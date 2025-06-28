@@ -46,7 +46,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 })
     }
 
-    if (user.role === "educator" && course.educatorId.toString() !== user.userId) {
+    if (user.role === "educator" && course.educatorId.toString() !== user.userId.toString()) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
@@ -62,7 +62,8 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: "Failed to update course" }, { status: 500 })
+    console.error("PUT /api/courses/[id] error:", error)
+    return NextResponse.json({ error: "Failed to update course", details: error.message }, { status: 500 })
   }
 }
 
@@ -81,7 +82,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 })
     }
 
-    if (user.role === "educator" && course.educatorId.toString() !== user.userId) {
+    if (user.role === "educator" && course.educatorId.toString() !== user.userId.toString()) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
@@ -91,6 +92,7 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete course" }, { status: 500 })
+    console.error("DELETE /api/courses/[id] error:", error)
+    return NextResponse.json({ error: "Failed to delete course", details: error.message }, { status: 500 })
   }
 }

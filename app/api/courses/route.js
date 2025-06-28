@@ -99,6 +99,29 @@ export async function GET(request) {
     const courses = await collection.find(filter).sort({ createdAt: -1 }).toArray()
     console.log("Query executed successfully, found", courses.length, "courses")
     
+    // Add enrollment counts to courses
+    if (courses.length > 0) {
+      const enrollmentCollection = db.collection("enrollments")
+      const courseIds = courses.map(course => course._id)
+      
+      // Get enrollment counts for all courses
+      const enrollmentCounts = await enrollmentCollection.aggregate([
+        { $match: { courseId: { $in: courseIds } } },
+        { $group: { _id: "$courseId", count: { $sum: 1 } } }
+      ]).toArray()
+      
+      // Create a map for quick lookup
+      const enrollmentMap = {}
+      enrollmentCounts.forEach(item => {
+        enrollmentMap[item._id.toString()] = item.count
+      })
+      
+      // Add enrollment counts to courses
+      courses.forEach(course => {
+        course.enrollmentCount = enrollmentMap[course._id.toString()] || 0
+      })
+    }
+    
     // Log sample data for debugging
     if (courses.length > 0) {
       console.log("First course sample:", {

@@ -2427,7 +2427,7 @@ Return JSON format:
                                   <div className="space-y-2">
                                     {testResults.map((test, index) => (
                                       <motion.div
-                                        key={`test-${index}-${test.testCase || index}`}
+                                        key={`test-result-${index}-${test.testCase || test.description || index}`}
                                         className={`flex items-center gap-3 p-3 rounded-lg border ${
                                           test.passed 
                                             ? 'bg-green-50 border-green-200' 

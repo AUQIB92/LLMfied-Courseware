@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
 import {
   Plus,
   BookOpen,
@@ -23,6 +24,15 @@ import {
   Settings,
   Bell,
   ChevronDown,
+  Clock,
+  Eye,
+  Edit3,
+  MoreVertical,
+  Calendar,
+  Star,
+  PlayCircle,
+  FileText,
+  ArrowRight,
 } from "lucide-react"
 import CourseCreator from "./CourseCreator"
 import CourseList from "./CourseList"
@@ -48,6 +58,7 @@ export default function EducatorDashboard() {
     publishedCourses: 0,
     totalStudents: 0,
   })
+
   const { user, getAuthHeaders, logout, updateProfile, updateUser } = useAuth()
   const router = useRouter()
 
@@ -62,9 +73,9 @@ export default function EducatorDashboard() {
     phone: "",
     organization: "",
     title: "",
-    expertise: []
+    expertise: [],
   })
-  
+
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
     pushNotifications: true,
@@ -72,9 +83,9 @@ export default function EducatorDashboard() {
     language: "en",
     timezone: "UTC",
     autoSave: true,
-    publicProfile: true
+    publicProfile: true,
   })
-  
+
   const [notifications, setNotifications] = useState([])
   const [profileLoading, setProfileLoading] = useState(false)
 
@@ -92,16 +103,17 @@ export default function EducatorDashboard() {
       console.log("Fetching courses for educator:", user.id)
       console.log("User ID type:", typeof user.id)
       console.log("Full user object:", user)
+
       const response = await fetch(`/api/courses?educatorId=${user.id}`, {
         headers: getAuthHeaders(),
       })
-      
+
       console.log("Response status:", response.status)
       console.log("Response ok:", response.ok)
-      
+
       const data = await response.json()
       console.log("API Response:", data)
-      
+
       // Handle error responses from API
       if (!response.ok || data.error) {
         console.error("API error:", data.error || "Unknown error")
@@ -119,11 +131,10 @@ export default function EducatorDashboard() {
         })
         return
       }
-      
+
       const coursesArray = Array.isArray(data) ? data : []
       console.log("Setting courses:", coursesArray.length, "courses")
       setCourses(coursesArray)
-
       setStats({
         totalCourses: coursesArray.length,
         publishedCourses: coursesArray.filter((c) => c.status === "published").length,
@@ -146,15 +157,15 @@ export default function EducatorDashboard() {
   const fetchProfile = async () => {
     setProfileLoading(true)
     try {
-      const response = await fetch('/api/profile', {
+      const response = await fetch("/api/profile", {
         headers: getAuthHeaders(),
       })
       if (response.ok) {
         const data = await response.json()
-        setProfile(prev => ({ ...prev, ...data.user }))
+        setProfile((prev) => ({ ...prev, ...data.user }))
       }
     } catch (error) {
-      console.error('Failed to fetch profile:', error)
+      console.error("Failed to fetch profile:", error)
     } finally {
       setProfileLoading(false)
     }
@@ -162,21 +173,21 @@ export default function EducatorDashboard() {
 
   const fetchPreferences = async () => {
     try {
-      const response = await fetch('/api/preferences', {
+      const response = await fetch("/api/preferences", {
         headers: getAuthHeaders(),
       })
       if (response.ok) {
         const data = await response.json()
-        setPreferences(prev => ({ ...prev, ...data.preferences || data }))
+        setPreferences((prev) => ({ ...prev, ...(data.preferences || data) }))
       }
     } catch (error) {
-      console.error('Failed to fetch preferences:', error)
+      console.error("Failed to fetch preferences:", error)
     }
   }
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications', {
+      const response = await fetch("/api/notifications", {
         headers: getAuthHeaders(),
       })
       if (response.ok) {
@@ -184,7 +195,7 @@ export default function EducatorDashboard() {
         setNotifications(Array.isArray(data) ? data : [])
       }
     } catch (error) {
-      console.error('Failed to fetch notifications:', error)
+      console.error("Failed to fetch notifications:", error)
     }
   }
 
@@ -232,6 +243,244 @@ export default function EducatorDashboard() {
     setActiveTab("notifications")
   }
 
+  // Beautiful Recent Courses Component
+  const BeautifulRecentCourses = () => {
+    const recentCourses = Array.isArray(courses) ? courses.slice(0, 6) : []
+
+    const getStatusColor = (status) => {
+      switch (status) {
+        case "published":
+          return "bg-gradient-to-r from-emerald-500 to-green-600 text-white"
+        case "draft":
+          return "bg-gradient-to-r from-amber-500 to-orange-600 text-white"
+        case "archived":
+          return "bg-gradient-to-r from-slate-500 to-gray-600 text-white"
+        default:
+          return "bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
+      }
+    }
+
+    const getStatusIcon = (status) => {
+      switch (status) {
+        case "published":
+          return <PlayCircle className="h-3 w-3" />
+        case "draft":
+          return <FileText className="h-3 w-3" />
+        case "archived":
+          return <Clock className="h-3 w-3" />
+        default:
+          return <BookOpen className="h-3 w-3" />
+      }
+    }
+
+    if (recentCourses.length === 0) {
+      return (
+        <div className="text-center py-16">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 to-purple-100/50 rounded-full blur-3xl"></div>
+            <div className="relative bg-gradient-to-br from-slate-100 to-blue-50 rounded-3xl p-12 border border-white/50 shadow-xl">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-2xl">
+                <BookOpen className="h-12 w-12 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-800 mb-3">No courses yet</h3>
+              <p className="text-slate-600 mb-8 max-w-md mx-auto">
+                Start your teaching journey by creating your first course. Share your knowledge with the world!
+              </p>
+              <Button
+                onClick={() => setActiveTab("create")}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Create Your First Course
+              </Button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-8">
+        {/* Header with View All Button */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-800">Recent Courses</h3>
+              <p className="text-slate-600 text-sm">Your latest educational content</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setActiveTab("courses")}
+            className="group hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200 hover:border-blue-300 transition-all duration-300"
+          >
+            View All Courses
+            <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+          </Button>
+        </div>
+
+        {/* Courses Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {recentCourses.map((course, index) => (
+            <Card
+              key={course._id || course.id || `course-${index}`}
+              className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] cursor-pointer"
+              style={{
+                animationDelay: `${index * 100}ms`,
+                animation: "fadeInUp 0.6s ease-out forwards",
+              }}
+            >
+              {/* Gradient Border Effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-[1px] bg-white rounded-xl"></div>
+
+              {/* Content */}
+              <div className="relative">
+                {/* Course Thumbnail/Header */}
+                <div className="relative h-32 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                  <div className="absolute inset-0 bg-[url('/placeholder.svg?height=128&width=400')] bg-cover bg-center opacity-20"></div>
+
+                  {/* Status Badge */}
+                  <div className="absolute top-4 left-4">
+                    <Badge className={`${getStatusColor(course.status)} px-3 py-1 text-xs font-semibold shadow-lg`}>
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(course.status)}
+                        {course.status?.charAt(0).toUpperCase() + course.status?.slice(1) || "Draft"}
+                      </div>
+                    </Badge>
+                  </div>
+
+                  {/* Course Actions */}
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-0"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => handleEditCourse(course.id)}>
+                          <Edit3 className="h-4 w-4 mr-2" />
+                          Edit Course
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Preview
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Users className="h-4 w-4 mr-2" />
+                          View Students
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Course Category/Level */}
+                  <div className="absolute bottom-4 left-4">
+                    <div className="flex items-center gap-2">
+                      <div className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded-lg text-white text-xs font-medium">
+                        {course.category || "General"}
+                      </div>
+                      <div className="flex items-center gap-1 text-white/80 text-xs">
+                        <Star className="h-3 w-3 fill-current" />
+                        {course.level || "Beginner"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Course Content */}
+                <CardContent className="p-6 space-y-4">
+                  {/* Title and Description */}
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-lg text-slate-800 line-clamp-2 group-hover:text-blue-600 transition-colors duration-300">
+                      {course.title || "Untitled Course"}
+                    </h4>
+                    <p className="text-slate-600 text-sm line-clamp-2 leading-relaxed">
+                      {course.description || "No description available for this course."}
+                    </p>
+                  </div>
+
+                  {/* Course Stats */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-4 text-sm text-slate-500">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span className="font-medium">{course.enrolledCount || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <BookOpen className="h-4 w-4" />
+                        <span className="font-medium">{course.lessonsCount || 0} lessons</span>
+                      </div>
+                    </div>
+
+                    {/* Last Updated */}
+                    <div className="flex items-center gap-1 text-xs text-slate-400">
+                      <Calendar className="h-3 w-3" />
+                      <span>{course.updatedAt ? new Date(course.updatedAt).toLocaleDateString() : "Recently"}</span>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar (if applicable) */}
+                  {course.completionRate !== undefined && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-600">Completion Rate</span>
+                        <span className="font-semibold text-slate-800">{course.completionRate}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-1000 ease-out"
+                          style={{ width: `${course.completionRate}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Button */}
+                  <Button
+                    onClick={() => handleEditCourse(course._id || course.id)}
+                    className="w-full bg-gradient-to-r from-slate-100 to-blue-50 hover:from-blue-50 hover:to-purple-50 text-slate-700 hover:text-slate-800 border border-slate-200 hover:border-blue-300 transition-all duration-300 group-hover:shadow-md"
+                  >
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    Edit Course
+                  </Button>
+                </CardContent>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex items-center justify-center pt-8">
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => setActiveTab("create")}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Create New Course
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setActiveTab("courses")}
+              className="hover:bg-gradient-to-r hover:from-slate-50 hover:to-blue-50 border-slate-200 hover:border-blue-300 px-6 py-3 rounded-xl transition-all duration-300"
+            >
+              <BookOpen className="h-5 w-5 mr-2" />
+              Manage All Courses
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Inline Profile Components
   const ProfileSettings = () => {
     const [localProfile, setLocalProfile] = useState(profile)
@@ -244,43 +493,41 @@ export default function EducatorDashboard() {
     const handleProfileUpdate = async (e) => {
       e.preventDefault()
       try {
-        console.log('Updating profile with data:', localProfile)
-        console.log('Auth headers:', getAuthHeaders())
-        
-        const response = await fetch('/api/profile', {
-          method: 'PUT',
+        console.log("Updating profile with data:", localProfile)
+        console.log("Auth headers:", getAuthHeaders())
+
+        const response = await fetch("/api/profile", {
+          method: "PUT",
           headers: {
             ...getAuthHeaders(),
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(localProfile),
         })
-
-        console.log('Response status:', response.status)
-        console.log('Response headers:', response.headers)
-
+        console.log("Response status:", response.status)
+        console.log("Response headers:", response.headers)
         if (response.ok) {
           const data = await response.json()
-          console.log('Profile update successful:', data)
-          
+          console.log("Profile update successful:", data)
+
           // Update user context if name or email changed
           if (localProfile.name !== user.name || localProfile.email !== user.email) {
-            updateUser({ 
-              name: localProfile.name, 
+            updateUser({
+              name: localProfile.name,
               email: localProfile.email,
-              avatar: localProfile.avatar 
+              avatar: localProfile.avatar,
             })
           }
-          
-          alert('Profile updated successfully!')
+
+          alert("Profile updated successfully!")
           fetchProfile() // Refresh profile data
         } else {
           const errorData = await response.json()
-          console.log('Profile update failed:', errorData)
-          alert(`Failed to update profile: ${errorData.error || 'Unknown error'}`)
+          console.log("Profile update failed:", errorData)
+          alert(`Failed to update profile: ${errorData.error || "Unknown error"}`)
         }
       } catch (error) {
-        console.error('Error updating profile:', error)
+        console.error("Error updating profile:", error)
         alert(`Error updating profile: ${error.message}`)
       }
     }
@@ -291,11 +538,11 @@ export default function EducatorDashboard() {
 
       setIsUploading(true)
       const formData = new FormData()
-      formData.append('avatar', file)
+      formData.append("avatar", file)
 
       try {
-        const response = await fetch('/api/upload/avatar', {
-          method: 'POST',
+        const response = await fetch("/api/upload/avatar", {
+          method: "POST",
           headers: getAuthHeaders(),
           body: formData,
         })
@@ -303,21 +550,21 @@ export default function EducatorDashboard() {
         if (response.ok) {
           const data = await response.json()
           const newAvatarUrl = data.avatarUrl
-          
+
           // Update local profile state immediately for instant UI feedback
-          setLocalProfile(prev => ({ ...prev, avatar: newAvatarUrl }))
-          setProfile(prev => ({ ...prev, avatar: newAvatarUrl }))
-          
+          setLocalProfile((prev) => ({ ...prev, avatar: newAvatarUrl }))
+          setProfile((prev) => ({ ...prev, avatar: newAvatarUrl }))
+
           // Update the user context (this will update the header avatar immediately)
           updateUser({ avatar: newAvatarUrl, _avatarTimestamp: Date.now() })
-          
-          alert('Avatar uploaded successfully!')
+
+          alert("Avatar uploaded successfully!")
         } else {
           const errorData = await response.json()
-          alert(`Failed to upload avatar: ${errorData.error || 'Unknown error'}`)
+          alert(`Failed to upload avatar: ${errorData.error || "Unknown error"}`)
         }
       } catch (error) {
-        console.error('Error uploading avatar:', error)
+        console.error("Error uploading avatar:", error)
         alert(`Error uploading avatar: ${error.message}`)
       } finally {
         setIsUploading(false)
@@ -327,11 +574,7 @@ export default function EducatorDashboard() {
     return (
       <div className="space-y-8">
         <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => setActiveTab("overview")}
-            className="hover:bg-blue-50 text-blue-600"
-          >
+          <Button variant="ghost" onClick={() => setActiveTab("overview")} className="hover:bg-blue-50 text-blue-600">
             ← Back to Dashboard
           </Button>
           <div>
@@ -371,18 +614,13 @@ export default function EducatorDashboard() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="cursor-pointer"
+                      className="cursor-pointer bg-transparent"
                       disabled={isUploading}
                       asChild
                     >
                       <span>
-                        {isUploading ? 'Uploading...' : 'Upload New Avatar'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          className="hidden"
-                        />
+                        {isUploading ? "Uploading..." : "Upload New Avatar"}
+                        <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                       </span>
                     </Button>
                   </label>
@@ -397,7 +635,7 @@ export default function EducatorDashboard() {
                   <Input
                     id="name"
                     value={localProfile.name}
-                    onChange={(e) => setLocalProfile(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, name: e.target.value }))}
                     className="h-12"
                   />
                 </div>
@@ -407,7 +645,7 @@ export default function EducatorDashboard() {
                     id="email"
                     type="email"
                     value={localProfile.email}
-                    onChange={(e) => setLocalProfile(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, email: e.target.value }))}
                     className="h-12"
                   />
                 </div>
@@ -419,7 +657,7 @@ export default function EducatorDashboard() {
                   <Input
                     id="title"
                     value={localProfile.title}
-                    onChange={(e) => setLocalProfile(prev => ({ ...prev, title: e.target.value }))}
+                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, title: e.target.value }))}
                     placeholder="e.g., Senior Developer, Math Professor"
                     className="h-12"
                   />
@@ -429,7 +667,7 @@ export default function EducatorDashboard() {
                   <Input
                     id="organization"
                     value={localProfile.organization}
-                    onChange={(e) => setLocalProfile(prev => ({ ...prev, organization: e.target.value }))}  
+                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, organization: e.target.value }))}
                     placeholder="e.g., Tech University, ABC Company"
                     className="h-12"
                   />
@@ -443,7 +681,7 @@ export default function EducatorDashboard() {
                     id="phone"
                     type="tel"
                     value={localProfile.phone}
-                    onChange={(e) => setLocalProfile(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, phone: e.target.value }))}
                     className="h-12"
                   />
                 </div>
@@ -452,7 +690,7 @@ export default function EducatorDashboard() {
                   <Input
                     id="location"
                     value={localProfile.location}
-                    onChange={(e) => setLocalProfile(prev => ({ ...prev, location: e.target.value }))}
+                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, location: e.target.value }))}
                     placeholder="e.g., New York, USA"
                     className="h-12"
                   />
@@ -465,7 +703,7 @@ export default function EducatorDashboard() {
                   id="website"
                   type="url"
                   value={localProfile.website}
-                  onChange={(e) => setLocalProfile(prev => ({ ...prev, website: e.target.value }))}
+                  onChange={(e) => setLocalProfile((prev) => ({ ...prev, website: e.target.value }))}
                   placeholder="https://yourwebsite.com"
                   className="h-12"
                 />
@@ -476,7 +714,7 @@ export default function EducatorDashboard() {
                 <Textarea
                   id="bio"
                   value={localProfile.bio}
-                  onChange={(e) => setLocalProfile(prev => ({ ...prev, bio: e.target.value }))}
+                  onChange={(e) => setLocalProfile((prev) => ({ ...prev, bio: e.target.value }))}
                   placeholder="Tell us about yourself..."
                   rows={4}
                 />
@@ -504,24 +742,23 @@ export default function EducatorDashboard() {
 
     const handlePreferenceUpdate = async () => {
       try {
-        const response = await fetch('/api/preferences', {
-          method: 'PUT',
+        const response = await fetch("/api/preferences", {
+          method: "PUT",
           headers: {
             ...getAuthHeaders(),
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(localPreferences),
         })
-
         if (response.ok) {
-          alert('Preferences updated successfully!')
+          alert("Preferences updated successfully!")
           fetchPreferences() // Refresh preferences data
         } else {
-          alert('Failed to update preferences')
+          alert("Failed to update preferences")
         }
       } catch (error) {
-        console.error('Error updating preferences:', error)
-        alert('Error updating preferences')
+        console.error("Error updating preferences:", error)
+        alert("Error updating preferences")
       }
     }
 
@@ -559,8 +796,8 @@ export default function EducatorDashboard() {
                 </div>
                 <Switch
                   checked={localPreferences.emailNotifications}
-                  onCheckedChange={(checked) => 
-                    setLocalPreferences(prev => ({ ...prev, emailNotifications: checked }))
+                  onCheckedChange={(checked) =>
+                    setLocalPreferences((prev) => ({ ...prev, emailNotifications: checked }))
                   }
                 />
               </div>
@@ -571,8 +808,8 @@ export default function EducatorDashboard() {
                 </div>
                 <Switch
                   checked={localPreferences.pushNotifications}
-                  onCheckedChange={(checked) => 
-                    setLocalPreferences(prev => ({ ...prev, pushNotifications: checked }))
+                  onCheckedChange={(checked) =>
+                    setLocalPreferences((prev) => ({ ...prev, pushNotifications: checked }))
                   }
                 />
               </div>
@@ -591,7 +828,7 @@ export default function EducatorDashboard() {
                 <Label>Language</Label>
                 <select
                   value={localPreferences.language}
-                  onChange={(e) => setLocalPreferences(prev => ({ ...prev, language: e.target.value }))}
+                  onChange={(e) => setLocalPreferences((prev) => ({ ...prev, language: e.target.value }))}
                   className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="en">English</option>
@@ -604,7 +841,7 @@ export default function EducatorDashboard() {
                 <Label>Timezone</Label>
                 <select
                   value={localPreferences.timezone}
-                  onChange={(e) => setLocalPreferences(prev => ({ ...prev, timezone: e.target.value }))}
+                  onChange={(e) => setLocalPreferences((prev) => ({ ...prev, timezone: e.target.value }))}
                   className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="UTC">UTC</option>
@@ -624,9 +861,7 @@ export default function EducatorDashboard() {
                 </div>
                 <Switch
                   checked={localPreferences.darkMode}
-                  onCheckedChange={(checked) => 
-                    setLocalPreferences(prev => ({ ...prev, darkMode: checked }))
-                  }
+                  onCheckedChange={(checked) => setLocalPreferences((prev) => ({ ...prev, darkMode: checked }))}
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -636,9 +871,7 @@ export default function EducatorDashboard() {
                 </div>
                 <Switch
                   checked={localPreferences.publicProfile}
-                  onCheckedChange={(checked) => 
-                    setLocalPreferences(prev => ({ ...prev, publicProfile: checked }))
-                  }
+                  onCheckedChange={(checked) => setLocalPreferences((prev) => ({ ...prev, publicProfile: checked }))}
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -648,9 +881,7 @@ export default function EducatorDashboard() {
                 </div>
                 <Switch
                   checked={localPreferences.autoSave}
-                  onCheckedChange={(checked) => 
-                    setLocalPreferences(prev => ({ ...prev, autoSave: checked }))
-                  }
+                  onCheckedChange={(checked) => setLocalPreferences((prev) => ({ ...prev, autoSave: checked }))}
                 />
               </div>
             </CardContent>
@@ -677,27 +908,17 @@ export default function EducatorDashboard() {
     }, [notifications])
 
     const markAsRead = (id) => {
-      setLocalNotifications(prev => 
-        prev.map(notif => 
-          notif.id === id ? { ...notif, read: true } : notif
-        )
-      )
+      setLocalNotifications((prev) => prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)))
     }
 
     const markAllAsRead = () => {
-      setLocalNotifications(prev => 
-        prev.map(notif => ({ ...notif, read: true }))
-      )
+      setLocalNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })))
     }
 
     return (
       <div className="space-y-8">
         <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => setActiveTab("overview")}
-            className="hover:bg-amber-50 text-amber-600"
-          >
+          <Button variant="ghost" onClick={() => setActiveTab("overview")} className="hover:bg-amber-50 text-amber-600">
             ← Back to Dashboard
           </Button>
           <div className="flex-1">
@@ -706,11 +927,7 @@ export default function EducatorDashboard() {
             </h2>
             <p className="text-slate-600">Stay updated with your latest activities</p>
           </div>
-          <Button
-            onClick={markAllAsRead}
-            variant="outline"
-            className="hover:bg-amber-50"
-          >
+          <Button onClick={markAllAsRead} variant="outline" className="hover:bg-amber-50 bg-transparent">
             Mark All as Read
           </Button>
         </div>
@@ -728,13 +945,15 @@ export default function EducatorDashboard() {
                 <div
                   key={notification.id}
                   className={`p-6 hover:bg-gray-50 transition-colors duration-200 ${
-                    !notification.read ? 'bg-blue-50/50' : ''
+                    !notification.read ? "bg-blue-50/50" : ""
                   }`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`w-3 h-3 rounded-full mt-2 ${
-                      !notification.read ? 'bg-blue-500 animate-pulse' : 'bg-gray-300'
-                    }`}></div>
+                    <div
+                      className={`w-3 h-3 rounded-full mt-2 ${
+                        !notification.read ? "bg-blue-500 animate-pulse" : "bg-gray-300"
+                      }`}
+                    ></div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between">
                         <div>
@@ -841,7 +1060,7 @@ export default function EducatorDashboard() {
               </div>
             </div>
 
-            {/* Recent Courses Section */}
+            {/* Beautiful Recent Courses Section */}
             <Card className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-500">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/50"></div>
               <CardHeader className="relative bg-gradient-to-r from-slate-50/80 to-blue-50/80 backdrop-blur-sm border-b border-white/20">
@@ -860,7 +1079,7 @@ export default function EducatorDashboard() {
                 </div>
               </CardHeader>
               <CardContent className="relative p-8">
-                <CourseList courses={Array.isArray(courses) ? courses.slice(0, 5) : []} onRefresh={fetchCourses} onEditCourse={handleEditCourse} />
+                <BeautifulRecentCourses />
               </CardContent>
             </Card>
           </div>
@@ -875,7 +1094,11 @@ export default function EducatorDashboard() {
               </h2>
               <p className="text-slate-600">Manage and organize all your educational content</p>
             </div>
-            <CourseList courses={Array.isArray(courses) ? courses : []} onRefresh={fetchCourses} onEditCourse={handleEditCourse} />
+            <CourseList
+              courses={Array.isArray(courses) ? courses : []}
+              onRefresh={fetchCourses}
+              onEditCourse={handleEditCourse}
+            />
           </div>
         )
 
@@ -928,7 +1151,6 @@ export default function EducatorDashboard() {
       <div className="relative bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 shadow-2xl">
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent"></div>
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5"></div>
-
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-12">
             <div className="space-y-2">
@@ -962,7 +1184,10 @@ export default function EducatorDashboard() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <Avatar className="h-10 w-10 ring-2 ring-white/30 group-hover:ring-white/50 transition-all duration-300" key={`header-avatar-${user?.avatar}-${user?._avatarTimestamp || Date.now()}`}>
+                          <Avatar
+                            className="h-10 w-10 ring-2 ring-white/30 group-hover:ring-white/50 transition-all duration-300"
+                            key={`header-avatar-${user?.avatar}-${user?._avatarTimestamp || Date.now()}`}
+                          >
                             <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
                             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
                               {user?.name?.charAt(0)?.toUpperCase() || "U"}
@@ -978,7 +1203,6 @@ export default function EducatorDashboard() {
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
-
                   <DropdownMenuContent
                     align="end"
                     className="w-72 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl p-2"
@@ -986,7 +1210,10 @@ export default function EducatorDashboard() {
                     {/* Profile Header */}
                     <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl mb-2">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12 ring-2 ring-blue-200" key={`dropdown-avatar-${user?.avatar}-${user?._avatarTimestamp || Date.now()}`}>
+                        <Avatar
+                          className="h-12 w-12 ring-2 ring-blue-200"
+                          key={`dropdown-avatar-${user?.avatar}-${user?._avatarTimestamp || Date.now()}`}
+                        >
                           <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
                           <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-lg">
                             {user?.name?.charAt(0)?.toUpperCase() || "U"}
@@ -1006,7 +1233,7 @@ export default function EducatorDashboard() {
                     <DropdownMenuSeparator className="bg-slate-200" />
 
                     {/* Menu Items */}
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={navigateToProfile}
                       className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 cursor-pointer"
                     >
@@ -1019,7 +1246,7 @@ export default function EducatorDashboard() {
                       </div>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={navigateToPreferences}
                       className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 cursor-pointer"
                     >
@@ -1032,7 +1259,7 @@ export default function EducatorDashboard() {
                       </div>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={navigateToNotifications}
                       className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 transition-all duration-200 cursor-pointer"
                     >
@@ -1100,6 +1327,27 @@ export default function EducatorDashboard() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="animate-in fade-in-50 duration-500">{renderContent()}</div>
       </div>
+
+      {/* Add CSS for animations */}
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   )
 }

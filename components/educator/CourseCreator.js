@@ -33,6 +33,7 @@ export default function CourseCreator({ onCourseCreated }) {
   const [curriculumTopic, setCurriculumTopic] = useState("")
   const [generatedCurriculum, setGeneratedCurriculum] = useState("")
   const [showCurriculumPreview, setShowCurriculumPreview] = useState(false)
+  const [currentCourseId, setCurrentCourseId] = useState(null)
   const { getAuthHeaders } = useAuth()
 
   const handleFileUpload = async (e) => {
@@ -181,24 +182,16 @@ export default function CourseCreator({ onCourseCreated }) {
       })
 
       if (response.ok) {
+        const data = await response.json()
+        setCurrentCourseId(data.id || data._id) // Capture the course ID for publishing
         alert("Course saved as draft!")
-        onCourseCreated?.()
-        setStep(1)
-        setCourseData({ 
-          title: "", 
-          description: "", 
-          modules: [],
-          subject: "",
-          learnerLevel: "",
-          duration: "",
-          objectives: []
-        })
-        setCurriculumTopic("")
-        setGeneratedCurriculum("")
-        setShowCurriculumPreview(false)
-        setGenerationType("upload")
+        // Don't reset form here - keep data for potential publishing
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to save course: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
+      console.error("Error saving course:", error)
       alert("Failed to save course")
     } finally {
       setLoading(false)
@@ -206,16 +199,20 @@ export default function CourseCreator({ onCourseCreated }) {
   }
 
   const handlePublish = async () => {
+    if (!currentCourseId) {
+      alert("Please save the course first before publishing")
+      return
+    }
+
     setLoading(true)
     try {
-      const response = await fetch("/api/courses", {
-        method: "POST",
+      const response = await fetch(`/api/courses/${currentCourseId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          ...courseData,
           status: "published",
         }),
       })
@@ -223,6 +220,7 @@ export default function CourseCreator({ onCourseCreated }) {
       if (response.ok) {
         alert("Course published successfully!")
         onCourseCreated?.()
+        // Reset the form completely after successful publishing
         setStep(1)
         setCourseData({ 
           title: "", 
@@ -237,8 +235,13 @@ export default function CourseCreator({ onCourseCreated }) {
         setGeneratedCurriculum("")
         setShowCurriculumPreview(false)
         setGenerationType("upload")
+        setCurrentCourseId(null)
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to publish course: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
+      console.error("Error publishing course:", error)
       alert("Failed to publish course")
     } finally {
       setLoading(false)
