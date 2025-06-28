@@ -1,0 +1,229 @@
+/* Visualizer Styles */
+.visualizer-container {
+  @apply transition-all duration-500 ease-in-out;
+}
+
+.visualizer-enter {
+  @apply opacity-0 transform scale-95;
+}
+
+.visualizer-enter-active {
+  @apply opacity-100 transform scale-100;
+}
+
+.visualizer-exit {
+  @apply opacity-100 transform scale-100;
+}
+
+.visualizer-exit-active {
+  @apply opacity-0 transform scale-95;
+}
+
+/* Flowchart Animations */
+.flowchart-step {
+  @apply transition-all duration-300 hover:scale-105;
+}
+
+.flowchart-connector {
+  @apply animate-pulse;
+}
+
+/* Comparison Visualizer */
+.comparison-item {
+  @apply transform transition-all duration-300 hover:scale-105 hover:shadow-lg;
+}
+
+/* Timeline Visualizer */
+.timeline-event {
+  @apply transform transition-all duration-300 hover:translate-x-2;
+}
+
+.timeline-dot {
+  @apply animate-pulse;
+}
+
+/* Relationship Visualizer */
+.relationship-node {
+  @apply transform transition-all duration-500 hover:scale-110 hover:rotate-6;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.relationship-connection {
+  @apply animate-pulse;
+  animation-delay: 0.5s;
+}
+
+/* Hierarchy Visualizer */
+.hierarchy-level {
+  @apply transform transition-all duration-300;
+}
+
+.hierarchy-level:hover {
+  @apply translate-x-2;
+}
+
+/* Cycle Visualizer */
+.cycle-stage {
+  @apply transform transition-all duration-500 hover:scale-110;
+  animation: rotate 8s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Formula Visualizer */
+.formula-container {
+  @apply transform transition-all duration-300 hover:scale-105;
+}
+
+.formula-variable {
+  @apply transform transition-all duration-300 hover:translate-x-2 hover:shadow-md;
+}
+
+/* Interactive Elements */
+.interactive-element {
+  @apply cursor-pointer transform transition-all duration-200;
+}
+
+.interactive-element:hover {
+  @apply scale-105 shadow-lg;
+}
+
+.interactive-element:active {
+  @apply scale-95;
+}
+
+/* Loading Animations */
+.loading-spinner {
+  @apply animate-spin;
+}
+
+.loading-pulse {
+  @apply animate-pulse;
+}
+
+/* Gradient Backgrounds */
+.gradient-blue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.gradient-green {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+/* Topic Cards */
+.topic-card {
+  @apply transform transition-all duration-300 hover:scale-102 hover:shadow-xl;
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,248,255,0.9) 100%);
+  backdrop-filter: blur(10px);
+}
+
+.topic-card:hover {
+  background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,248,255,1) 100%);
+}
+
+/* Explanation Cards */
+.explanation-card {
+  @apply transform transition-all duration-500;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Button Hover Effects */
+.btn-generate {
+  @apply transform transition-all duration-300;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.btn-generate:hover {
+  @apply scale-105;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.btn-visualize {
+  @apply transform transition-all duration-300;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.btn-visualize:hover {
+  @apply scale-105;
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+  box-shadow: 0 10px 25px rgba(240, 147, 251, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .visualizer-container {
+    @apply px-2;
+  }
+  
+  .relationship-node {
+    @apply w-16 h-16 text-xs;
+  }
+  
+  .cycle-stage {
+    @apply w-16 h-16 text-xs;
+  }
+  
+  .flowchart-step .w-12 {
+    @apply w-8 h-8;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .topic-card {
+    background: linear-gradient(135deg, rgba(30,41,59,0.9) 0%, rgba(15,23,42,0.9) 100%);
+  }
+  
+  .explanation-card {
+    @apply bg-slate-800 border-slate-600;
+  }
+}
+
+/* Accessibility */
+.visualizer-container:focus-within {
+  @apply ring-2 ring-blue-500 ring-offset-2;
+}
+
+.interactive-element:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Print Styles */
+@media print {
+  .visualizer-container {
+    @apply break-inside-avoid;
+  }
+  
+  .btn-generate,
+  .btn-visualize {
+    @apply hidden;
+  }
+}
