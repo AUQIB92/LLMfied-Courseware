@@ -25,7 +25,7 @@ import {
   Loader2
 } from "lucide-react"
 
-export default function CourseLibrary({ onCourseSelect }) {
+export default function CourseLibrary({ onCourseSelect, onDataChange }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedLevel, setSelectedLevel] = useState("all")
@@ -102,6 +102,10 @@ export default function CourseLibrary({ onCourseSelect }) {
         alert('Successfully enrolled in course! You can now access all course content.')
         // Refresh courses to get updated enrollment count
         fetchCourses()
+        // Notify parent component to refresh stats
+        if (onDataChange) {
+          onDataChange()
+        }
       } else {
         const error = await response.json()
         alert(`Failed to enroll: ${error.error}`)
@@ -132,6 +136,10 @@ export default function CourseLibrary({ onCourseSelect }) {
         alert('Successfully unenrolled from course!')
         // Refresh courses to get updated enrollment count
         fetchCourses()
+        // Notify parent component to refresh stats
+        if (onDataChange) {
+          onDataChange()
+        }
       } else {
         const error = await response.json()
         alert(`Failed to unenroll: ${error.error}`)
@@ -211,8 +219,18 @@ export default function CourseLibrary({ onCourseSelect }) {
 
   return (
     <div className="space-y-8">
-      {/* Beautiful Header */}
-      <div className="text-center space-y-6">
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">Loading Courses</h3>
+            <p className="text-slate-600">Discovering amazing learning opportunities for you...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Beautiful Header */}
+          <div className="text-center space-y-6">
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-emerald-600/20 blur-3xl"></div>
           <div className="relative">
@@ -249,8 +267,8 @@ export default function CourseLibrary({ onCourseSelect }) {
             <div className="w-px h-8 bg-slate-200"></div>
             <div className="text-center">
               <div className="text-2xl font-bold text-slate-800">
-                {coursesArray.length > 0 ? 
-                  (coursesArray.reduce((acc, course) => acc + (course.rating || 4.5), 0) / coursesArray.length).toFixed(1) : 
+                {courses.length > 0 ? 
+                  (courses.reduce((acc, course) => acc + (course.rating || 4.5), 0) / courses.length).toFixed(1) : 
                   '4.8'
                 }
               </div>
@@ -537,6 +555,8 @@ export default function CourseLibrary({ onCourseSelect }) {
             </Button>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   )

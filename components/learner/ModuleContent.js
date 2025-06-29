@@ -55,6 +55,7 @@ import {
   Heart,
   Eye,
   Settings,
+  Crown,
 } from "lucide-react"
 import QuizModal from "./QuizModal"
 
@@ -388,8 +389,6 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
   const [visualizerData, setVisualizerData] = useState({})
   const [contentSubsections, setContentSubsections] = useState([])
   const [loadingSubsections, setLoadingSubsections] = useState(false)
-  const [objectiveMappings, setObjectiveMappings] = useState({})
-  const [loadingMappings, setLoadingMappings] = useState(false)
   const [codeSimulators, setCodeSimulators] = useState({})
   const [loadingSimulator, setLoadingSimulator] = useState({})
   const [activeSimulator, setActiveSimulator] = useState(null)
@@ -488,7 +487,6 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
       } else {
         generateContentSubsections()
       }
-      generateObjectiveMappings()
     }
     return () => {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000 / 60)
@@ -735,113 +733,6 @@ Make explanations engaging and easy to understand.`,
       console.error("Error generating subsections:", error)
     } finally {
       setLoadingSubsections(false)
-    }
-  }
-
-  // Generate objective mappings
-  const generateObjectiveMappings = async () => {
-    if (!module.objectives || module.objectives.length === 0) return
-
-    setLoadingMappings(true)
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          ...getAuthHeaders(),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: `Map the module content to specific learning objectives and provide detailed explanations for how each objective is achieved.
-
-Learning Objectives:
-${module.objectives.map((obj, index) => `${index + 1}. ${obj}`).join("\n")}
-
-Module Content: ${module.content}
-
-For each objective, provide:
-1. How it's addressed in the content
-2. Key concepts that support this objective
-3. Practical applications
-4. Assessment criteria
-
-Return JSON in this format:
-{
-  "mappings": [
-    {
-      "objectiveIndex": 0,
-      "objective": "The learning objective text",
-      "howAddressed": "Detailed explanation of how content addresses this",
-      "keyConcepts": ["concept1", "concept2"],
-      "practicalApplications": ["application1", "application2"],
-      "assessmentCriteria": "How to measure if objective is met"
-    }
-  ]
-}`,
-          courseId: course._id,
-          moduleId: module.id,
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        try {
-          const mappings = extractJsonFromResponse(data.response)
-          
-          // Validate the structure
-          if (mappings && mappings.mappings && Array.isArray(mappings.mappings)) {
-            setObjectiveMappings(mappings)
-          } else if (mappings && mappings.error) {
-            console.error("AI response parsing failed:", mappings.originalError)
-            // Create fallback mappings
-            const fallbackMappings = {
-              mappings: module.objectives.map((obj, index) => ({
-                objectiveIndex: index,
-                objective: obj,
-                howAddressed: "Content analysis temporarily unavailable",
-                keyConcepts: ["General concepts"],
-                practicalApplications: ["To be determined"],
-                assessmentCriteria: "Understanding of core concepts"
-              }))
-            }
-            setObjectiveMappings(fallbackMappings)
-          } else {
-            throw new Error("Invalid response structure")
-          }
-        } catch (parseError) {
-          console.error("Error parsing objective mappings:", parseError)
-          
-          // Create simple fallback mappings
-          const fallbackMappings = {
-            mappings: module.objectives.map((obj, index) => ({
-              objectiveIndex: index,
-              objective: obj,
-              howAddressed: "Content addresses this objective through practical examples and explanations",
-              keyConcepts: ["Core concepts"],
-              practicalApplications: ["Real-world applications"],
-              assessmentCriteria: "Student demonstrates understanding"
-            }))
-          }
-          setObjectiveMappings(fallbackMappings)
-        }
-      } else {
-        console.error("Failed to generate objective mappings:", response.statusText)
-        // Create fallback mappings for network errors
-        const fallbackMappings = {
-          mappings: module.objectives.map((obj, index) => ({
-            objectiveIndex: index,
-            objective: obj,
-            howAddressed: "Mapping temporarily unavailable",
-            keyConcepts: ["Please retry"],
-            practicalApplications: ["Content analysis pending"],
-            assessmentCriteria: "Standard assessment criteria"
-          }))
-        }
-        setObjectiveMappings(fallbackMappings)
-      }
-    } catch (error) {
-      console.error("Error generating objective mappings:", error)
-    } finally {
-      setLoadingMappings(false)
     }
   }
 
@@ -1111,7 +1002,16 @@ Return JSON format:
 
   // Memoized resource handling
   const { legacyResources, aiResources } = useMemo(() => {
-    const legacy = Array.isArray(module.resources) ? module.resources : []
+    let legacy = []
+    
+    if (Array.isArray(module.resources)) {
+      // Legacy array format
+      legacy = module.resources
+    } else if (module.resources && typeof module.resources === "object" && module.resources.manual) {
+      // New object format with manual resources
+      legacy = Array.isArray(module.resources.manual) ? module.resources.manual : []
+    }
+    
     const ai =
       module.resources && typeof module.resources === "object" && !Array.isArray(module.resources)
         ? {
@@ -1136,8 +1036,21 @@ Return JSON format:
     return { legacyResources: legacy, aiResources: ai }
   }, [module.resources])
 
+  // Organize manual resources by type for the instructor masterpieces section
+  const instructorMasterpieces = useMemo(() => {
+    return {
+      articles: legacyResources.filter(r => r.type === 'article' || !r.type), // Default to article for legacy
+      videos: legacyResources.filter(r => r.type === 'video'),
+      books: legacyResources.filter(r => r.type === 'book'),
+      tools: legacyResources.filter(r => r.type === 'tool'),
+      websites: legacyResources.filter(r => r.type === 'website'),
+      exercises: legacyResources.filter(r => r.type === 'exercise'),
+      courses: legacyResources.filter(r => r.type === 'course'),
+    }
+  }, [legacyResources])
+
   // Enhanced Resource Card Component
-  const ResourceCard = ({ resource, type }) => {
+  const ResourceCard = ({ resource, type, isInstructorChoice = false }) => {
     const getIcon = () => {
       const iconMap = {
         books: <BookOpen className="h-5 w-5 text-blue-600" />,
@@ -1193,6 +1106,18 @@ Return JSON format:
             )}
 
             <div className="space-y-3 mt-auto">
+              {isInstructorChoice && (
+                <div className="flex items-center justify-center">
+                  <EnhancedBadge
+                    variant="default"
+                    className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold shadow-md"
+                  >
+                    <Crown className="h-3 w-3 mr-1" />
+                    Instructor's Masterpiece
+                  </EnhancedBadge>
+                </div>
+              )}
+
               {resource.difficulty && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Difficulty:</span>
@@ -1808,9 +1733,232 @@ Return JSON format:
           </motion.div>
         )}
 
+        {/* Masterpieces from the Instructor Section */}
+        {Object.values(instructorMasterpieces).some(arr => arr.length > 0) && (
+          <motion.div key={`instructor-masterpieces-${module.id}`} variants={itemVariants}>
+            <GlassCard className="bg-white/80 backdrop-blur-sm border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <CardHeader className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 rounded-t-lg">
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+                    <Crown className="h-6 w-6" />
+                  </div>
+                  Masterpieces from the Instructor
+                  <EnhancedBadge
+                    variant="secondary"
+                    className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold"
+                  >
+                    <Star className="h-3 w-3 mr-1" />
+                    Curated by Your Instructor
+                  </EnhancedBadge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8">
+                <Tabs
+                  defaultValue={
+                    instructorMasterpieces.articles.length > 0
+                      ? "articles"
+                      : instructorMasterpieces.videos.length > 0
+                        ? "videos"
+                        : instructorMasterpieces.books.length > 0
+                          ? "books"
+                          : instructorMasterpieces.courses.length > 0
+                            ? "courses"
+                            : instructorMasterpieces.tools.length > 0
+                              ? "tools"
+                              : instructorMasterpieces.websites.length > 0
+                                ? "websites"
+                                : instructorMasterpieces.exercises.length > 0
+                                  ? "exercises"
+                                  : "articles"
+                  }
+                  className="w-full"
+                >
+                  <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-amber-100 to-orange-200 rounded-xl">
+                    <TabsTrigger
+                      value="articles"
+                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                    >
+                      <FileText className="h-5 w-5 text-green-600" />
+                      <span className="text-xs font-medium">Articles</span>
+                      {instructorMasterpieces.articles.length > 0 && (
+                        <EnhancedBadge variant="secondary" className="text-xs">
+                          {instructorMasterpieces.articles.length}
+                        </EnhancedBadge>
+                      )}
+                    </TabsTrigger>
+
+                    <TabsTrigger
+                      value="videos"
+                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                    >
+                      <Play className="h-5 w-5 text-red-600" />
+                      <span className="text-xs font-medium">Videos</span>
+                      {instructorMasterpieces.videos.length > 0 && (
+                        <EnhancedBadge variant="secondary" className="text-xs">
+                          {instructorMasterpieces.videos.length}
+                        </EnhancedBadge>
+                      )}
+                    </TabsTrigger>
+
+                    <TabsTrigger
+                      value="books"
+                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                    >
+                      <BookOpen className="h-5 w-5 text-blue-600" />
+                      <span className="text-xs font-medium">Books</span>
+                      {instructorMasterpieces.books.length > 0 && (
+                        <EnhancedBadge variant="secondary" className="text-xs">
+                          {instructorMasterpieces.books.length}
+                        </EnhancedBadge>
+                      )}
+                    </TabsTrigger>
+
+                    <TabsTrigger
+                      value="courses"
+                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                    >
+                      <Video className="h-5 w-5 text-purple-600" />
+                      <span className="text-xs font-medium">Courses</span>
+                      {instructorMasterpieces.courses.length > 0 && (
+                        <EnhancedBadge variant="secondary" className="text-xs">
+                          {instructorMasterpieces.courses.length}
+                        </EnhancedBadge>
+                      )}
+                    </TabsTrigger>
+
+                    <TabsTrigger
+                      value="tools"
+                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                    >
+                      <Wrench className="h-5 w-5 text-orange-600" />
+                      <span className="text-xs font-medium">Tools</span>
+                      {instructorMasterpieces.tools.length > 0 && (
+                        <EnhancedBadge variant="secondary" className="text-xs">
+                          {instructorMasterpieces.tools.length}
+                        </EnhancedBadge>
+                      )}
+                    </TabsTrigger>
+
+                    <TabsTrigger
+                      value="websites"
+                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                    >
+                      <Globe className="h-5 w-5 text-indigo-600" />
+                      <span className="text-xs font-medium">Websites</span>
+                      {instructorMasterpieces.websites.length > 0 && (
+                        <EnhancedBadge variant="secondary" className="text-xs">
+                          {instructorMasterpieces.websites.length}
+                        </EnhancedBadge>
+                      )}
+                    </TabsTrigger>
+
+                    <TabsTrigger
+                      value="exercises"
+                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                    >
+                      <Target className="h-5 w-5 text-pink-600" />
+                      <span className="text-xs font-medium">Exercises</span>
+                      {instructorMasterpieces.exercises.length > 0 && (
+                        <EnhancedBadge variant="secondary" className="text-xs">
+                          {instructorMasterpieces.exercises.length}
+                        </EnhancedBadge>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <div className="mt-8">
+                    <TabsContent value="articles" className="space-y-6">
+                      {instructorMasterpieces.articles.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {instructorMasterpieces.articles.map((resource, index) => (
+                            <motion.div key={`instructor-article-${index}`} variants={itemVariants}>
+                              <ResourceCard resource={resource} type="articles" isInstructorChoice={true} />
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="videos" className="space-y-6">
+                      {instructorMasterpieces.videos.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {instructorMasterpieces.videos.map((resource, index) => (
+                            <motion.div key={`instructor-video-${index}`} variants={itemVariants}>
+                              <ResourceCard resource={resource} type="videos" isInstructorChoice={true} />
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="books" className="space-y-6">
+                      {instructorMasterpieces.books.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {instructorMasterpieces.books.map((resource, index) => (
+                            <motion.div key={`instructor-book-${index}`} variants={itemVariants}>
+                              <ResourceCard resource={resource} type="books" isInstructorChoice={true} />
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="courses" className="space-y-6">
+                      {instructorMasterpieces.courses.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {instructorMasterpieces.courses.map((resource, index) => (
+                            <motion.div key={`instructor-course-${index}`} variants={itemVariants}>
+                              <ResourceCard resource={resource} type="courses" isInstructorChoice={true} />
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="tools" className="space-y-6">
+                      {instructorMasterpieces.tools.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {instructorMasterpieces.tools.map((resource, index) => (
+                            <motion.div key={`instructor-tool-${index}`} variants={itemVariants}>
+                              <ResourceCard resource={resource} type="tools" isInstructorChoice={true} />
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="websites" className="space-y-6">
+                      {instructorMasterpieces.websites.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {instructorMasterpieces.websites.map((resource, index) => (
+                            <motion.div key={`instructor-website-${index}`} variants={itemVariants}>
+                              <ResourceCard resource={resource} type="websites" isInstructorChoice={true} />
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="exercises" className="space-y-6">
+                      {instructorMasterpieces.exercises.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {instructorMasterpieces.exercises.map((resource, index) => (
+                            <motion.div key={`instructor-exercise-${index}`} variants={itemVariants}>
+                              <ResourceCard resource={resource} type="exercises" isInstructorChoice={true} />
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+                  </div>
+                </Tabs>
+              </CardContent>
+            </GlassCard>
+          </motion.div>
+        )}
+
         {/* Complete Learning Resources Section */}
         {(
-          (legacyResources && legacyResources.length > 0) ||
           (aiResources.books && aiResources.books.length > 0) ||
           (aiResources.courses && aiResources.courses.length > 0) ||
           (aiResources.videos && aiResources.videos.length > 0) ||
@@ -1855,27 +2003,11 @@ Return JSON format:
                                 ? "websites"
                                 : aiResources.exercises && aiResources.exercises.length > 0
                                   ? "exercises"
-                                  : legacyResources && legacyResources.length > 0
-                                    ? "legacy"
-                                    : "books"
+                                  : "books"
                   }
                   className="w-full"
                 >
                   <TabsList className="grid w-full auto-cols-fr grid-flow-col mb-6 bg-white/70 backdrop-blur-sm p-2 rounded-xl border border-purple-200 shadow-sm overflow-x-auto">
-                    {/* Legacy Resources Tab */}
-                    {legacyResources && legacyResources.length > 0 && (
-                      <TabsTrigger
-                        value="legacy"
-                        className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-gray-600 data-[state=active]:text-white rounded-lg px-4 py-2 transition-all duration-200"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span className="hidden sm:inline font-medium">Resources</span>
-                        <EnhancedBadge variant="secondary" className="ml-1 bg-gray-100 text-gray-800">
-                          {legacyResources.length}
-                        </EnhancedBadge>
-                      </TabsTrigger>
-                    )}
-
                     {/* Books Tab */}
                     {aiResources.books && aiResources.books.length > 0 && (
                       <TabsTrigger
@@ -1976,24 +2108,6 @@ Return JSON format:
                   </TabsList>
 
                   <AnimatePresence mode="wait">
-                    {/* Legacy Resources Content */}
-                    {legacyResources && legacyResources.length > 0 && (
-                      <TabsContent key="legacy" value="legacy">
-                        <motion.div
-                          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                          variants={containerVariants}
-                          initial="hidden"
-                          animate="visible"
-                        >
-                          {legacyResources.map((resource, index) => (
-                            <motion.div key={`legacy-${index}-${resource.title || resource.name || index}`} variants={itemVariants}>
-                              <ResourceCard resource={resource} type="legacy" />
-                            </motion.div>
-                          ))}
-                        </motion.div>
-                      </TabsContent>
-                    )}
-
                     {/* Books Content */}
                     {aiResources.books && aiResources.books.length > 0 && (
                       <TabsContent key="books" value="books">

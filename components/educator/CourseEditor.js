@@ -92,6 +92,9 @@ export default function CourseEditor({ courseId, onBack, onCourseUpdated }) {
   const handleSave = async (newStatus = courseData.status) => {
     setSaving(true)
     try {
+      // Filter out immutable fields that shouldn't be sent in updates
+      const { _id, createdAt, educatorId, ...updateData } = courseData
+      
       const response = await fetch(`/api/courses/${courseId}`, {
         method: "PUT",
         headers: {
@@ -99,17 +102,20 @@ export default function CourseEditor({ courseId, onBack, onCourseUpdated }) {
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          ...courseData,
+          ...updateData,
           status: newStatus,
         }),
       })
 
       if (response.ok) {
+        const result = await response.json()
         setCourseData(prev => ({ ...prev, status: newStatus }))
         alert(newStatus === "published" ? "Course published successfully!" : "Course saved successfully!")
         onCourseUpdated?.()
       } else {
-        alert("Failed to save course")
+        const errorData = await response.json()
+        console.error("Save error response:", errorData)
+        alert(`Failed to save course: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error("Save error:", error)

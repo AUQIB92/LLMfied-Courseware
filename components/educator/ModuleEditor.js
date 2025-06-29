@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Plus,
   Trash2,
@@ -24,6 +25,8 @@ import {
   GraduationCap,
   Brain,
   Zap,
+  Crown,
+  Star,
 } from "lucide-react"
 
 export default function ModuleEditor({ module, onUpdate }) {
@@ -32,10 +35,37 @@ export default function ModuleEditor({ module, onUpdate }) {
     title: "",
     url: "",
     description: "",
+    type: "article", // Default type for categorization
   })
 
-  // Handle legacy resources (manual ones)
-  const legacyResources = Array.isArray(module.resources) ? module.resources : []
+  // Handle legacy resources (manual ones) - organized by type
+  const legacyResources = useMemo(() => {
+    if (Array.isArray(module.resources)) {
+      // Legacy array format
+      return module.resources
+    } else if (module.resources && typeof module.resources === "object" && module.resources.manual) {
+      // New object format with manual resources
+      return Array.isArray(module.resources.manual) ? module.resources.manual : []
+    }
+    return []
+  }, [module.resources])
+  
+  // Debug logging
+  console.log('Module resources:', module.resources)
+  console.log('Legacy resources:', legacyResources)
+  
+  // Organize manual resources by type for the instructor masterpieces section
+  const instructorMasterpieces = {
+    articles: legacyResources.filter(r => r.type === 'article' || !r.type), // Default to article for legacy
+    videos: legacyResources.filter(r => r.type === 'video'),
+    books: legacyResources.filter(r => r.type === 'book'),
+    tools: legacyResources.filter(r => r.type === 'tool'),
+    websites: legacyResources.filter(r => r.type === 'website'),
+    exercises: legacyResources.filter(r => r.type === 'exercise'),
+    courses: legacyResources.filter(r => r.type === 'course'),
+  }
+  
+  console.log('Instructor masterpieces:', instructorMasterpieces)
 
   // Handle new structured resources from AI with safer property access
   const aiResources =
@@ -61,50 +91,80 @@ export default function ModuleEditor({ module, onUpdate }) {
 
   const handleAddManualResource = () => {
     if (newResource.title) {
-      const updatedLegacyResources = [...legacyResources, { ...newResource, id: Date.now() }]
-      onUpdate({
-        resources: {
-          ...aiResources,
-          manual: updatedLegacyResources,
-        },
-      })
-      setNewResource({ title: "", url: "", description: "" })
+      const resourceWithId = { 
+        ...newResource, 
+        id: Date.now(),
+        type: newResource.type || 'article' // Ensure type is set
+      }
+      const updatedLegacyResources = [...legacyResources, resourceWithId]
+      
+      console.log('Adding new resource:', resourceWithId)
+      console.log('Updated legacy resources:', updatedLegacyResources)
+      
+      // If module already has AI resources structure, merge properly
+      if (module.resources && typeof module.resources === "object" && !Array.isArray(module.resources)) {
+        onUpdate({
+          resources: {
+            ...aiResources,
+            manual: updatedLegacyResources
+          }
+        })
+      } else {
+        // If module only has legacy array format, keep as array
+        onUpdate({
+          resources: updatedLegacyResources
+        })
+      }
+      
+      setNewResource({ title: "", url: "", description: "", type: "article" })
       setShowManualResourceForm(false)
     }
   }
 
   const handleRemoveManualResource = (resourceId) => {
     const updatedLegacyResources = legacyResources.filter((r) => r.id !== resourceId)
-    onUpdate({
-      resources: {
-        ...aiResources,
-        manual: updatedLegacyResources,
-      },
-    })
+    
+    console.log('Removing resource:', resourceId)
+    console.log('Updated legacy resources after removal:', updatedLegacyResources)
+    
+    // If module already has AI resources structure, merge properly
+    if (module.resources && typeof module.resources === "object" && !Array.isArray(module.resources)) {
+      onUpdate({
+        resources: {
+          ...aiResources,
+          manual: updatedLegacyResources
+        }
+      })
+    } else {
+      // If module only has legacy array format, keep as array
+      onUpdate({
+        resources: updatedLegacyResources
+      })
+    }
   }
 
-  const ResourceSection = ({ title, icon: Icon, resources, type }) => {
+  const ResourceSection = ({ title, icon: Icon, resources, type, isInstructorContent = false }) => {
     if (!resources || resources.length === 0) return null
 
     const getTypeGradient = () => {
-      switch (type) {
-        case "books":
-          return "from-blue-500/10 via-indigo-500/10 to-purple-500/10 border-blue-200/50"
-        case "courses":
-          return "from-purple-500/10 via-pink-500/10 to-rose-500/10 border-purple-200/50"
-        case "videos":
-          return "from-red-500/10 via-orange-500/10 to-yellow-500/10 border-red-200/50"
-        case "articles":
-          return "from-green-500/10 via-emerald-500/10 to-teal-500/10 border-green-200/50"
-        case "tools":
-          return "from-orange-500/10 via-amber-500/10 to-yellow-500/10 border-orange-200/50"
-        case "websites":
-          return "from-indigo-500/10 via-blue-500/10 to-cyan-500/10 border-indigo-200/50"
-        case "exercises":
-          return "from-pink-500/10 via-rose-500/10 to-red-500/10 border-pink-200/50"
-        default:
-          return "from-gray-500/10 via-slate-500/10 to-zinc-500/10 border-gray-200/50"
+      const baseGradients = {
+        "books": "from-blue-500/10 via-indigo-500/10 to-purple-500/10 border-blue-200/50",
+        "courses": "from-purple-500/10 via-pink-500/10 to-rose-500/10 border-purple-200/50",
+        "videos": "from-red-500/10 via-orange-500/10 to-yellow-500/10 border-red-200/50",
+        "articles": "from-green-500/10 via-emerald-500/10 to-teal-500/10 border-green-200/50",
+        "tools": "from-orange-500/10 via-amber-500/10 to-yellow-500/10 border-orange-200/50",
+        "websites": "from-indigo-500/10 via-blue-500/10 to-cyan-500/10 border-indigo-200/50",
+        "exercises": "from-pink-500/10 via-rose-500/10 to-red-500/10 border-pink-200/50"
       }
+      
+      // Special styling for instructor content
+      if (isInstructorContent) {
+        return baseGradients[type] ? 
+          baseGradients[type].replace('/10', '/20').replace('/50', '') + ' border-amber-300/70 shadow-amber-100/50' :
+          "from-amber-500/20 via-orange-500/20 to-yellow-500/20 border-amber-300/70 shadow-amber-100/50"
+      }
+      
+      return baseGradients[type] || "from-gray-500/10 via-slate-500/10 to-zinc-500/10 border-gray-200/50"
     }
 
     const getIconColor = () => {
@@ -149,7 +209,7 @@ export default function ModuleEditor({ module, onUpdate }) {
           <div className="space-y-4">
             {resources.map((resource, index) => (
               <div
-                key={index}
+                key={resource.id || index}
                 className="group/item bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-4 hover:bg-white/80 hover:shadow-md transition-all duration-300 hover:scale-[1.01]"
               >
                 <div className="flex items-start justify-between">
@@ -231,20 +291,41 @@ export default function ModuleEditor({ module, onUpdate }) {
                           {resource.cost}
                         </Badge>
                       )}
+                      {isInstructorContent && (
+                        <Badge
+                          variant="default"
+                          className="text-xs bg-gradient-to-r from-amber-500 to-orange-600 text-white"
+                        >
+                          <Crown className="h-3 w-3 mr-1" />
+                          Instructor's Choice
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                  {resource.url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                      className="ml-4 hover:bg-white/80 hover:scale-110 transition-all duration-300"
-                    >
-                      <a href={resource.url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2 ml-4">
+                    {resource.url && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="hover:bg-white/80 hover:scale-110 transition-all duration-300"
+                      >
+                        <a href={resource.url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    {isInstructorContent && resource.id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveManualResource(resource.id)}
+                        className="hover:bg-red-100 hover:text-red-600 transition-all duration-300"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -623,117 +704,469 @@ export default function ModuleEditor({ module, onUpdate }) {
               </div>
             </Tabs>
 
-            {/* Manual resources section */}
-            <div className="mt-12 pt-8 border-t border-gray-200">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  Manual Resources
-                </h3>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowManualResourceForm(!showManualResourceForm)}
-                  className="border-2 border-gray-300 hover:border-gray-500 hover:bg-gray-50 transition-all duration-300"
+        {/* Masterpieces from the Instructor */}
+        <Card className="bg-white/80 backdrop-blur-sm border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300">
+          <CardHeader className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 rounded-t-lg">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+                <Crown className="h-6 w-6" />
+              </div>
+              Masterpieces from the Instructor
+              <Badge
+                variant="secondary"
+                className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold"
+              >
+                <Star className="h-3 w-3 mr-1" />
+                Your Curated Content
+              </Badge>
+              <Button
+                onClick={() => setShowManualResourceForm(!showManualResourceForm)}
+                variant="outline"
+                size="sm"
+                className="ml-auto border-amber-300 text-amber-700 hover:bg-amber-50"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Masterpiece
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <Tabs
+              defaultValue={
+                instructorMasterpieces.articles.length > 0
+                  ? "articles"
+                  : instructorMasterpieces.videos.length > 0
+                    ? "videos"
+                    : instructorMasterpieces.books.length > 0
+                      ? "books"
+                      : instructorMasterpieces.courses.length > 0
+                        ? "courses"
+                        : instructorMasterpieces.tools.length > 0
+                          ? "tools"
+                          : instructorMasterpieces.websites.length > 0
+                            ? "websites"
+                            : instructorMasterpieces.exercises.length > 0
+                              ? "exercises"
+                              : "articles"
+              }
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-amber-100 to-orange-200 rounded-xl">
+                <TabsTrigger
+                  value="articles"
+                  className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Manual Resource
-                </Button>
-              </div>
+                  <FileText className="h-5 w-5 text-green-600" />
+                  <span className="text-xs font-medium">Articles</span>
+                  {instructorMasterpieces.articles.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {instructorMasterpieces.articles.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
 
-              {showManualResourceForm && (
-                <Card className="mb-6 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200">
-                  <CardContent className="p-6 space-y-6">
-                    <div className="space-y-3">
-                      <Label className="text-base font-semibold text-gray-700">Title</Label>
-                      <Input
-                        value={newResource.title}
-                        onChange={(e) => setNewResource((prev) => ({ ...prev, title: e.target.value }))}
-                        placeholder="Resource title"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 transition-colors duration-300"
-                      />
-                    </div>
+                <TabsTrigger
+                  value="videos"
+                  className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                >
+                  <Play className="h-5 w-5 text-red-600" />
+                  <span className="text-xs font-medium">Videos</span>
+                  {instructorMasterpieces.videos.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {instructorMasterpieces.videos.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
 
-                    <div className="space-y-3">
-                      <Label className="text-base font-semibold text-gray-700">URL (optional)</Label>
-                      <Input
-                        value={newResource.url}
-                        onChange={(e) => setNewResource((prev) => ({ ...prev, url: e.target.value }))}
-                        placeholder="https://..."
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 transition-colors duration-300"
-                      />
-                    </div>
+                <TabsTrigger
+                  value="books"
+                  className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                >
+                  <BookOpen className="h-5 w-5 text-blue-600" />
+                  <span className="text-xs font-medium">Books</span>
+                  {instructorMasterpieces.books.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {instructorMasterpieces.books.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
 
-                    <div className="space-y-3">
-                      <Label className="text-base font-semibold text-gray-700">Description</Label>
-                      <Textarea
-                        value={newResource.description}
-                        onChange={(e) => setNewResource((prev) => ({ ...prev, description: e.target.value }))}
-                        placeholder="Brief description of the resource"
-                        rows={3}
-                        className="border-2 border-gray-200 focus:border-blue-500 transition-colors duration-300 resize-none"
-                      />
-                    </div>
+                <TabsTrigger
+                  value="courses"
+                  className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                >
+                  <Video className="h-5 w-5 text-purple-600" />
+                  <span className="text-xs font-medium">Courses</span>
+                  {instructorMasterpieces.courses.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {instructorMasterpieces.courses.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
 
-                    <div className="flex gap-3">
+                <TabsTrigger
+                  value="tools"
+                  className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                >
+                  <Wrench className="h-5 w-5 text-orange-600" />
+                  <span className="text-xs font-medium">Tools</span>
+                  {instructorMasterpieces.tools.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {instructorMasterpieces.tools.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+
+                <TabsTrigger
+                  value="websites"
+                  className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                >
+                  <Globe className="h-5 w-5 text-indigo-600" />
+                  <span className="text-xs font-medium">Websites</span>
+                  {instructorMasterpieces.websites.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {instructorMasterpieces.websites.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+
+                <TabsTrigger
+                  value="exercises"
+                  className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
+                >
+                  <Target className="h-5 w-5 text-pink-600" />
+                  <span className="text-xs font-medium">Exercises</span>
+                  {instructorMasterpieces.exercises.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {instructorMasterpieces.exercises.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="mt-8">
+                <TabsContent value="articles" className="space-y-6">
+                  {instructorMasterpieces.articles.length > 0 ? (
+                    <ResourceSection
+                      title="Articles & Papers"
+                      icon={FileText}
+                      resources={instructorMasterpieces.articles}
+                      type="articles"
+                      isInstructorContent={true}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-500 mb-2">No Articles Added Yet</h3>
+                      <p className="text-gray-400 mb-4">Share your favorite articles and papers with students</p>
                       <Button
-                        onClick={handleAddManualResource}
-                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-6 py-2 transition-all duration-300"
-                      >
-                        Add Resource
-                      </Button>
-                      <Button
+                        onClick={() => {
+                          setNewResource(prev => ({ ...prev, type: 'article' }))
+                          setShowManualResourceForm(true)
+                        }}
                         variant="outline"
-                        onClick={() => setShowManualResourceForm(false)}
-                        className="border-2 border-gray-300 hover:border-gray-500 transition-colors duration-300"
+                        className="border-green-300 text-green-700 hover:bg-green-50"
                       >
-                        Cancel
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Article
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </TabsContent>
 
-              <div className="space-y-4">
-                {legacyResources.map((resource) => (
-                  <Card
-                    key={resource.id}
-                    className="bg-white/80 backdrop-blur-sm border border-gray-200 hover:shadow-lg transition-all duration-300 hover:scale-[1.01]"
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-bold text-lg text-gray-900 mb-2">{resource.title}</h4>
-                          {resource.description && (
-                            <p className="text-gray-700 leading-relaxed">{resource.description}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          {resource.url && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              asChild
-                              className="hover:bg-blue-100 hover:text-blue-600 transition-all duration-300"
-                            >
-                              <a href={resource.url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveManualResource(resource.id)}
-                            className="hover:bg-red-100 hover:text-red-600 transition-all duration-300"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                <TabsContent value="videos" className="space-y-6">
+                  {instructorMasterpieces.videos.length > 0 ? (
+                    <ResourceSection
+                      title="Video Tutorials"
+                      icon={Play}
+                      resources={instructorMasterpieces.videos}
+                      type="videos"
+                      isInstructorContent={true}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <Play className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-500 mb-2">No Videos Added Yet</h3>
+                      <p className="text-gray-400 mb-4">Share your recommended video tutorials</p>
+                      <Button
+                        onClick={() => {
+                          setNewResource(prev => ({ ...prev, type: 'video' }))
+                          setShowManualResourceForm(true)
+                        }}
+                        variant="outline"
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Video
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="books" className="space-y-6">
+                  {instructorMasterpieces.books.length > 0 ? (
+                    <ResourceSection
+                      title="Recommended Books"
+                      icon={BookOpen}
+                      resources={instructorMasterpieces.books}
+                      type="books"
+                      isInstructorContent={true}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-500 mb-2">No Books Added Yet</h3>
+                      <p className="text-gray-400 mb-4">Recommend essential books for deeper learning</p>
+                      <Button
+                        onClick={() => {
+                          setNewResource(prev => ({ ...prev, type: 'book' }))
+                          setShowManualResourceForm(true)
+                        }}
+                        variant="outline"
+                        className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Book
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="courses" className="space-y-6">
+                  {instructorMasterpieces.courses.length > 0 ? (
+                    <ResourceSection
+                      title="Online Courses"
+                      icon={Video}
+                      resources={instructorMasterpieces.courses}
+                      type="courses"
+                      isInstructorContent={true}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <Video className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-500 mb-2">No Courses Added Yet</h3>
+                      <p className="text-gray-400 mb-4">Share complementary online courses</p>
+                      <Button
+                        onClick={() => {
+                          setNewResource(prev => ({ ...prev, type: 'course' }))
+                          setShowManualResourceForm(true)
+                        }}
+                        variant="outline"
+                        className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Course
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="tools" className="space-y-6">
+                  {instructorMasterpieces.tools.length > 0 ? (
+                    <ResourceSection
+                      title="Tools & Software"
+                      icon={Wrench}
+                      resources={instructorMasterpieces.tools}
+                      type="tools"
+                      isInstructorContent={true}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <Wrench className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-500 mb-2">No Tools Added Yet</h3>
+                      <p className="text-gray-400 mb-4">Recommend useful tools and software</p>
+                      <Button
+                        onClick={() => {
+                          setNewResource(prev => ({ ...prev, type: 'tool' }))
+                          setShowManualResourceForm(true)
+                        }}
+                        variant="outline"
+                        className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Tool
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="websites" className="space-y-6">
+                  {instructorMasterpieces.websites.length > 0 ? (
+                    <ResourceSection
+                      title="Useful Websites"
+                      icon={Globe}
+                      resources={instructorMasterpieces.websites}
+                      type="websites"
+                      isInstructorContent={true}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <Globe className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-500 mb-2">No Websites Added Yet</h3>
+                      <p className="text-gray-400 mb-4">Share valuable websites and resources</p>
+                      <Button
+                        onClick={() => {
+                          setNewResource(prev => ({ ...prev, type: 'website' }))
+                          setShowManualResourceForm(true)
+                        }}
+                        variant="outline"
+                        className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Website
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="exercises" className="space-y-6">
+                  {instructorMasterpieces.exercises.length > 0 ? (
+                    <ResourceSection
+                      title="Practice Exercises"
+                      icon={Target}
+                      resources={instructorMasterpieces.exercises}
+                      type="exercises"
+                      isInstructorContent={true}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <Target className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-500 mb-2">No Exercises Added Yet</h3>
+                      <p className="text-gray-400 mb-4">Add practice exercises and challenges</p>
+                      <Button
+                        onClick={() => {
+                          setNewResource(prev => ({ ...prev, type: 'exercise' }))
+                          setShowManualResourceForm(true)
+                        }}
+                        variant="outline"
+                        className="border-pink-300 text-pink-700 hover:bg-pink-50"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Exercise
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
               </div>
-            </div>
+            </Tabs>
+
+            {showManualResourceForm && (
+              <Card className="mb-8 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-2 border-amber-200 shadow-xl">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-xl text-amber-800">
+                    <Plus className="h-6 w-6" />
+                    Add New Masterpiece
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold text-amber-800">Resource Type</Label>
+                    <Select
+                      value={newResource.type}
+                      onValueChange={(value) => setNewResource((prev) => ({ ...prev, type: value }))}
+                    >
+                      <SelectTrigger className="h-12 border-2 border-amber-200 focus:border-amber-500 transition-colors duration-300 bg-white/80">
+                        <SelectValue placeholder="Select resource type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="article">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-green-600" />
+                            Article
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="video">
+                          <div className="flex items-center gap-2">
+                            <Play className="h-4 w-4 text-red-600" />
+                            Video
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="book">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-blue-600" />
+                            Book
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="course">
+                          <div className="flex items-center gap-2">
+                            <Video className="h-4 w-4 text-purple-600" />
+                            Course
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="tool">
+                          <div className="flex items-center gap-2">
+                            <Wrench className="h-4 w-4 text-orange-600" />
+                            Tool
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="website">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-indigo-600" />
+                            Website
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="exercise">
+                          <div className="flex items-center gap-2">
+                            <Target className="h-4 w-4 text-pink-600" />
+                            Exercise
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold text-amber-800">Title</Label>
+                    <Input
+                      value={newResource.title}
+                      onChange={(e) => setNewResource((prev) => ({ ...prev, title: e.target.value }))}
+                      placeholder="Resource title"
+                      className="h-12 border-2 border-amber-200 focus:border-amber-500 transition-colors duration-300 bg-white/80"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold text-amber-800">URL (optional)</Label>
+                    <Input
+                      value={newResource.url}
+                      onChange={(e) => setNewResource((prev) => ({ ...prev, url: e.target.value }))}
+                      placeholder="https://..."
+                      className="h-12 border-2 border-amber-200 focus:border-amber-500 transition-colors duration-300 bg-white/80"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold text-amber-800">Description</Label>
+                    <Textarea
+                      value={newResource.description}
+                      onChange={(e) => setNewResource((prev) => ({ ...prev, description: e.target.value }))}
+                      placeholder="Brief description of the resource and why you recommend it"
+                      rows={3}
+                      className="border-2 border-amber-200 focus:border-amber-500 transition-colors duration-300 resize-none bg-white/80"
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleAddManualResource}
+                      className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold px-6 py-2 transition-all duration-300 shadow-lg"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Masterpiece
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowManualResourceForm(false)}
+                      className="border-2 border-amber-300 hover:border-amber-500 transition-colors duration-300"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
           </CardContent>
         </Card>
       </div>

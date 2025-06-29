@@ -36,6 +36,14 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
   const { getAuthHeaders } = useAuth()
 
   const handleStatusChange = async (courseId, newStatus) => {
+    // Add confirmation for unpublishing
+    if (newStatus === 'draft') {
+      const confirmed = confirm(
+        "Are you sure you want to unpublish this course? Students will lose access to the content until you publish it again."
+      )
+      if (!confirmed) return
+    }
+
     setLoading(true)
     try {
       const response = await fetch(`/api/courses/${courseId}`, {
@@ -50,22 +58,38 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
       })
 
       if (response.ok) {
-        alert(`Course ${newStatus === 'published' ? 'published' : 'unpublished'} successfully!`)
+        const action = newStatus === 'published' ? 'published' : 'unpublished'
+        alert(`Course ${action} successfully!`)
         onRefresh?.()
       } else {
         const errorData = await response.json()
-        alert(`Failed to update course status: ${errorData.error || 'Unknown error'}`)
+        const errorMessage = errorData.error || errorData.details || 'Unknown error occurred'
+        console.error(`Failed to update course status:`, errorData)
+        alert(`Failed to update course status: ${errorMessage}`)
       }
     } catch (error) {
       console.error("Error updating course status:", error)
-      alert("Failed to update course status")
+      alert(`Network error: Failed to update course status. Please check your connection and try again.`)
     } finally {
       setLoading(false)
     }
   }
 
   const handleDelete = async (courseId) => {
-    if (!confirm("Are you sure you want to delete this course? This action cannot be undone.")) return
+    // Enhanced confirmation dialog
+    const courseToDelete = courses.find(c => (c._id || c.id) === courseId)
+    const isPublished = courseToDelete?.status === 'published'
+    const enrollmentCount = courseToDelete?.enrolledCount || 0
+    
+    let confirmMessage = "Are you sure you want to delete this course? This action cannot be undone."
+    
+    if (isPublished && enrollmentCount > 0) {
+      confirmMessage = `⚠️ WARNING: This course is published and has ${enrollmentCount} enrolled student(s). Deleting it will remove their access to all course content. This action cannot be undone.\n\nAre you absolutely sure you want to proceed?`
+    } else if (isPublished) {
+      confirmMessage = "⚠️ WARNING: This course is currently published. Deleting it will make it unavailable to students. This action cannot be undone.\n\nAre you sure you want to proceed?"
+    }
+
+    if (!confirm(confirmMessage)) return
 
     setDeletingId(courseId)
     try {
@@ -79,11 +103,23 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
         onRefresh?.()
       } else {
         const errorData = await response.json()
-        alert(`Failed to delete course: ${errorData.error || 'Unknown error'}`)
+        const errorMessage = errorData.error || errorData.details || 'Unknown error occurred'
+        console.error(`Failed to delete course:`, errorData)
+        
+        // Provide specific error messages based on status code
+        if (response.status === 403) {
+          alert("Access denied: You don't have permission to delete this course.")
+        } else if (response.status === 404) {
+          alert("Course not found. It may have already been deleted.")
+        } else if (response.status === 409) {
+          alert("Cannot delete course: There may be active enrollments or dependencies.")
+        } else {
+          alert(`Failed to delete course: ${errorMessage}`)
+        }
       }
     } catch (error) {
       console.error("Error deleting course:", error)
-      alert("Failed to delete course")
+      alert("Network error: Failed to delete course. Please check your connection and try again.")
     } finally {
       setDeletingId(null)
     }
@@ -299,13 +335,22 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
                             Unpublish
                           </DropdownMenuItem>
                         ) : null}
+                        {/* Show enrollment info for published courses */}
+                        {course.status === "published" && course.enrolledCount > 0 && (
+                          <DropdownMenuItem disabled className="text-slate-500 hover:bg-slate-50">
+                            <Users className="h-4 w-4 mr-2" />
+                            {course.enrolledCount} Student{course.enrolledCount > 1 ? 's' : ''} Enrolled
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => handleDelete(course._id || course.id)}
                           className="text-red-600 hover:bg-red-50 cursor-pointer"
                           disabled={loading || isDeleting}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Course
+                          {course.status === "published" && course.enrolledCount > 0 
+                            ? "Delete (⚠️ Has Students)" 
+                            : "Delete Course"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

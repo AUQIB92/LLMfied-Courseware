@@ -43,6 +43,353 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
+// Helper Components
+const ProfileSettings = ({ user, updateUser, getAuthHeaders, setAvatarKey }) => {
+  const [profile, setProfile] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    bio: user?.bio || '',
+    avatar: user?.avatar || ''
+  })
+  const [isUploading, setIsUploading] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        name: user.name || '',
+        email: user.email || '',
+        bio: user.bio || '',
+        avatar: user.avatar || ''
+      })
+    }
+  }, [user])
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault()
+    try {
+      await updateUser(profile)
+      setAvatarKey(Date.now())
+    } catch (error) {
+      console.error('Failed to update profile:', error)
+    }
+  }
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    setIsUploading(true)
+    const formData = new FormData()
+    formData.append('avatar', file)
+
+    try {
+      const response = await fetch('/api/upload/avatar', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setProfile(prev => ({ ...prev, avatar: data.avatarUrl }))
+        setAvatarKey(Date.now())
+      }
+    } catch (error) {
+      console.error('Failed to upload avatar:', error)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-slate-800 mb-2">Profile Settings</h2>
+        <p className="text-slate-600">Manage your personal information and preferences</p>
+      </div>
+
+      <Card className="max-w-2xl mx-auto shadow-xl">
+        <CardHeader>
+          <CardTitle>Personal Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleProfileUpdate} className="space-y-6">
+            <div className="flex flex-col items-center space-y-4">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={profile.avatar || "/placeholder.svg"} alt={profile.name} />
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-2xl">
+                  {profile.name?.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <Label htmlFor="avatar-upload" className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                  {isUploading ? 'Uploading...' : 'Change Avatar'}
+                </Label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  value={profile.name}
+                  onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profile.email}
+                  onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Enter your email"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                value={profile.bio}
+                onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
+                placeholder="Tell us about yourself..."
+                rows={4}
+              />
+            </div>
+
+            <Button type="submit" className="w-full">
+              Update Profile
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+const Preferences = ({ user, getAuthHeaders }) => {
+  const [preferences, setPreferences] = useState({
+    emailNotifications: true,
+    pushNotifications: false,
+    darkMode: false,
+    language: 'en',
+    autoplay: true
+  })
+
+  useEffect(() => {
+    fetchPreferences()
+  }, [])
+
+  const fetchPreferences = async () => {
+    try {
+      const response = await fetch('/api/preferences', {
+        headers: getAuthHeaders()
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setPreferences(prev => ({ ...prev, ...data }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch preferences:', error)
+    }
+  }
+
+  const updatePreference = async (key, value) => {
+    try {
+      const newPreferences = { ...preferences, [key]: value }
+      setPreferences(newPreferences)
+      
+      await fetch('/api/preferences', {
+        method: 'PUT',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newPreferences)
+      })
+    } catch (error) {
+      console.error('Failed to update preferences:', error)
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-slate-800 mb-2">Learning Preferences</h2>
+        <p className="text-slate-600">Customize your learning experience</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Notifications</CardTitle>
+            <CardDescription>Manage how you receive updates</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="email-notifications">Email Notifications</Label>
+                <p className="text-sm text-slate-600">Receive course updates via email</p>
+              </div>
+              <Switch
+                id="email-notifications"
+                checked={preferences.emailNotifications}
+                onCheckedChange={(checked) => updatePreference('emailNotifications', checked)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="push-notifications">Push Notifications</Label>
+                <p className="text-sm text-slate-600">Receive push notifications</p>
+              </div>
+              <Switch
+                id="push-notifications"
+                checked={preferences.pushNotifications}
+                onCheckedChange={(checked) => updatePreference('pushNotifications', checked)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Interface</CardTitle>
+            <CardDescription>Customize your learning interface</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="dark-mode">Dark Mode</Label>
+                <p className="text-sm text-slate-600">Use dark theme</p>
+              </div>
+              <Switch
+                id="dark-mode"
+                checked={preferences.darkMode}
+                onCheckedChange={(checked) => updatePreference('darkMode', checked)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="autoplay">Autoplay Videos</Label>
+                <p className="text-sm text-slate-600">Automatically play video content</p>
+              </div>
+              <Switch
+                id="autoplay"
+                checked={preferences.autoplay}
+                onCheckedChange={(checked) => updatePreference('autoplay', checked)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+const Notifications = ({ user, getAuthHeaders }) => {
+  const [notifications, setNotifications] = useState([])
+
+  useEffect(() => {
+    fetchNotifications()
+  }, [])
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/notifications', {
+        headers: getAuthHeaders()
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setNotifications(Array.isArray(data) ? data : [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error)
+    }
+  }
+
+  const markAsRead = async (notificationId) => {
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      })
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notificationId 
+            ? { ...notif, read: true }
+            : notif
+        )
+      )
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error)
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-slate-800 mb-2">Notifications</h2>
+        <p className="text-slate-600">Stay updated with your learning progress</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>Your latest notifications and updates</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {notifications.map((notification, index) => (
+              <div
+                key={notification.id || index}
+                className={`group p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                  notification.read 
+                    ? 'bg-slate-50 border-slate-200' 
+                    : 'bg-blue-50 border-blue-200 shadow-md'
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`w-2 h-2 rounded-full ${notification.read ? 'bg-slate-400' : 'bg-blue-500'}`}></div>
+                      <h4 className="font-semibold text-slate-900">{notification.title || 'Notification'}</h4>
+                      <span className="text-xs text-slate-500">{notification.time || 'Just now'}</span>
+                    </div>
+                    <p className="text-slate-700 text-sm leading-relaxed">{notification.message || 'No message available'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!notification.read && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => markAsRead(notification.id)}
+                        className="text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-xl font-medium opacity-0 group-hover:opacity-100 transition-all duration-300"
+                      >
+                        Mark as read
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export default function LearnerDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [selectedCourse, setSelectedCourse] = useState(null)
@@ -57,10 +404,13 @@ export default function LearnerDashboard() {
   const [stats, setStats] = useState({
     coursesEnrolled: 0,
     coursesCompleted: 0,
+    coursesInProgress: 0,
+    coursesNotStarted: 0,
     totalTimeSpent: 0,
+    averageProgress: 0,
     averageScore: 0,
-    streak: 7,
-    certificates: 3
+    streak: 0,
+    certificates: 0
   })
   const { user, getAuthHeaders, logout, updateUser } = useAuth()
   const router = useRouter()
@@ -107,6 +457,10 @@ export default function LearnerDashboard() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [lastScrollY, hideHeader])
 
+  const refreshLearnerData = async () => {
+    await Promise.all([fetchEnrolledCourses(), fetchStats()])
+  }
+
   const fetchEnrolledCourses = async () => {
     try {
       console.log("Fetching enrolled courses...")
@@ -131,12 +485,8 @@ export default function LearnerDashboard() {
       console.log("Setting enrolled courses:", coursesArray.length, "courses")
       setEnrolledCourses(coursesArray)
       
-      // Update stats based on enrolled courses
-      setStats(prev => ({
-        ...prev,
-        coursesEnrolled: coursesArray.length,
-        coursesCompleted: coursesArray.filter(c => c.completionRate === 100).length
-      }))
+      // Refresh stats after updating enrolled courses
+      fetchStats()
     } catch (error) {
       console.error("Failed to fetch enrolled courses:", error)
       setEnrolledCourses([])
@@ -144,14 +494,32 @@ export default function LearnerDashboard() {
   }
 
   const fetchStats = async () => {
-    setStats({
-      coursesEnrolled: 8,
-      coursesCompleted: 5,
-      totalTimeSpent: 2847, // minutes
-      averageScore: 92,
-      streak: 12,
-      certificates: 5
-    })
+    try {
+      const response = await fetch("/api/stats?type=learner", {
+        headers: getAuthHeaders(),
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      } else {
+        console.error("Failed to fetch stats:", await response.text())
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error)
+      // Keep default stats if API fails
+      setStats({
+        coursesEnrolled: 0,
+        coursesCompleted: 0,
+        coursesInProgress: 0,
+        coursesNotStarted: 0,
+        totalTimeSpent: 0,
+        averageProgress: 0,
+        averageScore: 0,
+        streak: 0,
+        certificates: 0
+      })
+    }
   }
 
   const handleLogout = () => {
@@ -244,7 +612,7 @@ export default function LearnerDashboard() {
                   <div className="text-3xl font-bold text-slate-800 mb-1">{stats.coursesEnrolled}</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
-                    +2 this month
+                    Active learning
                   </p>
                 </CardContent>
               </Card>
@@ -261,7 +629,7 @@ export default function LearnerDashboard() {
                   <div className="text-3xl font-bold text-slate-800 mb-1">{stats.coursesCompleted}</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" />
-                    {Math.round((stats.coursesCompleted / stats.coursesEnrolled) * 100)}% completion rate
+                    {stats.coursesEnrolled > 0 ? Math.round((stats.coursesCompleted / stats.coursesEnrolled) * 100) : 0}% completion rate
                   </p>
                 </CardContent>
               </Card>
@@ -278,7 +646,7 @@ export default function LearnerDashboard() {
                   <div className="text-3xl font-bold text-slate-800 mb-1">{Math.floor(stats.totalTimeSpent / 60)}h</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <Zap className="h-3 w-3" />
-                    {stats.totalTimeSpent % 60}m this week
+                    {stats.totalTimeSpent % 60}m total
                   </p>
                 </CardContent>
               </Card>
@@ -296,6 +664,48 @@ export default function LearnerDashboard() {
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <Award className="h-3 w-3" />
                     Excellent performance
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Secondary Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">In Progress</CardTitle>
+                  <BookMarked className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">{stats.coursesInProgress}</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Currently learning
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Average Progress</CardTitle>
+                  <Target className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">{stats.averageProgress}%</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Overall progress
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Certificates</CardTitle>
+                  <Award className="h-4 w-4 text-yellow-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">{stats.certificates}</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Achievements earned
                   </p>
                 </CardContent>
               </Card>
@@ -436,7 +846,7 @@ export default function LearnerDashboard() {
         )
 
       case "library":
-        return <CourseLibrary onCourseSelect={setSelectedCourse} />
+        return <CourseLibrary onCourseSelect={setSelectedCourse} onDataChange={refreshLearnerData} />
 
       case "profile":
         return <ProfileSettings />

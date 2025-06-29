@@ -33,6 +33,7 @@ import {
   PlayCircle,
   FileText,
   ArrowRight,
+  Trophy,
 } from "lucide-react"
 import CourseCreator from "./CourseCreator"
 import CourseList from "./CourseList"
@@ -56,7 +57,11 @@ export default function EducatorDashboard() {
   const [stats, setStats] = useState({
     totalCourses: 0,
     publishedCourses: 0,
+    draftCourses: 0,
     totalStudents: 0,
+    recentEnrollments: 0,
+    completionRate: 0,
+    averageProgress: 0,
   })
 
   const { user, getAuthHeaders, logout, updateProfile, updateUser } = useAuth()
@@ -91,6 +96,7 @@ export default function EducatorDashboard() {
 
   useEffect(() => {
     fetchCourses()
+    fetchStats()
     if (user) {
       fetchProfile()
       fetchPreferences()
@@ -124,32 +130,44 @@ export default function EducatorDashboard() {
           console.error("API error stack:", data.stack)
         }
         setCourses([])
-        setStats({
-          totalCourses: 0,
-          publishedCourses: 0,
-          totalStudents: 0,
-        })
         return
       }
 
       const coursesArray = Array.isArray(data) ? data : []
       console.log("Setting courses:", coursesArray.length, "courses")
       setCourses(coursesArray)
-      setStats({
-        totalCourses: coursesArray.length,
-        publishedCourses: coursesArray.filter((c) => c.status === "published").length,
-        totalStudents: coursesArray.reduce((acc, course) => acc + (course.enrolledCount || 0), 0),
-      })
     } catch (error) {
       console.error("Failed to fetch courses:", error)
       console.error("Error type:", error.constructor.name)
       console.error("Error message:", error.message)
       console.error("Error stack:", error.stack)
       setCourses([])
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`/api/stats?type=educator`, {
+        headers: getAuthHeaders(),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      } else {
+        console.error("Failed to fetch stats:", await response.text())
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error)
+      // Keep default stats if API fails
       setStats({
         totalCourses: 0,
         publishedCourses: 0,
+        draftCourses: 0,
         totalStudents: 0,
+        recentEnrollments: 0,
+        completionRate: 0,
+        averageProgress: 0,
       })
     }
   }
@@ -204,13 +222,19 @@ export default function EducatorDashboard() {
     setActiveTab("edit")
   }
 
+  const refreshData = async () => {
+    await Promise.all([fetchCourses(), fetchStats()])
+  }
+
   const handleBackFromEditor = () => {
     setEditingCourseId(null)
     setActiveTab("courses")
   }
 
   const handleCourseUpdated = () => {
-    fetchCourses()
+    refreshData()
+    setEditingCourseId(null)
+    setActiveTab("courses")
   }
 
   const handleLogout = async () => {
@@ -1060,6 +1084,61 @@ export default function EducatorDashboard() {
               </div>
             </div>
 
+            {/* Secondary Stats Section */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Draft Courses</CardTitle>
+                  <FileText className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">{stats.draftCourses}</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ready to publish
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Recent Enrollments</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{stats.recentEnrollments}</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Last 30 days
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Completion Rate</CardTitle>
+                  <Trophy className="h-4 w-4 text-yellow-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">{stats.completionRate}%</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Course completion
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Average Progress</CardTitle>
+                  <Target className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">{stats.averageProgress}%</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Student progress
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Beautiful Recent Courses Section */}
             <Card className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-500">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/50"></div>
@@ -1096,7 +1175,7 @@ export default function EducatorDashboard() {
             </div>
             <CourseList
               courses={Array.isArray(courses) ? courses : []}
-              onRefresh={fetchCourses}
+              onRefresh={refreshData}
               onEditCourse={handleEditCourse}
             />
           </div>
@@ -1111,7 +1190,7 @@ export default function EducatorDashboard() {
               </h2>
               <p className="text-slate-600">Bring your knowledge to life</p>
             </div>
-            <CourseCreator onCourseCreated={fetchCourses} />
+            <CourseCreator onCourseCreated={refreshData} />
           </div>
         )
 
