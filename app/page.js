@@ -1671,7 +1671,14 @@ export default function Home() {
               </div>
               
               <div className="p-8 relative">
-              <AuthForm mode={authMode} onClose={() => setShowAuth(false)} />
+              <AuthForm 
+                mode={authMode} 
+                onClose={() => setShowAuth(false)} 
+                onShowWaitingList={() => {
+                  setShowAuth(false)
+                  setShowWaitingList(true)
+                }}
+              />
               </div>
             </div>
           </div>

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { GraduationCap, Mail, Lock, User, UserCheck, ArrowRight } from "lucide-react"
 import OTPVerification from "./OTPVerification"
 
-export default function AuthForm({ initialMode = "login", onClose }) {
+export default function AuthForm({ initialMode = "login", onClose, onShowWaitingList }) {
   const [isLogin, setIsLogin] = useState(initialMode === "login")
   const [showOTP, setShowOTP] = useState(false)
   const [formData, setFormData] = useState({
@@ -227,9 +227,22 @@ export default function AuthForm({ initialMode = "login", onClose }) {
                       </div>
                       <span className="font-bold">Learner</span>
                     </div>
-                    <p className="text-sm text-blue-600/80 mt-2 font-medium">
-                      Educator registration is currently disabled. Contact support if you're an educator.
-                    </p>
+                    <div className="mt-2 space-y-3">
+                      <p className="text-sm text-blue-600/80 font-medium">
+                        Educator registration is currently disabled. 
+                      </p>
+                      <div className="text-sm">
+                        <span className="text-blue-700 font-semibold">Are you an educator? </span>
+                        <button
+                          type="button"
+                          onClick={() => onShowWaitingList && onShowWaitingList()}
+                          className="text-emerald-600 hover:text-emerald-700 font-bold underline decoration-emerald-300 hover:decoration-emerald-500 transition-all duration-300"
+                        >
+                          Join our exclusive waiting list
+                        </button>
+                        <span className="text-blue-600/80"> for priority access to AI teaching tools!</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -300,10 +313,22 @@ export default function AuthForm({ initialMode = "login", onClose }) {
               <div className="mt-4 relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-green-50/50 rounded-xl blur-sm"></div>
                 <div className="relative p-3 bg-white/80 backdrop-blur-sm border border-emerald-200/60 rounded-xl">
-                  <p className="text-sm text-emerald-700 font-medium">
-                    <span className="font-bold">Educators:</span> You can sign in with your existing account. 
-                    For new educator accounts, please contact support.
-                  </p>
+                  <div className="text-sm text-emerald-700 font-medium space-y-2">
+                    <p>
+                      <span className="font-bold">Educators:</span> You can sign in with your existing account.
+                    </p>
+                    <p>
+                      <span className="font-semibold">New educator? </span>
+                      <button
+                        type="button"
+                        onClick={() => onShowWaitingList && onShowWaitingList()}
+                        className="text-emerald-800 hover:text-emerald-900 font-bold underline decoration-emerald-400 hover:decoration-emerald-600 transition-all duration-300"
+                      >
+                        Join our waiting list
+                      </button>
+                      <span> for exclusive early access!</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
