@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -389,7 +389,7 @@ export default function EducatorDashboard() {
         </div>
 
         {/* Courses Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {recentCourses.map((course, index) => (
             <Card
               key={course._id || course.id || `course-${index}`}
@@ -526,144 +526,179 @@ export default function EducatorDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="flex items-center justify-center pt-8">
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={() => setActiveTab("create")}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Create New Course
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setActiveTab("courses")}
-              className="hover:bg-gradient-to-r hover:from-slate-50 hover:to-blue-50 border-slate-200 hover:border-blue-300 px-6 py-3 rounded-xl transition-all duration-300"
-            >
-              <BookOpen className="h-5 w-5 mr-2" />
-              Manage All Courses
-            </Button>
-          </div>
+        <div className="flex flex-col sm:flex-row items-center justify-center pt-6 sm:pt-8 space-y-3 sm:space-y-0 sm:space-x-4">
+          <Button
+            onClick={() => setActiveTab("create")}
+            className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+          >
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+            Create New Course
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setActiveTab("courses")}
+            className="w-full sm:w-auto hover:bg-gradient-to-r hover:from-slate-50 hover:to-blue-50 border-slate-200 hover:border-blue-300 px-6 py-3 rounded-xl transition-all duration-300"
+          >
+            <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+            Manage All Courses
+          </Button>
         </div>
       </div>
     )
   }
 
-  // Inline Profile Components
+  // Completely reimplemented Profile Components
   const ProfileSettings = () => {
-    const [localProfile, setLocalProfile] = useState(profile)
+    // Initialize state only once with current user data
+    const [educatorProfile, setEducatorProfile] = useState(() => ({
+      name: user?.name || '',
+      email: user?.email || '',
+      bio: user?.bio || '',
+      avatar: user?.avatar || '',
+      phone: user?.phone || '',
+      location: user?.location || '',
+      website: user?.website || '',
+      title: user?.title || '',
+      organization: user?.organization || '',
+      expertise: user?.expertise || []
+    }))
+    
     const [isUploading, setIsUploading] = useState(false)
     const [saveLoading, setSaveLoading] = useState(false)
-    const [errors, setErrors] = useState({})
+    const [formErrors, setFormErrors] = useState({})
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
+    // Only update form if user data changes significantly (not on every render)
+    const userDataRef = useRef()
     useEffect(() => {
-      setLocalProfile(profile)
-    }, [profile])
+      const currentUserKey = user ? `${user._id}-${user.name}-${user.email}` : null
+      if (currentUserKey && currentUserKey !== userDataRef.current) {
+        userDataRef.current = currentUserKey
+        // Only update if we don't have unsaved changes
+        if (!hasUnsavedChanges) {
+          setEducatorProfile({
+            name: user?.name || '',
+            email: user?.email || '',
+            bio: user?.bio || '',
+            avatar: user?.avatar || '',
+            phone: user?.phone || '',
+            location: user?.location || '',
+            website: user?.website || '',
+            title: user?.title || '',
+            organization: user?.organization || '',
+            expertise: user?.expertise || []
+          })
+        }
+      }
+    }, [user?._id, user?.name, user?.email, hasUnsavedChanges])
 
     const validateForm = () => {
-      const newErrors = {}
-      if (!localProfile.name?.trim()) newErrors.name = 'Name is required'
-      if (!localProfile.email?.trim()) newErrors.email = 'Email is required'
-      if (localProfile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(localProfile.email)) {
-        newErrors.email = 'Please enter a valid email address'
+      const errors = {}
+      if (!educatorProfile.name?.trim()) {
+        errors.name = 'Name is required'
       }
-      setErrors(newErrors)
-      return Object.keys(newErrors).length === 0
+      if (!educatorProfile.email?.trim()) {
+        errors.email = 'Email is required'
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(educatorProfile.email)) {
+        errors.email = 'Please enter a valid email address'
+      }
+      if (educatorProfile.website && !/^https?:\/\/.+\..+/.test(educatorProfile.website)) {
+        errors.website = 'Please enter a valid website URL (include http:// or https://)'
+      }
+      setFormErrors(errors)
+      return Object.keys(errors).length === 0
+    }
+
+    const handleFieldChange = (fieldName, value) => {
+      setEducatorProfile(prev => ({
+        ...prev,
+        [fieldName]: value
+      }))
+      setHasUnsavedChanges(true)
+      
+      // Clear specific field error when user starts typing
+      if (formErrors[fieldName]) {
+        setFormErrors(prev => ({
+          ...prev,
+          [fieldName]: undefined
+        }))
+      }
     }
 
     const handleProfileUpdate = async (e) => {
       e.preventDefault()
-      if (!validateForm()) return
+      
+      if (!validateForm()) {
+        return
+      }
 
       setSaveLoading(true)
       try {
-        console.log("Updating profile with data:", localProfile)
-        console.log("Auth headers:", getAuthHeaders())
-
         const response = await fetch("/api/profile", {
           method: "PUT",
           headers: {
             ...getAuthHeaders(),
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(localProfile),
+          body: JSON.stringify(educatorProfile),
         })
-        console.log("Response status:", response.status)
-        console.log("Response headers:", response.headers)
+
         if (response.ok) {
           const data = await response.json()
-          console.log("Profile update successful:", data)
-
-          // Update user context if name or email changed
-          if (localProfile.name !== user.name || localProfile.email !== user.email) {
-            updateUser({
-              name: localProfile.name,
-              email: localProfile.email,
-              avatar: localProfile.avatar,
-            })
-          }
-
-          // Show success message with beautiful toast-like notification
-          const successNotification = document.createElement('div')
-          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
-          successNotification.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
-              </div>
-              <span class="font-semibold">Profile updated successfully!</span>
-            </div>
-          `
-          document.body.appendChild(successNotification)
+          updateUser(data.user)
+          setHasUnsavedChanges(false)
           
-          // Animate in
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(0)'
-          }, 100)
+          // Show success notification
+          showNotification('Profile updated successfully!', 'success')
           
-          // Animate out and remove
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(100%)'
-            setTimeout(() => document.body.removeChild(successNotification), 500)
-          }, 3000)
-
           fetchProfile() // Refresh profile data
         } else {
           const errorData = await response.json()
-          console.log("Profile update failed:", errorData)
-          
-          // Show error message
-          const errorNotification = document.createElement('div')
-          errorNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
-          errorNotification.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                </svg>
-              </div>
-              <span class="font-semibold">Failed to update profile: ${errorData.error || "Unknown error"}</span>
-            </div>
-          `
-          document.body.appendChild(errorNotification)
-          
-          setTimeout(() => {
-            errorNotification.style.transform = 'translateX(0)'
-          }, 100)
-          
-          setTimeout(() => {
-            errorNotification.style.transform = 'translateX(100%)'
-            setTimeout(() => document.body.removeChild(errorNotification), 500)
-          }, 5000)
+          console.error("Profile update failed:", errorData)
+          showNotification(`Failed to update profile: ${errorData.error || "Unknown error"}`, 'error')
         }
       } catch (error) {
         console.error("Error updating profile:", error)
-        alert(`Error updating profile: ${error.message}`)
+        showNotification(`Error updating profile: ${error.message}`, 'error')
       } finally {
         setSaveLoading(false)
       }
+    }
+
+    const showNotification = (message, type = 'info') => {
+      const notification = document.createElement('div')
+      notification.className = `fixed top-8 right-8 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500 ${
+        type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 
+        type === 'error' ? 'bg-gradient-to-r from-red-500 to-pink-600' : 
+        'bg-gradient-to-r from-blue-500 to-purple-600'
+      }`
+      
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            ${type === 'success' ? 
+              '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>' : 
+              '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>'
+            }
+          </div>
+          <span class="font-semibold">${message}</span>
+        </div>
+      `
+      
+      document.body.appendChild(notification)
+      
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)'
+      }, 100)
+      
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)'
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification)
+          }
+        }, 500)
+      }, 3000)
     }
 
     const handleAvatarUpload = async (e) => {
@@ -685,43 +720,16 @@ export default function EducatorDashboard() {
           const data = await response.json()
           const newAvatarUrl = data.avatarUrl
 
-          // Update local profile state immediately for instant UI feedback
-          setLocalProfile((prev) => ({ ...prev, avatar: newAvatarUrl }))
-          setProfile((prev) => ({ ...prev, avatar: newAvatarUrl }))
-
-          // Update the user context (this will update the header avatar immediately)
-          updateUser({ avatar: newAvatarUrl, _avatarTimestamp: Date.now() })
-
-          // Show success notification
-          const successNotification = document.createElement('div')
-          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
-          successNotification.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
-              </div>
-              <span class="font-semibold">Avatar uploaded successfully!</span>
-            </div>
-          `
-          document.body.appendChild(successNotification)
-          
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(0)'
-          }, 100)
-          
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(100%)'
-            setTimeout(() => document.body.removeChild(successNotification), 500)
-          }, 3000)
+          handleFieldChange('avatar', newAvatarUrl)
+          updateUser({ ...user, avatar: newAvatarUrl })
+          showNotification('Avatar uploaded successfully!', 'success')
         } else {
           const errorData = await response.json()
-          alert(`Failed to upload avatar: ${errorData.error || "Unknown error"}`)
+          showNotification(`Failed to upload avatar: ${errorData.error || "Unknown error"}`, 'error')
         }
       } catch (error) {
         console.error("Error uploading avatar:", error)
-        alert(`Error uploading avatar: ${error.message}`)
+        showNotification(`Error uploading avatar: ${error.message}`, 'error')
       } finally {
         setIsUploading(false)
       }
@@ -742,11 +750,11 @@ export default function EducatorDashboard() {
                 <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full group-hover:scale-110 transition-transform duration-300"></div>
                 <ArrowRight className="h-5 w-5 rotate-180 group-hover:-translate-x-2 transition-transform duration-300" />
                 Back to Dashboard
-          </Button>
+              </Button>
               <div className="flex-1">
                 <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-              Profile Settings
-            </h2>
+                  Profile Settings
+                </h2>
                 <p className="text-slate-600 text-lg mt-2">Manage your educator profile and professional information</p>
                 <div className="flex items-center gap-4 mt-4">
                   <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
@@ -756,6 +764,11 @@ export default function EducatorDashboard() {
                   <div className="text-sm text-slate-500">
                     Last updated: {new Date().toLocaleDateString()}
                   </div>
+                  {hasUnsavedChanges && (
+                    <div className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full font-medium">
+                      Unsaved changes
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -763,359 +776,341 @@ export default function EducatorDashboard() {
         </div>
 
         {/* Enhanced Profile Card */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-3xl blur-2xl"></div>
-          <Card className="relative border-0 shadow-2xl bg-white/95 backdrop-blur-xl overflow-hidden">
-            {/* Header with gradient and pattern */}
-            <CardHeader className="relative bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-50 border-b border-white/60">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full blur-3xl"></div>
-              
-              <div className="relative">
-                <CardTitle className="flex items-center gap-4 text-2xl">
-                  <div className="relative">
-                    <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-xl">
-                      <User className="h-7 w-7 text-white" />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full border-2 border-white"></div>
-                  </div>
-                  <div>
-                    <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                      Professional Profile
-                    </span>
-                    <div className="text-sm font-normal text-slate-600 mt-1">
-                      Update your educational credentials and personal details
-                    </div>
-                  </div>
-            </CardTitle>
+        <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-blue-50/80 via-purple-50/60 to-indigo-50/80 rounded-t-3xl border-b border-white/40">
+            <CardTitle className="flex items-center gap-4 text-3xl">
+              <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 rounded-2xl shadow-lg">
+                <User className="h-8 w-8 text-white" />
               </div>
+              <div>
+                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  Educator Profile
+                </span>
+                <p className="text-lg text-slate-600 font-normal mt-1">
+                  Shape your professional presence
+                </p>
+              </div>
+            </CardTitle>
           </CardHeader>
 
-            <CardContent className="p-10">
-              <form onSubmit={handleProfileUpdate} className="space-y-10">
-                {/* Enhanced Avatar Upload Section */}
+          <CardContent className="p-10">
+            <form onSubmit={handleProfileUpdate} className="space-y-10">
+              {/* Enhanced Avatar Upload Section */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-3xl blur-xl"></div>
+                <div className="relative bg-gradient-to-br from-white/80 to-blue-50/50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-white/60">
+                  <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 lg:gap-10">
+                    <div className="relative group shrink-0">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                      <div className="relative">
+                        <Avatar className="h-28 w-28 sm:h-32 sm:w-32 lg:h-36 lg:w-36 ring-4 ring-blue-200 group-hover:ring-blue-300 transition-all duration-300 shadow-2xl">
+                          <AvatarImage src={educatorProfile.avatar || "/placeholder.svg"} alt={educatorProfile.name} />
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-3xl sm:text-4xl font-bold">
+                            {educatorProfile.name?.charAt(0)?.toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
+                            <div className="animate-spin rounded-full h-8 w-8 border-3 border-white border-t-transparent"></div>
+                          </div>
+                        )}
+                        <div className="absolute -bottom-2 -right-2 p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-xl group-hover:scale-110 transition-transform duration-300">
+                          <Camera className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 space-y-6">
+                      <div>
+                        <h3 className="text-2xl font-bold text-slate-800 mb-2">Profile Picture</h3>
+                        <p className="text-slate-600 leading-relaxed">
+                          Upload a professional photo to help students and colleagues recognize you. 
+                          A clear, high-quality image works best for building trust and engagement.
+                        </p>
+                      </div>
+                      
+                      <label className="block">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="group cursor-pointer hover:bg-blue-50 border-2 border-blue-200 hover:border-blue-400 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                          disabled={isUploading}
+                          asChild
+                        >
+                          <span className="flex items-center gap-3">
+                            {isUploading ? (
+                              <>
+                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
+                                Choose New Photo
+                              </>
+                            )}
+                          </span>
+                        </Button>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleAvatarUpload} 
+                          className="hidden" 
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                {/* Basic Information */}
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-3xl blur-xl"></div>
-                  <div className="relative bg-gradient-to-br from-white/80 to-blue-50/50 rounded-3xl p-8 border border-white/60">
-                    <div className="flex items-center gap-10">
-                      <div className="relative group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                        <div className="relative">
-                          <Avatar className="h-36 w-36 ring-4 ring-blue-200 group-hover:ring-blue-300 transition-all duration-300 shadow-2xl">
-                    <AvatarImage src={localProfile.avatar || "/placeholder.svg"} alt={localProfile.name} />
-                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-4xl font-bold">
-                      {localProfile.name?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  {isUploading && (
-                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
-                              <div className="animate-spin rounded-full h-8 w-8 border-3 border-white border-t-transparent"></div>
-                    </div>
-                  )}
-                          <div className="absolute -bottom-2 -right-2 p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-xl group-hover:scale-110 transition-transform duration-300">
-                            <Camera className="h-5 w-5 text-white" />
-                </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex-1 space-y-6">
-                <div>
-                          <h3 className="text-2xl font-bold text-slate-800 mb-2">Profile Picture</h3>
-                          <p className="text-slate-600 leading-relaxed">
-                            Upload a professional photo to help students and colleagues recognize you. 
-                            A clear, high-quality image works best for building trust and engagement.
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-4">
-                  <label className="block">
-                    <Button
-                      type="button"
-                      variant="outline"
-                              className="group cursor-pointer hover:bg-blue-50 border-2 border-blue-200 hover:border-blue-400 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                      disabled={isUploading}
-                      asChild
-                    >
-                              <span className="flex items-center gap-3">
-                                {isUploading ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-                                    Uploading...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Upload className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
-                                    Choose New Photo
-                                  </>
-                                )}
-                        <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                      </span>
-                    </Button>
-                  </label>
-                          
-                          <div className="flex items-center gap-6 text-sm text-slate-500">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-emerald-500" />
-                              JPG, PNG, or GIF
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-emerald-500" />
-                              Max size 5MB
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-emerald-500" />
-                              Square format recommended
-                            </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/50 to-blue-50/50 rounded-2xl blur-xl"></div>
+                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-blue-600 rounded-full"></div>
+                      Basic Information
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <Label htmlFor="name" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-blue-100 rounded-lg">
+                            <User className="h-4 w-4 text-blue-600" />
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                </div>
-              </div>
-
-                {/* Enhanced Form Fields */}
-                <div className="space-y-8">
-                  {/* Basic Information */}
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/50 to-blue-50/50 rounded-2xl blur-xl"></div>
-                    <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
-                      <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                        <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-blue-600 rounded-full"></div>
-                        Basic Information
-                      </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                          <Label htmlFor="name" className="text-slate-700 font-semibold flex items-center gap-2">
-                            <div className="p-1 bg-blue-100 rounded-lg">
-                              <User className="h-4 w-4 text-blue-600" />
-                            </div>
-                            Full Name *
-                          </Label>
-                  <Input
-                    id="name"
-                    value={localProfile.name}
-                            onChange={(e) => {
-                              setLocalProfile((prev) => ({ ...prev, name: e.target.value }))
-                              if (errors.name) setErrors(prev => ({...prev, name: ''}))
-                            }}
-                            className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                              errors.name ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
-                            }`}
-                            placeholder="Enter your full name"
-                          />
-                          {errors.name && (
-                            <p className="text-red-500 text-sm flex items-center gap-2">
-                              <AlertCircle className="h-4 w-4" />
-                              {errors.name}
-                            </p>
-                          )}
-                </div>
-                        
-                        <div className="space-y-3">
-                          <Label htmlFor="email" className="text-slate-700 font-semibold flex items-center gap-2">
-                            <div className="p-1 bg-purple-100 rounded-lg">
-                              <Mail className="h-4 w-4 text-purple-600" />
-                            </div>
-                            Email Address *
-                          </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={localProfile.email}
-                            onChange={(e) => {
-                              setLocalProfile((prev) => ({ ...prev, email: e.target.value }))
-                              if (errors.email) setErrors(prev => ({...prev, email: ''}))
-                            }}
-                            className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                              errors.email ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
-                            }`}
-                            placeholder="Enter your email address"
-                          />
-                          {errors.email && (
-                            <p className="text-red-500 text-sm flex items-center gap-2">
-                              <AlertCircle className="h-4 w-4" />
-                              {errors.email}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                </div>
-              </div>
-
-                  {/* Professional Information */}
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 rounded-2xl blur-xl"></div>
-                    <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
-                      <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                        <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
-                        Professional Details
-                      </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                          <Label htmlFor="title" className="text-slate-700 font-semibold flex items-center gap-2">
-                            <div className="p-1 bg-indigo-100 rounded-lg">
-                              <Briefcase className="h-4 w-4 text-indigo-600" />
-                            </div>
-                            Professional Title
-                          </Label>
-                  <Input
-                    id="title"
-                    value={localProfile.title}
-                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, title: e.target.value }))}
-                    placeholder="e.g., Senior Developer, Math Professor"
-                            className="h-14 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 hover:border-slate-300 transition-all duration-300"
-                  />
-                </div>
-                        
-                        <div className="space-y-3">
-                          <Label htmlFor="organization" className="text-slate-700 font-semibold flex items-center gap-2">
-                            <div className="p-1 bg-purple-100 rounded-lg">
-                              <Building2 className="h-4 w-4 text-purple-600" />
-                            </div>
-                            Organization
-                          </Label>
-                  <Input
-                    id="organization"
-                    value={localProfile.organization}
-                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, organization: e.target.value }))}
-                    placeholder="e.g., Tech University, ABC Company"
-                            className="h-14 rounded-2xl border-2 border-slate-200 focus:border-purple-500 hover:border-slate-300 transition-all duration-300"
-                  />
-                        </div>
-                      </div>
-                </div>
-              </div>
-
-                  {/* Contact Information */}
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-2xl blur-xl"></div>
-                    <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
-                      <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                        <div className="w-1 h-6 bg-gradient-to-b from-amber-500 to-orange-600 rounded-full"></div>
-                        Contact Information
-                      </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                          <Label htmlFor="phone" className="text-slate-700 font-semibold flex items-center gap-2">
-                            <div className="p-1 bg-amber-100 rounded-lg">
-                              <Phone className="h-4 w-4 text-amber-600" />
-                            </div>
-                            Phone Number
-                          </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={localProfile.phone}
-                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, phone: e.target.value }))}
-                            placeholder="+1 (555) 123-4567"
-                            className="h-14 rounded-2xl border-2 border-slate-200 focus:border-amber-500 hover:border-slate-300 transition-all duration-300"
-                  />
-                </div>
-                        
-                        <div className="space-y-3">
-                          <Label htmlFor="location" className="text-slate-700 font-semibold flex items-center gap-2">
-                            <div className="p-1 bg-orange-100 rounded-lg">
-                              <MapPin className="h-4 w-4 text-orange-600" />
-                            </div>
-                            Location
-                          </Label>
-                  <Input
-                    id="location"
-                    value={localProfile.location}
-                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, location: e.target.value }))}
-                    placeholder="e.g., New York, USA"
-                            className="h-14 rounded-2xl border-2 border-slate-200 focus:border-orange-500 hover:border-slate-300 transition-all duration-300"
-                  />
-                </div>
-              </div>
-
-                      <div className="mt-8 space-y-3">
-                        <Label htmlFor="website" className="text-slate-700 font-semibold flex items-center gap-2">
-                          <div className="p-1 bg-emerald-100 rounded-lg">
-                            <Globe className="h-4 w-4 text-emerald-600" />
-                          </div>
-                          Website
+                          Full Name *
                         </Label>
-                <Input
-                  id="website"
-                  type="url"
-                  value={localProfile.website}
-                  onChange={(e) => setLocalProfile((prev) => ({ ...prev, website: e.target.value }))}
-                  placeholder="https://yourwebsite.com"
-                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-emerald-500 hover:border-slate-300 transition-all duration-300"
-                />
+                        <Input
+                          id="name"
+                          value={educatorProfile.name}
+                          onChange={(e) => handleFieldChange('name', e.target.value)}
+                          className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
+                            formErrors.name ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
+                          }`}
+                          placeholder="Enter your full name"
+                        />
+                        {formErrors.name && (
+                          <p className="text-red-500 text-sm flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4" />
+                            {formErrors.name}
+                          </p>
+                        )}
                       </div>
-                    </div>
-              </div>
-
-                  {/* Bio Section */}
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-rose-50/50 to-pink-50/50 rounded-2xl blur-xl"></div>
-                    <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
-                      <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                        <div className="w-1 h-6 bg-gradient-to-b from-rose-500 to-pink-600 rounded-full"></div>
-                        About You
-                      </h4>
                       
                       <div className="space-y-3">
-                        <Label htmlFor="bio" className="text-slate-700 font-semibold flex items-center gap-2">
-                          <div className="p-1 bg-rose-100 rounded-lg">
-                            <FileText className="h-4 w-4 text-rose-600" />
+                        <Label htmlFor="email" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-purple-100 rounded-lg">
+                            <Mail className="h-4 w-4 text-purple-600" />
                           </div>
-                          Professional Bio
+                          Email Address *
                         </Label>
-                <Textarea
-                  id="bio"
-                  value={localProfile.bio}
-                  onChange={(e) => setLocalProfile((prev) => ({ ...prev, bio: e.target.value }))}
-                          placeholder="Tell us about your background, expertise, and teaching philosophy..."
-                          rows={6}
-                          className="rounded-2xl border-2 border-slate-200 focus:border-rose-500 hover:border-slate-300 transition-all duration-300 resize-none"
+                        <Input
+                          id="email"
+                          type="email"
+                          value={educatorProfile.email}
+                          onChange={(e) => handleFieldChange('email', e.target.value)}
+                          className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
+                            formErrors.email ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
+                          }`}
+                          placeholder="Enter your email address"
                         />
-                        <p className="text-sm text-slate-500 mt-2">
-                          Share your teaching philosophy, areas of expertise, and what makes you passionate about education.
-                        </p>
+                        {formErrors.email && (
+                          <p className="text-red-500 text-sm flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4" />
+                            {formErrors.email}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Enhanced Save Button */}
-                <div className="flex items-center justify-between pt-8">
-                  <div className="text-sm text-slate-500">
-                    <span className="text-red-500">*</span> Required fields
-              </div>
-
-              <Button
-                type="submit"
-                    disabled={saveLoading}
-                    className="group relative bg-gradient-to-r from-blue-500 via-purple-600 to-indigo-600 hover:from-blue-600 hover:via-purple-700 hover:to-indigo-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  >
-                    {/* Button background effects */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                {/* Professional Information */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 rounded-2xl blur-xl"></div>
+                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
+                      Professional Details
+                    </h4>
                     
-                    <div className="relative flex items-center gap-3">
-                      {saveLoading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
-                          Saving Changes...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
-                          Save Profile Changes
-                        </>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <Label htmlFor="title" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-indigo-100 rounded-lg">
+                            <Briefcase className="h-4 w-4 text-indigo-600" />
+                          </div>
+                          Professional Title
+                        </Label>
+                        <Input
+                          id="title"
+                          value={educatorProfile.title}
+                          onChange={(e) => handleFieldChange('title', e.target.value)}
+                          placeholder="e.g., Senior Developer, Math Professor"
+                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 hover:border-slate-300 transition-all duration-300"
+                        />
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Label htmlFor="organization" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-purple-100 rounded-lg">
+                            <Building2 className="h-4 w-4 text-purple-600" />
+                          </div>
+                          Organization
+                        </Label>
+                        <Input
+                          id="organization"
+                          value={educatorProfile.organization}
+                          onChange={(e) => handleFieldChange('organization', e.target.value)}
+                          placeholder="e.g., Tech University, ABC Company"
+                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-purple-500 hover:border-slate-300 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-2xl blur-xl"></div>
+                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <div className="w-1 h-6 bg-gradient-to-b from-amber-500 to-orange-600 rounded-full"></div>
+                      Contact Information
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <Label htmlFor="phone" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-amber-100 rounded-lg">
+                            <Phone className="h-4 w-4 text-amber-600" />
+                          </div>
+                          Phone Number
+                        </Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={educatorProfile.phone}
+                          onChange={(e) => handleFieldChange('phone', e.target.value)}
+                          placeholder="+1 (555) 123-4567"
+                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-amber-500 hover:border-slate-300 transition-all duration-300"
+                        />
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Label htmlFor="location" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-orange-100 rounded-lg">
+                            <MapPin className="h-4 w-4 text-orange-600" />
+                          </div>
+                          Location
+                        </Label>
+                        <Input
+                          id="location"
+                          value={educatorProfile.location}
+                          onChange={(e) => handleFieldChange('location', e.target.value)}
+                          placeholder="e.g., New York, USA"
+                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-orange-500 hover:border-slate-300 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-8 space-y-3">
+                      <Label htmlFor="website" className="text-slate-700 font-semibold flex items-center gap-2">
+                        <div className="p-1 bg-emerald-100 rounded-lg">
+                          <Globe className="h-4 w-4 text-emerald-600" />
+                        </div>
+                        Website
+                      </Label>
+                      <Input
+                        id="website"
+                        type="url"
+                        value={educatorProfile.website}
+                        onChange={(e) => handleFieldChange('website', e.target.value)}
+                        placeholder="https://yourwebsite.com"
+                        className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
+                          formErrors.website ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-emerald-500 hover:border-slate-300'
+                        }`}
+                      />
+                      {formErrors.website && (
+                        <p className="text-red-500 text-sm flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          {formErrors.website}
+                        </p>
                       )}
                     </div>
-              </Button>
+                  </div>
                 </div>
+
+                {/* Bio Section */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-rose-50/50 to-pink-50/50 rounded-2xl blur-xl"></div>
+                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <div className="w-1 h-6 bg-gradient-to-b from-rose-500 to-pink-600 rounded-full"></div>
+                      About You
+                    </h4>
+                    
+                    <div className="space-y-3">
+                      <Label htmlFor="bio" className="text-slate-700 font-semibold flex items-center gap-2">
+                        <div className="p-1 bg-rose-100 rounded-lg">
+                          <FileText className="h-4 w-4 text-rose-600" />
+                        </div>
+                        Professional Bio
+                      </Label>
+                      <Textarea
+                        id="bio"
+                        value={educatorProfile.bio}
+                        onChange={(e) => handleFieldChange('bio', e.target.value)}
+                        placeholder="Tell us about your background, expertise, and teaching philosophy..."
+                        rows={6}
+                        className="rounded-2xl border-2 border-slate-200 focus:border-rose-500 hover:border-slate-300 transition-all duration-300 resize-none"
+                      />
+                      <p className="text-sm text-slate-500 mt-2">
+                        Share your teaching philosophy, areas of expertise, and what makes you passionate about education.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhanced Save Button */}
+              <div className="flex items-center justify-between pt-8">
+                <div className="text-sm text-slate-500">
+                  <span className="text-red-500">*</span> Required fields
+                  {hasUnsavedChanges && (
+                    <span className="ml-4 text-amber-600 font-medium">
+                      You have unsaved changes
+                    </span>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={saveLoading}
+                  className="group relative bg-gradient-to-r from-blue-500 via-purple-600 to-indigo-600 hover:from-blue-600 hover:via-purple-700 hover:to-indigo-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  {/* Button background effects */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  
+                  <div className="relative flex items-center gap-3">
+                    {saveLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                        Saving Changes...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
+                        Save Profile Changes
+                      </>
+                    )}
+                  </div>
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
-        </div>
       </div>
     )
   }
@@ -1378,7 +1373,7 @@ export default function EducatorDashboard() {
             {/* Hero Stats Section */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 rounded-3xl blur-3xl"></div>
-              <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white shadow-2xl hover:shadow-blue-500/25 transition-all duration-500 hover:scale-105">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
@@ -1448,7 +1443,7 @@ export default function EducatorDashboard() {
             </div>
 
             {/* Secondary Stats Section */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-gray-600">Draft Courses</CardTitle>
@@ -1593,27 +1588,30 @@ export default function EducatorDashboard() {
       <div className="relative bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 shadow-2xl">
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent"></div>
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-12">
-            <div className="space-y-2">
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-indigo-200 bg-clip-text text-transparent">
+        <div className="relative max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-6 sm:py-8 lg:py-12 space-y-4 sm:space-y-0">
+            <div className="space-y-2 flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-indigo-200 bg-clip-text text-transparent">
                 LLMfied Courseware
               </h1>
-              <div className="text-blue-200 text-xl flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                Welcome back, <span className="font-semibold text-white">{user?.name}</span>
+              <div className="text-blue-200 text-sm sm:text-base lg:text-xl flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span>Welcome back, <span className="font-semibold text-white">{user?.name}</span></span>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               {/* Create Course Button */}
               <Button
                 onClick={() => setActiveTab("create")}
-                className="group relative bg-gradient-to-r from-white to-blue-50 hover:from-blue-50 hover:to-white text-slate-800 shadow-2xl hover:shadow-white/25 border-0 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105"
+                className="group relative bg-gradient-to-r from-white to-blue-50 hover:from-blue-50 hover:to-white text-slate-800 shadow-2xl hover:shadow-white/25 border-0 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-sm sm:text-base lg:text-lg font-semibold transition-all duration-300 hover:scale-105"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                Create Course
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                <span className="hidden sm:inline">Create Course</span>
+                <span className="sm:hidden">Create</span>
               </Button>
 
               {/* Profile Section */}
@@ -1622,26 +1620,26 @@ export default function EducatorDashboard() {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="group relative h-16 px-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all duration-300 hover:scale-105"
+                      className="group relative h-12 sm:h-14 lg:h-16 px-3 sm:px-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all duration-300 hover:scale-105"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3">
                         <div className="relative">
                           <Avatar
-                            className="h-10 w-10 ring-2 ring-white/30 group-hover:ring-white/50 transition-all duration-300"
+                            className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-white/30 group-hover:ring-white/50 transition-all duration-300"
                             key={`header-avatar-${user?.avatar}-${user?._avatarTimestamp || Date.now()}`}
                           >
                             <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
-                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-sm sm:text-base">
                               {user?.name?.charAt(0)?.toUpperCase() || "U"}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
+                          <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
                         </div>
-                        <div className="hidden md:block text-left">
-                          <p className="text-white font-semibold text-sm leading-none">{user?.name || "Educator"}</p>
-                          <p className="text-blue-200 text-xs mt-1">{user?.email || "educator@example.com"}</p>
+                        <div className="hidden sm:block text-left">
+                          <p className="text-white font-semibold text-xs sm:text-sm leading-none truncate max-w-32 lg:max-w-none">{user?.name || "Educator"}</p>
+                          <p className="text-blue-200 text-xs mt-1 truncate max-w-32 lg:max-w-none">{user?.email || "educator@example.com"}</p>
                         </div>
-                        <ChevronDown className="h-4 w-4 text-blue-200 group-hover:text-white transition-all duration-300 group-data-[state=open]:rotate-180" />
+                        <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-blue-200 group-hover:text-white transition-all duration-300 group-data-[state=open]:rotate-180" />
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
@@ -1737,7 +1735,7 @@ export default function EducatorDashboard() {
           </div>
 
           {/* Enhanced Navigation */}
-          <nav className="flex space-x-2 pb-6">
+          <nav className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pb-4 sm:pb-6">
             {[
               { id: "overview", label: "Overview", icon: TrendingUp },
               { id: "courses", label: "My Courses", icon: BookOpen },
@@ -1746,18 +1744,18 @@ export default function EducatorDashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`group relative py-4 px-6 font-semibold text-sm transition-all duration-300 rounded-xl ${
+                className={`group relative py-3 sm:py-4 px-4 sm:px-6 font-semibold text-sm transition-all duration-300 rounded-lg sm:rounded-xl touch-manipulation ${
                   activeTab === tab.id
                     ? "bg-white/20 backdrop-blur-sm text-white shadow-lg"
                     : "text-blue-200 hover:text-white hover:bg-white/10 backdrop-blur-sm"
                 }`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center sm:justify-start gap-2">
                   <tab.icon className="h-4 w-4" />
-                  {tab.label}
+                  <span className="text-xs sm:text-sm font-medium">{tab.label}</span>
                 </div>
                 {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 sm:w-8 h-0.5 sm:h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
                 )}
               </button>
             ))}
@@ -1766,7 +1764,7 @@ export default function EducatorDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="relative max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-8 lg:py-12">
         <div className="animate-in fade-in-50 duration-500">{renderContent()}</div>
       </div>
 

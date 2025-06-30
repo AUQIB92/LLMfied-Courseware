@@ -250,98 +250,102 @@ export default function Home() {
             ))}
           </div>
           
-          <div className="container mx-auto px-6 lg:px-8 relative z-10">
-            <div className="flex items-center justify-between h-20">
+          <div className="container mx-auto px-3 sm:px-4 lg:px-8 relative z-10">
+            <div className="flex items-center justify-between h-16 sm:h-18 lg:h-20">
               {/* Beautiful Logo with Theme Integration */}
-              <div className="flex items-center space-x-4 group cursor-pointer">
+              <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 group cursor-pointer">
                 <div className="relative">
                   {/* Logo Container with Theme Effects */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 via-purple-500/20 to-indigo-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
-                  <div className="absolute inset-0 bg-gradient-to-tr from-cyan-400/20 via-blue-400/15 to-purple-400/20 rounded-2xl blur-lg opacity-50 group-hover:opacity-80 transition-all duration-500"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 via-purple-500/20 to-indigo-500/30 rounded-xl sm:rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-cyan-400/20 via-blue-400/15 to-purple-400/20 rounded-xl sm:rounded-2xl blur-lg opacity-50 group-hover:opacity-80 transition-all duration-500"></div>
                   
-                  <div className="relative w-16 h-16 bg-gradient-to-br from-white via-blue-50/70 to-purple-50/50 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-700 group-hover:scale-110 border border-white/60 group-hover:border-blue-300/60 overflow-hidden p-2">
+                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gradient-to-br from-white via-blue-50/70 to-purple-50/50 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-700 group-hover:scale-110 border border-white/60 group-hover:border-blue-300/60 overflow-hidden p-1.5 sm:p-2">
                     
                     {/* Logo Image */}
                     <img 
                       src="/uploads/avatars/Logo.png" 
                       alt="LLMfied Logo" 
-                      className="w-full h-full object-contain transition-all duration-500 group-hover:scale-110 group-hover:brightness-110 rounded-xl"
+                      className="w-full h-full object-contain transition-all duration-500 group-hover:scale-110 group-hover:brightness-110 rounded-lg sm:rounded-xl"
                     />
                     
                     {/* Subtle theme overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   </div>
                 </div>
                 
-                <div className="flex flex-col">
-                  <span className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-purple-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:via-purple-700 group-hover:to-indigo-700 transition-all duration-500 group-hover:scale-105">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-purple-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:via-purple-700 group-hover:to-indigo-700 transition-all duration-500 group-hover:scale-105 truncate">
                     LLMfied
                   </span>
-                  <span className="text-xs font-medium bg-gradient-to-r from-slate-600 via-blue-600 to-purple-600 bg-clip-text text-transparent group-hover:from-blue-500 group-hover:via-purple-500 group-hover:to-indigo-500 -mt-0.5 tracking-wider transition-all duration-500 leading-none">
+                  <span className="text-xs sm:text-xs lg:text-xs font-medium bg-gradient-to-r from-slate-600 via-blue-600 to-purple-600 bg-clip-text text-transparent group-hover:from-blue-500 group-hover:via-purple-500 group-hover:to-indigo-500 -mt-0.5 tracking-wider transition-all duration-500 leading-none hidden sm:block">
                     DEMYSTIFY • REIMAGINE • DELIVER
                   </span>
                 </div>
               </div>
 
               {/* Enhanced Navigation Links */}
-              <div className="hidden lg:flex items-center space-x-2">
-                <nav className="flex items-center space-x-2">
+              <div className="hidden md:flex items-center space-x-1 lg:space-x-2">
+                <nav className="flex items-center space-x-1 lg:space-x-2">
                   <Button 
                     variant="ghost" 
-                    className="relative text-slate-600 hover:text-blue-600 font-semibold px-6 py-3 rounded-2xl hover:bg-blue-50/60 transition-all duration-500 group overflow-hidden"
+                    className="relative text-slate-600 hover:text-blue-600 font-semibold px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-blue-50/60 transition-all duration-500 group overflow-hidden text-sm lg:text-base"
                     onClick={() => scrollToSection('features')}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
-                    <span className="relative z-10 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-                    Features
+                    <span className="relative z-10 flex items-center gap-1 lg:gap-2">
+                      <Sparkles className="w-3 h-3 lg:w-4 lg:h-4 group-hover:rotate-12 transition-transform duration-300" />
+                      <span className="hidden lg:inline">Features</span>
+                      <span className="lg:hidden">Features</span>
                     </span>
                     <div className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-purple-500 group-hover:w-2/3 group-hover:left-1/6 transition-all duration-500"></div>
                   </Button>
                   
                   <Button 
                     variant="ghost" 
-                    className="relative text-slate-600 hover:text-purple-600 font-semibold px-6 py-3 rounded-2xl hover:bg-purple-50/60 transition-all duration-500 group overflow-hidden"
+                    className="relative text-slate-600 hover:text-purple-600 font-semibold px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-purple-50/60 transition-all duration-500 group overflow-hidden text-sm lg:text-base"
                     onClick={() => scrollToSection('about')}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
-                    <span className="relative z-10 flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-                    About
+                    <span className="relative z-10 flex items-center gap-1 lg:gap-2">
+                      <BookOpen className="w-3 h-3 lg:w-4 lg:h-4 group-hover:rotate-12 transition-transform duration-300" />
+                      <span className="hidden lg:inline">About</span>
+                      <span className="lg:hidden">About</span>
                     </span>
                     <div className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-500 group-hover:w-2/3 group-hover:left-1/6 transition-all duration-500"></div>
                   </Button>
 
                   <Button 
                     variant="ghost" 
-                    className="relative text-slate-600 hover:text-emerald-600 font-semibold px-6 py-3 rounded-2xl hover:bg-emerald-50/60 transition-all duration-500 group overflow-hidden"
+                    className="relative text-slate-600 hover:text-emerald-600 font-semibold px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-emerald-50/60 transition-all duration-500 group overflow-hidden text-sm lg:text-base"
                     onClick={() => setShowDemo(true)}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
-                    <span className="relative z-10 flex items-center gap-2">
-                      <Play className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-                    Demo
+                    <span className="relative z-10 flex items-center gap-1 lg:gap-2">
+                      <Play className="w-3 h-3 lg:w-4 lg:h-4 group-hover:scale-110 transition-transform duration-300" />
+                      <span className="hidden lg:inline">Demo</span>
+                      <span className="lg:hidden">Demo</span>
                     </span>
                     <div className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-gradient-to-r from-emerald-400 to-teal-500 group-hover:w-2/3 group-hover:left-1/6 transition-all duration-500"></div>
                   </Button>
                 </nav>
 
                 {/* Spectacular Auth Button */}
-                <div className="flex items-center ml-8">
+                <div className="flex items-center ml-4 lg:ml-8">
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-all duration-700"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-xl lg:rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-all duration-700"></div>
                   <Button
                     onClick={() => {
                         setAuthMode("signup")
                       setShowAuth(true)
                     }}
-                      className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-bold px-8 py-3 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 group overflow-hidden border border-white/20"
+                      className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-bold px-4 lg:px-8 py-2 lg:py-3 rounded-xl lg:rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 group overflow-hidden border border-white/20 text-sm lg:text-base"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
-                      <span className="relative z-10 flex items-center gap-2">
-                        <Rocket className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-                        Get Started
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                      <span className="relative z-10 flex items-center gap-1 lg:gap-2">
+                        <Rocket className="w-3 h-3 lg:w-4 lg:h-4 group-hover:rotate-12 transition-transform duration-300" />
+                        <span className="hidden lg:inline">Get Started</span>
+                        <span className="lg:hidden">Start</span>
+                        <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4 group-hover:translate-x-1 transition-transform duration-300" />
                       </span>
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   </Button>
@@ -350,16 +354,16 @@ export default function Home() {
               </div>
 
               {/* Enhanced Mobile Menu Button */}
-              <div className="lg:hidden">
+              <div className="md:hidden">
                 <Button
                   variant="ghost"
-                  className="relative p-3 rounded-2xl hover:bg-slate-100/80 transition-all duration-300 group"
+                  className="relative p-2 sm:p-3 rounded-xl sm:rounded-2xl hover:bg-slate-100/80 transition-all duration-300 group"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
-                  <div className="w-6 h-6 flex flex-col justify-center space-y-1.5 relative">
-                    <div className={`w-full h-0.5 bg-slate-600 rounded-full transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></div>
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 flex flex-col justify-center space-y-1 sm:space-y-1.5 relative">
+                    <div className={`w-full h-0.5 bg-slate-600 rounded-full transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-1.5 sm:translate-y-2' : ''}`}></div>
                     <div className={`w-full h-0.5 bg-slate-600 rounded-full transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}></div>
-                    <div className={`w-full h-0.5 bg-slate-600 rounded-full transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></div>
+                    <div className={`w-full h-0.5 bg-slate-600 rounded-full transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-1.5 sm:-translate-y-2' : ''}`}></div>
                   </div>
                 </Button>
               </div>
@@ -367,36 +371,36 @@ export default function Home() {
           </div>
           
           {/* Mobile Menu */}
-          <div className={`lg:hidden transition-all duration-500 overflow-hidden ${
+          <div className={`md:hidden transition-all duration-500 overflow-hidden ${
             mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
           }`}>
-            <div className="px-6 py-4 bg-white/95 backdrop-blur-xl border-t border-white/30">
-              <div className="flex flex-col space-y-4">
+            <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white/95 backdrop-blur-xl border-t border-white/30">
+              <div className="flex flex-col space-y-2 sm:space-y-3">
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start text-slate-600 hover:text-blue-600 font-medium"
+                  className="w-full justify-start text-slate-600 hover:text-blue-600 font-medium py-3 px-3 rounded-xl text-sm sm:text-base"
                   onClick={() => scrollToSection('features')}
                 >
-                  <Sparkles className="w-4 h-4 mr-3" />
+                  <Sparkles className="w-4 h-4 mr-3 shrink-0" />
                   Features
                 </Button>
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start text-slate-600 hover:text-purple-600 font-medium"
+                  className="w-full justify-start text-slate-600 hover:text-purple-600 font-medium py-3 px-3 rounded-xl text-sm sm:text-base"
                   onClick={() => scrollToSection('about')}
                 >
-                  <BookOpen className="w-4 h-4 mr-3" />
+                  <BookOpen className="w-4 h-4 mr-3 shrink-0" />
                   About
                 </Button>
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start text-slate-600 hover:text-emerald-600 font-medium"
+                  className="w-full justify-start text-slate-600 hover:text-emerald-600 font-medium py-3 px-3 rounded-xl text-sm sm:text-base"
                   onClick={() => setShowDemo(true)}
                 >
-                  <Play className="w-4 h-4 mr-3" />
+                  <Play className="w-4 h-4 mr-3 shrink-0" />
                   Demo
                 </Button>
-                <div className="pt-4 border-t border-slate-200">
+                <div className="pt-3 sm:pt-4 border-t border-slate-200">
                   <Button
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600"
                     onClick={() => {
@@ -423,7 +427,7 @@ export default function Home() {
       </nav>
 
       {/* Revolutionary Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 pb-16">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24 pb-12 sm:pb-16">
         {/* Dynamic Background */}
         <div className="absolute inset-0">
           {/* Gradient Mesh */}
@@ -455,41 +459,41 @@ export default function Home() {
         </div>
         
         {/* Hero Content */}
-        <div className="container mx-auto px-6 lg:px-8 relative z-10">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-8 relative z-10">
           <div className="max-w-6xl mx-auto text-center">
             {/* Announcement Badge */}
-            <div className="flex justify-center mb-16">
-  <div className="relative group">
-    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
-    <Badge className="relative bg-white/90 backdrop-blur-sm text-slate-800 border border-white/50 px-8 py-3 text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-      <div className="flex items-center space-x-3">
-        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-        <Sparkles className="w-4 h-4 text-emerald-600" />
-        <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-extrabold">
-          Next-Generation AI Learning Platform
-        </span>
-        <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
-      </div>
-    </Badge>
-  </div>
-</div>
+            <div className="flex justify-center mb-8 sm:mb-12 lg:mb-16">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+                <Badge className="relative bg-white/90 backdrop-blur-sm text-slate-800 border border-white/50 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 text-xs sm:text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600" />
+                    <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-extrabold">
+                      Next-Generation AI Learning Platform
+                    </span>
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                  </div>
+                </Badge>
+              </div>
+            </div>
             
             {/* Main Headline */}
-            <div className="mb-16">
-  <h1 className="text-5xl lg:text-7xl xl:text-8xl font-black text-slate-900 tracking-tight">
-                <span className="block mb-6 leading-none">Transform</span>
-                <span className="block relative leading-[1.2] mb-16 font-black bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x">
-      <span className="inline-block align-baseline">Learning Forever</span>
-    </span>
-    <span className="block text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-600 leading-snug">
-      with AI-Powered Education
-    </span>
-  </h1>
-</div>
+            <div className="mb-8 sm:mb-12 lg:mb-16">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-black text-slate-900 tracking-tight">
+                <span className="block mb-3 sm:mb-4 lg:mb-6 leading-none">Transform</span>
+                <span className="block relative leading-[1.2] mb-8 sm:mb-12 lg:mb-16 font-black bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x">
+                  <span className="inline-block align-baseline">Learning Forever</span>
+                </span>
+                <span className="block text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-600 leading-snug">
+                  with AI-Powered Education
+                </span>
+              </h1>
+            </div>
             
             {/* Subtitle */}
-            <div className="mb-16">
-              <p className="text-xl lg:text-2xl text-slate-600 max-w-4xl mx-auto leading-relaxed font-medium">
+            <div className="mb-12 sm:mb-16">
+              <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-slate-600 max-w-4xl mx-auto leading-relaxed font-medium px-4 sm:px-0">
                 Revolutionize your educational journey with cutting-edge artificial intelligence. 
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 font-bold">
                   {" "}Whether you're an educator or learner
@@ -499,23 +503,23 @@ export default function Home() {
             </div>
             
             {/* Enhanced CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-24">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-16 sm:mb-20 lg:mb-24">
               {/* Primary CTA */}
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition duration-300"></div>
+              <div className="relative group w-full sm:w-auto">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-xl sm:rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition duration-300"></div>
                 <Button
                   size="lg"
                   onClick={() => {
                     setAuthMode("signup")
                     setShowAuth(true)
                   }}
-                  className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white px-12 py-6 text-xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 group overflow-hidden"
+                  className="relative w-full sm:w-auto bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl font-bold rounded-xl sm:rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 group overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
-                  <div className="relative z-10 flex items-center">
-                    <Rocket className="mr-4 w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
+                  <div className="relative z-10 flex items-center justify-center">
+                    <Rocket className="mr-3 sm:mr-4 w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300" />
                     Start Your Journey
-                    <ArrowRight className="ml-4 w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
+                    <ArrowRight className="ml-3 sm:ml-4 w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-2 transition-transform duration-300" />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 </Button>
@@ -526,15 +530,15 @@ export default function Home() {
                 size="lg"
                 variant="outline"
                 onClick={() => setShowDemo(true)}
-                className="border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 px-12 py-6 text-xl font-bold rounded-2xl transition-all duration-300 group backdrop-blur-sm bg-white/50 hover:bg-white/80 shadow-lg hover:shadow-xl"
+                className="w-full sm:w-auto border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl font-bold rounded-xl sm:rounded-2xl transition-all duration-300 group backdrop-blur-sm bg-white/50 hover:bg-white/80 shadow-lg hover:shadow-xl"
               >
-                <Play className="mr-4 w-6 h-6 group-hover:scale-110 transition-transform duration-300 text-blue-600" />
+                <Play className="mr-3 sm:mr-4 w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300 text-blue-600" />
                 Watch Demo
               </Button>
             </div>
             
             {/* Enhanced Social Proof */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-slate-600 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 text-slate-600 max-w-4xl mx-auto px-4 sm:px-0">
               <div className="flex flex-col items-center group">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex -space-x-2">
@@ -584,7 +588,7 @@ export default function Home() {
       </section>
 
       {/* Enhanced Breathtaking Features Section */}
-      <section id="features" className="py-28 relative overflow-hidden">
+      <section id="features" className="py-16 sm:py-20 lg:py-28 relative overflow-hidden">
         {/* Stunning Background with Multiple Layers */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/80 to-purple-50/60"></div>
         
@@ -616,8 +620,8 @@ export default function Home() {
         
         <div className="container mx-auto px-6 lg:px-8 relative z-10">
           {/* Enhanced Section Header */}
-          <div className="text-center mb-20">
-            <div className="relative inline-block mb-8">
+          <div className="text-center mb-12 sm:mb-16 lg:mb-20">
+            <div className="relative inline-block mb-6 sm:mb-8">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-full blur-xl"></div>
               <Badge className="relative bg-white/90 backdrop-blur-xl text-purple-800 border border-purple-200/50 px-8 py-4 text-sm font-bold shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105">
                 <div className="flex items-center space-x-3">
@@ -631,20 +635,20 @@ export default function Home() {
             </Badge>
             </div>
             
-            <h2 className="text-5xl lg:text-7xl font-black text-slate-900 mb-8 leading-tight">
-              <span className="block mb-4">Why Choose</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black text-slate-900 mb-6 sm:mb-8 leading-tight">
+              <span className="block mb-2 sm:mb-4">Why Choose</span>
               <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x">
                 LLMfied?
               </span>
             </h2>
-            <p className="text-xl lg:text-2xl text-slate-600 max-w-4xl mx-auto leading-relaxed font-medium">
+            <p className="text-lg sm:text-xl lg:text-2xl text-slate-600 max-w-4xl mx-auto leading-relaxed font-medium px-4 sm:px-0">
               Experience the future of education with our 
               <span className="font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> comprehensive AI-powered platform</span>
             </p>
           </div>
 
           {/* Stunning Feature Cards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
             {[
               {
                 icon: Brain,

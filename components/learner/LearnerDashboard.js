@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -45,6 +45,7 @@ import {
 } from "lucide-react"
 import CourseLibrary from "./CourseLibrary"
 import CourseViewer from "./CourseViewer"
+import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -373,71 +374,75 @@ export default function LearnerDashboard() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-indigo-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                  <CardTitle className="text-sm font-semibold text-slate-700">Courses Enrolled</CardTitle>
-                  <div className="p-2 bg-blue-500/10 rounded-xl group-hover:bg-blue-500/20 transition-colors duration-300">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 relative z-10">
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700">Courses Enrolled</CardTitle>
+                  <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg sm:rounded-xl group-hover:bg-blue-500/20 transition-colors duration-300">
+                    <BookOpen className="h-3 w-3 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10">
-                  <div className="text-3xl font-bold text-slate-800 mb-1">{stats.coursesEnrolled}</div>
+                <CardContent className="relative z-10 pt-0 sm:pt-6">
+                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{stats.coursesEnrolled}</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
-                    +2 this month
+                    <span className="hidden sm:inline">+2 this month</span>
+                    <span className="sm:hidden">+2</span>
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-emerald-50 to-green-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                  <CardTitle className="text-sm font-semibold text-slate-700">Completed</CardTitle>
-                  <div className="p-2 bg-emerald-500/10 rounded-xl group-hover:bg-emerald-500/20 transition-colors duration-300">
-                    <Trophy className="h-5 w-5 text-emerald-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 relative z-10">
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700">Completed</CardTitle>
+                  <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg sm:rounded-xl group-hover:bg-emerald-500/20 transition-colors duration-300">
+                    <Trophy className="h-3 w-3 sm:h-5 sm:w-5 text-emerald-600" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10">
-                  <div className="text-3xl font-bold text-slate-800 mb-1">{stats.coursesCompleted}</div>
+                <CardContent className="relative z-10 pt-0 sm:pt-6">
+                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{stats.coursesCompleted}</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" />
-                    {Math.round((stats.coursesCompleted / stats.coursesEnrolled) * 100)}% completion rate
+                    <span className="hidden sm:inline">{Math.round((stats.coursesCompleted / stats.coursesEnrolled) * 100)}% completion rate</span>
+                    <span className="sm:hidden">{Math.round((stats.coursesCompleted / stats.coursesEnrolled) * 100)}%</span>
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-amber-50 to-orange-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                  <CardTitle className="text-sm font-semibold text-slate-700">Time Spent</CardTitle>
-                  <div className="p-2 bg-amber-500/10 rounded-xl group-hover:bg-amber-500/20 transition-colors duration-300">
-                    <Clock className="h-5 w-5 text-amber-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 relative z-10">
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700">Time Spent</CardTitle>
+                  <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded-lg sm:rounded-xl group-hover:bg-amber-500/20 transition-colors duration-300">
+                    <Clock className="h-3 w-3 sm:h-5 sm:w-5 text-amber-600" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10">
-                  <div className="text-3xl font-bold text-slate-800 mb-1">{Math.floor(stats.totalTimeSpent / 60)}h</div>
+                <CardContent className="relative z-10 pt-0 sm:pt-6">
+                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{Math.floor(stats.totalTimeSpent / 60)}h</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <Zap className="h-3 w-3" />
-                    {stats.totalTimeSpent % 60}m this week
+                    <span className="hidden sm:inline">{stats.totalTimeSpent % 60}m this week</span>
+                    <span className="sm:hidden">{stats.totalTimeSpent % 60}m</span>
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-pink-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                  <CardTitle className="text-sm font-semibold text-slate-700">Average Score</CardTitle>
-                  <div className="p-2 bg-purple-500/10 rounded-xl group-hover:bg-purple-500/20 transition-colors duration-300">
-                    <Star className="h-5 w-5 text-purple-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 relative z-10">
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700">Average Score</CardTitle>
+                  <div className="p-1.5 sm:p-2 bg-purple-500/10 rounded-lg sm:rounded-xl group-hover:bg-purple-500/20 transition-colors duration-300">
+                    <Star className="h-3 w-3 sm:h-5 sm:w-5 text-purple-600" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10">
-                  <div className="text-3xl font-bold text-slate-800 mb-1">{stats.averageScore}%</div>
+                <CardContent className="relative z-10 pt-0 sm:pt-6">
+                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{stats.averageScore}%</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <Award className="h-3 w-3" />
-                    Excellent performance
+                    <span className="hidden sm:inline">Excellent performance</span>
+                    <span className="sm:hidden">Excellent</span>
                   </p>
                 </CardContent>
               </Card>
@@ -543,34 +548,34 @@ export default function LearnerDashboard() {
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <Card className="group border-0 bg-gradient-to-br from-indigo-50 to-blue-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 cursor-pointer">
-                <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Calendar className="h-8 w-8 text-white" />
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <h3 className="font-bold text-lg text-slate-800 mb-2">Study Schedule</h3>
-                  <p className="text-slate-600 text-sm">Plan your learning sessions</p>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1 sm:mb-2">Study Schedule</h3>
+                  <p className="text-slate-600 text-xs sm:text-sm">Plan your learning sessions</p>
                 </CardContent>
               </Card>
 
               <Card className="group border-0 bg-gradient-to-br from-emerald-50 to-green-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 cursor-pointer">
-                <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Target className="h-8 w-8 text-white" />
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Target className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <h3 className="font-bold text-lg text-slate-800 mb-2">Learning Goals</h3>
-                  <p className="text-slate-600 text-sm">Set and track your objectives</p>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1 sm:mb-2">Learning Goals</h3>
+                  <p className="text-slate-600 text-xs sm:text-sm">Set and track your objectives</p>
                 </CardContent>
               </Card>
 
-              <Card className="group border-0 bg-gradient-to-br from-purple-50 to-pink-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 cursor-pointer">
-                <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Award className="h-8 w-8 text-white" />
+              <Card className="group border-0 bg-gradient-to-br from-purple-50 to-pink-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 cursor-pointer sm:col-span-2 lg:col-span-1">
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Award className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <h3 className="font-bold text-lg text-slate-800 mb-2">Achievements</h3>
-                  <p className="text-slate-600 text-sm">View your badges and certificates</p>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1 sm:mb-2">Achievements</h3>
+                  <p className="text-slate-600 text-xs sm:text-sm">View your badges and certificates</p>
                 </CardContent>
               </Card>
             </div>
@@ -600,9 +605,10 @@ export default function LearnerDashboard() {
     }
   }
 
-  // Enhanced Profile Components
+  // Enhanced Profile Components - Completely reimplemented
   const ProfileSettings = () => {
-    const [profile, setProfile] = useState({
+    // Initialize state only once with current user data
+    const [profileForm, setProfileForm] = useState(() => ({
       name: user?.name || '',
       email: user?.email || '',
       bio: user?.bio || '',
@@ -612,44 +618,75 @@ export default function LearnerDashboard() {
       website: user?.website || '',
       learningGoals: user?.learningGoals || '',
       interests: user?.interests || []
-    })
+    }))
+    
     const [isUploading, setIsUploading] = useState(false)
-    const [errors, setErrors] = useState({})
+    const [formErrors, setFormErrors] = useState({})
     const [saveLoading, setSaveLoading] = useState(false)
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
+    // Only update form if user data changes significantly (not on every render)
+    const userDataRef = useRef()
     useEffect(() => {
-      if (user) {
-        setProfile({
-          name: user.name || '',
-          email: user.email || '',
-          bio: user.bio || '',
-          avatar: user.avatar || '',
-          phone: user.phone || '',
-          location: user.location || '',
-          website: user.website || '',
-          learningGoals: user.learningGoals || '',
-          interests: user.interests || []
-        })
+      const currentUserKey = user ? `${user._id}-${user.name}-${user.email}` : null
+      if (currentUserKey && currentUserKey !== userDataRef.current) {
+        userDataRef.current = currentUserKey
+        // Only update if we don't have unsaved changes
+        if (!hasUnsavedChanges) {
+          setProfileForm({
+            name: user?.name || '',
+            email: user?.email || '',
+            bio: user?.bio || '',
+            avatar: user?.avatar || '',
+            phone: user?.phone || '',
+            location: user?.location || '',
+            website: user?.website || '',
+            learningGoals: user?.learningGoals || '',
+            interests: user?.interests || []
+          })
+        }
       }
-    }, [user])
+    }, [user?._id, user?.name, user?.email, hasUnsavedChanges])
 
     const validateForm = () => {
-      const newErrors = {}
-      if (!profile.name?.trim()) newErrors.name = 'Name is required'
-      if (!profile.email?.trim()) newErrors.email = 'Email is required'
-      if (profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
-        newErrors.email = 'Please enter a valid email address'
+      const errors = {}
+      if (!profileForm.name?.trim()) {
+        errors.name = 'Name is required'
       }
-      if (profile.website && !/^https?:\/\/.+\..+/.test(profile.website)) {
-        newErrors.website = 'Please enter a valid website URL (include http:// or https://)'
+      if (!profileForm.email?.trim()) {
+        errors.email = 'Email is required'
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileForm.email)) {
+        errors.email = 'Please enter a valid email address'
       }
-      setErrors(newErrors)
-      return Object.keys(newErrors).length === 0
+      if (profileForm.website && !/^https?:\/\/.+\..+/.test(profileForm.website)) {
+        errors.website = 'Please enter a valid website URL (include http:// or https://)'
+      }
+      setFormErrors(errors)
+      return Object.keys(errors).length === 0
     }
 
-    const handleProfileUpdate = async (e) => {
+    const handleFieldChange = (fieldName, value) => {
+      setProfileForm(prev => ({
+        ...prev,
+        [fieldName]: value
+      }))
+      setHasUnsavedChanges(true)
+      
+      // Clear specific field error when user starts typing
+      if (formErrors[fieldName]) {
+        setFormErrors(prev => ({
+          ...prev,
+          [fieldName]: undefined
+        }))
+      }
+    }
+
+    const handleFormSubmit = async (e) => {
       e.preventDefault()
-      if (!validateForm()) return
+      
+      if (!validateForm()) {
+        return
+      }
 
       setSaveLoading(true)
       try {
@@ -659,48 +696,64 @@ export default function LearnerDashboard() {
             ...getAuthHeaders(),
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(profile),
+          body: JSON.stringify(profileForm),
         })
 
         if (response.ok) {
-          const updatedUser = await response.json()
-          updateUser(updatedUser.user)
+          const result = await response.json()
+          updateUser(result.user)
+          setHasUnsavedChanges(false)
           setAvatarKey(Date.now())
           
-          // Show beautiful success notification
-          const successNotification = document.createElement('div')
-          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
-          successNotification.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
-              </div>
-              <span class="font-semibold">Profile updated successfully!</span>
-            </div>
-          `
-          document.body.appendChild(successNotification)
-          
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(0)'
-          }, 100)
-          
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(100%)'
-            setTimeout(() => document.body.removeChild(successNotification), 500)
-          }, 3000)
+          // Show success notification
+          showNotification('Profile updated successfully!', 'success')
         } else {
           const errorData = await response.json()
           console.error('Profile update failed:', errorData)
-          alert(`Failed to update profile: ${errorData.error || 'Unknown error'}`)
+          showNotification(`Failed to update profile: ${errorData.error || 'Unknown error'}`, 'error')
         }
       } catch (error) {
         console.error('Error updating profile:', error)
-        alert(`Error updating profile: ${error.message}`)
+        showNotification(`Error updating profile: ${error.message}`, 'error')
       } finally {
         setSaveLoading(false)
       }
+    }
+
+    const showNotification = (message, type = 'info') => {
+      const notification = document.createElement('div')
+      notification.className = `fixed top-8 right-8 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500 ${
+        type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 
+        type === 'error' ? 'bg-gradient-to-r from-red-500 to-pink-600' : 
+        'bg-gradient-to-r from-blue-500 to-purple-600'
+      }`
+      
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            ${type === 'success' ? 
+              '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>' : 
+              '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>'
+            }
+          </div>
+          <span class="font-semibold">${message}</span>
+        </div>
+      `
+      
+      document.body.appendChild(notification)
+      
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)'
+      }, 100)
+      
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)'
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification)
+          }
+        }, 500)
+      }, 3000)
     }
 
     const handleAvatarUpload = async (e) => {
@@ -720,17 +773,18 @@ export default function LearnerDashboard() {
 
         if (response.ok) {
           const data = await response.json()
-          const updatedProfile = { ...profile, avatar: data.avatarUrl }
-          setProfile(updatedProfile)
-          updateUser({ ...user, avatar: data.avatarUrl })
+          const newAvatarUrl = data.avatarUrl
+          
+          handleFieldChange('avatar', newAvatarUrl)
+          updateUser({ ...user, avatar: newAvatarUrl })
           setAvatarKey(Date.now())
-          alert('Avatar uploaded successfully!')
+          showNotification('Avatar uploaded successfully!', 'success')
         } else {
-          alert('Failed to upload avatar')
+          showNotification('Failed to upload avatar', 'error')
         }
       } catch (error) {
         console.error('Error uploading avatar:', error)
-        alert('Error uploading avatar')
+        showNotification('Error uploading avatar', 'error')
       } finally {
         setIsUploading(false)
       }
@@ -768,23 +822,21 @@ export default function LearnerDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8">
-            <form onSubmit={handleProfileUpdate} className="space-y-8">
+            <form onSubmit={handleFormSubmit} className="space-y-8">
               {/* Avatar Upload */}
-              <div className="flex items-center gap-8">
-                <div className="relative group">
-                  {/* Enhanced Avatar with multiple rings and effects */}
+              <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+                <div className="relative group shrink-0">
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500 scale-125"></div>
                   <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/20 to-pink-400/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-700 scale-110 animate-pulse"></div>
                   
                   <div className="relative">
-                    <Avatar key={`profile-${avatarKey}`} className="h-40 w-40 ring-4 ring-blue-200 group-hover:ring-blue-300 group-hover:ring-8 transition-all duration-500 shadow-2xl">
-                      <AvatarImage src={profile.avatar || "/placeholder.svg"} alt={profile.name} />
-                      <AvatarFallback className="bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 text-white text-5xl font-bold">
-                        {profile.name?.charAt(0)?.toUpperCase() || "U"}
+                    <Avatar key={`profile-${avatarKey}`} className="h-28 w-28 sm:h-32 sm:w-32 lg:h-40 lg:w-40 ring-4 ring-blue-200 group-hover:ring-blue-300 group-hover:ring-8 transition-all duration-500 shadow-2xl">
+                      <AvatarImage src={profileForm.avatar || "/placeholder.svg"} alt={profileForm.name} />
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 text-white text-3xl sm:text-4xl lg:text-5xl font-bold">
+                        {profileForm.name?.charAt(0)?.toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                     
-                    {/* Loading overlay */}
                     {isUploading && (
                       <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center backdrop-blur-sm">
                         <div className="text-center text-white">
@@ -794,7 +846,6 @@ export default function LearnerDashboard() {
                       </div>
                     )}
                     
-                    {/* Hover overlay with change hint */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-full transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                       <div className="text-white text-center">
                         <Upload className="h-8 w-8 mx-auto mb-2" />
@@ -802,7 +853,6 @@ export default function LearnerDashboard() {
                       </div>
                     </div>
                     
-                    {/* Status indicator */}
                     <div className="absolute -bottom-2 -right-2 p-3 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full shadow-xl group-hover:scale-110 transition-transform duration-300 border-4 border-white">
                       <Shield className="h-5 w-5 text-white" />
                     </div>
@@ -828,58 +878,40 @@ export default function LearnerDashboard() {
                         This helps create connections with educators and fellow students in the community.
                       </p>
                       
-                      <div className="space-y-4">
-                        <label className="block">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="group cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-2 border-blue-200 hover:border-blue-400 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl w-full"
-                            disabled={isUploading}
-                            asChild
-                          >
-                            <span className="flex items-center justify-center gap-3">
-                              {isUploading ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
-                                  <span>Uploading Photo...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Upload className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
-                                  <span>Choose New Profile Picture</span>
-                                </>
-                              )}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleAvatarUpload}
-                                className="hidden"
-                              />
-                            </span>
-                          </Button>
-                        </label>
-                        
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">
-                            <CheckCircle className="h-4 w-4" />
-                            <span className="font-medium">JPG, PNG, GIF</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-2 rounded-xl">
-                            <CheckCircle className="h-4 w-4" />
-                            <span className="font-medium">Max 5MB</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-purple-600 bg-purple-50 px-3 py-2 rounded-xl">
-                            <CheckCircle className="h-4 w-4" />
-                            <span className="font-medium">Square format</span>
-                          </div>
-                        </div>
-                      </div>
+                      <label className="block">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="group cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-2 border-blue-200 hover:border-blue-400 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl w-full"
+                          disabled={isUploading}
+                          asChild
+                        >
+                          <span className="flex items-center justify-center gap-3">
+                            {isUploading ? (
+                              <>
+                                <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+                                <span>Uploading Photo...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
+                                <span>Choose New Photo</span>
+                              </>
+                            )}
+                          </span>
+                        </Button>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleAvatarUpload} 
+                          className="hidden" 
+                        />
+                      </label>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Enhanced Form Fields */}
               <div className="space-y-8">
                 {/* Basic Information */}
                 <div className="relative">
@@ -890,30 +922,27 @@ export default function LearnerDashboard() {
                       Basic Information
                     </h4>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                       <div className="space-y-3">
-                        <Label htmlFor="name" className="text-slate-700 font-semibold flex items-center gap-2">
+                        <Label htmlFor="name" className="text-slate-700 font-semibold flex items-center gap-2 text-sm sm:text-base">
                           <div className="p-1 bg-blue-100 rounded-lg">
-                            <User className="h-4 w-4 text-blue-600" />
+                            <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                           </div>
                           Full Name *
                         </Label>
                         <Input
                           id="name"
-                          value={profile.name}
-                          onChange={(e) => {
-                            setProfile(prev => ({ ...prev, name: e.target.value }))
-                            if (errors.name) setErrors(prev => ({...prev, name: ''}))
-                          }}
-                          className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                            errors.name ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
+                          value={profileForm.name}
+                          onChange={(e) => handleFieldChange('name', e.target.value)}
+                          className={`h-12 sm:h-14 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 text-sm sm:text-base ${
+                            formErrors.name ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
                           }`}
                           placeholder="Enter your full name"
                         />
-                        {errors.name && (
+                        {formErrors.name && (
                           <p className="text-red-500 text-sm flex items-center gap-2">
                             <AlertCircle className="h-4 w-4" />
-                            {errors.name}
+                            {formErrors.name}
                           </p>
                         )}
                       </div>
@@ -928,20 +957,17 @@ export default function LearnerDashboard() {
                         <Input
                           id="email"
                           type="email"
-                          value={profile.email}
-                          onChange={(e) => {
-                            setProfile(prev => ({ ...prev, email: e.target.value }))
-                            if (errors.email) setErrors(prev => ({...prev, email: ''}))
-                          }}
+                          value={profileForm.email}
+                          onChange={(e) => handleFieldChange('email', e.target.value)}
                           className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                            errors.email ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-purple-500 hover:border-slate-300'
+                            formErrors.email ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-purple-500 hover:border-slate-300'
                           }`}
                           placeholder="Enter your email address"
                         />
-                        {errors.email && (
+                        {formErrors.email && (
                           <p className="text-red-500 text-sm flex items-center gap-2">
                             <AlertCircle className="h-4 w-4" />
-                            {errors.email}
+                            {formErrors.email}
                           </p>
                         )}
                       </div>
@@ -969,8 +995,8 @@ export default function LearnerDashboard() {
                         <Input
                           id="phone"
                           type="tel"
-                          value={profile.phone}
-                          onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
+                          value={profileForm.phone}
+                          onChange={(e) => handleFieldChange('phone', e.target.value)}
                           placeholder="+1 (555) 123-4567"
                           className="h-14 rounded-2xl border-2 border-slate-200 focus:border-emerald-500 hover:border-slate-300 transition-all duration-300"
                         />
@@ -985,8 +1011,8 @@ export default function LearnerDashboard() {
                         </Label>
                         <Input
                           id="location"
-                          value={profile.location}
-                          onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
+                          value={profileForm.location}
+                          onChange={(e) => handleFieldChange('location', e.target.value)}
                           placeholder="e.g., New York, USA"
                           className="h-14 rounded-2xl border-2 border-slate-200 focus:border-green-500 hover:border-slate-300 transition-all duration-300"
                         />
@@ -1003,20 +1029,17 @@ export default function LearnerDashboard() {
                       <Input
                         id="website"
                         type="url"
-                        value={profile.website}
-                        onChange={(e) => {
-                          setProfile(prev => ({ ...prev, website: e.target.value }))
-                          if (errors.website) setErrors(prev => ({...prev, website: ''}))
-                        }}
+                        value={profileForm.website}
+                        onChange={(e) => handleFieldChange('website', e.target.value)}
                         placeholder="https://yourwebsite.com"
                         className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                          errors.website ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-teal-500 hover:border-slate-300'
+                          formErrors.website ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-teal-500 hover:border-slate-300'
                         }`}
                       />
-                      {errors.website && (
+                      {formErrors.website && (
                         <p className="text-red-500 text-sm flex items-center gap-2">
                           <AlertCircle className="h-4 w-4" />
-                          {errors.website}
+                          {formErrors.website}
                         </p>
                       )}
                     </div>
@@ -1042,8 +1065,8 @@ export default function LearnerDashboard() {
                         </Label>
                         <Textarea
                           id="bio"
-                          value={profile.bio}
-                          onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
+                          value={profileForm.bio}
+                          onChange={(e) => handleFieldChange('bio', e.target.value)}
                           placeholder="Tell us about your background, interests, and learning style..."
                           rows={4}
                           className="rounded-2xl border-2 border-slate-200 focus:border-indigo-500 hover:border-slate-300 transition-all duration-300 resize-none"
@@ -1059,8 +1082,8 @@ export default function LearnerDashboard() {
                         </Label>
                         <Textarea
                           id="learningGoals"
-                          value={profile.learningGoals}
-                          onChange={(e) => setProfile(prev => ({ ...prev, learningGoals: e.target.value }))}
+                          value={profileForm.learningGoals}
+                          onChange={(e) => handleFieldChange('learningGoals', e.target.value)}
                           placeholder="What are your learning objectives? What skills do you want to develop?"
                           rows={3}
                           className="rounded-2xl border-2 border-slate-200 focus:border-blue-500 hover:border-slate-300 transition-all duration-300 resize-none"
@@ -1071,10 +1094,15 @@ export default function LearnerDashboard() {
                 </div>
               </div>
 
-              {/* Enhanced Save Button */}
+              {/* Save Button */}
               <div className="flex items-center justify-between pt-8">
                 <div className="text-sm text-slate-500">
                   <span className="text-red-500">*</span> Required fields
+                  {hasUnsavedChanges && (
+                    <span className="ml-4 text-amber-600 font-medium">
+                      You have unsaved changes
+                    </span>
+                  )}
                 </div>
 
                 <Button
@@ -1082,7 +1110,6 @@ export default function LearnerDashboard() {
                   disabled={saveLoading}
                   className="group relative bg-gradient-to-r from-blue-500 via-purple-600 to-indigo-600 hover:from-blue-600 hover:via-purple-700 hover:to-indigo-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                  {/* Button background effects */}
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   
                   <div className="relative flex items-center gap-3">
@@ -1587,68 +1614,70 @@ export default function LearnerDashboard() {
         <div className={`bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-50 transition-all duration-300 ease-in-out ${
           isHeaderVisible ? 'translate-y-0 shadow-xl' : '-translate-y-full shadow-lg'
         } ${lastScrollY > 10 ? 'shadow-2xl border-slate-300/50' : 'shadow-xl'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 space-y-3 sm:space-y-0">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Learning Hub
                 </h1>
-                <div className="text-slate-600 flex items-center gap-3 mt-2">
-                  <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg"></div>
-                  <span className="text-lg">Welcome back, <span className="font-semibold text-slate-800">{user?.name}</span></span>
-                  <Badge className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border-blue-200">
+                <div className="text-slate-600 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 sm:w-3 h-2 sm:h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg"></div>
+                    <span className="text-sm sm:text-base lg:text-lg">Welcome back, <span className="font-semibold text-slate-800">{user?.name}</span></span>
+                  </div>
+                  <Badge className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border-blue-200 self-start sm:self-auto text-xs sm:text-sm">
                     {stats.streak} day streak 🔥
                   </Badge>
                 </div>
               </div>
             
             {/* Enhanced User Profile Menu */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="group relative h-16 px-6 bg-gradient-to-r from-slate-50 to-blue-50 hover:from-slate-100 hover:to-blue-100 border-2 border-slate-200 hover:border-blue-300 transition-all duration-300 hover:scale-105 rounded-2xl shadow-lg hover:shadow-xl"
+                    className="group relative h-12 sm:h-14 lg:h-16 px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-slate-50 to-blue-50 hover:from-slate-100 hover:to-blue-100 border-2 border-slate-200 hover:border-blue-300 transition-all duration-300 hover:scale-105 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl"
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
                       <div className="relative">
-                        <Avatar key={`header-${avatarKey}`} className="h-12 w-12 ring-4 ring-slate-200 group-hover:ring-blue-300 transition-all duration-300 shadow-lg">
+                        <Avatar key={`header-${avatarKey}`} className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 ring-2 sm:ring-4 ring-slate-200 group-hover:ring-blue-300 transition-all duration-300 shadow-lg">
                           <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-lg">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-sm sm:text-base lg:text-lg">
                             {user?.name?.charAt(0)?.toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-emerald-500 border-3 border-white rounded-full shadow-lg"></div>
+                        <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-green-400 to-emerald-500 border-2 sm:border-3 border-white rounded-full shadow-lg"></div>
                       </div>
-                      <div className="hidden md:block text-left">
-                        <p className="text-slate-800 font-bold text-base leading-none">{user?.name || "Learner"}</p>
-                        <p className="text-slate-600 text-sm mt-1 font-medium">{user?.email || "learner@example.com"}</p>
+                      <div className="hidden sm:block text-left">
+                        <p className="text-slate-800 font-bold text-sm lg:text-base leading-none truncate max-w-32 lg:max-w-none">{user?.name || "Learner"}</p>
+                        <p className="text-slate-600 text-xs lg:text-sm mt-1 font-medium truncate max-w-32 lg:max-w-none">{user?.email || "learner@example.com"}</p>
                       </div>
-                      <ChevronDown className="h-5 w-5 text-slate-600 group-hover:text-slate-800 transition-all duration-300 group-data-[state=open]:rotate-180" />
+                      <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 group-hover:text-slate-800 transition-all duration-300 group-data-[state=open]:rotate-180" />
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent
                   align="end"
-                  className="w-80 bg-white/95 backdrop-blur-xl border-2 border-slate-200 shadow-2xl rounded-3xl p-3"
+                  className="w-72 sm:w-80 bg-white/95 backdrop-blur-xl border-2 border-slate-200 shadow-2xl rounded-2xl sm:rounded-3xl p-2 sm:p-3"
                 >
                   {/* Enhanced Profile Header */}
-                  <div className="px-6 py-5 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-2xl mb-3">
-                    <div className="flex items-center gap-4">
-                      <Avatar key={`dropdown-${avatarKey}`} className="h-16 w-16 ring-4 ring-blue-200 shadow-lg">
+                  <div className="px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-xl sm:rounded-2xl mb-2 sm:mb-3">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <Avatar key={`dropdown-${avatarKey}`} className="h-12 w-12 sm:h-16 sm:w-16 ring-2 sm:ring-4 ring-blue-200 shadow-lg">
                         <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-xl">
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-lg sm:text-xl">
                           {user?.name?.charAt(0)?.toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-900 truncate text-lg">{user?.name || "Learner Name"}</p>
-                        <p className="text-sm text-slate-600 truncate font-medium">{user?.email || "learner@example.com"}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <p className="font-bold text-slate-900 truncate text-base sm:text-lg">{user?.name || "Learner Name"}</p>
+                        <p className="text-xs sm:text-sm text-slate-600 truncate font-medium">{user?.email || "learner@example.com"}</p>
+                        <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
                           <span className="text-xs text-green-600 font-semibold">Online</span>
-                          <Badge className="ml-2 bg-blue-100 text-blue-700 text-xs">
+                          <Badge className="ml-1 sm:ml-2 bg-blue-100 text-blue-700 text-xs">
                             Level {Math.floor(stats.averageScore / 20)}
                           </Badge>
                         </div>
@@ -1720,7 +1749,7 @@ export default function LearnerDashboard() {
           </div>
 
           {/* Enhanced Navigation */}
-          <nav className="flex space-x-2 pb-6">
+          <nav className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pb-4 sm:pb-6">
             {[
               { id: "overview", label: "Dashboard", icon: TrendingUp, gradient: "from-blue-500 to-indigo-600" },
               { id: "library", label: "Course Library", icon: BookOpen, gradient: "from-emerald-500 to-green-600" },
@@ -1732,16 +1761,16 @@ export default function LearnerDashboard() {
                   setIsHeaderVisible(true) // Show header when switching tabs
                   setLastScrollY(0) // Reset scroll tracking
                 }}
-                className={`group flex items-center gap-3 py-4 px-8 font-semibold text-sm transition-all duration-300 rounded-2xl ${
+                className={`group flex items-center justify-center sm:justify-start gap-2 sm:gap-3 py-3 sm:py-4 px-4 sm:px-6 lg:px-8 font-semibold text-sm transition-all duration-300 rounded-xl sm:rounded-2xl touch-manipulation ${
                   activeTab === tab.id
                     ? `bg-gradient-to-r ${tab.gradient} text-white shadow-xl scale-105`
                     : "text-slate-600 hover:text-slate-800 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 hover:scale-105"
                 }`}
               >
-                <tab.icon className="h-5 w-5" />
-                {tab.label}
+                <tab.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="text-xs sm:text-sm font-medium">{tab.label}</span>
                 {activeTab === tab.id && (
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full animate-pulse"></div>
                 )}
               </button>
             ))}
@@ -1751,7 +1780,7 @@ export default function LearnerDashboard() {
       )}
 
       {/* Enhanced Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="animate-in fade-in-50 duration-700 slide-in-from-bottom-4">
           {renderContent()}
         </div>
