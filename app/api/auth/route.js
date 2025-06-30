@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
+import { sendLearnerRegistrationNotification, sendEducatorRegistrationNotification } from "@/lib/emailService"
 
 export async function POST(request) {
   try {
@@ -27,6 +28,18 @@ export async function POST(request) {
     if (action === "register") {
       console.log("Processing registration for:", email)
       
+      // Validate role - only allow learner registration
+      const requestedRole = role || "learner"
+      if (requestedRole === "educator") {
+        console.log("Educator registration blocked for:", email)
+        return NextResponse.json({ 
+          error: "Educator registration is currently disabled. Please contact support if you're an educator." 
+        }, { status: 403 })
+      }
+      
+      // Force role to be learner
+      const userRole = "learner"
+      
       const existingUser = await db.collection("users").findOne({ email })
       if (existingUser) {
         console.log("User already exists:", email)
@@ -41,20 +54,36 @@ export async function POST(request) {
         email,
         password: hashedPassword,
         name,
-        role: role || "learner",
+        role: userRole, // Always learner
         createdAt: new Date(),
         updatedAt: new Date(),
       })
 
       console.log("User created with ID:", user.insertedId)
       
+      // Send email notifications
+      console.log("Sending email notifications...")
+      
+      // Only send learner registration notification (role is always "learner" now)
+      const emailResult = await sendLearnerRegistrationNotification({
+        name,
+        email,
+        role: userRole
+      })
+      
+      if (emailResult.success) {
+        console.log("✅ Learner registration emails sent successfully")
+      } else {
+        console.warn("⚠️ Failed to send some registration emails:", emailResult.error)
+      }
+      
       console.log("Generating JWT token...")
-      const token = jwt.sign({ userId: user.insertedId, email, role: role || "learner" }, process.env.JWT_SECRET, {
+      const token = jwt.sign({ userId: user.insertedId, email, role: userRole }, process.env.JWT_SECRET, {
         expiresIn: "7d",
       })
 
       console.log("Registration successful for:", email)
-      return NextResponse.json({ token, user: { id: user.insertedId, email, name, role: role || "learner" } })
+      return NextResponse.json({ token, user: { id: user.insertedId, email, name, role: userRole } })
     }
 
     if (action === "login") {

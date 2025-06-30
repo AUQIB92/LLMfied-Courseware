@@ -75,6 +75,26 @@ export function AuthProvider({ children }) {
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
 
+  const refreshUser = async () => {
+    try {
+      const response = await fetch("/api/profile", {
+        headers: getAuthHeaders()
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const updatedUser = { ...user, ...data.user }
+        setUser(updatedUser)
+        localStorage.setItem("user", JSON.stringify(updatedUser))
+        return { success: true, user: updatedUser }
+      }
+      
+      return { success: false, error: "Failed to refresh user data" }
+    } catch (error) {
+      return { success: false, error: "Failed to refresh user data" }
+    }
+  }
+
   const updateProfile = async (profileData) => {
     try {
       const response = await fetch("/api/profile", {
@@ -111,13 +131,16 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         login,
         register,
         logout,
         getAuthHeaders,
         updateProfile,
         updateUser,
+        refreshUser,
         loading,
+        isAuthenticated: !!user, // Add isAuthenticated property
       }}
     >
       {children}

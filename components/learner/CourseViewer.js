@@ -41,28 +41,41 @@ import {
 import ModuleContent from "./ModuleContent"
 import AITutor from "./AITutor"
 
-export default function CourseViewer({ course, onBack, onModuleView }) {
+export default function CourseViewer({ course, onBack, onModuleView, isEnrolled: initialEnrollmentStatus, onEnrollmentChange }) {
   const [selectedModule, setSelectedModule] = useState(null)
   const [showTutor, setShowTutor] = useState(false)
   const [progress, setProgress] = useState({ moduleProgress: [], overallProgress: 0 })
   const [uploadingContent, setUploadingContent] = useState(false)
   const [processedContent, setProcessedContent] = useState(null)
   const [showContentUpload, setShowContentUpload] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [isEnrolled, setIsEnrolled] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true) // Start with sidebar hidden for full-page experience
+  const [isEnrolled, setIsEnrolled] = useState(initialEnrollmentStatus || false)
   const [enrollmentLoading, setEnrollmentLoading] = useState(false)
-  const [checkingEnrollment, setCheckingEnrollment] = useState(true)
+  const [checkingEnrollment, setCheckingEnrollment] = useState(!initialEnrollmentStatus) // Only check if not already provided
   const { getAuthHeaders } = useAuth()
 
   useEffect(() => {
-    checkEnrollmentStatus()
+    // Only check enrollment status if not already provided
+    if (!initialEnrollmentStatus) {
+      checkEnrollmentStatus()
+    }
     fetchProgress()
-    if (course.modules && course.modules.length > 0) {
+  }, [course, initialEnrollmentStatus])
+
+  // Auto-select first module only for enrolled users
+  useEffect(() => {
+    if (isEnrolled && course.modules && course.modules.length > 0 && !selectedModule) {
       handleSelectModule(course.modules[0])
     }
-  }, [course])
+  }, [isEnrolled, course.modules, selectedModule])
 
   const checkEnrollmentStatus = async () => {
+    // Skip check if enrollment status was already provided
+    if (initialEnrollmentStatus !== undefined) {
+      setCheckingEnrollment(false)
+      return
+    }
+    
     try {
       const response = await fetch(`/api/enrollment?courseId=${course._id}`, {
         headers: getAuthHeaders(),
@@ -94,6 +107,12 @@ export default function CourseViewer({ course, onBack, onModuleView }) {
 
       if (response.ok) {
         setIsEnrolled(true)
+        
+        // Notify parent component about enrollment change
+        if (onEnrollmentChange) {
+          onEnrollmentChange(course._id, true)
+        }
+        
         alert('Successfully enrolled in course! You now have full access to all content.')
       } else {
         const error = await response.json()
@@ -196,6 +215,23 @@ export default function CourseViewer({ course, onBack, onModuleView }) {
   }
 
   // Check if user is enrolled before allowing access
+  if (checkingEnrollment) {
+    // Show loading spinner while checking enrollment
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
+            <Loader2 className="h-8 w-8 animate-spin text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">Loading Course</h3>
+            <p className="text-slate-600">Preparing your learning experience...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (!isEnrolled) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
@@ -418,18 +454,41 @@ export default function CourseViewer({ course, onBack, onModuleView }) {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   {course.title}
                 </h1>
-                <p className="text-slate-600 text-sm">Module {course.modules?.findIndex(m => m.id === selectedModule.id) + 1} of {course.modules?.length}</p>
+                <p className="text-slate-600 text-sm">
+                  {selectedModule 
+                    ? `Module ${course.modules?.findIndex(m => m.id === selectedModule.id) + 1} of ${course.modules?.length}` 
+                    : `${course.modules?.length || 0} modules available`
+                  }
+                </p>
               </div>
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Module Navigation Toggle */}
               <Button
                 variant="outline"
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="lg:hidden"
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg ${
+                  sidebarCollapsed 
+                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-700 hover:from-blue-100 hover:to-indigo-100 hover:border-blue-400' 
+                    : 'bg-gradient-to-r from-slate-50 to-gray-50 border-slate-300 text-slate-700 hover:from-slate-100 hover:to-gray-100 hover:border-slate-400'
+                }`}
+                title={sidebarCollapsed ? "Show module navigation panel" : "Hide module navigation panel"}
               >
-                {sidebarCollapsed ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                {sidebarCollapsed ? (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    Show Modules
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    Hide Modules
+                  </>
+                )}
               </Button>
+              
+              {/* AI Tutor Toggle */}
               <Button 
                 onClick={() => setShowTutor(!showTutor)} 
                 className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 ${
@@ -447,11 +506,12 @@ export default function CourseViewer({ course, onBack, onModuleView }) {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className={`grid gap-8 transition-all duration-500 ${sidebarCollapsed ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
-          {/* Sidebar */}
-          <div className={`space-y-6 transition-all duration-500 ${sidebarCollapsed ? 'hidden lg:block lg:col-span-1' : 'lg:col-span-1'}`}>
-            {/* Course Progress Card */}
-            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden">
+        <div className={`grid gap-8 transition-all duration-500 ease-in-out ${sidebarCollapsed ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
+          {/* Sidebar - Module Navigation */}
+          {!sidebarCollapsed && (
+            <div className="lg:col-span-1 space-y-6 transition-all duration-500 ease-in-out">
+              {/* Course Progress Card */}
+              <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-t-2xl">
                 <CardTitle className="flex items-center gap-3">
                   <div className="p-2 bg-blue-500/10 rounded-xl">
@@ -596,22 +656,6 @@ export default function CourseViewer({ course, onBack, onModuleView }) {
                   <p className="text-xs text-purple-600">
                     Supports: .md, .txt files • PDF coming soon
                   </p>
-                  <div className="space-y-1">
-                    <a 
-                      href="/sample-ml-content.md" 
-                      download
-                      className="text-xs text-purple-500 hover:text-purple-700 underline block transition-colors duration-200"
-                    >
-                      📄 Download ML basics sample
-                    </a>
-                    <a 
-                      href="/comprehensive-ml-guide.md" 
-                      download
-                      className="text-xs text-purple-500 hover:text-purple-700 underline block transition-colors duration-200"
-                    >
-                      📚 Download comprehensive guide
-                    </a>
-                  </div>
                 </div>
 
                 {processedContent && (
@@ -651,6 +695,7 @@ export default function CourseViewer({ course, onBack, onModuleView }) {
               </CardContent>
             </Card>
           </div>
+          )}
 
           {/* Main Content */}
           <div className={`space-y-8 transition-all duration-500 ${sidebarCollapsed ? 'col-span-1' : 'lg:col-span-3'}`}>
@@ -659,14 +704,37 @@ export default function CourseViewer({ course, onBack, onModuleView }) {
               <ProcessedContentDisplay content={processedContent} />
             )}
             
-            <ModuleContent
-              module={selectedModule}
-              course={course}
-              onProgressUpdate={updateProgress}
-              moduleProgress={getModuleProgress(selectedModule.id)}
-            />
+            {selectedModule && (
+              <ModuleContent
+                module={selectedModule}
+                course={course}
+                onProgressUpdate={updateProgress}
+                moduleProgress={getModuleProgress(selectedModule.id)}
+              />
+            )}
 
-            {showTutor && (
+            {!selectedModule && isEnrolled && course.modules && course.modules.length > 0 && (
+              <div className="text-center py-12">
+                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <BookOpen className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 mb-4">Ready to Start Learning!</h3>
+                <p className="text-slate-600 mb-6">Select a module from the navigation panel to begin your learning journey.</p>
+                {!sidebarCollapsed ? (
+                  <p className="text-slate-500 text-sm">👈 Choose a module from the left panel</p>
+                ) : (
+                  <Button
+                    onClick={() => setSidebarCollapsed(false)}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Show Modules
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {showTutor && selectedModule && (
               <div className="animate-in slide-in-from-bottom-4 duration-500">
                 <AITutor 
                   course={course} 

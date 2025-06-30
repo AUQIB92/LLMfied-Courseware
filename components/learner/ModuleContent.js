@@ -439,42 +439,96 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
 
   // Helper function to extract JSON from AI responses
   const extractJsonFromResponse = useCallback((responseText) => {
+    // Debug: Log the response text sample
+    console.log("Attempting to parse AI response:", responseText.substring(0, 200) + "...")
+    
     try {
       // First try direct parsing
-      return JSON.parse(responseText)
+      const parsed = JSON.parse(responseText)
+      console.log("✅ Direct JSON parse successful")
+      return parsed
     } catch (directParseError) {
-      console.warn("Direct JSON parse failed, trying to extract JSON from response:", directParseError.message)
+      console.warn("Direct JSON parse failed:", directParseError.message)
       
       try {
-        // Try to find JSON in code blocks
-        const jsonMatch =
-          responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
-          responseText.match(/```\s*([\s\S]*?)\s*```/) ||
-          responseText.match(/\{[\s\S]*\}/)
-
-        if (jsonMatch) {
-          let jsonString = jsonMatch[1] || jsonMatch[0]
-          
-          // Clean up common JSON issues
-          jsonString = jsonString
-            .trim()
-            .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
-            .replace(/([{\[,]\s*)([\w-]+)(\s*:)/g, '$1"$2"$3') // Quote unquoted keys
-            .replace(/:\s*([^",{\[\]}\s][^",{\[\]}\n]*?)(\s*[,}\]])/g, ': "$1"$2') // Quote unquoted string values
-            .replace(/"\s*([^"]*?)\s*"/g, '"$1"') // Trim quoted strings
-          
-          console.log("Cleaned JSON string:", jsonString.substring(0, 200) + "...")
-          
-          return JSON.parse(jsonString)
-        }
-
-        throw new Error("No valid JSON pattern found in response")
-      } catch (extractError) {
-        console.error("JSON extraction failed:", extractError.message)
-        console.error("Response text:", responseText.substring(0, 500) + "...")
+        // Try to find JSON in code blocks or text
+        let jsonString = responseText
         
-        // Return a safe fallback structure
-        return { error: "Failed to parse AI response", originalError: extractError.message }
+        // Look for JSON in various patterns
+        const patterns = [
+          /```json\s*([\s\S]*?)\s*```/,  // JSON code blocks
+          /```\s*([\s\S]*?)\s*```/,      // Generic code blocks
+          /\{[\s\S]*\}/                  // Anything that looks like JSON
+        ]
+        
+        for (const pattern of patterns) {
+          const match = responseText.match(pattern)
+          if (match) {
+            jsonString = match[1] || match[0]
+            console.log("Found JSON pattern, extracted:", jsonString.substring(0, 100) + "...")
+            break
+          }
+        }
+        
+        // Clean up the JSON string more carefully
+        jsonString = jsonString.trim()
+        
+        // Only apply fixes if we're sure it's needed
+        if (jsonString.includes(',}') || jsonString.includes(',]')) {
+          console.log("Removing trailing commas...")
+          // Remove trailing commas before closing brackets
+          jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1')
+        }
+        
+        // Try to parse the cleaned JSON
+        const parsed = JSON.parse(jsonString)
+        console.log("✅ Successfully extracted and parsed JSON from response")
+        return parsed
+        
+      } catch (extractError) {
+        console.error("❌ JSON extraction failed:", extractError.message)
+        console.error("Response text sample:", responseText.substring(0, 500))
+        
+        // Try one more time with a more lenient approach
+        try {
+          // Look for the first complete JSON object
+          const startIndex = responseText.indexOf('{')
+          const endIndex = responseText.lastIndexOf('}')
+          
+          if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+            const jsonCandidate = responseText.substring(startIndex, endIndex + 1)
+            console.log("Trying last resort JSON extraction...")
+            const parsed = JSON.parse(jsonCandidate)
+            console.log("✅ Last resort parsing successful")
+            return parsed
+          }
+        } catch (lastResortError) {
+          console.error("❌ Last resort JSON parsing also failed:", lastResortError.message)
+        }
+        
+        // Return a safe fallback structure based on the context
+        console.log("Returning fallback structure...")
+        if (responseText.toLowerCase().includes('challenge')) {
+          return { 
+            challenges: [],
+            error: "Failed to parse AI response", 
+            originalError: extractError.message,
+            rawResponse: responseText.substring(0, 200)
+          }
+        } else if (responseText.toLowerCase().includes('subsection')) {
+          return { 
+            subsections: [],
+            error: "Failed to parse AI response", 
+            originalError: extractError.message,
+            rawResponse: responseText.substring(0, 200)
+          }
+        } else {
+          return { 
+            error: "Failed to parse AI response", 
+            originalError: extractError.message,
+            rawResponse: responseText.substring(0, 200)
+          }
+        }
       }
     }
   }, [])
@@ -1000,28 +1054,38 @@ Return JSON format:
     }))
   }
 
-  // Memoized resource handling
+  // Memoized resource handling - Clean version without debug output
   const { legacyResources, aiResources } = useMemo(() => {
     let legacy = []
     
     if (Array.isArray(module.resources)) {
-      // Legacy array format
-      legacy = module.resources
-    } else if (module.resources && typeof module.resources === "object" && module.resources.manual) {
-      // New object format with manual resources
-      legacy = Array.isArray(module.resources.manual) ? module.resources.manual : []
+      // Legacy array format - contains manual resources added by educators
+      legacy = module.resources.filter(resource => 
+        resource && (resource.title || resource.name || resource.url)
+      )
+    } else if (module.resources && typeof module.resources === "object") {
+      // Check for manual resources in new object format (preferred structure from ModuleEditor)
+      if (module.resources.manual && Array.isArray(module.resources.manual)) {
+        // These are definitely educator-added manual resources from the course editor
+        legacy = module.resources.manual.filter(resource => 
+          resource && (resource.title || resource.name || resource.url) &&
+          // Ensure it has an ID (added by the educator through the interface)
+          resource.id
+        )
+      }
     }
     
+    // Process AI resources (generated content)
     const ai =
       module.resources && typeof module.resources === "object" && !Array.isArray(module.resources)
         ? {
-            books: Array.isArray(module.resources.books) ? module.resources.books : [],
-            courses: Array.isArray(module.resources.courses) ? module.resources.courses : [],
-            articles: Array.isArray(module.resources.articles) ? module.resources.articles : [],
-            videos: Array.isArray(module.resources.videos) ? module.resources.videos : [],
-            tools: Array.isArray(module.resources.tools) ? module.resources.tools : [],
-            websites: Array.isArray(module.resources.websites) ? module.resources.websites : [],
-            exercises: Array.isArray(module.resources.exercises) ? module.resources.exercises : [],
+            books: Array.isArray(module.resources.books) ? module.resources.books.filter(r => r && (r.title || r.name)) : [],
+            courses: Array.isArray(module.resources.courses) ? module.resources.courses.filter(r => r && (r.title || r.name)) : [],
+            articles: Array.isArray(module.resources.articles) ? module.resources.articles.filter(r => r && (r.title || r.name)) : [],
+            videos: Array.isArray(module.resources.videos) ? module.resources.videos.filter(r => r && (r.title || r.name)) : [],
+            tools: Array.isArray(module.resources.tools) ? module.resources.tools.filter(r => r && (r.title || r.name)) : [],
+            websites: Array.isArray(module.resources.websites) ? module.resources.websites.filter(r => r && (r.title || r.name)) : [],
+            exercises: Array.isArray(module.resources.exercises) ? module.resources.exercises.filter(r => r && (r.title || r.name)) : [],
           }
         : {
             books: [],
@@ -1038,108 +1102,214 @@ Return JSON format:
 
   // Organize manual resources by type for the instructor masterpieces section
   const instructorMasterpieces = useMemo(() => {
-    return {
-      articles: legacyResources.filter(r => r.type === 'article' || !r.type), // Default to article for legacy
-      videos: legacyResources.filter(r => r.type === 'video'),
-      books: legacyResources.filter(r => r.type === 'book'),
-      tools: legacyResources.filter(r => r.type === 'tool'),
-      websites: legacyResources.filter(r => r.type === 'website'),
-      exercises: legacyResources.filter(r => r.type === 'exercise'),
-      courses: legacyResources.filter(r => r.type === 'course'),
+    // Only process resources that have an ID (indicating they were added through the educator interface)
+    const educatorAddedResources = legacyResources.filter(resource => {
+      const hasId = resource.id && resource.id !== null && resource.id !== undefined
+      const hasRequiredFields = (resource.title || resource.name) && resource.url
+      return hasId && hasRequiredFields
+    })
+    
+    const masterpieces = {
+      articles: educatorAddedResources.filter(r => 
+        r.type === 'article' || r.type === 'articles' || 
+        (!r.type && (r.title || r.name)) || 
+        (r.type === 'text' || r.type === 'reading' || r.type === 'paper')
+      ),
+      videos: educatorAddedResources.filter(r => 
+        r.type === 'video' || r.type === 'videos' || 
+        r.type === 'youtube' || r.type === 'vimeo' || r.type === 'media'
+      ),
+      books: educatorAddedResources.filter(r => 
+        r.type === 'book' || r.type === 'books' || 
+        r.type === 'ebook' || r.type === 'textbook' || r.type === 'publication'
+      ),
+      tools: educatorAddedResources.filter(r => 
+        r.type === 'tool' || r.type === 'tools' ||
+        r.type === 'software' || r.type === 'app' || r.type === 'application'
+      ),
+      websites: educatorAddedResources.filter(r => 
+        r.type === 'website' || r.type === 'websites' ||
+        r.type === 'web' || r.type === 'link' || r.type === 'url' || r.type === 'site'
+      ),
+      exercises: educatorAddedResources.filter(r => 
+        r.type === 'exercise' || r.type === 'exercises' ||
+        r.type === 'practice' || r.type === 'assignment' || r.type === 'quiz'
+      ),
+      courses: educatorAddedResources.filter(r => 
+        r.type === 'course' || r.type === 'courses' ||
+        r.type === 'tutorial' || r.type === 'learning' || r.type === 'mooc'
+      ),
     }
+    
+    // Ensure no resource is categorized multiple times by removing duplicates
+    const allCategorized = new Set()
+    Object.keys(masterpieces).forEach(category => {
+      masterpieces[category] = masterpieces[category].filter(resource => {
+        const resourceKey = resource.id || resource.url || resource.title
+        if (allCategorized.has(resourceKey)) {
+          return false
+        }
+        allCategorized.add(resourceKey)
+        return true
+      })
+    })
+    
+    return masterpieces
   }, [legacyResources])
 
-  // Enhanced Resource Card Component
+  // Enhanced Resource Card Component with Educator Masterpiece Design
   const ResourceCard = ({ resource, type, isInstructorChoice = false }) => {
     const getIcon = () => {
       const iconMap = {
-        books: <BookOpen className="h-5 w-5 text-blue-600" />,
-        courses: <Video className="h-5 w-5 text-purple-600" />,
-        videos: <Play className="h-5 w-5 text-red-600" />,
-        articles: <FileText className="h-5 w-5 text-green-600" />,
-        tools: <Wrench className="h-5 w-5 text-orange-600" />,
-        websites: <Globe className="h-5 w-5 text-indigo-600" />,
-        exercises: <Target className="h-5 w-5 text-pink-600" />,
+        books: <BookOpen className="h-6 w-6 text-white" />,
+        courses: <Video className="h-6 w-6 text-white" />,
+        videos: <Play className="h-6 w-6 text-white" />,
+        articles: <FileText className="h-6 w-6 text-white" />,
+        tools: <Wrench className="h-6 w-6 text-white" />,
+        websites: <Globe className="h-6 w-6 text-white" />,
+        exercises: <Target className="h-6 w-6 text-white" />,
       }
-      return iconMap[type] || <ExternalLink className="h-4 w-4" />
+      return iconMap[type] || <ExternalLink className="h-6 w-6 text-white" />
     }
 
-    const getGradient = () => {
-      const gradientMap = {
-        books: "from-blue-400/20 via-blue-500/10 to-blue-600/20",
-        courses: "from-purple-400/20 via-purple-500/10 to-purple-600/20",
-        videos: "from-red-400/20 via-red-500/10 to-red-600/20",
-        articles: "from-green-400/20 via-green-500/10 to-green-600/20",
-        tools: "from-orange-400/20 via-orange-500/10 to-orange-600/20",
-        websites: "from-indigo-400/20 via-indigo-500/10 to-indigo-600/20",
-        exercises: "from-pink-400/20 via-pink-500/10 to-pink-600/20",
+    const getGradientAndColors = () => {
+      const designMap = {
+        books: {
+          gradient: "from-blue-500/10 via-indigo-500/10 to-purple-500/10",
+          border: "border-blue-200/50",
+          iconBg: "from-blue-500 to-indigo-600",
+          titleColor: "text-blue-700",
+          accent: "blue"
+        },
+        courses: {
+          gradient: "from-purple-500/10 via-pink-500/10 to-rose-500/10",
+          border: "border-purple-200/50",
+          iconBg: "from-purple-500 to-pink-600",
+          titleColor: "text-purple-700",
+          accent: "purple"
+        },
+        videos: {
+          gradient: "from-red-500/10 via-orange-500/10 to-yellow-500/10",
+          border: "border-red-200/50",
+          iconBg: "from-red-500 to-orange-600",
+          titleColor: "text-red-700",
+          accent: "red"
+        },
+        articles: {
+          gradient: "from-green-500/10 via-emerald-500/10 to-teal-500/10",
+          border: "border-green-200/50",
+          iconBg: "from-green-500 to-emerald-600",
+          titleColor: "text-green-700",
+          accent: "green"
+        },
+        tools: {
+          gradient: "from-orange-500/10 via-amber-500/10 to-yellow-500/10",
+          border: "border-orange-200/50",
+          iconBg: "from-orange-500 to-amber-600",
+          titleColor: "text-orange-700",
+          accent: "orange"
+        },
+        websites: {
+          gradient: "from-indigo-500/10 via-blue-500/10 to-cyan-500/10",
+          border: "border-indigo-200/50",
+          iconBg: "from-indigo-500 to-blue-600",
+          titleColor: "text-indigo-700",
+          accent: "indigo"
+        },
+        exercises: {
+          gradient: "from-pink-500/10 via-rose-500/10 to-red-500/10",
+          border: "border-pink-200/50",
+          iconBg: "from-pink-500 to-rose-600",
+          titleColor: "text-pink-700",
+          accent: "pink"
+        }
       }
-      return gradientMap[type] || "from-gray-400/20 via-gray-500/10 to-gray-600/20"
+      return designMap[type] || designMap.articles
     }
+
+    const design = getGradientAndColors()
 
     return (
-      <motion.div variants={cardVariants} whileHover="hover" className="group">
-        <GlassCard className={`h-full bg-gradient-to-br ${getGradient()} border-white/30`}>
-          <CardContent className="p-6 h-full flex flex-col">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3 flex-1">
-                <motion.div
-                  className="p-3 rounded-2xl bg-white/90 shadow-lg backdrop-blur-sm"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  {getIcon()}
-                </motion.div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-lg text-gray-800 group-hover:text-gray-900 transition-colors leading-tight line-clamp-2">
-                    {resource.title || resource.name}
-                  </h4>
-                  {resource.creator && <p className="text-sm text-gray-600 mt-1 font-medium">by {resource.creator}</p>}
-                </div>
+      <motion.div 
+        variants={cardVariants} 
+        whileHover="hover" 
+        className="group h-full"
+      >
+        <Card className={`h-full bg-gradient-to-br ${design.gradient} backdrop-blur-sm border ${design.border} transition-all duration-300 hover:shadow-xl hover:scale-[1.02] overflow-hidden relative`}>
+          {/* Subtle background animation for instructor choice */}
+          {isInstructorChoice && (
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          )}
+          
+          <CardHeader className="pb-4 relative z-10">
+            <div className="flex items-start gap-4">
+              <motion.div
+                className={`p-3 rounded-2xl bg-gradient-to-br ${design.iconBg} shadow-lg group-hover:shadow-xl transition-all duration-300`}
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                {getIcon()}
+              </motion.div>
+              
+              <div className="flex-1 min-w-0">
+                <CardTitle className={`${design.titleColor} group-hover:${design.titleColor.replace('700', '800')} transition-colors duration-300 text-lg font-bold leading-tight mb-2`}>
+                  {resource.title || resource.name}
+                </CardTitle>
+                {resource.creator && (
+                  <p className="text-slate-600 text-sm font-medium">by {resource.creator}</p>
+                )}
+                
+                {/* Special badge for instructor choices */}
+                {isInstructorChoice && (
+                  <motion.div
+                    className="mt-2"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, type: "spring" }}
+                  >
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 shadow-md">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Instructor's Choice
+                    </Badge>
+                  </motion.div>
+                )}
               </div>
             </div>
+          </CardHeader>
 
+          <CardContent className="pt-0 space-y-4 relative z-10">
             {resource.description && (
-              <div className="mb-4 p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-white/40 flex-1">
-                <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">{resource.description}</p>
+              <div className="p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/40 group-hover:bg-white/80 transition-all duration-300">
+                <p className="text-slate-700 text-sm leading-relaxed line-clamp-3">{resource.description}</p>
               </div>
             )}
 
-            <div className="space-y-3 mt-auto">
-              {isInstructorChoice && (
-                <div className="flex items-center justify-center">
-                  <EnhancedBadge
-                    variant="default"
-                    className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold shadow-md"
-                  >
-                    <Crown className="h-3 w-3 mr-1" />
-                    Instructor's Masterpiece
-                  </EnhancedBadge>
-                </div>
-              )}
-
+            <div className="space-y-3">
               {resource.difficulty && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Difficulty:</span>
-                  <EnhancedBadge
-                    variant="secondary"
-                    className={`${
+                  <span className="text-sm font-semibold text-slate-600">Difficulty:</span>
+                  <Badge
+                    className={`font-semibold ${
                       resource.difficulty === "Beginner"
-                        ? "bg-green-100 text-green-800 border-green-200"
+                        ? "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 border-emerald-300"
                         : resource.difficulty === "Intermediate"
-                          ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                          : "bg-red-100 text-red-800 border-red-200"
+                          ? "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 border-amber-300"
+                          : "bg-gradient-to-r from-red-100 to-pink-100 text-red-700 border-red-300"
                     }`}
                   >
                     {resource.difficulty}
-                  </EnhancedBadge>
+                  </Badge>
                 </div>
               )}
 
               {resource.url && (
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <motion.div 
+                  whileHover={{ scale: 1.02 }} 
+                  whileTap={{ scale: 0.98 }}
+                  className="pt-2"
+                >
                   <Button
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    className={`w-full bg-gradient-to-r ${design.iconBg} hover:from-${design.accent}-600 hover:to-${design.accent}-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 group/button`}
                     asChild
                   >
                     <a
@@ -1148,146 +1318,193 @@ Return JSON format:
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2"
                     >
-                      <ExternalLink className="h-4 w-4" />
-                      Open Resource
+                      <ExternalLink className="h-4 w-4 group-hover/button:scale-110 transition-transform duration-300" />
+                      <span className="font-semibold">Explore Resource</span>
                     </a>
                   </Button>
                 </motion.div>
               )}
             </div>
           </CardContent>
-        </GlassCard>
+          
+          {/* Floating accent elements */}
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          {isInstructorChoice && (
+            <div className="absolute -top-4 -left-4 w-16 h-16 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          )}
+        </Card>
       </motion.div>
     )
   }
 
   return (
     <motion.div
-      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100"
+      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50 relative overflow-hidden"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      {/* Reading Progress Bar with enhanced design */}
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-indigo-400/10 to-cyan-600/10 rounded-full blur-3xl animate-pulse delay-500"></div>
+      </div>
+      
+      {/* Enhanced Reading Progress Bar */}
       <motion.div
-        className="fixed top-0 left-0 right-0 z-50 h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 origin-left shadow-lg"
+        className="fixed top-0 left-0 right-0 z-50 h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 origin-left shadow-2xl"
         style={{ scaleX: animatedProgress / 100 }}
         initial={{ scaleX: 0 }}
         animate={{ scaleX: animatedProgress / 100 }}
         transition={{ duration: 0.3 }}
       >
         <motion.div
-          className="absolute right-0 top-0 h-full w-8 bg-gradient-to-r from-transparent to-white/50 blur-sm"
-          animate={{ x: [0, 10, 0] }}
+          className="absolute right-0 top-0 h-full w-12 bg-gradient-to-r from-transparent via-white/30 to-white/60 blur-sm"
+          animate={{ x: [0, 20, 0] }}
           transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+        />
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"
         />
       </motion.div>
 
-      {/* Floating Quick Actions */}
+      {/* Enhanced Floating Quick Actions */}
       <motion.div
-        className="fixed bottom-8 right-8 z-40 flex flex-col gap-3"
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1 }}
+        className="fixed bottom-8 right-8 z-40 flex flex-col gap-4"
+        initial={{ opacity: 0, scale: 0, y: 100 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ delay: 1, type: "spring", stiffness: 300 }}
       >
-        {/* Quick Quiz Button */}
+        {/* Quiz Challenge Button */}
         <motion.button
           onClick={() => setShowQuiz(true)}
-          className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:shadow-3xl transition-all duration-300"
+          className="group relative w-16 h-16 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 rounded-2xl shadow-2xl hover:shadow-emerald-500/25 flex items-center justify-center text-white transition-all duration-500 overflow-hidden"
           whileHover={{ scale: 1.1, rotate: 5 }}
           whileTap={{ scale: 0.9 }}
           variants={floatingVariants}
           animate="floating"
         >
-          <TestTube className="h-6 w-6" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          <TestTube className="h-7 w-7 relative z-10 group-hover:scale-110 transition-transform duration-300" />
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+          
+          {/* Tooltip */}
+          <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
+            Take Quiz Challenge
+            <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-black/80"></div>
+          </div>
         </motion.button>
 
-        {/* Bookmark Button */}
+        {/* Enhanced Bookmark Button */}
         <motion.button
           onClick={() => setIsBookmarked(!isBookmarked)}
-          className={`w-12 h-12 ${
+          className={`group relative w-14 h-14 ${
             isBookmarked 
-              ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
-              : 'bg-gradient-to-r from-gray-400 to-gray-500'
-          } rounded-full shadow-xl flex items-center justify-center text-white transition-all duration-300`}
+              ? 'bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-600 shadow-amber-500/25' 
+              : 'bg-gradient-to-br from-slate-400 via-gray-500 to-slate-600 shadow-slate-500/25'
+          } rounded-xl shadow-xl hover:shadow-2xl flex items-center justify-center text-white transition-all duration-500 overflow-hidden`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           variants={isBookmarked ? sparkleVariants : {}}
           animate={isBookmarked ? "sparkle" : ""}
         >
-          <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          <Bookmark className={`h-6 w-6 relative z-10 ${isBookmarked ? 'fill-current' : ''} group-hover:scale-110 transition-transform duration-300`} />
+          {isBookmarked && <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl"></div>}
+          
+          {/* Tooltip */}
+          <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
+            {isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'}
+            <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-black/80"></div>
+          </div>
         </motion.button>
 
-        {/* Progress Indicator */}
+        {/* Progress Circle with Enhanced Design */}
         <motion.div
-          className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-xl flex items-center justify-center text-white text-xs font-bold relative overflow-hidden"
+          className="group relative w-14 h-14 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 rounded-xl shadow-xl hover:shadow-2xl flex items-center justify-center text-white text-xs font-bold overflow-hidden transition-all duration-500"
           whileHover={{ scale: 1.1 }}
         >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-            style={{ scaleY: animatedProgress / 100 }}
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: animatedProgress / 100 }}
-            transition={{ duration: 0.3 }}
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-white/20 rounded-xl"
+            style={{ clipPath: `polygon(0 ${100 - animatedProgress}%, 100% ${100 - animatedProgress}%, 100% 100%, 0% 100%)` }}
+            initial={{ clipPath: "polygon(0 100%, 100% 100%, 100% 100%, 0% 100%)" }}
+            animate={{ clipPath: `polygon(0 ${100 - animatedProgress}%, 100% ${100 - animatedProgress}%, 100% 100%, 0% 100%)` }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
           />
-          <span className="relative z-10">{Math.round(animatedProgress)}%</span>
+          <span className="relative z-10 font-extrabold">{Math.round(animatedProgress)}%</span>
+          <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl"></div>
+          
+          {/* Tooltip */}
+          <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
+            Reading Progress
+            <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-black/80"></div>
+          </div>
         </motion.div>
       </motion.div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        {/* Enhanced Hero Section with Dynamic Background */}
+        {/* Masterpiece Hero Section - Educator Dashboard Style */}
         <motion.div key="hero-section" variants={itemVariants}>
-          <GlassCard className="overflow-hidden bg-gradient-to-br from-blue-600/90 via-purple-600/90 to-indigo-600/90 text-white border-white/20 relative">
-            {/* Animated background elements */}
-            <div className="absolute inset-0 overflow-hidden">
-              <motion.div
-                className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-3xl"
-                animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-                transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-              />
-              <motion.div
-                className="absolute -bottom-20 -left-20 w-60 h-60 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"
-                animate={{ rotate: -360, scale: [1.2, 1, 1.2] }}
-                transition={{ duration: 25, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-              />
-              <motion.div
-                className="absolute top-1/2 left-1/2 w-32 h-32 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full blur-2xl"
-                animate={{ 
-                  x: [-50, 50, -50],
-                  y: [-25, 25, -25],
-                  scale: [1, 1.1, 1]
-                }}
-                transition={{ duration: 15, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-              />
-            </div>
-
-            <CardHeader className="relative z-10">
-              {/* Decorative grid pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22%23ffffff%22 fillOpacity=%220.1%22%3E%3Cpath d=%22M0 0h40v40H0z%22/%3E%3Cpath d=%22M0 0h20v20H0zM20 20h20v20H20z%22/%3E%3C/g%3E%3C/svg%3E')]"></div>
+          <div className="relative">
+            {/* Enhanced background blur effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 rounded-3xl blur-3xl"></div>
+            
+            <Card className="relative border-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white shadow-2xl overflow-hidden">
+              {/* Animated background elements */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5"></div>
+                
+                <motion.div
+                  className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-3xl"
+                  animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+                  transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                />
+                <motion.div
+                  className="absolute -bottom-20 -left-20 w-60 h-60 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"
+                  animate={{ rotate: -360, scale: [1.2, 1, 1.2] }}
+                  transition={{ duration: 25, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                />
+                <motion.div
+                  className="absolute top-1/2 left-1/2 w-32 h-32 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full blur-2xl"
+                  animate={{ 
+                    x: [-50, 50, -50],
+                    y: [-25, 25, -25],
+                    scale: [1, 1.1, 1]
+                  }}
+                  transition={{ duration: 15, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+                />
               </div>
 
-              <div className="relative flex justify-between items-start">
-                <div className="flex-1">
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.8 }}
-                  >
-                    <motion.h1
-                      className="text-5xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent leading-tight"
-                      style={{ backgroundSize: "200% 200%" }}
-                      variants={gradientTextVariants}
-                      animate="animate"
+              <CardHeader className="relative z-10 p-12">
+                {/* Decorative grid pattern */}
+                <div className="absolute inset-0 opacity-5">
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22%23ffffff%22 fillOpacity=%220.1%22%3E%3Cpath d=%22M0 0h40v40H0z%22/%3E%3Cpath d=%22M0 0h20v20H0zM20 20h20v20H20z%22/%3E%3C/g%3E%3C/svg%3E')]"></div>
+                </div>
+
+                <div className="relative flex justify-between items-start">
+                  <div className="flex-1">
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.8 }}
                     >
-                      {module.title}
-                    </motion.h1>
-                    {module.summary && (
-                      <CardDescription className="text-blue-100 text-xl leading-relaxed max-w-4xl">
-                        {module.summary}
-                      </CardDescription>
-                    )}
-                  </motion.div>
+                      <motion.h1
+                        className="text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent leading-tight"
+                        style={{ backgroundSize: "200% 200%" }}
+                        variants={gradientTextVariants}
+                        animate="animate"
+                      >
+                        {module.title}
+                      </motion.h1>
+                      {module.summary && (
+                        <CardDescription className="text-blue-100 text-xl leading-relaxed max-w-4xl">
+                          {module.summary}
+                        </CardDescription>
+                      )}
+                    </motion.div>
 
                   {/* Enhanced Summary Elements with Micro-interactions */}
                   {module.beautifulSummaryElements && (
@@ -1374,72 +1591,113 @@ Return JSON format:
                 </motion.div>
               </div>
             </CardHeader>
-          </GlassCard>
+          </Card>
+        </div>
         </motion.div>
 
-        {/* Learning Objectives */}
+        {/* Enhanced Learning Objectives - Educator Masterpiece Style */}
         {module.objectives && module.objectives.length > 0 && (
           <motion.div key={`learning-objectives-${module.id}`} variants={itemVariants}>
-            <GlassCard className="bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-200/50">
-              <CardContent className="p-8">
-                <motion.h3
-                  className="font-bold text-2xl mb-6 flex items-center gap-3 text-blue-800"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
+            <div className="relative">
+              {/* Enhanced background blur effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 rounded-3xl blur-3xl"></div>
+              
+              <Card className="relative border-0 bg-gradient-to-br from-blue-50/90 via-indigo-50/90 to-purple-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
+                {/* Animated background elements */}
+                <div className="absolute inset-0 overflow-hidden">
                   <motion.div
-                    className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                  >
-                    <Target className="h-6 w-6 text-white" />
-                  </motion.div>
-                  Learning Objectives
+                    className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-blue-400/20 to-indigo-400/20 rounded-full blur-2xl"
+                    animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+                    transition={{ duration: 15, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  />
                   <motion.div
-                    className="ml-auto text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.5, type: "spring" }}
-                  >
-                    {module.objectives.length} objectives
-                  </motion.div>
-                </motion.h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {module.objectives.map((objective, index) => (
-                    <motion.div
-                      key={`objective-${index}-${objective.substring(0, 30)}`}
-                      className="group"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <div className="flex items-start gap-4 p-6 bg-white/70 backdrop-blur-sm rounded-xl border border-blue-100 shadow-sm hover:shadow-lg transition-all duration-300 group-hover:border-blue-200">
-                        <motion.div
-                          className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg"
-                          whileHover={{ scale: 1.1, rotate: 360 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          {index + 1}
-                        </motion.div>
-                        <div className="flex-1">
-                          <p className="text-gray-800 leading-relaxed group-hover:text-gray-900 transition-colors">
-                            {objective}
-                          </p>
-                          <motion.div
-                            className="mt-2 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full origin-left"
-                            initial={{ scaleX: 0 }}
-                            animate={{ scaleX: 1 }}
-                            transition={{ delay: 0.3 + 0.1 * index, duration: 0.5 }}
-                          />
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                    className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-indigo-400/20 to-purple-400/20 rounded-full blur-2xl"
+                    animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
+                    transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  />
                 </div>
-              </CardContent>
-            </GlassCard>
+
+                <CardHeader className="relative z-10 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border-b border-blue-200/50 p-8">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <motion.div
+                        className="w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl"
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      >
+                        <Target className="h-8 w-8 text-white" />
+                      </motion.div>
+                      
+                      <div>
+                        <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 bg-clip-text text-transparent mb-2">
+                          Learning Objectives
+                        </CardTitle>
+                        <CardDescription className="text-blue-700 text-lg font-medium">
+                          Your roadmap to mastering this module
+                        </CardDescription>
+                      </div>
+                    </div>
+                    
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.3, type: "spring" }}
+                    >
+                      <Badge className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
+                        <Award className="h-4 w-4 mr-2" />
+                        {module.objectives.length} Goals
+                      </Badge>
+                    </motion.div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="relative z-10 p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {module.objectives.map((objective, index) => (
+                      <motion.div
+                        key={`objective-${index}-${objective.substring(0, 30)}`}
+                        className="group relative"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 * index }}
+                        whileHover={{ scale: 1.02 }}
+                      >
+                        <Card className="h-full bg-gradient-to-br from-white/80 to-blue-50/50 backdrop-blur-sm border border-blue-200/50 transition-all duration-300 hover:shadow-xl hover:border-blue-300/70 overflow-hidden">
+                          {/* Subtle background animation */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                          
+                          <CardContent className="relative z-10 p-6">
+                            <div className="flex items-start gap-4">
+                              <motion.div
+                                className="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0 shadow-lg group-hover:shadow-xl transition-all duration-300"
+                                whileHover={{ scale: 1.1, rotate: 360 }}
+                                transition={{ duration: 0.5 }}
+                              >
+                                {index + 1}
+                              </motion.div>
+                              <div className="flex-1">
+                                <p className="text-slate-800 leading-relaxed group-hover:text-slate-900 transition-colors font-medium">
+                                  {objective}
+                                </p>
+                                <motion.div
+                                  className="mt-4 h-2 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 rounded-full origin-left shadow-lg"
+                                  initial={{ scaleX: 0 }}
+                                  animate={{ scaleX: 1 }}
+                                  transition={{ delay: 0.3 + 0.1 * index, duration: 0.8, ease: "easeOut" }}
+                                />
+                              </div>
+                            </div>
+                          </CardContent>
+                          
+                          {/* Floating accent elements */}
+                          <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </motion.div>
         )}
 
@@ -1733,145 +1991,196 @@ Return JSON format:
           </motion.div>
         )}
 
-        {/* Masterpieces from the Instructor Section */}
-        {Object.values(instructorMasterpieces).some(arr => arr.length > 0) && (
-          <motion.div key={`instructor-masterpieces-${module.id}`} variants={itemVariants}>
-            <GlassCard className="bg-white/80 backdrop-blur-sm border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <CardHeader className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white">
-                    <Crown className="h-6 w-6" />
+        {/* Enhanced Instructor Masterpieces Section - Always Show Template */}
+        <motion.div key={`instructor-masterpieces-${module.id}`} variants={itemVariants}>
+          <div className="relative">
+            {/* Enhanced background blur effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 via-orange-600/10 to-red-600/10 rounded-3xl blur-3xl"></div>
+              
+              <Card className="relative border-0 bg-gradient-to-br from-amber-50/90 via-orange-50/90 to-red-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
+                {/* Animated background elements */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-100/30 to-orange-100/30"></div>
+                  <motion.div
+                    className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-full blur-2xl"
+                    animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+                    transition={{ duration: 15, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  />
+                  <motion.div
+                    className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-orange-400/20 to-red-400/20 rounded-full blur-2xl"
+                    animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
+                    transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  />
+                </div>
+
+                <CardHeader className="relative z-10 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border-b border-amber-200/50 p-8">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <motion.div
+                        className="w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 rounded-2xl flex items-center justify-center shadow-xl"
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      >
+                        <Crown className="h-8 w-8 text-white" />
+                      </motion.div>
+                      
+                      <div>
+                        <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-amber-700 via-orange-700 to-red-700 bg-clip-text text-transparent mb-2">
+                          Instructor's Masterpieces
+                        </CardTitle>
+                        <CardDescription className="text-amber-700 text-lg font-medium">
+                          Handpicked resources curated especially for your learning journey
+                        </CardDescription>
+                      </div>
+                    </div>
+                    
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.3, type: "spring" }}
+                    >
+                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
+                        <Star className="h-4 w-4 mr-2" />
+                        Premium Collection
+                      </Badge>
+                    </motion.div>
                   </div>
-                  Masterpieces from the Instructor
-                  <EnhancedBadge
-                    variant="secondary"
-                    className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold"
+                </CardHeader>
+                <CardContent className="relative z-10 p-8">
+                  <Tabs
+                    defaultValue={
+                      instructorMasterpieces.articles.length > 0
+                        ? "articles"
+                        : instructorMasterpieces.videos.length > 0
+                          ? "videos"
+                          : instructorMasterpieces.books.length > 0
+                            ? "books"
+                            : instructorMasterpieces.courses.length > 0
+                              ? "courses"
+                              : instructorMasterpieces.tools.length > 0
+                                ? "tools"
+                                : instructorMasterpieces.websites.length > 0
+                                  ? "websites"
+                                  : instructorMasterpieces.exercises.length > 0
+                                    ? "exercises"
+                                    : "articles"
+                    }
+                    className="w-full"
                   >
-                    <Star className="h-3 w-3 mr-1" />
-                    Curated by Your Instructor
-                  </EnhancedBadge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8">
-                <Tabs
-                  defaultValue={
-                    instructorMasterpieces.articles.length > 0
-                      ? "articles"
-                      : instructorMasterpieces.videos.length > 0
-                        ? "videos"
-                        : instructorMasterpieces.books.length > 0
-                          ? "books"
-                          : instructorMasterpieces.courses.length > 0
-                            ? "courses"
-                            : instructorMasterpieces.tools.length > 0
-                              ? "tools"
-                              : instructorMasterpieces.websites.length > 0
-                                ? "websites"
-                                : instructorMasterpieces.exercises.length > 0
-                                  ? "exercises"
-                                  : "articles"
-                  }
-                  className="w-full"
-                >
-                  <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-amber-100 to-orange-200 rounded-xl">
-                    <TabsTrigger
-                      value="articles"
-                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
-                    >
-                      <FileText className="h-5 w-5 text-green-600" />
-                      <span className="text-xs font-medium">Articles</span>
-                      {instructorMasterpieces.articles.length > 0 && (
-                        <EnhancedBadge variant="secondary" className="text-xs">
-                          {instructorMasterpieces.articles.length}
-                        </EnhancedBadge>
-                      )}
-                    </TabsTrigger>
+                    {/* Enhanced TabsList with Educator Design */}
+                    <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-white/80 to-amber-50/80 backdrop-blur-sm rounded-2xl border border-amber-200/50 shadow-lg">
+                      <TabsTrigger
+                        value="articles"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-green-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <FileText className="h-5 w-5 text-green-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Articles</span>
+                        {instructorMasterpieces.articles.length > 0 && (
+                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                            {instructorMasterpieces.articles.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
 
-                    <TabsTrigger
-                      value="videos"
-                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
-                    >
-                      <Play className="h-5 w-5 text-red-600" />
-                      <span className="text-xs font-medium">Videos</span>
-                      {instructorMasterpieces.videos.length > 0 && (
-                        <EnhancedBadge variant="secondary" className="text-xs">
-                          {instructorMasterpieces.videos.length}
-                        </EnhancedBadge>
-                      )}
-                    </TabsTrigger>
+                      <TabsTrigger
+                        value="videos"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-red-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Play className="h-5 w-5 text-red-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Videos</span>
+                        {instructorMasterpieces.videos.length > 0 && (
+                          <Badge variant="secondary" className="text-xs bg-red-100 text-red-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                            {instructorMasterpieces.videos.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
 
-                    <TabsTrigger
-                      value="books"
-                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
-                    >
-                      <BookOpen className="h-5 w-5 text-blue-600" />
-                      <span className="text-xs font-medium">Books</span>
-                      {instructorMasterpieces.books.length > 0 && (
-                        <EnhancedBadge variant="secondary" className="text-xs">
-                          {instructorMasterpieces.books.length}
-                        </EnhancedBadge>
-                      )}
-                    </TabsTrigger>
+                      <TabsTrigger
+                        value="books"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-blue-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <BookOpen className="h-5 w-5 text-blue-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Books</span>
+                        {instructorMasterpieces.books.length > 0 && (
+                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                            {instructorMasterpieces.books.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
 
-                    <TabsTrigger
-                      value="courses"
-                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
-                    >
-                      <Video className="h-5 w-5 text-purple-600" />
-                      <span className="text-xs font-medium">Courses</span>
-                      {instructorMasterpieces.courses.length > 0 && (
-                        <EnhancedBadge variant="secondary" className="text-xs">
-                          {instructorMasterpieces.courses.length}
-                        </EnhancedBadge>
-                      )}
-                    </TabsTrigger>
+                      <TabsTrigger
+                        value="courses"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-purple-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Video className="h-5 w-5 text-purple-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Courses</span>
+                        {instructorMasterpieces.courses.length > 0 && (
+                          <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                            {instructorMasterpieces.courses.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
 
-                    <TabsTrigger
-                      value="tools"
-                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
-                    >
-                      <Wrench className="h-5 w-5 text-orange-600" />
-                      <span className="text-xs font-medium">Tools</span>
-                      {instructorMasterpieces.tools.length > 0 && (
-                        <EnhancedBadge variant="secondary" className="text-xs">
-                          {instructorMasterpieces.tools.length}
-                        </EnhancedBadge>
-                      )}
-                    </TabsTrigger>
+                      <TabsTrigger
+                        value="tools"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-orange-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Wrench className="h-5 w-5 text-orange-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Tools</span>
+                        {instructorMasterpieces.tools.length > 0 && (
+                          <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                            {instructorMasterpieces.tools.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
 
-                    <TabsTrigger
-                      value="websites"
-                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
-                    >
-                      <Globe className="h-5 w-5 text-indigo-600" />
-                      <span className="text-xs font-medium">Websites</span>
-                      {instructorMasterpieces.websites.length > 0 && (
-                        <EnhancedBadge variant="secondary" className="text-xs">
-                          {instructorMasterpieces.websites.length}
-                        </EnhancedBadge>
-                      )}
-                    </TabsTrigger>
+                      <TabsTrigger
+                        value="websites"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-indigo-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Globe className="h-5 w-5 text-indigo-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Websites</span>
+                        {instructorMasterpieces.websites.length > 0 && (
+                          <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                            {instructorMasterpieces.websites.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
 
-                    <TabsTrigger
-                      value="exercises"
-                      className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300"
-                    >
-                      <Target className="h-5 w-5 text-pink-600" />
-                      <span className="text-xs font-medium">Exercises</span>
-                      {instructorMasterpieces.exercises.length > 0 && (
-                        <EnhancedBadge variant="secondary" className="text-xs">
-                          {instructorMasterpieces.exercises.length}
-                        </EnhancedBadge>
-                      )}
-                    </TabsTrigger>
-                  </TabsList>
+                      <TabsTrigger
+                        value="exercises"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-pink-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Target className="h-5 w-5 text-pink-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Exercises</span>
+                        {instructorMasterpieces.exercises.length > 0 && (
+                          <Badge variant="secondary" className="text-xs bg-pink-100 text-pink-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                            {instructorMasterpieces.exercises.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    </TabsList>
 
                   <div className="mt-8">
                     <TabsContent value="articles" className="space-y-6">
                       {instructorMasterpieces.articles.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {instructorMasterpieces.articles.map((resource, index) => (
-                            <motion.div key={`instructor-article-${index}`} variants={itemVariants}>
+                            <motion.div key={`instructor-article-${resource.id || resource.url || resource.title || index}`} variants={itemVariants}>
                               <ResourceCard resource={resource} type="articles" isInstructorChoice={true} />
                             </motion.div>
                           ))}
@@ -1883,7 +2192,7 @@ Return JSON format:
                       {instructorMasterpieces.videos.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {instructorMasterpieces.videos.map((resource, index) => (
-                            <motion.div key={`instructor-video-${index}`} variants={itemVariants}>
+                            <motion.div key={`instructor-video-${resource.id || resource.url || resource.title || index}`} variants={itemVariants}>
                               <ResourceCard resource={resource} type="videos" isInstructorChoice={true} />
                             </motion.div>
                           ))}
@@ -1895,7 +2204,7 @@ Return JSON format:
                       {instructorMasterpieces.books.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {instructorMasterpieces.books.map((resource, index) => (
-                            <motion.div key={`instructor-book-${index}`} variants={itemVariants}>
+                            <motion.div key={`instructor-book-${resource.id || resource.url || resource.title || index}`} variants={itemVariants}>
                               <ResourceCard resource={resource} type="books" isInstructorChoice={true} />
                             </motion.div>
                           ))}
@@ -1907,7 +2216,7 @@ Return JSON format:
                       {instructorMasterpieces.courses.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {instructorMasterpieces.courses.map((resource, index) => (
-                            <motion.div key={`instructor-course-${index}`} variants={itemVariants}>
+                            <motion.div key={`instructor-course-${resource.id || resource.url || resource.title || index}`} variants={itemVariants}>
                               <ResourceCard resource={resource} type="courses" isInstructorChoice={true} />
                             </motion.div>
                           ))}
@@ -1919,7 +2228,7 @@ Return JSON format:
                       {instructorMasterpieces.tools.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {instructorMasterpieces.tools.map((resource, index) => (
-                            <motion.div key={`instructor-tool-${index}`} variants={itemVariants}>
+                            <motion.div key={`instructor-tool-${resource.id || resource.url || resource.title || index}`} variants={itemVariants}>
                               <ResourceCard resource={resource} type="tools" isInstructorChoice={true} />
                             </motion.div>
                           ))}
@@ -1931,7 +2240,7 @@ Return JSON format:
                       {instructorMasterpieces.websites.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {instructorMasterpieces.websites.map((resource, index) => (
-                            <motion.div key={`instructor-website-${index}`} variants={itemVariants}>
+                            <motion.div key={`instructor-website-${resource.id || resource.url || resource.title || index}`} variants={itemVariants}>
                               <ResourceCard resource={resource} type="websites" isInstructorChoice={true} />
                             </motion.div>
                           ))}
@@ -1943,7 +2252,7 @@ Return JSON format:
                       {instructorMasterpieces.exercises.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {instructorMasterpieces.exercises.map((resource, index) => (
-                            <motion.div key={`instructor-exercise-${index}`} variants={itemVariants}>
+                            <motion.div key={`instructor-exercise-${resource.id || resource.url || resource.title || index}`} variants={itemVariants}>
                               <ResourceCard resource={resource} type="exercises" isInstructorChoice={true} />
                             </motion.div>
                           ))}
@@ -1952,162 +2261,197 @@ Return JSON format:
                     </TabsContent>
                   </div>
                 </Tabs>
-              </CardContent>
-            </GlassCard>
+                </CardContent>
+              </Card>
+            </div>
           </motion.div>
-        )}
 
-        {/* Complete Learning Resources Section */}
-        {(
-          (aiResources.books && aiResources.books.length > 0) ||
-          (aiResources.courses && aiResources.courses.length > 0) ||
-          (aiResources.videos && aiResources.videos.length > 0) ||
-          (aiResources.articles && aiResources.articles.length > 0) ||
-          (aiResources.tools && aiResources.tools.length > 0) ||
-          (aiResources.websites && aiResources.websites.length > 0) ||
-          (aiResources.exercises && aiResources.exercises.length > 0)
-        ) && (
-          <motion.div key={`learning-resources-${module.id}`} variants={itemVariants}>
-            <GlassCard className="bg-gradient-to-br from-purple-50/80 to-pink-50/80 border-purple-200/50">
-              <CardContent className="p-8">
-                <motion.h3
-                  className="font-bold text-2xl mb-6 flex items-center gap-3 text-purple-800"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
+        {/* Complete Learning Resources Section - Educator Dashboard Style */}
+        <motion.div key={`complete-learning-resources-${module.id}`} variants={itemVariants}>
+          <div className="relative">
+            {/* Enhanced background blur effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-indigo-600/10 to-blue-600/10 rounded-3xl blur-3xl"></div>
+            
+            <Card className="relative border-0 bg-gradient-to-br from-purple-50/90 via-indigo-50/90 to-blue-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
+              {/* Animated background elements */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 to-indigo-100/30"></div>
+                <motion.div
+                  className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 rounded-full blur-2xl"
+                  animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+                  transition={{ duration: 15, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                />
+                <motion.div
+                  className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-indigo-400/20 to-blue-400/20 rounded-full blur-2xl"
+                  animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
+                  transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                />
+              </div>
+
+              <CardHeader className="relative z-10 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border-b border-purple-200/50 p-8">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <motion.div
+                      className="w-16 h-16 bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      <Sparkles className="h-8 w-8 text-white" />
+                    </motion.div>
+                    
+                    <div>
+                      <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 bg-clip-text text-transparent mb-2">
+                        Complete Learning Resources
+                      </CardTitle>
+                      <CardDescription className="text-purple-700 text-lg font-medium">
+                        AI-curated collection of comprehensive learning materials
+                      </CardDescription>
+                    </div>
+                  </div>
+                  
                   <motion.div
-                    className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.3, type: "spring" }}
                   >
-                    <BookOpen className="h-6 w-6 text-white" />
+                    <Badge className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
+                      <Brain className="h-4 w-4 mr-2" />
+                      AI Curated
+                    </Badge>
                   </motion.div>
-                  Complete Learning Resources
-                  <EnhancedBadge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1">
-                    AI Curated
-                  </EnhancedBadge>
-                </motion.h3>
+                </div>
+              </CardHeader>
+              <CardContent className="relative z-10 p-8">
 
                 <Tabs
                   defaultValue={
-                    aiResources.books && aiResources.books.length > 0
-                      ? "books"
-                      : aiResources.courses && aiResources.courses.length > 0
-                        ? "courses"
-                        : aiResources.videos && aiResources.videos.length > 0
-                          ? "videos"
-                          : aiResources.articles && aiResources.articles.length > 0
-                            ? "articles"
+                    aiResources.articles && aiResources.articles.length > 0
+                      ? "articles"
+                      : aiResources.videos && aiResources.videos.length > 0
+                        ? "videos"
+                        : aiResources.books && aiResources.books.length > 0
+                          ? "books"
+                          : aiResources.courses && aiResources.courses.length > 0
+                            ? "courses"
                             : aiResources.tools && aiResources.tools.length > 0
                               ? "tools"
                               : aiResources.websites && aiResources.websites.length > 0
                                 ? "websites"
                                 : aiResources.exercises && aiResources.exercises.length > 0
                                   ? "exercises"
-                                  : "books"
+                                  : "articles"
                   }
                   className="w-full"
                 >
-                  <TabsList className="grid w-full auto-cols-fr grid-flow-col mb-6 bg-white/70 backdrop-blur-sm p-2 rounded-xl border border-purple-200 shadow-sm overflow-x-auto">
-                    {/* Books Tab */}
-                    {aiResources.books && aiResources.books.length > 0 && (
-                      <TabsTrigger
-                        value="books"
-                        className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg px-4 py-2 transition-all duration-200"
-                      >
-                        <BookOpen className="h-4 w-4" />
-                        <span className="hidden sm:inline font-medium">Books</span>
-                        <EnhancedBadge variant="secondary" className="ml-1 bg-blue-100 text-blue-800">
-                          {aiResources.books.length}
-                        </EnhancedBadge>
-                      </TabsTrigger>
-                    )}
-
-                    {/* Courses Tab */}
-                    {aiResources.courses && aiResources.courses.length > 0 && (
-                      <TabsTrigger
-                        value="courses"
-                        className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg px-4 py-2 transition-all duration-200"
-                      >
-                        <Video className="h-5 w-5" />
-                        <span className="hidden sm:inline font-medium">Courses</span>
-                        <EnhancedBadge variant="secondary" className="ml-1 bg-purple-100 text-purple-800">
-                          {aiResources.courses.length}
-                        </EnhancedBadge>
-                      </TabsTrigger>
-                    )}
-
-                    {/* Videos Tab */}
-                    {aiResources.videos && aiResources.videos.length > 0 && (
-                      <TabsTrigger
-                        value="videos"
-                        className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-red-600 data-[state=active]:text-white rounded-lg px-4 py-2 transition-all duration-200"
-                      >
-                        <Play className="h-4 w-4" />
-                        <span className="hidden sm:inline">Videos</span>
-                        <EnhancedBadge variant="secondary" className="ml-1 bg-red-100 text-red-800">
-                          {aiResources.videos.length}
-                        </EnhancedBadge>
-                      </TabsTrigger>
-                    )}
-
-                    {/* Articles Tab */}
+                  {/* Enhanced TabsList with Educator Design */}
+                  <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-lg">
                     {aiResources.articles && aiResources.articles.length > 0 && (
                       <TabsTrigger
                         value="articles"
-                        className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white rounded-lg px-4 py-2 transition-all duration-200"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-green-50"
                       >
-                        <FileText className="h-4 w-4" />
-                        <span className="hidden sm:inline">Articles</span>
-                        <EnhancedBadge variant="secondary" className="ml-1 bg-green-100 text-green-800">
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <FileText className="h-5 w-5 text-green-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Articles</span>
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
                           {aiResources.articles.length}
-                        </EnhancedBadge>
+                        </Badge>
                       </TabsTrigger>
                     )}
 
-                    {/* Tools Tab */}
+                    {aiResources.videos && aiResources.videos.length > 0 && (
+                      <TabsTrigger
+                        value="videos"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-red-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Play className="h-5 w-5 text-red-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Videos</span>
+                        <Badge variant="secondary" className="text-xs bg-red-100 text-red-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                          {aiResources.videos.length}
+                        </Badge>
+                      </TabsTrigger>
+                    )}
+
+                    {aiResources.books && aiResources.books.length > 0 && (
+                      <TabsTrigger
+                        value="books"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-blue-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <BookOpen className="h-5 w-5 text-blue-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Books</span>
+                        <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                          {aiResources.books.length}
+                        </Badge>
+                      </TabsTrigger>
+                    )}
+
+                    {aiResources.courses && aiResources.courses.length > 0 && (
+                      <TabsTrigger
+                        value="courses"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-purple-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Video className="h-5 w-5 text-purple-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Courses</span>
+                        <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                          {aiResources.courses.length}
+                        </Badge>
+                      </TabsTrigger>
+                    )}
+
                     {aiResources.tools && aiResources.tools.length > 0 && (
                       <TabsTrigger
                         value="tools"
-                        className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white rounded-lg px-4 py-2 transition-all duration-200"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-orange-50"
                       >
-                        <Wrench className="h-4 w-4" />
-                        <span className="hidden sm:inline">Tools</span>
-                        <EnhancedBadge variant="secondary" className="ml-1 bg-orange-100 text-orange-800">
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Wrench className="h-5 w-5 text-orange-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Tools</span>
+                        <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
                           {aiResources.tools.length}
-                        </EnhancedBadge>
+                        </Badge>
                       </TabsTrigger>
                     )}
 
-                    {/* Websites Tab */}
                     {aiResources.websites && aiResources.websites.length > 0 && (
                       <TabsTrigger
                         value="websites"
-                        className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white rounded-lg px-4 py-2 transition-all duration-200"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-indigo-50"
                       >
-                        <Globe className="h-4 w-4" />
-                        <span className="hidden sm:inline">Websites</span>
-                        <EnhancedBadge variant="secondary" className="ml-1 bg-indigo-100 text-indigo-800">
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Globe className="h-5 w-5 text-indigo-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Websites</span>
+                        <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
                           {aiResources.websites.length}
-                        </EnhancedBadge>
+                        </Badge>
                       </TabsTrigger>
                     )}
 
-                    {/* Exercises Tab */}
                     {aiResources.exercises && aiResources.exercises.length > 0 && (
                       <TabsTrigger
                         value="exercises"
-                        className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-pink-600 data-[state=active]:text-white rounded-lg px-4 py-2 transition-all duration-200"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-pink-50"
                       >
-                        <Target className="h-4 w-4" />
-                        <span className="hidden sm:inline">Exercises</span>
-                        <EnhancedBadge variant="secondary" className="ml-1 bg-pink-100 text-pink-800">
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Target className="h-5 w-5 text-pink-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Exercises</span>
+                        <Badge variant="secondary" className="text-xs bg-pink-100 text-pink-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
                           {aiResources.exercises.length}
-                        </EnhancedBadge>
+                        </Badge>
                       </TabsTrigger>
                     )}
                   </TabsList>
 
-                  <AnimatePresence mode="wait">
+                <div className="mt-8">
                     {/* Books Content */}
                     {aiResources.books && aiResources.books.length > 0 && (
                       <TabsContent key="books" value="books">
@@ -2233,15 +2577,16 @@ Return JSON format:
                         </motion.div>
                       </TabsContent>
                     )}
-                  </AnimatePresence>
+                  </div>
                 </Tabs>
-              </CardContent>
-            </GlassCard>
+                </CardContent>
+              </Card>
+            </div>
           </motion.div>
-        )}
 
         {/* Interactive Programming Practice Section */}
-        <motion.div key={`programming-practice-${module.id}`} variants={itemVariants}>
+        {module.content && detectVisualizableContent(module.content) && (
+          <motion.div key={`programming-practice-${module.id}`} variants={itemVariants}>
           <GlassCard className="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 border-emerald-200/50">
             <CardContent className="p-8">
               <motion.h3
@@ -2670,6 +3015,7 @@ Return JSON format:
             </CardContent>
           </GlassCard>
         </motion.div>
+        )}
 
         {/* Action Section */}
         <motion.div key={`action-section-${module.id}`} variants={itemVariants}>

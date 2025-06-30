@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,18 +23,27 @@ import {
   Upload,
   Check,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  Moon,
+  Sun,
+  Monitor
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function ProfileSettings() {
-  const { user, updateProfile, getAuthHeaders } = useAuth()
+  const { user, updateProfile, getAuthHeaders, refreshUser } = useAuth()
+  const { theme, setTheme } = useTheme()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: "", text: "" })
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || "")
   const [avatarFile, setAvatarFile] = useState(null)
   const fileInputRef = useRef(null)
+  const [preferences, setPreferences] = useState({
+    darkMode: false,
+    emailNotifications: true,
+    pushNotifications: false,
+  })
   
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -45,6 +55,47 @@ export default function ProfileSettings() {
     experience: user?.experience || "",
     website: user?.website || "",
   })
+
+  useEffect(() => {
+    fetchPreferences()
+  }, [])
+
+  const fetchPreferences = async () => {
+    try {
+      const response = await fetch("/api/preferences", {
+        headers: getAuthHeaders()
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setPreferences(prev => ({ ...prev, ...data }))
+      }
+    } catch (error) {
+      console.error("Failed to fetch preferences:", error)
+    }
+  }
+
+  const updatePreferences = async (newPreferences) => {
+    try {
+      const response = await fetch("/api/preferences", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify(newPreferences)
+      })
+      
+      if (response.ok) {
+        setPreferences(newPreferences)
+        return { success: true }
+      }
+      
+      return { success: false, error: "Failed to update preferences" }
+    } catch (error) {
+      return { success: false, error: "Failed to update preferences" }
+    }
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -99,6 +150,8 @@ export default function ProfileSettings() {
       const data = await response.json()
       
       if (response.ok) {
+        // Refresh user context to get updated avatar
+        await refreshUser()
         return data.avatarUrl
       } else {
         throw new Error(data.error || "Failed to upload avatar")
@@ -106,6 +159,12 @@ export default function ProfileSettings() {
     } catch (error) {
       throw new Error("Failed to upload avatar: " + error.message)
     }
+  }
+
+  const handleThemeChange = (newTheme) => {
+    setTheme(newTheme)
+    const updatedPreferences = { ...preferences, darkMode: newTheme === 'dark' }
+    updatePreferences(updatedPreferences)
   }
 
   const handleSubmit = async (e) => {
@@ -136,9 +195,11 @@ export default function ProfileSettings() {
       
       if (result.success) {
         setMessage({ type: "success", text: "Profile updated successfully!" })
+        // Clear avatar file after successful upload
+        setAvatarFile(null)
         setTimeout(() => {
-          router.back()
-        }, 2000)
+          setMessage({ type: "", text: "" })
+        }, 3000)
       } else {
         setMessage({ type: "error", text: result.error || "Failed to update profile" })
       }
@@ -154,10 +215,10 @@ export default function ProfileSettings() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-blue-600 bg-clip-text text-transparent">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-blue-600 dark:from-slate-200 dark:to-blue-400 bg-clip-text text-transparent">
             Profile Settings
           </h2>
-          <p className="text-slate-600 mt-2">Manage your account information and preferences</p>
+          <p className="text-slate-600 dark:text-slate-300 mt-2">Manage your account information and preferences</p>
         </div>
         <Button variant="outline" onClick={() => router.back()} className="flex items-center gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -167,13 +228,13 @@ export default function ProfileSettings() {
 
       {/* Success/Error Messages */}
       {message.text && (
-        <Alert className={`${message.type === "success" ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50"}`}>
+        <Alert className={`${message.type === "success" ? "border-green-500 bg-green-50 dark:bg-green-900/20" : "border-red-500 bg-red-50 dark:bg-red-900/20"}`}>
           {message.type === "success" ? (
-            <Check className="h-4 w-4 text-green-600" />
+            <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
           ) : (
-            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
           )}
-          <AlertDescription className={message.type === "success" ? "text-green-800" : "text-red-800"}>
+          <AlertDescription className={message.type === "success" ? "text-green-800 dark:text-green-200" : "text-red-800 dark:text-red-200"}>
             {message.text}
           </AlertDescription>
         </Alert>
@@ -192,7 +253,7 @@ export default function ProfileSettings() {
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center space-y-4">
               <div className="relative group">
-                <Avatar className="h-32 w-32 ring-4 ring-slate-200 group-hover:ring-blue-300 transition-all duration-300">
+                <Avatar className="h-32 w-32 ring-4 ring-slate-200 dark:ring-slate-700 group-hover:ring-blue-300 transition-all duration-300">
                   <AvatarImage src={avatarPreview} alt={formData.name} />
                   <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
                     {formData.name?.charAt(0)?.toUpperCase() || "U"}
@@ -223,7 +284,7 @@ export default function ProfileSettings() {
                 Upload Photo
               </Button>
               
-              <p className="text-xs text-slate-500 text-center">
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
                 JPG, PNG or GIF. Max size 5MB
               </p>
             </div>
@@ -231,12 +292,60 @@ export default function ProfileSettings() {
             <Separator />
 
             <div className="space-y-2">
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                 {user?.role === "educator" ? "Educator" : "Learner"}
               </Badge>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 Member since {new Date(user?.createdAt || Date.now()).toLocaleDateString()}
               </p>
+            </div>
+
+            <Separator />
+
+            {/* Theme Settings */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-slate-800 dark:text-slate-200">Appearance</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sun className="h-4 w-4" />
+                    <span className="text-sm">Light</span>
+                  </div>
+                  <Button
+                    variant={theme === 'light' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleThemeChange('light')}
+                  >
+                    {theme === 'light' && <Check className="h-3 w-3" />}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Moon className="h-4 w-4" />
+                    <span className="text-sm">Dark</span>
+                  </div>
+                  <Button
+                    variant={theme === 'dark' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleThemeChange('dark')}
+                  >
+                    {theme === 'dark' && <Check className="h-3 w-3" />}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Monitor className="h-4 w-4" />
+                    <span className="text-sm">System</span>
+                  </div>
+                  <Button
+                    variant={theme === 'system' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleThemeChange('system')}
+                  >
+                    {theme === 'system' && <Check className="h-3 w-3" />}
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -314,7 +423,7 @@ export default function ProfileSettings() {
                 <>
                   <Separator />
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-800">Professional Information</h3>
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Professional Information</h3>
                     
                     <div className="space-y-2">
                       <Label htmlFor="specialization">Area of Specialization</Label>
