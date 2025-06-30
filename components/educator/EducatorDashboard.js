@@ -105,6 +105,39 @@ export default function EducatorDashboard() {
   const [notifications, setNotifications] = useState([])
   const [profileLoading, setProfileLoading] = useState(false)
 
+  // Add missing state variables for ProfileSettings functionality
+  const [localProfile, setLocalProfile] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    bio: "",
+    location: "",
+    website: "",
+    avatar: user?.avatar || "",
+    phone: "",
+    organization: "",
+    title: "",
+    expertise: [],
+  })
+  const [errors, setErrors] = useState({})
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+
+  // Sync localProfile with profile and user data
+  useEffect(() => {
+    if (user) {
+      setLocalProfile(prev => ({
+        ...prev,
+        name: user.name || "",
+        email: user.email || "",
+        avatar: user.avatar || ""
+      }))
+    }
+  }, [user])
+
+  useEffect(() => {
+    setLocalProfile(prev => ({ ...prev, ...profile }))
+  }, [profile])
+
   useEffect(() => {
     fetchCourses()
     fetchStats()
@@ -1564,7 +1597,7 @@ export default function EducatorDashboard() {
           <div className="flex justify-between items-center py-12">
             <div className="space-y-2">
               <h1 className="text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-indigo-200 bg-clip-text text-transparent">
-                LLMfied Coursewares
+                LLMfied Courseware
               </h1>
               <div className="text-blue-200 text-xl flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>

@@ -30,7 +30,7 @@ import {
   RotateCcw
 } from "lucide-react"
 
-export default function CourseLibrary({ onCourseSelect }) {
+export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedLevel, setSelectedLevel] = useState("all")
@@ -162,44 +162,55 @@ export default function CourseLibrary({ onCourseSelect }) {
   }
 
   const fetchEnrollmentStatus = async () => {
+    console.log('🔍 Fetching enrollment status...')
     try {
       const response = await fetch('/api/enrollment', {
         headers: getAuthHeaders(),
       })
       
+      console.log('📡 Enrollment API response status:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('📊 Enrollment API response data:', data)
+        
         const enrollmentMap = {}
         
         // Handle different response formats
         if (data && Array.isArray(data.enrollments)) {
+          console.log('📋 Processing enrollments array:', data.enrollments.length, 'items')
           data.enrollments.forEach(enrollment => {
             enrollmentMap[enrollment.courseId] = enrollment
           })
         } else if (data && Array.isArray(data.courses)) {
+          console.log('📚 Processing courses array:', data.courses.length, 'items')
           // Handle case where courses are returned directly
           data.courses.forEach(course => {
             enrollmentMap[course._id || course.id] = { courseId: course._id || course.id }
           })
         } else if (Array.isArray(data)) {
+          console.log('📄 Processing direct array:', data.length, 'items')
           // Handle case where enrollments are returned as array
           data.forEach(enrollment => {
             enrollmentMap[enrollment.courseId] = enrollment
           })
         }
         
+        console.log('✅ Final enrollment map:', enrollmentMap)
+        console.log('📈 Number of enrollments:', Object.keys(enrollmentMap).length)
         setEnrollments(enrollmentMap)
       } else {
-        console.warn(`Failed to fetch enrollment status. Status: ${response.status}`)
+        console.warn(`❌ Failed to fetch enrollment status. Status: ${response.status}`)
         setEnrollments({})
       }
     } catch (error) {
-      console.warn('Error fetching enrollment status:', error)
+      console.warn('🔥 Error fetching enrollment status:', error)
       setEnrollments({})
     }
   }
 
   const handleEnrollment = async (courseId) => {
+    console.log('🎯 Starting enrollment for course:', courseId)
     setEnrollmentLoading(prev => ({ ...prev, [courseId]: true }))
     
     try {
@@ -212,22 +223,119 @@ export default function CourseLibrary({ onCourseSelect }) {
         body: JSON.stringify({ courseId }),
       })
 
+      console.log('📡 Enrollment POST response status:', response.status)
+
       if (response.ok) {
         const data = await response.json()
-        setEnrollments(prev => ({
-          ...prev,
-          [courseId]: data.enrollment
-        }))
-        // Show success message
-        alert('Successfully enrolled in course! You can now access all course content.')
+        console.log('✅ Enrollment successful:', data)
+        
+        // Update local enrollment state immediately
+        setEnrollments(prev => {
+          const newState = {
+            ...prev,
+            [courseId]: data.enrollment
+          }
+          console.log('🔄 Updated local enrollment state:', newState)
+          return newState
+        })
+        
+        // Call parent's onEnrollmentChange for state sync
+        if (onEnrollmentChange) {
+          console.log('📢 Notifying parent of enrollment change')
+          onEnrollmentChange(courseId, true)
+        } else {
+          console.warn('⚠️ onEnrollmentChange callback not provided')
+        }
+        
+        // Find the enrolled course data
+        const enrolledCourse = courses.find(course => course._id === courseId)
+        
+        if (enrolledCourse && onCourseSelect) {
+          console.log('🚀 Navigating to enrolled course:', enrolledCourse.title)
+          // Show enrollment success notification
+          const successNotification = document.createElement('div')
+          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+          successNotification.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <span class="font-semibold">Successfully enrolled! Opening course...</span>
+            </div>
+          `
+          document.body.appendChild(successNotification)
+          
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(0)'
+          }, 100)
+          
+          // Auto-dismiss notification
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(100%)'
+            setTimeout(() => {
+              if (document.body.contains(successNotification)) {
+                document.body.removeChild(successNotification)
+              }
+            }, 500)
+          }, 2500)
+          
+          // Navigate to course content after showing success message
+          setTimeout(() => {
+            // Get instructor info for the course
+            const instructorInfo = getInstructorInfo(enrolledCourse)
+            
+            // Pass the course with enrollment status and instructor info
+            onCourseSelect({
+              ...enrolledCourse,
+              instructorName: instructorInfo.name,
+              instructorAvatar: instructorInfo.avatar,
+              isEnrolled: true, // Explicitly set enrollment status
+              enrolledAt: new Date().toISOString()
+            })
+          }, 1000)
+        } else {
+          console.log('📝 Showing standalone success message')
+          // If no course selection handler, show success message
+          const successNotification = document.createElement('div')
+          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+          successNotification.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <span class="font-semibold">Successfully enrolled in course!</span>
+            </div>
+          `
+          document.body.appendChild(successNotification)
+          
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(0)'
+          }, 100)
+          
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(100%)'
+            setTimeout(() => {
+              if (document.body.contains(successNotification)) {
+                document.body.removeChild(successNotification)
+              }
+            }, 500)
+          }, 3000)
+        }
+        
         // Refresh courses to get updated enrollment count
+        console.log('🔄 Refreshing courses list')
         fetchCourses()
       } else {
         const error = await response.json()
+        console.error('❌ Enrollment failed:', error)
         alert(`Failed to enroll: ${error.error}`)
       }
     } catch (error) {
-      console.error('Enrollment failed:', error)
+      console.error('🔥 Enrollment error:', error)
       alert('Failed to enroll in course')
     } finally {
       setEnrollmentLoading(prev => ({ ...prev, [courseId]: false }))
@@ -235,29 +343,83 @@ export default function CourseLibrary({ onCourseSelect }) {
   }
 
   const handleUnenrollment = async (courseId) => {
+    if (!confirm('Are you sure you want to unenroll from this course? You will lose access to all course materials.')) {
+      return
+    }
+
+    console.log('🗑️ Starting unenrollment for course:', courseId)
     setEnrollmentLoading(prev => ({ ...prev, [courseId]: true }))
     
     try {
-      const response = await fetch(`/api/enrollment?courseId=${courseId}`, {
+      const response = await fetch('/api/enrollment', {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ courseId }),
       })
 
+      console.log('📡 Unenrollment DELETE response status:', response.status)
+
       if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Unenrollment successful:', data)
+        
+        // Update local enrollment state immediately
         setEnrollments(prev => {
           const newEnrollments = { ...prev }
           delete newEnrollments[courseId]
+          console.log('🔄 Updated local enrollment state after unenrollment:', newEnrollments)
           return newEnrollments
         })
-        alert('Successfully unenrolled from course!')
+        
+        // Call parent's onEnrollmentChange for state sync
+        if (onEnrollmentChange) {
+          console.log('📢 Notifying parent of unenrollment change')
+          onEnrollmentChange(courseId, false)
+        } else {
+          console.warn('⚠️ onEnrollmentChange callback not provided')
+        }
+        
+        // Show unenrollment notification
+        const warningNotification = document.createElement('div')
+        warningNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        warningNotification.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <span class="font-semibold">Successfully unenrolled from course</span>
+          </div>
+        `
+        document.body.appendChild(warningNotification)
+        
+        setTimeout(() => {
+          warningNotification.style.transform = 'translateX(0)'
+        }, 100)
+        
+        setTimeout(() => {
+          warningNotification.style.transform = 'translateX(100%)'
+          setTimeout(() => {
+            if (document.body.contains(warningNotification)) {
+              document.body.removeChild(warningNotification)
+            }
+          }, 500)
+        }, 3000)
+        
         // Refresh courses to get updated enrollment count
+        console.log('🔄 Refreshing courses list')
         fetchCourses()
       } else {
         const error = await response.json()
+        console.error('❌ Unenrollment failed:', error)
         alert(`Failed to unenroll: ${error.error}`)
       }
     } catch (error) {
-      console.error('Unenrollment failed:', error)
+      console.error('🔥 Unenrollment error:', error)
       alert('Failed to unenroll from course')
     } finally {
       setEnrollmentLoading(prev => ({ ...prev, [courseId]: false }))
@@ -265,7 +427,11 @@ export default function CourseLibrary({ onCourseSelect }) {
   }
 
   const isEnrolled = (courseId) => {
-    return !!enrollments[courseId]
+    const enrolled = !!enrollments[courseId]
+    if (courseId === Object.keys(enrollments)[0]) { // Only log for the first course to avoid spam
+      console.log(`🔍 Checking enrollment for course ${courseId}:`, enrolled, 'Enrollments:', enrollments)
+    }
+    return enrolled
   }
 
   const isLoading = (courseId) => {

@@ -55,27 +55,140 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
   const { getAuthHeaders } = useAuth()
 
   useEffect(() => {
-    // Only check enrollment status if not already provided
-    if (!initialEnrollmentStatus) {
+    if (initialEnrollmentStatus !== undefined) {
+      setIsEnrolled(initialEnrollmentStatus)
+      setCheckingEnrollment(false)
+    } else {
       checkEnrollmentStatus()
     }
     fetchProgress()
-  }, [course, initialEnrollmentStatus])
+  }, [course._id, initialEnrollmentStatus])
+
+  // Listen for real-time enrollment changes (especially unenrollment)
+  useEffect(() => {
+    const handleEnrollmentChange = async (event) => {
+      const { courseId, isEnrolled: newEnrollmentStatus } = event.detail
+      
+      // If this event is for the current course
+      if (courseId === course._id) {
+        console.log(`Enrollment change detected for current course: ${newEnrollmentStatus}`)
+        
+        if (!newEnrollmentStatus) {
+          // User unenrolled - immediately revoke access
+          setIsEnrolled(false)
+          setSelectedModule(null) // Clear any selected module
+          setProgress({ moduleProgress: [], overallProgress: 0 }) // Clear progress
+          setProcessedContent(null) // Clear any processed content
+          
+          // Show notification about access revocation
+          const warningNotification = document.createElement('div')
+          warningNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+          warningNotification.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <span class="font-semibold">Course access revoked - Please re-enroll to continue</span>
+            </div>
+          `
+          document.body.appendChild(warningNotification)
+          
+          setTimeout(() => {
+            warningNotification.style.transform = 'translateX(0)'
+          }, 100)
+          
+          setTimeout(() => {
+            warningNotification.style.transform = 'translateX(100%)'
+            setTimeout(() => {
+              if (document.body.contains(warningNotification)) {
+                document.body.removeChild(warningNotification)
+              }
+            }, 500)
+          }, 5000)
+          
+          // Hide header if viewing module
+          if (onModuleView) {
+            onModuleView(false)
+          }
+        } else {
+          // User enrolled - grant access and refresh data
+          setIsEnrolled(true)
+          fetchProgress()
+        }
+      }
+    }
+
+    // Listen for enrollment events
+    window.addEventListener('courseEnrolled', handleEnrollmentChange)
+    window.addEventListener('courseUnenrolled', handleEnrollmentChange)
+
+    return () => {
+      window.removeEventListener('courseEnrolled', handleEnrollmentChange)
+      window.removeEventListener('courseUnenrolled', handleEnrollmentChange)
+    }
+  }, [course._id, onModuleView])
+
+  // Enhanced enrollment status checking with real-time verification
+  useEffect(() => {
+    const verifyEnrollmentStatus = async () => {
+      try {
+        const response = await fetch(`/api/enrollment?courseId=${course._id}`, {
+          headers: getAuthHeaders(),
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          const currentEnrollmentStatus = data.isEnrolled
+          
+          // If enrollment status changed, update immediately
+          if (currentEnrollmentStatus !== isEnrolled) {
+            setIsEnrolled(currentEnrollmentStatus)
+            
+            if (!currentEnrollmentStatus) {
+              // Access revoked
+              setSelectedModule(null)
+              setProgress({ moduleProgress: [], overallProgress: 0 })
+              setProcessedContent(null)
+              
+              if (onModuleView) {
+                onModuleView(false)
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to verify enrollment status:', error)
+      }
+    }
+
+    // Verify enrollment status every 30 seconds to catch any changes
+    const interval = setInterval(verifyEnrollmentStatus, 30000)
+    
+    return () => clearInterval(interval)
+  }, [course._id, isEnrolled, getAuthHeaders, onModuleView])
 
   // Auto-select first module only for enrolled users
   useEffect(() => {
     if (isEnrolled && course.modules && course.modules.length > 0 && !selectedModule) {
-      handleSelectModule(course.modules[0])
+      // Add a small delay to ensure the UI has rendered properly
+      setTimeout(() => {
+        handleSelectModule(course.modules[0])
+      }, 500)
     }
   }, [isEnrolled, course.modules, selectedModule])
 
-  const checkEnrollmentStatus = async () => {
-    // Skip check if enrollment status was already provided
-    if (initialEnrollmentStatus !== undefined) {
+  // Simplified enrollment handling - trust the props and check enrollment status
+  useEffect(() => {
+    if (course.isEnrolled === true) {
+      console.log('Course marked as enrolled, updating state')
+      setIsEnrolled(true)
       setCheckingEnrollment(false)
-      return
     }
-    
+  }, [course.isEnrolled])
+
+  const checkEnrollmentStatus = async () => {
     try {
       const response = await fetch(`/api/enrollment?courseId=${course._id}`, {
         headers: getAuthHeaders(),
@@ -83,10 +196,15 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
       
       if (response.ok) {
         const data = await response.json()
+        console.log('Enrollment status check result:', data)
         setIsEnrolled(data.isEnrolled)
+      } else {
+        console.error('Failed to check enrollment status:', response.status)
+        setIsEnrolled(false)
       }
     } catch (error) {
       console.error('Failed to check enrollment status:', error)
+      setIsEnrolled(false)
     } finally {
       setCheckingEnrollment(false)
     }
@@ -106,6 +224,7 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
       })
 
       if (response.ok) {
+        // Update local state immediately
         setIsEnrolled(true)
         
         // Notify parent component about enrollment change
@@ -113,7 +232,34 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
           onEnrollmentChange(course._id, true)
         }
         
-        alert('Successfully enrolled in course! You now have full access to all content.')
+        // Show success notification
+        const successNotification = document.createElement('div')
+        successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        successNotification.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <span class="font-semibold">Successfully enrolled! You now have access.</span>
+          </div>
+        `
+        document.body.appendChild(successNotification)
+        
+        setTimeout(() => {
+          successNotification.style.transform = 'translateX(0)'
+        }, 100)
+        
+        setTimeout(() => {
+          successNotification.style.transform = 'translateX(100%)'
+          setTimeout(() => {
+            if (document.body.contains(successNotification)) {
+              document.body.removeChild(successNotification)
+            }
+          }, 500)
+        }, 4000)
+        
       } else {
         const error = await response.json()
         alert(`Failed to enroll: ${error.error}`)
@@ -128,6 +274,12 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
 
   // Helper function to handle module selection and notify parent
   const handleSelectModule = (module) => {
+    // Verify enrollment before allowing module access
+    if (!isEnrolled) {
+      alert('You must be enrolled in this course to access module content.')
+      return
+    }
+    
     setSelectedModule(module)
     if (onModuleView) {
       onModuleView(true) // Hide header when viewing a module

@@ -65,6 +65,7 @@ export default function LearnerDashboard() {
   const [hideHeader, setHideHeader] = useState(false) // For hiding header when viewing modules
   const [isHeaderVisible, setIsHeaderVisible] = useState(true) // For scroll-based header visibility (auto-hide on scroll down)
   const [lastScrollY, setLastScrollY] = useState(0) // Track scroll position for header visibility
+  const [enrollmentUpdated, setEnrollmentUpdated] = useState(0) // Counter to trigger enrollment refresh
   const [stats, setStats] = useState({
     coursesEnrolled: 0,
     coursesCompleted: 0,
@@ -79,6 +80,30 @@ export default function LearnerDashboard() {
   useEffect(() => {
     fetchEnrolledCourses()
     fetchStats()
+  }, [])
+
+  // Enhanced useEffect to instantly update enrolled courses when enrollment changes
+  useEffect(() => {
+    if (enrollmentUpdated > 0) {
+      fetchEnrolledCourses()
+    }
+  }, [enrollmentUpdated])
+
+  // Listen for enrollment events across the app
+  useEffect(() => {
+    const handleEnrollmentEvent = (event) => {
+      console.log('Enrollment event detected:', event.detail)
+      setEnrollmentUpdated(prev => prev + 1)
+    }
+
+    // Listen for custom enrollment events
+    window.addEventListener('courseEnrolled', handleEnrollmentEvent)
+    window.addEventListener('courseUnenrolled', handleEnrollmentEvent)
+
+    return () => {
+      window.removeEventListener('courseEnrolled', handleEnrollmentEvent)
+      window.removeEventListener('courseUnenrolled', handleEnrollmentEvent)
+    }
   }, [])
 
   // Scroll event listener for header visibility
@@ -192,23 +217,115 @@ export default function LearnerDashboard() {
   }
 
   const handleEnrollmentChange = async (courseId, isEnrolled) => {
+    console.log('Enrollment change detected:', { courseId, isEnrolled })
+    
     if (isEnrolled) {
-      // Refresh the enrolled courses list
-      await fetchEnrolledCourses()
+      // Add the course to enrolled courses immediately
+      try {
+        const courseResponse = await fetch(`/api/courses/${courseId}`, {
+          headers: getAuthHeaders(),
+        })
+        
+        if (courseResponse.ok) {
+          const courseData = await courseResponse.json()
+          
+          // Add to enrolled courses immediately
+          setEnrolledCourses(prev => {
+            // Check if already enrolled to avoid duplicates
+            const isAlreadyEnrolled = prev.some(course => course._id === courseId)
+            if (!isAlreadyEnrolled) {
+              return [...prev, { ...courseData, enrolledAt: new Date().toISOString() }]
+            }
+            return prev
+          })
+          
+          // Update stats immediately
+          setStats(prev => ({
+            ...prev,
+            coursesEnrolled: prev.coursesEnrolled + 1
+          }))
+          
+          console.log('Successfully updated enrolled courses and stats')
+        }
+      } catch (error) {
+        console.error('Error getting course data for immediate update:', error)
+      }
+      
+      // Trigger enrollment update counter for additional refresh
+      setEnrollmentUpdated(prev => prev + 1)
+      
+    } else {
+      // Handle unenrollment - immediate access revocation
+      setEnrolledCourses(prev => prev.filter(course => course._id !== courseId))
+      setStats(prev => ({
+        ...prev,
+        coursesEnrolled: Math.max(0, prev.coursesEnrolled - 1)
+      }))
+      
+      // If user is currently viewing the unenrolled course, kick them out
+      if (selectedCourse && selectedCourse._id === courseId) {
+        setSelectedCourse(null)
+        setActiveTab('overview') // Go back to dashboard overview
+        
+        // Show immediate access revocation warning
+        const warningNotification = document.createElement('div')
+        warningNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        warningNotification.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <span class="font-semibold">Access revoked - You have been unenrolled from this course</span>
+          </div>
+        `
+        document.body.appendChild(warningNotification)
+        
+        setTimeout(() => {
+          warningNotification.style.transform = 'translateX(0)'
+        }, 100)
+        
+        setTimeout(() => {
+          warningNotification.style.transform = 'translateX(100%)'
+          setTimeout(() => {
+            if (document.body.contains(warningNotification)) {
+              document.body.removeChild(warningNotification)
+            }
+          }, 500)
+        }, 5000)
+      }
+      
+      // Trigger enrollment update
+      setEnrollmentUpdated(prev => prev + 1)
     }
   }
 
   const renderContent = () => {
     if (selectedCourse) {
-      // Check if the course is in the enrolled courses list
-      const isEnrolledCourse = enrolledCourses.some(enrolledCourse => 
+      // Enhanced enrollment check - also check if the course object itself has enrollment status
+      const isEnrolledInList = enrolledCourses.some(enrolledCourse => 
         enrolledCourse._id === selectedCourse._id || enrolledCourse.id === selectedCourse.id
       )
+      
+      // Also check if the course was passed with immediate enrollment status
+      const hasImmediateEnrollment = selectedCourse.isEnrolled === true
+      
+      // Final enrollment status - enrolled if in list OR has immediate enrollment
+      const finalEnrollmentStatus = isEnrolledInList || hasImmediateEnrollment
+      
+      console.log('Course selection debug:', {
+        courseId: selectedCourse._id,
+        isEnrolledInList,
+        hasImmediateEnrollment,
+        finalEnrollmentStatus,
+        enrolledCoursesCount: enrolledCourses.length
+      })
       
       return (
         <CourseViewer 
           course={selectedCourse} 
-          isEnrolled={isEnrolledCourse}
+          isEnrolled={finalEnrollmentStatus}
           onBack={() => {
             setSelectedCourse(null)
             setHideHeader(false)
@@ -461,10 +578,13 @@ export default function LearnerDashboard() {
         )
 
       case "library":
-        return <CourseLibrary onCourseSelect={(course, enrollmentStatus) => {
-          setSelectedCourse(course)
-          // If enrollment status is provided, we'll use it in the CourseViewer
-        }} />
+        return <CourseLibrary 
+          onCourseSelect={(course, enrollmentStatus) => {
+            setSelectedCourse(course)
+            // If enrollment status is provided, we'll use it in the CourseViewer
+          }} 
+          onEnrollmentChange={handleEnrollmentChange}
+        />
 
       case "profile":
         return <ProfileSettings />
@@ -486,9 +606,16 @@ export default function LearnerDashboard() {
       name: user?.name || '',
       email: user?.email || '',
       bio: user?.bio || '',
-      avatar: user?.avatar || ''
+      avatar: user?.avatar || '',
+      phone: user?.phone || '',
+      location: user?.location || '',
+      website: user?.website || '',
+      learningGoals: user?.learningGoals || '',
+      interests: user?.interests || []
     })
     const [isUploading, setIsUploading] = useState(false)
+    const [errors, setErrors] = useState({})
+    const [saveLoading, setSaveLoading] = useState(false)
 
     useEffect(() => {
       if (user) {
@@ -496,13 +623,35 @@ export default function LearnerDashboard() {
           name: user.name || '',
           email: user.email || '',
           bio: user.bio || '',
-          avatar: user.avatar || ''
+          avatar: user.avatar || '',
+          phone: user.phone || '',
+          location: user.location || '',
+          website: user.website || '',
+          learningGoals: user.learningGoals || '',
+          interests: user.interests || []
         })
       }
     }, [user])
 
+    const validateForm = () => {
+      const newErrors = {}
+      if (!profile.name?.trim()) newErrors.name = 'Name is required'
+      if (!profile.email?.trim()) newErrors.email = 'Email is required'
+      if (profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
+        newErrors.email = 'Please enter a valid email address'
+      }
+      if (profile.website && !/^https?:\/\/.+\..+/.test(profile.website)) {
+        newErrors.website = 'Please enter a valid website URL (include http:// or https://)'
+      }
+      setErrors(newErrors)
+      return Object.keys(newErrors).length === 0
+    }
+
     const handleProfileUpdate = async (e) => {
       e.preventDefault()
+      if (!validateForm()) return
+
+      setSaveLoading(true)
       try {
         const response = await fetch('/api/profile', {
           method: 'PUT',
@@ -517,13 +666,40 @@ export default function LearnerDashboard() {
           const updatedUser = await response.json()
           updateUser(updatedUser.user)
           setAvatarKey(Date.now())
-          alert('Profile updated successfully!')
+          
+          // Show beautiful success notification
+          const successNotification = document.createElement('div')
+          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+          successNotification.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <span class="font-semibold">Profile updated successfully!</span>
+            </div>
+          `
+          document.body.appendChild(successNotification)
+          
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(0)'
+          }, 100)
+          
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(100%)'
+            setTimeout(() => document.body.removeChild(successNotification), 500)
+          }, 3000)
         } else {
-          alert('Failed to update profile')
+          const errorData = await response.json()
+          console.error('Profile update failed:', errorData)
+          alert(`Failed to update profile: ${errorData.error || 'Unknown error'}`)
         }
       } catch (error) {
         console.error('Error updating profile:', error)
-        alert('Error updating profile')
+        alert(`Error updating profile: ${error.message}`)
+      } finally {
+        setSaveLoading(false)
       }
     }
 
@@ -703,50 +879,227 @@ export default function LearnerDashboard() {
                 </div>
               </div>
 
-              {/* Form Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <Label htmlFor="name" className="text-slate-700 font-semibold">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={profile.name}
-                    onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
-                    className="h-14 rounded-2xl border-2 border-slate-200 focus:border-blue-500 transition-colors duration-300"
-                    placeholder="Enter your full name"
-                  />
+              {/* Enhanced Form Fields */}
+              <div className="space-y-8">
+                {/* Basic Information */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-2xl blur-xl"></div>
+                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+                      Basic Information
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <Label htmlFor="name" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-blue-100 rounded-lg">
+                            <User className="h-4 w-4 text-blue-600" />
+                          </div>
+                          Full Name *
+                        </Label>
+                        <Input
+                          id="name"
+                          value={profile.name}
+                          onChange={(e) => {
+                            setProfile(prev => ({ ...prev, name: e.target.value }))
+                            if (errors.name) setErrors(prev => ({...prev, name: ''}))
+                          }}
+                          className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
+                            errors.name ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
+                          }`}
+                          placeholder="Enter your full name"
+                        />
+                        {errors.name && (
+                          <p className="text-red-500 text-sm flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4" />
+                            {errors.name}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Label htmlFor="email" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-purple-100 rounded-lg">
+                            <Mail className="h-4 w-4 text-purple-600" />
+                          </div>
+                          Email Address *
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={profile.email}
+                          onChange={(e) => {
+                            setProfile(prev => ({ ...prev, email: e.target.value }))
+                            if (errors.email) setErrors(prev => ({...prev, email: ''}))
+                          }}
+                          className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
+                            errors.email ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-purple-500 hover:border-slate-300'
+                          }`}
+                          placeholder="Enter your email address"
+                        />
+                        {errors.email && (
+                          <p className="text-red-500 text-sm flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4" />
+                            {errors.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <Label htmlFor="email" className="text-slate-700 font-semibold">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profile.email}
-                    onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
-                    className="h-14 rounded-2xl border-2 border-slate-200 focus:border-blue-500 transition-colors duration-300"
-                    placeholder="Enter your email"
-                  />
+
+                {/* Contact Information */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/50 to-green-50/50 rounded-2xl blur-xl"></div>
+                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-green-600 rounded-full"></div>
+                      Contact Information
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <Label htmlFor="phone" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-emerald-100 rounded-lg">
+                            <Phone className="h-4 w-4 text-emerald-600" />
+                          </div>
+                          Phone Number
+                        </Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={profile.phone}
+                          onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="+1 (555) 123-4567"
+                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-emerald-500 hover:border-slate-300 transition-all duration-300"
+                        />
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Label htmlFor="location" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-green-100 rounded-lg">
+                            <MapPin className="h-4 w-4 text-green-600" />
+                          </div>
+                          Location
+                        </Label>
+                        <Input
+                          id="location"
+                          value={profile.location}
+                          onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
+                          placeholder="e.g., New York, USA"
+                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-green-500 hover:border-slate-300 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-8 space-y-3">
+                      <Label htmlFor="website" className="text-slate-700 font-semibold flex items-center gap-2">
+                        <div className="p-1 bg-teal-100 rounded-lg">
+                          <Globe className="h-4 w-4 text-teal-600" />
+                        </div>
+                        Website
+                      </Label>
+                      <Input
+                        id="website"
+                        type="url"
+                        value={profile.website}
+                        onChange={(e) => {
+                          setProfile(prev => ({ ...prev, website: e.target.value }))
+                          if (errors.website) setErrors(prev => ({...prev, website: ''}))
+                        }}
+                        placeholder="https://yourwebsite.com"
+                        className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
+                          errors.website ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-teal-500 hover:border-slate-300'
+                        }`}
+                      />
+                      {errors.website && (
+                        <p className="text-red-500 text-sm flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.website}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Learning Profile */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 rounded-2xl blur-xl"></div>
+                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-blue-600 rounded-full"></div>
+                      Learning Profile
+                    </h4>
+                    
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <Label htmlFor="bio" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-indigo-100 rounded-lg">
+                            <BookOpen className="h-4 w-4 text-indigo-600" />
+                          </div>
+                          About You
+                        </Label>
+                        <Textarea
+                          id="bio"
+                          value={profile.bio}
+                          onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
+                          placeholder="Tell us about your background, interests, and learning style..."
+                          rows={4}
+                          className="rounded-2xl border-2 border-slate-200 focus:border-indigo-500 hover:border-slate-300 transition-all duration-300 resize-none"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label htmlFor="learningGoals" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-blue-100 rounded-lg">
+                            <Target className="h-4 w-4 text-blue-600" />
+                          </div>
+                          Learning Goals
+                        </Label>
+                        <Textarea
+                          id="learningGoals"
+                          value={profile.learningGoals}
+                          onChange={(e) => setProfile(prev => ({ ...prev, learningGoals: e.target.value }))}
+                          placeholder="What are your learning objectives? What skills do you want to develop?"
+                          rows={3}
+                          className="rounded-2xl border-2 border-slate-200 focus:border-blue-500 hover:border-slate-300 transition-all duration-300 resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <Label htmlFor="bio" className="text-slate-700 font-semibold">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={profile.bio}
-                  onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Tell us about your learning journey and goals..."
-                  rows={5}
-                  className="rounded-2xl border-2 border-slate-200 focus:border-blue-500 transition-colors duration-300 resize-none"
-                />
-              </div>
+              {/* Enhanced Save Button */}
+              <div className="flex items-center justify-between pt-8">
+                <div className="text-sm text-slate-500">
+                  <span className="text-red-500">*</span> Required fields
+                </div>
 
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
-              >
-                Save Changes
-                <CheckCircle className="h-5 w-5 ml-2" />
-              </Button>
+                <Button
+                  type="submit"
+                  disabled={saveLoading}
+                  className="group relative bg-gradient-to-r from-blue-500 via-purple-600 to-indigo-600 hover:from-blue-600 hover:via-purple-700 hover:to-indigo-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  {/* Button background effects */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  
+                  <div className="relative flex items-center gap-3">
+                    {saveLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                        Saving Changes...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
+                        Save Profile Changes
+                      </>
+                    )}
+                  </div>
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -764,8 +1117,35 @@ export default function LearnerDashboard() {
       weeklyGoal: 5,
       preferredStudyTime: 'morning'
     })
+    const [loading, setLoading] = useState(true)
+    const [saveLoading, setSaveLoading] = useState(false)
+
+    useEffect(() => {
+      fetchPreferences()
+    }, [])
+
+    const fetchPreferences = async () => {
+      setLoading(true)
+      try {
+        const response = await fetch('/api/preferences', {
+          headers: getAuthHeaders(),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setPreferences(prev => ({ ...prev, ...data }))
+        } else {
+          console.error('Failed to fetch preferences')
+        }
+      } catch (error) {
+        console.error('Error fetching preferences:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
     const handlePreferenceUpdate = async () => {
+      setSaveLoading(true)
       try {
         const response = await fetch('/api/preferences', {
           method: 'PUT',
@@ -777,13 +1157,38 @@ export default function LearnerDashboard() {
         })
 
         if (response.ok) {
-          alert('Preferences updated successfully!')
+          // Show beautiful success notification
+          const successNotification = document.createElement('div')
+          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+          successNotification.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <span class="font-semibold">Preferences updated successfully!</span>
+            </div>
+          `
+          document.body.appendChild(successNotification)
+          
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(0)'
+          }, 100)
+          
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(100%)'
+            setTimeout(() => document.body.removeChild(successNotification), 500)
+          }, 3000)
         } else {
-          alert('Failed to update preferences')
+          const errorData = await response.json()
+          alert(`Failed to update preferences: ${errorData.message || 'Unknown error'}`)
         }
       } catch (error) {
         console.error('Error updating preferences:', error)
-        alert('Error updating preferences')
+        alert(`Error updating preferences: ${error.message}`)
+      } finally {
+        setSaveLoading(false)
       }
     }
 
@@ -928,10 +1333,25 @@ export default function LearnerDashboard() {
         <div className="flex justify-end">
           <Button
             onClick={handlePreferenceUpdate}
-            className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+            disabled={saveLoading}
+            className="group relative bg-gradient-to-r from-purple-500 via-pink-600 to-indigo-600 hover:from-purple-600 hover:via-pink-700 hover:to-indigo-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
-            Save Preferences
-            <CheckCircle className="h-5 w-5 ml-2" />
+            {/* Button background effects */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
+            <div className="relative flex items-center gap-3">
+              {saveLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                  Saving Preferences...
+                </>
+              ) : (
+                <>
+                  <Save className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
+                  Save Preferences
+                </>
+              )}
+            </div>
           </Button>
         </div>
       </div>
@@ -939,71 +1359,126 @@ export default function LearnerDashboard() {
   }
 
   const Notifications = () => {
-    const [notifications, setNotifications] = useState([
-      {
-        id: 1,
-        type: 'course',
-        title: 'Course progress update',
-        message: 'You completed Module 2 of "JavaScript Fundamentals"',
-        time: '1 hour ago',
-        read: false,
-        icon: BookOpen,
-        color: 'blue'
-      },
-      {
-        id: 2,
-        type: 'achievement',
-        title: 'Achievement unlocked!',
-        message: 'You earned the "Quick Learner" badge',
-        time: '2 days ago',
-        read: true,
-        icon: Trophy,
-        color: 'yellow'
-      },
-      {
-        id: 3,
-        type: 'reminder',
-        title: 'Daily study reminder',
-        message: 'Time for your daily 30-minute learning session',
-        time: '3 days ago',
-        read: false,
-        icon: Clock,
-        color: 'green'
-      },
-      {
-        id: 4,
-        type: 'certificate',
-        title: 'Certificate available',
-        message: 'Your "React Fundamentals" certificate is ready for download',
-        time: '1 week ago',
-        read: true,
-        icon: Award,
-        color: 'purple'
-      }
-    ])
+    const [notifications, setNotifications] = useState([])
+    const [loading, setLoading] = useState(true)
 
-    const markAsRead = (id) => {
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === id ? { ...notif, read: true } : notif
-        )
-      )
+    useEffect(() => {
+      fetchNotifications()
+    }, [])
+
+    const fetchNotifications = async () => {
+      setLoading(true)
+      try {
+        const response = await fetch('/api/notifications', {
+          headers: getAuthHeaders(),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setNotifications(Array.isArray(data) ? data : [])
+        } else {
+          console.error('Failed to fetch notifications')
+          // Set default notifications
+          setNotifications([
+            {
+              id: 1,
+              type: 'course',
+              title: 'Welcome to your learning journey!',
+              message: 'Start exploring our course library to begin learning.',
+              time: '1 hour ago',
+              read: false,
+              icon: BookOpen,
+              color: 'blue'
+            },
+            {
+              id: 2,
+              type: 'achievement',
+              title: 'First course enrolled!',
+              message: 'You successfully enrolled in your first course.',
+              time: '2 days ago',
+              read: true,
+              icon: Trophy,
+              color: 'yellow'
+            },
+            {
+              id: 3,
+              type: 'reminder',
+              title: 'Daily study reminder',
+              message: 'Keep up your learning streak! Study for 30 minutes today.',
+              time: '3 days ago',
+              read: false,
+              icon: Clock,
+              color: 'green'
+            }
+          ])
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error)
+        // Set default notifications on error
+        setNotifications([
+          {
+            id: 1,
+            type: 'welcome',
+            title: 'Welcome to LLMfied!',
+            message: 'Your personalized learning platform is ready.',
+            time: 'Just now',
+            read: false,
+            icon: Sparkles,
+            color: 'purple'
+          }
+        ])
+      } finally {
+        setLoading(false)
+      }
     }
 
-    const markAllAsRead = () => {
-      setNotifications(prev => 
-        prev.map(notif => ({ ...notif, read: true }))
-      )
+    const markAsRead = async (id) => {
+      try {
+        const response = await fetch('/api/notifications', {
+          method: 'PUT',
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'markAsRead',
+            notificationId: id
+          }),
+        })
+
+        if (response.ok) {
+          setNotifications(prev => 
+            prev.map(notif => 
+              notif.id === id ? { ...notif, read: true } : notif
+            )
+          )
+        }
+      } catch (error) {
+        console.error('Error marking notification as read:', error)
+      }
     }
 
-    const getColorClasses = (color, read) => {
-      const colors = {
-        blue: read ? 'from-blue-50 to-blue-50' : 'from-blue-50 to-indigo-100',
-        yellow: read ? 'from-yellow-50 to-yellow-50' : 'from-yellow-50 to-amber-100',
-        green: read ? 'from-green-50 to-green-50' : 'from-green-50 to-emerald-100',
-        purple: read ? 'from-purple-50 to-purple-50' : 'from-purple-50 to-pink-100'
+    const markAllAsRead = async () => {
+      try {
+        const response = await fetch('/api/notifications', {
+          method: 'PUT',
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'markAllAsRead'
+          }),
+        })
+
+        if (response.ok) {
+          setNotifications(prev => 
+            prev.map(notif => ({ ...notif, read: true }))
+          )
+        }
+      } catch (error) {
+        console.error('Error marking all notifications as read:', error)
       }
-      return colors[color] || colors.blue
     }
 
     return (
@@ -1052,7 +1527,7 @@ export default function LearnerDashboard() {
                 return (
                   <div
                     key={notification.id}
-                    className={`group p-8 hover:bg-gradient-to-r ${getColorClasses(notification.color, notification.read)} transition-all duration-300 ${
+                    className={`group p-8 hover:bg-gradient-to-r ${
                       !notification.read ? 'border-l-4 border-l-blue-500' : ''
                     }`}
                   >

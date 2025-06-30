@@ -151,7 +151,17 @@ export async function DELETE(request) {
   try {
     const user = await verifyToken(request)
     const { searchParams } = new URL(request.url)
-    const courseId = searchParams.get("courseId")
+    let courseId = searchParams.get("courseId")
+    
+    // If not in query params, check request body
+    if (!courseId) {
+      try {
+        const body = await request.json()
+        courseId = body.courseId
+      } catch (e) {
+        // Body might be empty, that's okay if courseId was in query params
+      }
+    }
     
     if (!courseId) {
       return NextResponse.json(
