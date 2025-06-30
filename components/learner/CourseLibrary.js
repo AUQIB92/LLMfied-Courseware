@@ -37,6 +37,7 @@ export default function CourseLibrary({ onCourseSelect }) {
   const [courses, setCourses] = useState([])
   const [enrollments, setEnrollments] = useState({})
   const [enrollmentLoading, setEnrollmentLoading] = useState({})
+  const [instructors, setInstructors] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { getAuthHeaders } = useAuth()
@@ -46,6 +47,72 @@ export default function CourseLibrary({ onCourseSelect }) {
     fetchCourses()
     fetchEnrollmentStatus()
   }, [])
+
+  // Fetch instructor details when courses change
+  useEffect(() => {
+    if (courses.length > 0) {
+      fetchInstructorDetails()
+    }
+  }, [courses])
+
+  const fetchInstructorDetails = async () => {
+    const instructorIds = [...new Set(courses.map(course => course.educatorId).filter(Boolean))]
+    
+    if (instructorIds.length === 0) return
+    
+    console.log('Fetching instructor details for IDs:', instructorIds)
+    
+    const instructorPromises = instructorIds.map(async (educatorId) => {
+      try {
+        const response = await fetch(`/api/users/${educatorId}`)
+        if (response.ok) {
+          const data = await response.json()
+          return { id: educatorId, data: data.user }
+        } else {
+          console.warn(`Failed to fetch instructor ${educatorId}`)
+          return { id: educatorId, data: null }
+        }
+      } catch (error) {
+        console.warn(`Error fetching instructor ${educatorId}:`, error)
+        return { id: educatorId, data: null }
+      }
+    })
+
+    try {
+      const instructorResults = await Promise.all(instructorPromises)
+      const instructorMap = {}
+      
+      instructorResults.forEach(({ id, data }) => {
+        instructorMap[id] = data
+      })
+      
+      setInstructors(instructorMap)
+      console.log('Instructor data loaded:', instructorMap)
+    } catch (error) {
+      console.error('Error fetching instructor details:', error)
+    }
+  }
+
+  const getInstructorInfo = (course) => {
+    const instructorData = instructors[course.educatorId]
+    
+    if (instructorData) {
+      return {
+        name: instructorData.name || 'Unknown Instructor',
+        avatar: instructorData.avatar || null,
+        title: instructorData.title || '',
+        organization: instructorData.organization || ''
+      }
+    }
+    
+    // Fallback to placeholder while loading or if instructor not found
+    return {
+      name: 'Loading...',
+      avatar: null,
+      title: '',
+      organization: ''
+    }
+  }
 
   const fetchCourses = async () => {
     try {
@@ -389,6 +456,7 @@ export default function CourseLibrary({ onCourseSelect }) {
           {coursesArray.map((course, index) => {
             const courseData = getDefaultData(course)
             const LevelIcon = getLevelIcon(course.level)
+            const instructorInfo = getInstructorInfo(course)
             
             return (
               <Card 
@@ -408,7 +476,36 @@ export default function CourseLibrary({ onCourseSelect }) {
                     className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                   />
                   
-                  {/* Floating Elements */}
+                  {/* Instructor Info - Top Left Corner */}
+                  <div className="absolute top-4 left-4 flex items-center gap-3 p-3 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-white/30 group-hover:bg-white transition-all duration-300">
+                    <div className="relative">
+                      {instructorInfo.avatar ? (
+                        <img 
+                          src={instructorInfo.avatar} 
+                          alt={instructorInfo.name}
+                          className="w-10 h-10 rounded-full object-cover shadow-lg border-2 border-white/50"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white/50">
+                          <span className="text-white text-sm font-bold">
+                            {instructorInfo.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      {/* Online Status Indicator */}
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-slate-600 font-medium mb-0.5">Instructor</p>
+                      <p className="text-sm font-bold text-slate-800 truncate max-w-[120px]">
+                        {instructorInfo.name}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Floating Elements - Top Right */}
                   <div className="absolute top-4 right-4 flex gap-2">
                     <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
                       <Award className="h-5 w-5 text-white" />
@@ -471,19 +568,6 @@ export default function CourseLibrary({ onCourseSelect }) {
                       </div>
                       <p className="text-xs text-slate-500 font-medium mb-1">Rating</p>
                       <p className="text-sm font-bold text-slate-800">{course.rating || courseData.rating || 'N/A'}</p>
-                    </div>
-                  </div>
-
-                  {/* Instructor Info */}
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                      <span className="text-white text-sm font-bold">
-                        {courseData.instructor.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-slate-500 font-medium">Instructor</p>
-                      <p className="text-sm font-semibold text-slate-800">{courseData.instructor}</p>
                     </div>
                   </div>
 

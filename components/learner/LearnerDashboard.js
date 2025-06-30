@@ -30,7 +30,18 @@ import {
   Play,
   CheckCircle,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Camera,
+  Upload,
+  AlertCircle,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  Save,
+  Shield,
+  GraduationCap,
+  Bookmark
 } from "lucide-react"
 import CourseLibrary from "./CourseLibrary"
 import CourseViewer from "./CourseViewer"
@@ -585,46 +596,110 @@ export default function LearnerDashboard() {
               {/* Avatar Upload */}
               <div className="flex items-center gap-8">
                 <div className="relative group">
-                  <Avatar key={`profile-${avatarKey}`} className="h-32 w-32 ring-4 ring-blue-200 shadow-xl group-hover:ring-blue-300 transition-all duration-300">
-                    <AvatarImage src={profile.avatar || "/placeholder.svg"} alt={profile.name} />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-4xl font-bold">
-                      {profile.name?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  {isUploading && (
-                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-3 border-white border-t-transparent"></div>
+                  {/* Enhanced Avatar with multiple rings and effects */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500 scale-125"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/20 to-pink-400/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-700 scale-110 animate-pulse"></div>
+                  
+                  <div className="relative">
+                    <Avatar key={`profile-${avatarKey}`} className="h-40 w-40 ring-4 ring-blue-200 group-hover:ring-blue-300 group-hover:ring-8 transition-all duration-500 shadow-2xl">
+                      <AvatarImage src={profile.avatar || "/placeholder.svg"} alt={profile.name} />
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 text-white text-5xl font-bold">
+                        {profile.name?.charAt(0)?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    {/* Loading overlay */}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <div className="text-center text-white">
+                          <div className="animate-spin rounded-full h-10 w-10 border-3 border-white border-t-transparent mx-auto mb-2"></div>
+                          <div className="text-sm font-medium">Uploading...</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Hover overlay with change hint */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-full transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="text-white text-center">
+                        <Upload className="h-8 w-8 mx-auto mb-2" />
+                        <div className="text-sm font-semibold">Change Photo</div>
+                      </div>
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-full transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <div className="text-white text-sm font-medium">Change</div>
+                    
+                    {/* Status indicator */}
+                    <div className="absolute -bottom-2 -right-2 p-3 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full shadow-xl group-hover:scale-110 transition-transform duration-300 border-4 border-white">
+                      <Shield className="h-5 w-5 text-white" />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">Profile Picture</h3>
-                    <p className="text-slate-600 mb-4">Upload a new avatar to personalize your profile</p>
+                
+                <div className="flex-1 space-y-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-2xl blur-xl"></div>
+                    <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/60">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+                          <Camera className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-slate-800">Profile Picture</h3>
+                          <p className="text-slate-600">Express your learning journey visually</p>
+                        </div>
+                      </div>
+                      
+                      <p className="text-slate-600 mb-6 leading-relaxed">
+                        Upload a clear, friendly photo that represents you as a learner. 
+                        This helps create connections with educators and fellow students in the community.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        <label className="block">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="group cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-2 border-blue-200 hover:border-blue-400 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl w-full"
+                            disabled={isUploading}
+                            asChild
+                          >
+                            <span className="flex items-center justify-center gap-3">
+                              {isUploading ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+                                  <span>Uploading Photo...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
+                                  <span>Choose New Profile Picture</span>
+                                </>
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarUpload}
+                                className="hidden"
+                              />
+                            </span>
+                          </Button>
+                        </label>
+                        
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="font-medium">JPG, PNG, GIF</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-2 rounded-xl">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="font-medium">Max 5MB</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-purple-600 bg-purple-50 px-3 py-2 rounded-xl">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="font-medium">Square format</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <label className="block">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="cursor-pointer hover:bg-blue-50 border-2 border-blue-200 hover:border-blue-300 px-6 py-3 rounded-2xl font-medium"
-                      disabled={isUploading}
-                      asChild
-                    >
-                      <span>
-                        {isUploading ? 'Uploading...' : 'Upload New Avatar'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          className="hidden"
-                        />
-                      </span>
-                    </Button>
-                  </label>
-                  <p className="text-sm text-slate-500">JPG, PNG or GIF. Max size 5MB.</p>
                 </div>
               </div>
 

@@ -34,6 +34,17 @@ import {
   FileText,
   ArrowRight,
   Trophy,
+  Camera,
+  Upload,
+  CheckCircle,
+  AlertCircle,
+  Mail,
+  Briefcase,
+  Building2,
+  Phone,
+  MapPin,
+  Globe,
+  Save,
 } from "lucide-react"
 import CourseCreator from "./CourseCreator"
 import CourseList from "./CourseList"
@@ -509,13 +520,29 @@ export default function EducatorDashboard() {
   const ProfileSettings = () => {
     const [localProfile, setLocalProfile] = useState(profile)
     const [isUploading, setIsUploading] = useState(false)
+    const [saveLoading, setSaveLoading] = useState(false)
+    const [errors, setErrors] = useState({})
 
     useEffect(() => {
       setLocalProfile(profile)
     }, [profile])
 
+    const validateForm = () => {
+      const newErrors = {}
+      if (!localProfile.name?.trim()) newErrors.name = 'Name is required'
+      if (!localProfile.email?.trim()) newErrors.email = 'Email is required'
+      if (localProfile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(localProfile.email)) {
+        newErrors.email = 'Please enter a valid email address'
+      }
+      setErrors(newErrors)
+      return Object.keys(newErrors).length === 0
+    }
+
     const handleProfileUpdate = async (e) => {
       e.preventDefault()
+      if (!validateForm()) return
+
+      setSaveLoading(true)
       try {
         console.log("Updating profile with data:", localProfile)
         console.log("Auth headers:", getAuthHeaders())
@@ -543,16 +570,66 @@ export default function EducatorDashboard() {
             })
           }
 
-          alert("Profile updated successfully!")
+          // Show success message with beautiful toast-like notification
+          const successNotification = document.createElement('div')
+          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+          successNotification.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <span class="font-semibold">Profile updated successfully!</span>
+            </div>
+          `
+          document.body.appendChild(successNotification)
+          
+          // Animate in
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(0)'
+          }, 100)
+          
+          // Animate out and remove
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(100%)'
+            setTimeout(() => document.body.removeChild(successNotification), 500)
+          }, 3000)
+
           fetchProfile() // Refresh profile data
         } else {
           const errorData = await response.json()
           console.log("Profile update failed:", errorData)
-          alert(`Failed to update profile: ${errorData.error || "Unknown error"}`)
+          
+          // Show error message
+          const errorNotification = document.createElement('div')
+          errorNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+          errorNotification.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <span class="font-semibold">Failed to update profile: ${errorData.error || "Unknown error"}</span>
+            </div>
+          `
+          document.body.appendChild(errorNotification)
+          
+          setTimeout(() => {
+            errorNotification.style.transform = 'translateX(0)'
+          }, 100)
+          
+          setTimeout(() => {
+            errorNotification.style.transform = 'translateX(100%)'
+            setTimeout(() => document.body.removeChild(errorNotification), 500)
+          }, 5000)
         }
       } catch (error) {
         console.error("Error updating profile:", error)
         alert(`Error updating profile: ${error.message}`)
+      } finally {
+        setSaveLoading(false)
       }
     }
 
@@ -582,7 +659,29 @@ export default function EducatorDashboard() {
           // Update the user context (this will update the header avatar immediately)
           updateUser({ avatar: newAvatarUrl, _avatarTimestamp: Date.now() })
 
-          alert("Avatar uploaded successfully!")
+          // Show success notification
+          const successNotification = document.createElement('div')
+          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+          successNotification.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <span class="font-semibold">Avatar uploaded successfully!</span>
+            </div>
+          `
+          document.body.appendChild(successNotification)
+          
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(0)'
+          }, 100)
+          
+          setTimeout(() => {
+            successNotification.style.transform = 'translateX(100%)'
+            setTimeout(() => document.body.removeChild(successNotification), 500)
+          }, 3000)
         } else {
           const errorData = await response.json()
           alert(`Failed to upload avatar: ${errorData.error || "Unknown error"}`)
@@ -597,162 +696,393 @@ export default function EducatorDashboard() {
 
     return (
       <div className="space-y-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={() => setActiveTab("overview")} className="hover:bg-blue-50 text-blue-600">
-            ← Back to Dashboard
+        {/* Enhanced Header */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 to-purple-100/50 rounded-3xl blur-3xl"></div>
+          <div className="relative bg-gradient-to-r from-white/80 to-blue-50/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 shadow-xl">
+            <div className="flex items-center gap-6">
+              <Button 
+                variant="ghost" 
+                onClick={() => setActiveTab("overview")} 
+                className="group flex items-center gap-3 hover:bg-blue-50 text-blue-600 px-6 py-4 rounded-2xl font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+              >
+                <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full group-hover:scale-110 transition-transform duration-300"></div>
+                <ArrowRight className="h-5 w-5 rotate-180 group-hover:-translate-x-2 transition-transform duration-300" />
+                Back to Dashboard
           </Button>
-          <div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <div className="flex-1">
+                <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
               Profile Settings
             </h2>
-            <p className="text-slate-600">Manage your account information</p>
+                <p className="text-slate-600 text-lg mt-2">Manage your educator profile and professional information</p>
+                <div className="flex items-center gap-4 mt-4">
+                  <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    Profile Active
+                  </div>
+                  <div className="text-sm text-slate-500">
+                    Last updated: {new Date().toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5 text-blue-600" />
-              Personal Information
+        {/* Enhanced Profile Card */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-3xl blur-2xl"></div>
+          <Card className="relative border-0 shadow-2xl bg-white/95 backdrop-blur-xl overflow-hidden">
+            {/* Header with gradient and pattern */}
+            <CardHeader className="relative bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-50 border-b border-white/60">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full blur-3xl"></div>
+              
+              <div className="relative">
+                <CardTitle className="flex items-center gap-4 text-2xl">
+                  <div className="relative">
+                    <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-xl">
+                      <User className="h-7 w-7 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full border-2 border-white"></div>
+                  </div>
+                  <div>
+                    <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                      Professional Profile
+                    </span>
+                    <div className="text-sm font-normal text-slate-600 mt-1">
+                      Update your educational credentials and personal details
+                    </div>
+                  </div>
             </CardTitle>
+              </div>
           </CardHeader>
-          <CardContent className="p-8">
-            <form onSubmit={handleProfileUpdate} className="space-y-6">
-              {/* Avatar Upload */}
-              <div className="flex items-center gap-6">
+
+            <CardContent className="p-10">
+              <form onSubmit={handleProfileUpdate} className="space-y-10">
+                {/* Enhanced Avatar Upload Section */}
                 <div className="relative">
-                  <Avatar className="h-24 w-24 ring-4 ring-blue-200">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-3xl blur-xl"></div>
+                  <div className="relative bg-gradient-to-br from-white/80 to-blue-50/50 rounded-3xl p-8 border border-white/60">
+                    <div className="flex items-center gap-10">
+                      <div className="relative group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                        <div className="relative">
+                          <Avatar className="h-36 w-36 ring-4 ring-blue-200 group-hover:ring-blue-300 transition-all duration-300 shadow-2xl">
                     <AvatarImage src={localProfile.avatar || "/placeholder.svg"} alt={localProfile.name} />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-4xl font-bold">
                       {localProfile.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   {isUploading && (
-                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
+                              <div className="animate-spin rounded-full h-8 w-8 border-3 border-white border-t-transparent"></div>
                     </div>
                   )}
+                          <div className="absolute -bottom-2 -right-2 p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-xl group-hover:scale-110 transition-transform duration-300">
+                            <Camera className="h-5 w-5 text-white" />
                 </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 space-y-6">
                 <div>
+                          <h3 className="text-2xl font-bold text-slate-800 mb-2">Profile Picture</h3>
+                          <p className="text-slate-600 leading-relaxed">
+                            Upload a professional photo to help students and colleagues recognize you. 
+                            A clear, high-quality image works best for building trust and engagement.
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-4">
                   <label className="block">
                     <Button
                       type="button"
                       variant="outline"
-                      className="cursor-pointer bg-transparent"
+                              className="group cursor-pointer hover:bg-blue-50 border-2 border-blue-200 hover:border-blue-400 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
                       disabled={isUploading}
                       asChild
                     >
-                      <span>
-                        {isUploading ? "Uploading..." : "Upload New Avatar"}
+                              <span className="flex items-center gap-3">
+                                {isUploading ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                                    Uploading...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
+                                    Choose New Photo
+                                  </>
+                                )}
                         <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                       </span>
                     </Button>
                   </label>
-                  <p className="text-sm text-slate-500 mt-2">JPG, PNG or GIF. Max size 5MB.</p>
+                          
+                          <div className="flex items-center gap-6 text-sm text-slate-500">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-emerald-500" />
+                              JPG, PNG, or GIF
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-emerald-500" />
+                              Max size 5MB
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-emerald-500" />
+                              Square format recommended
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                 </div>
               </div>
 
-              {/* Form Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                {/* Enhanced Form Fields */}
+                <div className="space-y-8">
+                  {/* Basic Information */}
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/50 to-blue-50/50 rounded-2xl blur-xl"></div>
+                    <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                      <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                        <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-blue-600 rounded-full"></div>
+                        Basic Information
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <Label htmlFor="name" className="text-slate-700 font-semibold flex items-center gap-2">
+                            <div className="p-1 bg-blue-100 rounded-lg">
+                              <User className="h-4 w-4 text-blue-600" />
+                            </div>
+                            Full Name *
+                          </Label>
                   <Input
                     id="name"
                     value={localProfile.name}
-                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, name: e.target.value }))}
-                    className="h-12"
-                  />
+                            onChange={(e) => {
+                              setLocalProfile((prev) => ({ ...prev, name: e.target.value }))
+                              if (errors.name) setErrors(prev => ({...prev, name: ''}))
+                            }}
+                            className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
+                              errors.name ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
+                            }`}
+                            placeholder="Enter your full name"
+                          />
+                          {errors.name && (
+                            <p className="text-red-500 text-sm flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.name}
+                            </p>
+                          )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                        
+                        <div className="space-y-3">
+                          <Label htmlFor="email" className="text-slate-700 font-semibold flex items-center gap-2">
+                            <div className="p-1 bg-purple-100 rounded-lg">
+                              <Mail className="h-4 w-4 text-purple-600" />
+                            </div>
+                            Email Address *
+                          </Label>
                   <Input
                     id="email"
                     type="email"
                     value={localProfile.email}
-                    onChange={(e) => setLocalProfile((prev) => ({ ...prev, email: e.target.value }))}
-                    className="h-12"
-                  />
+                            onChange={(e) => {
+                              setLocalProfile((prev) => ({ ...prev, email: e.target.value }))
+                              if (errors.email) setErrors(prev => ({...prev, email: ''}))
+                            }}
+                            className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
+                              errors.email ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
+                            }`}
+                            placeholder="Enter your email address"
+                          />
+                          {errors.email && (
+                            <p className="text-red-500 text-sm flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Professional Title</Label>
+                  {/* Professional Information */}
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 rounded-2xl blur-xl"></div>
+                    <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                      <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                        <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
+                        Professional Details
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <Label htmlFor="title" className="text-slate-700 font-semibold flex items-center gap-2">
+                            <div className="p-1 bg-indigo-100 rounded-lg">
+                              <Briefcase className="h-4 w-4 text-indigo-600" />
+                            </div>
+                            Professional Title
+                          </Label>
                   <Input
                     id="title"
                     value={localProfile.title}
                     onChange={(e) => setLocalProfile((prev) => ({ ...prev, title: e.target.value }))}
                     placeholder="e.g., Senior Developer, Math Professor"
-                    className="h-12"
+                            className="h-14 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 hover:border-slate-300 transition-all duration-300"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="organization">Organization</Label>
+                        
+                        <div className="space-y-3">
+                          <Label htmlFor="organization" className="text-slate-700 font-semibold flex items-center gap-2">
+                            <div className="p-1 bg-purple-100 rounded-lg">
+                              <Building2 className="h-4 w-4 text-purple-600" />
+                            </div>
+                            Organization
+                          </Label>
                   <Input
                     id="organization"
                     value={localProfile.organization}
                     onChange={(e) => setLocalProfile((prev) => ({ ...prev, organization: e.target.value }))}
                     placeholder="e.g., Tech University, ABC Company"
-                    className="h-12"
+                            className="h-14 rounded-2xl border-2 border-slate-200 focus:border-purple-500 hover:border-slate-300 transition-all duration-300"
                   />
+                        </div>
+                      </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  {/* Contact Information */}
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-2xl blur-xl"></div>
+                    <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                      <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                        <div className="w-1 h-6 bg-gradient-to-b from-amber-500 to-orange-600 rounded-full"></div>
+                        Contact Information
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <Label htmlFor="phone" className="text-slate-700 font-semibold flex items-center gap-2">
+                            <div className="p-1 bg-amber-100 rounded-lg">
+                              <Phone className="h-4 w-4 text-amber-600" />
+                            </div>
+                            Phone Number
+                          </Label>
                   <Input
                     id="phone"
                     type="tel"
                     value={localProfile.phone}
                     onChange={(e) => setLocalProfile((prev) => ({ ...prev, phone: e.target.value }))}
-                    className="h-12"
+                            placeholder="+1 (555) 123-4567"
+                            className="h-14 rounded-2xl border-2 border-slate-200 focus:border-amber-500 hover:border-slate-300 transition-all duration-300"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
+                        
+                        <div className="space-y-3">
+                          <Label htmlFor="location" className="text-slate-700 font-semibold flex items-center gap-2">
+                            <div className="p-1 bg-orange-100 rounded-lg">
+                              <MapPin className="h-4 w-4 text-orange-600" />
+                            </div>
+                            Location
+                          </Label>
                   <Input
                     id="location"
                     value={localProfile.location}
                     onChange={(e) => setLocalProfile((prev) => ({ ...prev, location: e.target.value }))}
                     placeholder="e.g., New York, USA"
-                    className="h-12"
+                            className="h-14 rounded-2xl border-2 border-slate-200 focus:border-orange-500 hover:border-slate-300 transition-all duration-300"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
+                      <div className="mt-8 space-y-3">
+                        <Label htmlFor="website" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-emerald-100 rounded-lg">
+                            <Globe className="h-4 w-4 text-emerald-600" />
+                          </div>
+                          Website
+                        </Label>
                 <Input
                   id="website"
                   type="url"
                   value={localProfile.website}
                   onChange={(e) => setLocalProfile((prev) => ({ ...prev, website: e.target.value }))}
                   placeholder="https://yourwebsite.com"
-                  className="h-12"
+                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-emerald-500 hover:border-slate-300 transition-all duration-300"
                 />
+                      </div>
+                    </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
+                  {/* Bio Section */}
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-rose-50/50 to-pink-50/50 rounded-2xl blur-xl"></div>
+                    <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
+                      <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                        <div className="w-1 h-6 bg-gradient-to-b from-rose-500 to-pink-600 rounded-full"></div>
+                        About You
+                      </h4>
+                      
+                      <div className="space-y-3">
+                        <Label htmlFor="bio" className="text-slate-700 font-semibold flex items-center gap-2">
+                          <div className="p-1 bg-rose-100 rounded-lg">
+                            <FileText className="h-4 w-4 text-rose-600" />
+                          </div>
+                          Professional Bio
+                        </Label>
                 <Textarea
                   id="bio"
                   value={localProfile.bio}
                   onChange={(e) => setLocalProfile((prev) => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Tell us about yourself..."
-                  rows={4}
-                />
+                          placeholder="Tell us about your background, expertise, and teaching philosophy..."
+                          rows={6}
+                          className="rounded-2xl border-2 border-slate-200 focus:border-rose-500 hover:border-slate-300 transition-all duration-300 resize-none"
+                        />
+                        <p className="text-sm text-slate-500 mt-2">
+                          Share your teaching philosophy, areas of expertise, and what makes you passionate about education.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Save Button */}
+                <div className="flex items-center justify-between pt-8">
+                  <div className="text-sm text-slate-500">
+                    <span className="text-red-500">*</span> Required fields
               </div>
 
               <Button
                 type="submit"
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3"
-              >
-                Save Changes
+                    disabled={saveLoading}
+                    className="group relative bg-gradient-to-r from-blue-500 via-purple-600 to-indigo-600 hover:from-blue-600 hover:via-purple-700 hover:to-indigo-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  >
+                    {/* Button background effects */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    
+                    <div className="relative flex items-center gap-3">
+                      {saveLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                          Saving Changes...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
+                          Save Profile Changes
+                        </>
+                      )}
+                    </div>
               </Button>
+                </div>
             </form>
           </CardContent>
         </Card>
+        </div>
       </div>
     )
   }
@@ -1234,7 +1564,7 @@ export default function EducatorDashboard() {
           <div className="flex justify-between items-center py-12">
             <div className="space-y-2">
               <h1 className="text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-indigo-200 bg-clip-text text-transparent">
-                Educator Dashboard
+                LLMfied Coursewares
               </h1>
               <div className="text-blue-200 text-xl flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>

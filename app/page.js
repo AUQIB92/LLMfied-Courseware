@@ -33,7 +33,8 @@ import {
   Mail,
   X,
   Menu,
-  ChevronDown
+  ChevronDown,
+  MessageCircle
 } from "lucide-react"
 
 export default function Home() {
@@ -47,6 +48,28 @@ export default function Home() {
   const [headerVisible, setHeaderVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Waiting List State
+  const [showWaitingList, setShowWaitingList] = useState(false)
+  const [waitingListData, setWaitingListData] = useState({
+    name: '',
+    email: '',
+    institution: '',
+    experience: '',
+    interests: ''
+  })
+  const [waitingListSubmitting, setWaitingListSubmitting] = useState(false)
+
+  // Feedback Form State
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [feedbackData, setFeedbackData] = useState({
+    name: '',
+    email: '',
+    type: 'general',
+    message: '',
+    rating: 5
+  })
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
 
   // Testimonials data
   const testimonials = [
@@ -111,6 +134,69 @@ export default function Home() {
       element.scrollIntoView({ behavior: 'smooth' })
     }
     setMobileMenuOpen(false)
+  }
+
+  // Handler Functions for Forms
+  const handleWaitingListSubmit = async (e) => {
+    e.preventDefault()
+    setWaitingListSubmitting(true)
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      console.log('Waiting List Submission:', waitingListData)
+      
+      // Show success message
+      alert('Thank you for joining our educator waiting list! We\'ll be in touch soon with early access information.')
+      
+      // Reset form
+      setWaitingListData({
+        name: '',
+        email: '',
+        institution: '',
+        experience: '',
+        interests: ''
+      })
+      setShowWaitingList(false)
+      
+    } catch (error) {
+      console.error('Waiting list submission error:', error)
+      alert('There was an error submitting your information. Please try again.')
+    } finally {
+      setWaitingListSubmitting(false)
+    }
+  }
+
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault()
+    setFeedbackSubmitting(true)
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      console.log('Feedback Submission:', feedbackData)
+      
+      // Show success message
+      alert('Thank you for your feedback! We really appreciate your input and will use it to improve our platform.')
+      
+      // Reset form
+      setFeedbackData({
+        name: '',
+        email: '',
+        type: 'general',
+        message: '',
+        rating: 5
+      })
+      setShowFeedback(false)
+      
+    } catch (error) {
+      console.error('Feedback submission error:', error)
+      alert('There was an error submitting your feedback. Please try again.')
+    } finally {
+      setFeedbackSubmitting(false)
+    }
   }
 
   // Authentication logic
@@ -208,7 +294,7 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
                     <span className="relative z-10 flex items-center gap-2">
                       <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-                      Features
+                    Features
                     </span>
                     <div className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-purple-500 group-hover:w-2/3 group-hover:left-1/6 transition-all duration-500"></div>
                   </Button>
@@ -221,7 +307,7 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
                     <span className="relative z-10 flex items-center gap-2">
                       <BookOpen className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-                      About
+                    About
                     </span>
                     <div className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-500 group-hover:w-2/3 group-hover:left-1/6 transition-all duration-500"></div>
                   </Button>
@@ -234,7 +320,7 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
                     <span className="relative z-10 flex items-center gap-2">
                       <Play className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-                      Demo
+                    Demo
                     </span>
                     <div className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-gradient-to-r from-emerald-400 to-teal-500 group-hover:w-2/3 group-hover:left-1/6 transition-all duration-500"></div>
                   </Button>
@@ -244,11 +330,11 @@ export default function Home() {
                 <div className="flex items-center ml-8">
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-all duration-700"></div>
-                    <Button
-                      onClick={() => {
+                  <Button
+                    onClick={() => {
                         setAuthMode("signup")
-                        setShowAuth(true)
-                      }}
+                      setShowAuth(true)
+                    }}
                       className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-bold px-8 py-3 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 group overflow-hidden border border-white/20"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
@@ -258,7 +344,7 @@ export default function Home() {
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                       </span>
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                    </Button>
+                  </Button>
                   </div>
                 </div>
               </div>
@@ -373,33 +459,33 @@ export default function Home() {
           <div className="max-w-6xl mx-auto text-center">
             {/* Announcement Badge */}
             <div className="flex justify-center mb-16">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
-                <Badge className="relative bg-white/90 backdrop-blur-sm text-slate-800 border border-white/50 px-8 py-3 text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                    <Sparkles className="w-4 h-4 text-emerald-600" />
-                    <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-extrabold">
-                      Next-Generation AI Learning Platform
-                    </span>
-                    <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
-                  </div>
-                </Badge>
-              </div>
-            </div>
-
+  <div className="relative group">
+    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+    <Badge className="relative bg-white/90 backdrop-blur-sm text-slate-800 border border-white/50 px-8 py-3 text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+      <div className="flex items-center space-x-3">
+        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+        <Sparkles className="w-4 h-4 text-emerald-600" />
+        <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-extrabold">
+          Next-Generation AI Learning Platform
+        </span>
+        <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+      </div>
+    </Badge>
+  </div>
+</div>
+            
             {/* Main Headline */}
             <div className="mb-16">
-              <h1 className="text-5xl lg:text-7xl xl:text-8xl font-black text-slate-900 tracking-tight">
+  <h1 className="text-5xl lg:text-7xl xl:text-8xl font-black text-slate-900 tracking-tight">
                 <span className="block mb-6 leading-none">Transform</span>
                 <span className="block relative leading-[1.2] mb-16 font-black bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x">
-                  <span className="inline-block align-baseline">Learning Forever</span>
-                </span>
-                <span className="block text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-600 leading-snug">
-                  with AI-Powered Education
-                </span>
-              </h1>
-            </div>
+      <span className="inline-block align-baseline">Learning Forever</span>
+    </span>
+    <span className="block text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-600 leading-snug">
+      with AI-Powered Education
+    </span>
+  </h1>
+</div>
             
             {/* Subtitle */}
             <div className="mb-16">
@@ -542,7 +628,7 @@ export default function Home() {
                   </span>
                   <div className="w-2 h-2 bg-pink-500 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
                 </div>
-              </Badge>
+            </Badge>
             </div>
             
             <h2 className="text-5xl lg:text-7xl font-black text-slate-900 mb-8 leading-tight">
@@ -649,8 +735,8 @@ export default function Home() {
                       {/* Subtle Border Animation */}
                       <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500" style={{background: `linear-gradient(135deg, ${feature.primaryColor === 'blue' ? '#3b82f6' : feature.primaryColor === 'purple' ? '#8b5cf6' : feature.primaryColor === 'indigo' ? '#6366f1' : feature.primaryColor === 'cyan' ? '#06b6d4' : feature.primaryColor === 'teal' ? '#14b8a6' : '#8b5cf6'}22, transparent, ${feature.primaryColor === 'blue' ? '#3b82f6' : feature.primaryColor === 'purple' ? '#8b5cf6' : feature.primaryColor === 'indigo' ? '#6366f1' : feature.primaryColor === 'cyan' ? '#06b6d4' : feature.primaryColor === 'teal' ? '#14b8a6' : '#8b5cf6'}22)`, padding: '1px'}}>
                         <div className="w-full h-full bg-white/90 backdrop-blur-2xl rounded-3xl"></div>
-                      </div>
-                      
+                    </div>
+                    
                       <CardContent className="relative p-10 lg:p-12 h-full flex flex-col">
                         {/* Enhanced Icon Container */}
                         <div className="relative mb-10">
@@ -699,8 +785,8 @@ export default function Home() {
                         
                         {/* Radial Gradient Overlay */}
                         <div className={`absolute inset-0 bg-gradient-radial from-${feature.glowColor} via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-3xl`}></div>
-                      </CardContent>
-                    </Card>
+                  </CardContent>
+                </Card>
                   </div>
                 </div>
               )
@@ -965,6 +1051,132 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Educator Waiting List Section */}
+      <section className="py-28 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/10 to-teal-400/10 animate-gradient-x"></div>
+        
+        {/* Floating particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {isClient && [...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full animate-float opacity-40"
+              style={{
+                background: `linear-gradient(45deg, ${['#10b981', '#059669', '#047857', '#065f46'][i % 4]}, ${['#0d9488', '#0f766e', '#115e59', '#134e4a'][i % 4]})`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 8}s`,
+                animationDuration: `${4 + Math.random() * 6}s`
+              }}
+            />
+          ))}
+        </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-20 left-20 w-40 h-40 bg-gradient-to-br from-emerald-200/30 to-green-200/30 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-gradient-to-br from-teal-200/30 to-cyan-200/30 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        
+        <div className="container mx-auto px-6 lg:px-8 relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Section Header */}
+            <div className="mb-16">
+              <div className="relative inline-block mb-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/20 to-green-600/20 rounded-full blur-xl"></div>
+                <Badge className="relative bg-white/90 backdrop-blur-xl text-emerald-800 border border-emerald-200/50 px-8 py-4 text-sm font-bold shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <GraduationCap className="w-5 h-5 text-emerald-600" />
+                    <span className="bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent font-extrabold">
+                      Exclusive Early Access
+                    </span>
+                    <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+                  </div>
+                </Badge>
+              </div>
+              
+              <h2 className="text-5xl lg:text-6xl font-black text-slate-900 mb-8 leading-tight">
+                <span className="block mb-4">Join the Educator</span>
+                <span className="block bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent animate-gradient-x">
+                  Waiting List
+                </span>
+              </h2>
+              <p className="text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
+                Be among the first educators to access our revolutionary AI-powered teaching tools. 
+                <span className="font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent"> Get priority access, exclusive features, and special educator pricing.</span>
+              </p>
+            </div>
+
+            {/* Waiting List CTA */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 rounded-3xl blur-lg opacity-30"></div>
+              <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-12 border border-white/60">
+                {/* Benefits Grid */}
+                <div className="grid md:grid-cols-3 gap-8 mb-12">
+                  {[
+                    {
+                      icon: Star,
+                      title: "Priority Access",
+                      description: "Be first to experience new AI teaching features",
+                      color: "from-emerald-500 to-green-600"
+                    },
+                    {
+                      icon: Award,
+                      title: "Special Pricing",
+                      description: "Exclusive educator discounts and free premium features",
+                      color: "from-green-500 to-teal-600"
+                    },
+                    {
+                      icon: Users,
+                      title: "Expert Community",
+                      description: "Connect with fellow innovative educators worldwide",
+                      color: "from-teal-500 to-cyan-600"
+                    }
+                  ].map((benefit, index) => {
+                    const Icon = benefit.icon
+                    return (
+                      <div key={index} className="text-center group">
+                        <div className={`w-16 h-16 mx-auto bg-gradient-to-br ${benefit.color} rounded-2xl flex items-center justify-center shadow-lg mb-4 transform group-hover:rotate-6 transition-transform duration-300`}>
+                          <Icon className="w-8 h-8 text-white" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-800 mb-2">{benefit.title}</h3>
+                        <p className="text-slate-600 text-sm leading-relaxed">{benefit.description}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Join Button */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 rounded-2xl blur-lg opacity-30"></div>
+                  <Button
+                    size="lg"
+                    onClick={() => setShowWaitingList(true)}
+                    className="relative bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 hover:from-emerald-700 hover:via-green-700 hover:to-teal-700 text-white px-12 py-6 text-xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105 group overflow-hidden border border-white/20"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
+                    <span className="relative z-10 flex items-center gap-3">
+                      <Mail className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
+                      Join Educator Waiting List
+                      <ChevronRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  </Button>
+                </div>
+
+                {/* Stats */}
+                <div className="mt-12 pt-8 border-t border-slate-200 flex justify-center">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-emerald-600 mb-1">500+</div>
+                    <div className="text-sm text-slate-600">Educators already registered</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Statistics Section */}
       <section className="py-24 bg-white/80 backdrop-blur-sm relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-white/80 to-indigo-50/50"></div>
@@ -988,6 +1200,142 @@ export default function Home() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* Feedback Section */}
+      <section className="py-28 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-400/10 via-amber-400/10 to-yellow-400/10 animate-gradient-x"></div>
+        
+        {/* Floating particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {isClient && [...Array(25)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1.5 h-1.5 rounded-full animate-float opacity-50"
+              style={{
+                background: `linear-gradient(45deg, ${['#f59e0b', '#d97706', '#b45309', '#92400e'][i % 4]}, ${['#f97316', '#ea580c', '#dc2626', '#b91c1c'][i % 4]})`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 10}s`,
+                animationDuration: `${3 + Math.random() * 5}s`
+              }}
+            />
+          ))}
+        </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-16 left-16 w-48 h-48 bg-gradient-to-br from-orange-200/30 to-amber-200/30 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-16 right-16 w-48 h-48 bg-gradient-to-br from-yellow-200/30 to-orange-200/30 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
+        <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-gradient-to-br from-amber-200/20 to-yellow-200/20 rounded-full blur-2xl animate-pulse" style={{animationDelay: '3s'}}></div>
+        
+        <div className="container mx-auto px-6 lg:px-8 relative z-10">
+          <div className="max-w-4xl mx-auto">
+            {/* Section Header */}
+            <div className="text-center mb-16">
+              <div className="relative inline-block mb-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-600/20 to-amber-600/20 rounded-full blur-xl"></div>
+                <Badge className="relative bg-white/90 backdrop-blur-xl text-orange-800 border border-orange-200/50 px-8 py-4 text-sm font-bold shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                    <MessageCircle className="w-5 h-5 text-orange-600" />
+                    <span className="bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent font-extrabold">
+                      Your Voice Matters
+                    </span>
+                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+                  </div>
+                </Badge>
+              </div>
+              
+              <h2 className="text-5xl lg:text-6xl font-black text-slate-900 mb-8 leading-tight">
+                <span className="block mb-4">Help Us</span>
+                <span className="block bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent animate-gradient-x">
+                  Improve
+                </span>
+              </h2>
+              <p className="text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
+                We're constantly evolving to better serve educators and learners. 
+                <span className="font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent"> Share your thoughts and help shape the future of AI-powered education.</span>
+              </p>
+            </div>
+
+            {/* Feedback Options Grid */}
+            <div className="grid md:grid-cols-2 gap-8 mb-12">
+              {/* Quick Feedback Card */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 rounded-3xl blur-lg opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
+                <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/60 group-hover:shadow-2xl transition-all duration-500">
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg mb-6 transform group-hover:rotate-6 transition-transform duration-300">
+                      <MessageCircle className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-800 mb-4">General Feedback</h3>
+                    <p className="text-slate-600 mb-8 leading-relaxed">
+                      Share your thoughts, suggestions, or experiences with our platform. Every insight helps us improve.
+                    </p>
+                    <Button
+                      onClick={() => setShowFeedback(true)}
+                      className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    >
+                      <MessageCircle className="w-5 h-5 mr-2" />
+                      Share Feedback
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature Request Card */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 rounded-3xl blur-lg opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
+                <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/60 group-hover:shadow-2xl transition-all duration-500">
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-6 transform group-hover:rotate-6 transition-transform duration-300">
+                      <Lightbulb className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-800 mb-4">Feature Ideas</h3>
+                    <p className="text-slate-600 mb-8 leading-relaxed">
+                      Have an idea for a new feature? We'd love to hear what would make your experience even better.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        setFeedbackData(prev => ({ ...prev, type: 'feature' }))
+                        setShowFeedback(true)
+                      }}
+                      className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    >
+                      <Lightbulb className="w-5 h-5 mr-2" />
+                      Suggest Feature
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Floating Feedback Button */}
+            <div className="text-center">
+              <div className="relative inline-block">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 rounded-2xl blur-lg opacity-30"></div>
+                <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl">
+                  <p className="text-slate-600 mb-4 font-medium">
+                    Quick feedback? Just want to say hi? 
+                    <span className="block text-sm text-slate-500 mt-1">We read every single message ❤️</span>
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setFeedbackData(prev => ({ ...prev, type: 'quick' }))
+                      setShowFeedback(true)
+                    }}
+                    variant="outline"
+                    className="border-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 px-6 py-2 rounded-xl font-medium transition-all duration-300"
+                  >
+                    <Heart className="w-4 h-4 mr-2 text-red-500" />
+                    Send Quick Message
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1103,8 +1451,8 @@ export default function Home() {
                     
                     {/* Enhanced theme overlay for footer */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  </div>
                 </div>
+              </div>
                 <div className="flex flex-col">
                   <span className="text-xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-purple-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:via-purple-700 group-hover:to-indigo-700 mb-1 leading-tight transition-all duration-500 group-hover:scale-105">
                     LLMfied
@@ -1159,7 +1507,7 @@ export default function Home() {
                     <div className="w-2 h-2 bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Enterprise
                   </button></li>
-                </ul>
+              </ul>
               </div>
             </div>
             
@@ -1188,7 +1536,7 @@ export default function Home() {
                     <div className="w-2 h-2 bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Help Center
                   </button></li>
-                </ul>
+              </ul>
               </div>
             </div>
             
@@ -1217,7 +1565,7 @@ export default function Home() {
                     <div className="w-2 h-2 bg-slate-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Terms of Service
                   </button></li>
-                </ul>
+              </ul>
               </div>
             </div>
           </div>
@@ -1237,8 +1585,8 @@ export default function Home() {
                 <div className="flex items-center mt-4 md:mt-0 text-slate-600">
                   <Heart className="w-4 h-4 text-red-500 mr-2 animate-pulse" />
                   <p className="font-medium">Made with love for the future of education</p>
-                </div>
-              </div>
+            </div>
+          </div>
             </div>
           </div>
         </div>
@@ -1289,17 +1637,41 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-tr from-cyan-400/15 via-blue-400/10 to-purple-400/15 rounded-3xl blur-lg opacity-80"></div>
             
             <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-white/60">
-              {/* Enhanced Close Button */}
-              <button
-                onClick={() => setShowAuth(false)}
-                className="absolute top-6 right-6 p-3 hover:bg-slate-100/80 rounded-2xl transition-all duration-300 z-10 group border border-slate-200/60 hover:border-slate-300/60 hover:scale-110"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-100/50 to-white/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <X className="w-5 h-5 text-slate-500 group-hover:text-slate-700 transition-colors duration-300 relative z-10" />
-              </button>
+              {/* Spectacular Enhanced Close Button */}
+              <div className="absolute top-6 right-6 z-20">
+                <div className="relative group">
+                  {/* Animated background rings */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-pink-400/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-pink-500/10 rounded-2xl scale-150 opacity-0 group-hover:opacity-100 transition-all duration-700 animate-ping"></div>
+                  
+                  {/* Main button */}
+            <button
+              onClick={() => setShowAuth(false)}
+                    className="relative group bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-xl p-4 rounded-2xl transition-all duration-300 border-2 border-slate-200/60 hover:border-red-300/60 hover:scale-110 hover:rotate-90 shadow-lg hover:shadow-2xl hover:shadow-red-500/20"
+                  >
+                    {/* Button background with gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-50/50 to-pink-50/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    
+                    {/* Shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-2xl translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                    
+                    {/* Icon with enhanced styling */}
+                    <X className="w-5 h-5 text-slate-600 group-hover:text-red-600 transition-all duration-300 relative z-10 group-hover:scale-110" />
+                    
+                    {/* Pulsing dot indicator */}
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+            </button>
+                  
+                  {/* Floating close hint */}
+                  <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 bg-slate-800/90 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-lg">
+                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                    Press ESC or click to close
+                  </div>
+                </div>
+              </div>
               
               <div className="p-8 relative">
-                <AuthForm mode={authMode} onClose={() => setShowAuth(false)} />
+              <AuthForm mode={authMode} onClose={() => setShowAuth(false)} />
               </div>
             </div>
           </div>
@@ -1364,6 +1736,361 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Educator Waiting List Modal */}
+      {showWaitingList && (
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-emerald-900/60 to-teal-900/80 backdrop-blur-xl flex items-center justify-center z-50 p-4 overflow-hidden">
+          {/* Background Effects */}
+          <div className="absolute inset-0">
+            {/* Animated gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-green-500/10 to-teal-500/10 animate-gradient-x"></div>
+            
+            {/* Floating particles effect */}
+            <div className="absolute inset-0 overflow-hidden">
+              {isClient && [...Array(12)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-gradient-to-r from-emerald-400/50 to-teal-400/50 rounded-full animate-float"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${i * 0.8}s`,
+                    animationDuration: `${4 + Math.random() * 3}s`
+                  }}
+                />
+              ))}
+            </div>
+            
+            {/* Large decorative elements */}
+            <div className="absolute top-20 left-20 w-60 h-60 bg-gradient-to-br from-emerald-400/20 to-green-400/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-20 right-20 w-60 h-60 bg-gradient-to-br from-teal-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+          </div>
+          
+          {/* Enhanced Modal Container */}
+          <div className="relative">
+            {/* Glassmorphism Background */}
+            <div className="absolute inset-0 bg-white/20 backdrop-blur-3xl rounded-3xl border border-white/30"></div>
+            
+            {/* Enhanced Glow Effects */}
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-green-500/15 to-teal-500/20 rounded-3xl blur-xl opacity-60"></div>
+            
+            <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/60">
+              {/* Enhanced Close Button */}
+              <button
+                onClick={() => setShowWaitingList(false)}
+                className="absolute top-6 right-6 p-3 bg-white/80 hover:bg-white/95 rounded-2xl transition-all duration-300 border border-slate-200/60 hover:border-emerald-300/60 shadow-lg hover:shadow-xl hover:scale-110 z-20"
+              >
+                <X className="w-5 h-5 text-slate-600 hover:text-emerald-600 transition-colors duration-300" />
+              </button>
+              
+              <div className="p-8 relative">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg mb-6">
+                    <GraduationCap className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-slate-900 mb-4">Join the Educator Waiting List</h3>
+                  <p className="text-slate-600 text-lg">Be among the first to experience revolutionary AI-powered teaching tools</p>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleWaitingListSubmit} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={waitingListData.name}
+                        onChange={(e) => setWaitingListData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300 bg-white/80 backdrop-blur-sm"
+                        placeholder="Your full name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Email Address *</label>
+                      <input
+                        type="email"
+                        required
+                        value={waitingListData.email}
+                        onChange={(e) => setWaitingListData(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300 bg-white/80 backdrop-blur-sm"
+                        placeholder="your@email.com"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Institution/Organization</label>
+                    <input
+                      type="text"
+                      value={waitingListData.institution}
+                      onChange={(e) => setWaitingListData(prev => ({ ...prev, institution: e.target.value }))}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300 bg-white/80 backdrop-blur-sm"
+                      placeholder="University, School, Company, etc."
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Teaching Experience</label>
+                    <select
+                      value={waitingListData.experience}
+                      onChange={(e) => setWaitingListData(prev => ({ ...prev, experience: e.target.value }))}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300 bg-white/80 backdrop-blur-sm"
+                    >
+                      <option value="">Select your experience level</option>
+                      <option value="new">New to teaching (0-2 years)</option>
+                      <option value="experienced">Experienced (3-10 years)</option>
+                      <option value="veteran">Veteran educator (10+ years)</option>
+                      <option value="administrator">Administrator/Leadership</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Areas of Interest</label>
+                    <textarea
+                      value={waitingListData.interests}
+                      onChange={(e) => setWaitingListData(prev => ({ ...prev, interests: e.target.value }))}
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300 bg-white/80 backdrop-blur-sm resize-none"
+                      placeholder="What subjects do you teach? What AI features interest you most?"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 rounded-2xl blur-lg opacity-30"></div>
+                    <button
+                      type="submit"
+                      disabled={waitingListSubmitting}
+                      className="relative w-full bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 hover:from-emerald-700 hover:via-green-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
+                      <span className="relative z-10 flex items-center justify-center gap-3">
+                        {waitingListSubmitting ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Joining Waiting List...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-5 h-5" />
+                            Join Educator Waiting List
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                          </>
+                        )}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+
+                {/* Benefits Reminder */}
+                <div className="mt-8 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200/50">
+                  <h4 className="font-bold text-emerald-800 mb-3">What you'll get:</h4>
+                  <ul className="space-y-2 text-sm text-emerald-700">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      Priority access to new AI teaching features
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      Exclusive educator pricing and discounts
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      Direct input on feature development
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      Access to educator-only community
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Modal */}
+      {showFeedback && (
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-orange-900/60 to-amber-900/80 backdrop-blur-xl flex items-center justify-center z-50 p-4 overflow-hidden">
+          {/* Background Effects */}
+          <div className="absolute inset-0">
+            {/* Animated gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-yellow-500/10 animate-gradient-x"></div>
+            
+            {/* Floating particles effect */}
+            <div className="absolute inset-0 overflow-hidden">
+              {isClient && [...Array(15)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-gradient-to-r from-orange-400/50 to-amber-400/50 rounded-full animate-float"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${i * 0.7}s`,
+                    animationDuration: `${3 + Math.random() * 4}s`
+                  }}
+                />
+              ))}
+            </div>
+            
+            {/* Large decorative elements */}
+            <div className="absolute top-16 left-16 w-56 h-56 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-16 right-16 w-56 h-56 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1.2s'}}></div>
+          </div>
+          
+          {/* Enhanced Modal Container */}
+          <div className="relative">
+            {/* Glassmorphism Background */}
+            <div className="absolute inset-0 bg-white/20 backdrop-blur-3xl rounded-3xl border border-white/30"></div>
+            
+            {/* Enhanced Glow Effects */}
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 via-amber-500/15 to-yellow-500/20 rounded-3xl blur-xl opacity-60"></div>
+            
+            <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/60">
+              {/* Enhanced Close Button */}
+              <button
+                onClick={() => setShowFeedback(false)}
+                className="absolute top-6 right-6 p-3 bg-white/80 hover:bg-white/95 rounded-2xl transition-all duration-300 border border-slate-200/60 hover:border-orange-300/60 shadow-lg hover:shadow-xl hover:scale-110 z-20"
+              >
+                <X className="w-5 h-5 text-slate-600 hover:text-orange-600 transition-colors duration-300" />
+              </button>
+              
+              <div className="p-8 relative">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg mb-6">
+                    <MessageCircle className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-slate-900 mb-4">Share Your Feedback</h3>
+                  <p className="text-slate-600 text-lg">Help us improve LLMfied by sharing your thoughts and suggestions</p>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleFeedbackSubmit} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Your Name</label>
+                      <input
+                        type="text"
+                        value={feedbackData.name}
+                        onChange={(e) => setFeedbackData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 bg-white/80 backdrop-blur-sm"
+                        placeholder="Your name (optional)"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Email Address</label>
+                      <input
+                        type="email"
+                        value={feedbackData.email}
+                        onChange={(e) => setFeedbackData(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 bg-white/80 backdrop-blur-sm"
+                        placeholder="your@email.com (optional)"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Feedback Type</label>
+                    <select
+                      value={feedbackData.type}
+                      onChange={(e) => setFeedbackData(prev => ({ ...prev, type: e.target.value }))}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 bg-white/80 backdrop-blur-sm"
+                    >
+                      <option value="general">General Feedback</option>
+                      <option value="feature">Feature Request</option>
+                      <option value="bug">Bug Report</option>
+                      <option value="improvement">Improvement Suggestion</option>
+                      <option value="praise">Compliment</option>
+                      <option value="quick">Quick Message</option>
+                    </select>
+                  </div>
+
+                  {/* Rating */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Overall Experience Rating</label>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFeedbackData(prev => ({ ...prev, rating }))}
+                          className={`p-2 rounded-lg transition-all duration-300 ${
+                            feedbackData.rating >= rating
+                              ? 'text-yellow-500 scale-110 transform'
+                              : 'text-slate-300 hover:text-yellow-400'
+                          }`}
+                        >
+                          <Star className={`w-8 h-8 ${feedbackData.rating >= rating ? 'fill-current' : ''}`} />
+                        </button>
+                      ))}
+                      <span className="ml-4 text-sm text-slate-600">
+                        {feedbackData.rating === 5 ? '🎉 Excellent!' : 
+                         feedbackData.rating === 4 ? '😊 Great!' :
+                         feedbackData.rating === 3 ? '👍 Good' :
+                         feedbackData.rating === 2 ? '😐 Okay' : '😞 Poor'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Your Message *</label>
+                    <textarea
+                      required
+                      value={feedbackData.message}
+                      onChange={(e) => setFeedbackData(prev => ({ ...prev, message: e.target.value }))}
+                      rows={5}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 bg-white/80 backdrop-blur-sm resize-none"
+                      placeholder="Share your thoughts, suggestions, or experiences with LLMfied..."
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 rounded-2xl blur-lg opacity-30"></div>
+                    <button
+                      type="submit"
+                      disabled={feedbackSubmitting}
+                      className="relative w-full bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 hover:from-orange-700 hover:via-amber-700 hover:to-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
+                      <span className="relative z-10 flex items-center justify-center gap-3">
+                        {feedbackSubmitting ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Sending Feedback...
+                          </>
+                        ) : (
+                          <>
+                            <Heart className="w-5 h-5" />
+                            Send Feedback
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                          </>
+                        )}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+
+                {/* Thank You Note */}
+                <div className="mt-8 p-6 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200/50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Heart className="w-5 h-5 text-red-500" />
+                    <h4 className="font-bold text-orange-800">Thank You!</h4>
+                  </div>
+                  <p className="text-sm text-orange-700 leading-relaxed">
+                    Your feedback helps us create a better learning experience for everyone. We read every message and use your insights to guide our development priorities.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

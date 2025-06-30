@@ -4,6 +4,16 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { sendLearnerRegistrationNotification, sendEducatorRegistrationNotification } from "@/lib/emailService"
 
+// Helper function to check if a password is already hashed
+function isPasswordHashed(password) {
+  // bcrypt hashes always start with $2a$, $2b$, or $2y$ and are 60 characters long
+  return password && (
+    password.startsWith('$2a$') || 
+    password.startsWith('$2b$') || 
+    password.startsWith('$2y$')
+  ) && password.length === 60
+}
+
 export async function POST(request) {
   try {
     console.log("=== Starting POST /api/auth ===")
@@ -28,59 +38,51 @@ export async function POST(request) {
     if (action === "register") {
       console.log("Processing registration for:", email)
       
-      // Validate role - only allow learner registration
-      const requestedRole = role || "learner"
-      if (requestedRole === "educator") {
-        console.log("Educator registration blocked for:", email)
-        return NextResponse.json({ 
-          error: "Educator registration is currently disabled. Please contact support if you're an educator." 
-        }, { status: 403 })
-      }
-      
-      // Force role to be learner
-      const userRole = "learner"
-      
+      // Check if user already exists
       const existingUser = await db.collection("users").findOne({ email })
       if (existingUser) {
         console.log("User already exists:", email)
         return NextResponse.json({ error: "User already exists" }, { status: 400 })
       }
 
-      console.log("Hashing password...")
+      console.log("Hashing password for new user...")
       const hashedPassword = await bcrypt.hash(password, 12)
+      console.log("Password hashed successfully")
+
+      const userRole = role || "learner"
       
-      console.log("Creating new user...")
+      console.log("Creating new user with role:", userRole)
       const user = await db.collection("users").insertOne({
         email,
         password: hashedPassword,
         name,
-        role: userRole, // Always learner
+        role: userRole,
         createdAt: new Date(),
         updatedAt: new Date(),
+        passwordHashed: true, // Flag to indicate password is hashed
       })
 
-      console.log("User created with ID:", user.insertedId)
-      
-      // Send email notifications
-      console.log("Sending email notifications...")
-      
-      // Only send learner registration notification (role is always "learner" now)
-      const emailResult = await sendLearnerRegistrationNotification({
-        name,
-        email,
-        role: userRole
-      })
-      
-      if (emailResult.success) {
-        console.log("✅ Learner registration emails sent successfully")
-      } else {
-        console.warn("⚠️ Failed to send some registration emails:", emailResult.error)
-      }
-      
+      console.log("User created successfully with ID:", user.insertedId)
+
       console.log("Generating JWT token...")
       const token = jwt.sign({ userId: user.insertedId, email, role: userRole }, process.env.JWT_SECRET, {
         expiresIn: "7d",
       })
+
+      // Send registration notification emails
+      console.log("Sending registration notification emails...")
+      let emailResult
+      if (userRole === "educator") {
+        emailResult = await sendEducatorRegistrationNotification({ name, email, role: userRole })
+      } else {
+        emailResult = await sendLearnerRegistrationNotification({ name, email, role: userRole })
+      }
+      
+      if (emailResult.success) {
+        console.log("✅ Registration notification emails sent successfully")
+      } else {
+        console.warn("⚠️ Failed to send registration notification emails:", emailResult.error)
+      }
 
       console.log("Registration successful for:", email)
       return NextResponse.json({ token, user: { id: user.insertedId, email, name, role: userRole } })
@@ -96,10 +98,49 @@ export async function POST(request) {
       }
 
       console.log("User found, verifying password...")
-      const isValid = await bcrypt.compare(password, user.password)
+      let isValid = false
+      let needsPasswordMigration = false
+
+      // Check if password is already hashed
+      if (isPasswordHashed(user.password)) {
+        console.log("Password is hashed, using bcrypt.compare...")
+        isValid = await bcrypt.compare(password, user.password)
+      } else {
+        console.log("Password appears to be plain text, checking direct comparison...")
+        // For backward compatibility, check plain text password
+        if (user.password === password) {
+          isValid = true
+          needsPasswordMigration = true
+          console.log("Plain text password matched, will migrate to hashed password")
+        }
+      }
+
       if (!isValid) {
         console.log("Invalid password for:", email)
         return NextResponse.json({ error: "Invalid credentials" }, { status: 400 })
+      }
+
+      // If user has plain text password, migrate it to hashed password
+      if (needsPasswordMigration) {
+        console.log("Migrating plain text password to hashed password for:", email)
+        try {
+          const hashedPassword = await bcrypt.hash(password, 12)
+          await db.collection("users").updateOne(
+            { _id: user._id },
+            { 
+              $set: { 
+                password: hashedPassword,
+                passwordHashed: true,
+                passwordMigratedAt: new Date(),
+                updatedAt: new Date()
+              }
+            }
+          )
+          console.log("✅ Password successfully migrated to hash for:", email)
+        } catch (migrationError) {
+          console.error("⚠️ Failed to migrate password for:", email, migrationError)
+          // Don't fail the login if migration fails, but log it
+        }
       }
 
       console.log("Password valid, generating token...")
@@ -110,7 +151,13 @@ export async function POST(request) {
       console.log("Login successful for:", email, "with role:", user.role)
       return NextResponse.json({
         token,
-        user: { id: user._id, email: user.email, name: user.name, role: user.role },
+        user: { 
+          id: user._id, 
+          email: user.email, 
+          name: user.name, 
+          role: user.role,
+          avatar: user.avatar 
+        },
       })
     }
     

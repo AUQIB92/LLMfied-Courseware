@@ -52,8 +52,9 @@ export async function POST(request) {
     }
     
     // Hash password and create user
-    console.log("Hashing password...")
+    console.log("Hashing password for new user...")
     const hashedPassword = await bcrypt.hash(password, 12)
+    console.log("Password hashed successfully")
     
     console.log("Creating new user...")
     const user = await db.collection("users").insertOne({
@@ -62,6 +63,7 @@ export async function POST(request) {
       name: otpRecord.name,
       role: "learner", // Always learner for OTP registration
       emailVerified: true,
+      passwordHashed: true, // Flag to indicate password is properly hashed
       createdAt: new Date(),
       updatedAt: new Date(),
     })
@@ -124,7 +126,8 @@ export async function POST(request) {
     
     return NextResponse.json({ 
       error: "OTP verification failed",
-      details: error.message
+      details: error.message,
+      type: error.constructor.name
     }, { status: 500 })
   }
 }
