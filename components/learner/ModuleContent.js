@@ -56,6 +56,10 @@ import {
   Eye,
   Settings,
   Crown,
+  Maximize2,
+  Minimize2,
+  RefreshCw,
+  ChevronLeft,
 } from "lucide-react"
 import QuizModal from "./QuizModal"
 
@@ -418,8 +422,67 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
   const [autoComplete, setAutoComplete] = useState(true)
   const [livePreview, setLivePreview] = useState(false)
   
+  // NEW: Multi-page detailed explanations state
+  const [explanationPages, setExplanationPages] = useState({}) // Track current page for each subsection
+  const [wordsPerExplanationPage] = useState(200) // Words per page for individual explanations
+  
   const { getAuthHeaders } = useAuth()
   const codeEditorRef = useRef(null)
+
+  // NEW: Enhanced Rich text formatting helper for beautiful text display
+  const formatRichText = (text) => {
+    if (!text) return ''
+    
+    return text
+      .split('\n\n')
+      .map(paragraph => {
+        // Format bold text (**text** -> <strong>text</strong>)
+        let formatted = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-800">$1</strong>')
+        
+        // Format inline math ($equation$ -> styled math)
+        formatted = formatted.replace(/\$([^$]+)\$/g, '<span class="inline-flex items-center bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 text-blue-900 px-4 py-2 rounded-xl font-mono text-sm border-2 border-blue-300 mx-1 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">✨ $1</span>')
+        
+        // Format block math ($$equation$$ -> styled block math)
+        formatted = formatted.replace(/\$\$([^$]+)\$\$/g, '<div class="my-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 text-center"><span class="font-mono text-lg text-blue-800">$1</span></div>')
+        
+        // Format code blocks (`code` -> styled code)
+        formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-gray-100 text-gray-800 px-2 py-1 rounded font-mono text-sm">$1</code>')
+        
+        // Format italic text (*text* -> <em>text</em>)
+        formatted = formatted.replace(/\*([^*]+)\*/g, '<em class="italic text-slate-600">$1</em>')
+        
+        return `<p class="mb-6 last:mb-0">${formatted}</p>`
+      })
+      .join('')
+  }
+
+  // NEW: Helper functions for multi-page explanations
+  const splitExplanationIntoPages = (explanation) => {
+    if (!explanation || explanation.length === 0) return []
+    
+    const words = explanation.split(' ')
+    const pages = []
+    
+    for (let i = 0; i < words.length; i += wordsPerExplanationPage) {
+      const pageWords = words.slice(i, i + wordsPerExplanationPage)
+      pages.push(pageWords.join(' '))
+    }
+    
+    return pages.length > 0 ? pages : [explanation]
+  }
+
+  // Get current page for a specific subsection explanation
+  const getCurrentExplanationPage = (subsectionId) => {
+    return explanationPages[subsectionId] || 0
+  }
+
+  // Set current page for a specific subsection explanation
+  const setCurrentExplanationPageForSubsection = (subsectionId, pageIndex) => {
+    setExplanationPages(prev => ({
+      ...prev,
+      [subsectionId]: pageIndex
+    }))
+  }
 
   // Calculate reading progress
   useEffect(() => {
@@ -536,11 +599,44 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
   useEffect(() => {
     setStartTime(Date.now())
     if (module.content) {
+      // Only use pre-generated detailed subsections from curriculum processing
       if (module.detailedSubsections && module.detailedSubsections.length > 0) {
-        setContentSubsections(module.detailedSubsections)
-      } else {
-        generateContentSubsections()
+        console.log('🔍 Raw module.detailedSubsections:', module.detailedSubsections)
+        
+        // Ensure each subsection has a unique ID for proper toggling
+        const subsectionsWithIds = module.detailedSubsections.map((subsection, index) => {
+          console.log(`🔧 Processing subsection ${index}:`, subsection)
+          
+          // Enhanced ID generation with multiple fallbacks
+          let uniqueId
+          if (subsection.id && typeof subsection.id === 'string' && subsection.id.trim() !== '') {
+            uniqueId = subsection.id.trim()
+          } else if (subsection.title && typeof subsection.title === 'string' && subsection.title.trim() !== '') {
+            uniqueId = subsection.title.trim().replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
+          } else {
+            uniqueId = `subsection-${module.id || 'unknown'}-${index}`
+          }
+          
+          console.log(`✅ Generated ID for subsection ${index}: "${uniqueId}"`)
+          
+          return {
+            ...subsection,
+            id: uniqueId // Ensure unique ID
+          }
+        })
+        
+        console.log('✅ Subsections with proper IDs:', subsectionsWithIds)
+        setContentSubsections(subsectionsWithIds)
+        
+        // Initialize expanded state for all subsections as closed
+        const initialExpandedState = {}
+        subsectionsWithIds.forEach(subsection => {
+          initialExpandedState[subsection.id] = false
+        })
+        console.log('📊 Initial expanded state:', initialExpandedState)
+        setExpandedSubsections(initialExpandedState)
       }
+      // No fallback generation - content should be pre-generated during curriculum processing
     }
     return () => {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000 / 60)
@@ -675,120 +771,8 @@ Please structure your response as:
     }
   }
 
-  // Generate content subsections
-  const generateContentSubsections = async () => {
-    if (!module.content) return
-
-    setLoadingSubsections(true)
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          ...getAuthHeaders(),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: `Analyze this module content and break it into logical subsections with beautiful explanations. Each subsection should:
-
-1. Have a clear, descriptive title
-2. Include simplified explanation with analogies
-3. Show practical examples
-4. Identify if it needs code simulation/visualization
-5. Map to learning objectives if applicable
-
-Module Content: ${module.content}
-Learning Objectives: ${module.objectives ? module.objectives.join(", ") : "Not specified"}
-
-Return a JSON array of subsections in this format:
-[
-  {
-    "id": "subsection-1",
-    "title": "Clear Subsection Title",
-    "keyTerms": ["term1", "term2"],
-    "explanation": "Beautiful, simplified explanation with analogies",
-    "practicalExample": "Real-world example that demonstrates the concept",
-    "needsCodeSimulation": true/false,
-    "simulationType": "algorithm|data-structure|mathematical|visual|interactive",
-    "relatedObjectives": [0, 1],
-    "complexity": "beginner|intermediate|advanced",
-    "estimatedTime": "5-10 minutes"
-  }
-]
-
-Make explanations engaging and easy to understand.`,
-          courseId: course._id,
-          moduleId: module.id,
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        try {
-          const subsections = extractJsonFromResponse(data.response)
-          
-          // Validate the response structure
-          if (Array.isArray(subsections)) {
-            setContentSubsections(subsections)
-          } else if (subsections && subsections.error) {
-            console.error("AI response parsing failed:", subsections.originalError)
-            // Create fallback subsection
-            setContentSubsections([
-              {
-                id: "main-content",
-                title: "Main Content",
-                keyTerms: [],
-                explanation: module.content || "Content temporarily unavailable",
-                practicalExample: "Examples will be provided in the next update",
-                needsCodeSimulation: false,
-                simulationType: "visual",
-                relatedObjectives: [0],
-                complexity: "beginner",
-                estimatedTime: "10-15 minutes"
-              },
-            ])
-          } else {
-            throw new Error("Invalid subsections structure")
-          }
-        } catch (parseError) {
-          console.error("Error parsing subsections:", parseError)
-          setContentSubsections([
-            {
-              id: "main-content",
-              title: "Main Content",
-              keyTerms: [],
-              explanation: module.content || "Content available but processing failed",
-              practicalExample: "Please reload to try again",
-              needsCodeSimulation: false,
-              simulationType: "visual",
-              relatedObjectives: [0],
-              complexity: "beginner",
-              estimatedTime: "10-15 minutes"
-            },
-          ])
-        }
-      } else {
-        console.error("Failed to generate subsections:", response.statusText)
-        setContentSubsections([
-          {
-            id: "main-content",
-            title: "Main Content",
-            keyTerms: [],
-            explanation: module.content || "Content temporarily unavailable",
-            practicalExample: "Network error - please try again",
-            needsCodeSimulation: false,
-            simulationType: "visual",
-            relatedObjectives: [0],
-            complexity: "beginner",
-            estimatedTime: "10-15 minutes"
-          },
-        ])
-      }
-    } catch (error) {
-      console.error("Error generating subsections:", error)
-    } finally {
-      setLoadingSubsections(false)
-    }
-  }
+  // Note: Content subsections should be pre-generated during curriculum processing
+  // The generateContentSubsections function has been removed to prevent learner-side content generation
 
   // Programming Practice Functions
   const generateProgrammingChallenges = async () => {
@@ -1048,10 +1032,21 @@ Return JSON format:
   }
 
   const toggleSubsection = (subsectionId) => {
-    setExpandedSubsections((prev) => ({
-      ...prev,
-      [subsectionId]: !prev[subsectionId],
-    }))
+    console.log('🔧 Toggling subsection:', subsectionId)
+    console.log('📊 Current expandedSubsections:', expandedSubsections)
+    
+    setExpandedSubsections((prev) => {
+      // Create new state with only the clicked subsection toggled
+      const newState = {
+        ...prev,
+        [subsectionId]: !prev[subsectionId],
+      }
+      
+      console.log('✅ New expandedSubsections state:', newState)
+      console.log(`📍 Subsection ${subsectionId} is now:`, newState[subsectionId] ? 'EXPANDED' : 'COLLAPSED')
+      
+      return newState
+    })
   }
 
   // Memoized resource handling - Clean version without debug output
@@ -1100,42 +1095,63 @@ Return JSON format:
     return { legacyResources: legacy, aiResources: ai }
   }, [module.resources])
 
-  // Organize manual resources by type for the instructor masterpieces section
+  // Organize resources by type for the comprehensive resources section
   const instructorMasterpieces = useMemo(() => {
-    // Only process resources that have an ID (indicating they were added through the educator interface)
+    // Process manually added resources (educator interface)
     const educatorAddedResources = legacyResources.filter(resource => {
       const hasId = resource.id && resource.id !== null && resource.id !== undefined
       const hasRequiredFields = (resource.title || resource.name) && resource.url
       return hasId && hasRequiredFields
     })
     
+    // Combine educator-added resources with AI-generated resources
+    const allResources = [...educatorAddedResources]
+    
+    // Add AI-generated resources from curriculum processing
+    Object.keys(aiResources).forEach(category => {
+      if (Array.isArray(aiResources[category])) {
+        aiResources[category].forEach(resource => {
+          // Only add resources that have proper titles and URLs
+          if (resource && (resource.title || resource.name) && (resource.url || resource.link)) {
+            // Mark AI resources for special handling and ensure proper URL
+            allResources.push({
+              ...resource,
+              isAIGenerated: true,
+              url: resource.url || resource.link,
+              type: category.slice(0, -1) // Remove 's' from category name (e.g., 'articles' -> 'article')
+            })
+          }
+        })
+      }
+    })
+    
     const masterpieces = {
-      articles: educatorAddedResources.filter(r => 
+      articles: allResources.filter(r => 
         r.type === 'article' || r.type === 'articles' || 
         (!r.type && (r.title || r.name)) || 
         (r.type === 'text' || r.type === 'reading' || r.type === 'paper')
       ),
-      videos: educatorAddedResources.filter(r => 
+      videos: allResources.filter(r => 
         r.type === 'video' || r.type === 'videos' || 
         r.type === 'youtube' || r.type === 'vimeo' || r.type === 'media'
       ),
-      books: educatorAddedResources.filter(r => 
+      books: allResources.filter(r => 
         r.type === 'book' || r.type === 'books' || 
         r.type === 'ebook' || r.type === 'textbook' || r.type === 'publication'
       ),
-      tools: educatorAddedResources.filter(r => 
+      tools: allResources.filter(r => 
         r.type === 'tool' || r.type === 'tools' ||
         r.type === 'software' || r.type === 'app' || r.type === 'application'
       ),
-      websites: educatorAddedResources.filter(r => 
+      websites: allResources.filter(r => 
         r.type === 'website' || r.type === 'websites' ||
         r.type === 'web' || r.type === 'link' || r.type === 'url' || r.type === 'site'
       ),
-      exercises: educatorAddedResources.filter(r => 
+      exercises: allResources.filter(r => 
         r.type === 'exercise' || r.type === 'exercises' ||
         r.type === 'practice' || r.type === 'assignment' || r.type === 'quiz'
       ),
-      courses: educatorAddedResources.filter(r => 
+      courses: allResources.filter(r => 
         r.type === 'course' || r.type === 'courses' ||
         r.type === 'tutorial' || r.type === 'learning' || r.type === 'mooc'
       ),
@@ -1145,7 +1161,7 @@ Return JSON format:
     const allCategorized = new Set()
     Object.keys(masterpieces).forEach(category => {
       masterpieces[category] = masterpieces[category].filter(resource => {
-        const resourceKey = resource.id || resource.url || resource.title
+        const resourceKey = resource.id || resource.url || resource.title || resource.name
         if (allCategorized.has(resourceKey)) {
           return false
         }
@@ -1155,7 +1171,7 @@ Return JSON format:
     })
     
     return masterpieces
-  }, [legacyResources])
+  }, [legacyResources, aiResources])
 
   // Enhanced Resource Card Component with Educator Masterpiece Design
   const ResourceCard = ({ resource, type, isInstructorChoice = false }) => {
@@ -1259,8 +1275,20 @@ Return JSON format:
                   <p className="text-slate-600 text-sm font-medium">by {resource.creator}</p>
                 )}
                 
-                {/* Special badge for instructor choices */}
-                {isInstructorChoice && (
+                {/* Special badges for different resource types */}
+                {resource.isAIGenerated ? (
+                  <motion.div
+                    className="mt-2"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, type: "spring" }}
+                  >
+                    <Badge className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0 shadow-md">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI Curated
+                    </Badge>
+                  </motion.div>
+                ) : isInstructorChoice && (
                   <motion.div
                     className="mt-2"
                     initial={{ scale: 0, opacity: 0 }}
@@ -1329,6 +1357,9 @@ Return JSON format:
           
           {/* Floating accent elements */}
           <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          {resource.isAIGenerated && (
+            <div className="absolute -top-4 -left-4 w-16 h-16 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          )}
           {isInstructorChoice && (
             <div className="absolute -top-4 -left-4 w-16 h-16 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           )}
@@ -1763,6 +1794,7 @@ Return JSON format:
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 * index }}
                           >
+                            {console.log(`🔍 Rendering subsection ${subsection.id}, expanded:`, expandedSubsections[subsection.id])}
                             <GlassCard className="bg-white/70 border-cyan-200/50 overflow-hidden">
                               <motion.div
                                 className="p-6 cursor-pointer hover:bg-cyan-50/50 transition-colors"
@@ -1772,7 +1804,7 @@ Return JSON format:
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-4 flex-1">
                                     <motion.div
-                                      className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg"
+                                      className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300"
                                       whileHover={{ scale: 1.1, rotate: 360 }}
                                       transition={{ duration: 0.3 }}
                                     >
@@ -1875,7 +1907,332 @@ Return JSON format:
                                             <Lightbulb className="h-4 w-4" />
                                             Explanation
                                           </h5>
-                                          <p className="text-cyan-700 leading-relaxed">{subsection.explanation}</p>
+                                          {/* Multi-page explanation system */}
+                                          {(() => {
+                                            // Check if AI generated explanationPages exist
+                                            if (subsection.explanationPages && Array.isArray(subsection.explanationPages) && subsection.explanationPages.length > 0) {
+                                              const currentPage = Math.min(getCurrentExplanationPage(subsection.id), subsection.explanationPages.length - 1)
+                                              const totalPages = subsection.explanationPages.length
+                                              const currentPageData = subsection.explanationPages[currentPage]
+                                              
+                                              // Safety check: ensure currentPageData exists and has content
+                                              if (!currentPageData || !currentPageData.content) {
+                                                // Fallback to regular explanation if page data is malformed
+                                                return subsection.explanation ? (
+                                                  <motion.div
+                                                    className="prose prose-lg max-w-none"
+                                                    initial={{ opacity: 0, y: 15 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.5 }}
+                                                  >
+                                                    <div className="bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 rounded-2xl p-8 border border-cyan-100/50 shadow-lg backdrop-blur-sm">
+                                                      <div 
+                                                        className="text-slate-700 leading-8 text-lg font-medium tracking-wide"
+                                                        style={{
+                                                          lineHeight: '1.8',
+                                                          fontFamily: '"Inter", "system-ui", sans-serif',
+                                                          letterSpacing: '0.01em'
+                                                        }}
+                                                        dangerouslySetInnerHTML={{
+                                                          __html: formatRichText(subsection.explanation)
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  </motion.div>
+                                                ) : (
+                                                  <div className="text-center py-8">
+                                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                      <FileText className="h-8 w-8 text-gray-400" />
+                                                    </div>
+                                                    <p className="text-gray-500 italic text-lg">No explanation available for this section.</p>
+                                                  </div>
+                                                )
+                                              }
+                                              
+                                              return (
+                                                <div className="space-y-6">
+                                                  {/* Enhanced Page Content */}
+                                                  <div className="space-y-5">
+                                                    {currentPageData.pageTitle && (
+                                                      <motion.div
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                      >
+                                                        <h6 className="font-bold text-2xl bg-gradient-to-r from-cyan-800 via-blue-700 to-indigo-800 bg-clip-text text-transparent mb-3 leading-tight">
+                                                          {currentPageData.pageTitle}
+                                                        </h6>
+                                                        <div className="w-16 h-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full mb-4"></div>
+                                                      </motion.div>
+                                                    )}
+                                                    
+                                                    <motion.div
+                                                      className="prose prose-lg max-w-none"
+                                                      initial={{ opacity: 0, y: 15 }}
+                                                      animate={{ opacity: 1, y: 0 }}
+                                                      transition={{ duration: 0.5, delay: 0.1 }}
+                                                    >
+                                                      <div className="bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 rounded-2xl p-8 border border-cyan-100/50 shadow-lg backdrop-blur-sm">
+                                                        <div 
+                                                          className="text-slate-700 leading-8 text-lg font-medium tracking-wide"
+                                                          style={{
+                                                            lineHeight: '1.8',
+                                                            fontFamily: '"Inter", "system-ui", sans-serif',
+                                                            letterSpacing: '0.01em'
+                                                          }}
+                                                          dangerouslySetInnerHTML={{
+                                                            __html: formatRichText(currentPageData.content)
+                                                          }}
+                                                        />
+                                                      </div>
+                                                    </motion.div>
+                                                    
+                                                    {currentPageData.keyTakeaway && (
+                                                      <motion.div
+                                                        className="mt-6 p-6 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border border-amber-200/50 shadow-lg"
+                                                        initial={{ opacity: 0, scale: 0.95 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        transition={{ duration: 0.4, delay: 0.2 }}
+                                                      >
+                                                        <div className="flex items-center gap-3 mb-4">
+                                                          <div className="p-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl shadow-md">
+                                                            <Star className="h-5 w-5 text-white" />
+                                                          </div>
+                                                          <span className="text-lg font-bold bg-gradient-to-r from-amber-700 to-orange-700 bg-clip-text text-transparent">
+                                                            💡 Key Takeaway
+                                                          </span>
+                                                        </div>
+                                                        <p className="text-amber-800 text-base leading-7 font-medium italic">
+                                                          "{currentPageData.keyTakeaway}"
+                                                        </p>
+                                                      </motion.div>
+                                                    )}
+                                                  </div>
+                                                  
+                                                  {/* Page Navigation */}
+                                                  {totalPages > 1 && (
+                                                    <div className="flex items-center justify-between pt-4 border-t border-cyan-200">
+                                                      <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-cyan-600">Page {currentPage + 1} of {totalPages}</span>
+                                                        <Badge variant="outline" className="text-xs border-cyan-300 text-cyan-700">
+                                                          <Sparkles className="h-3 w-3 mr-1" />
+                                                          AI-generated pages
+                                                        </Badge>
+                                                      </div>
+                                                      <div className="flex items-center gap-2">
+                                                        <Button
+                                                          size="sm"
+                                                          variant="outline"
+                                                          onClick={() => setCurrentExplanationPageForSubsection(subsection.id, Math.max(0, currentPage - 1))}
+                                                          disabled={currentPage === 0}
+                                                          className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                                        >
+                                                          <ChevronLeft className="h-4 w-4 mr-1" />
+                                                          Previous
+                                                        </Button>
+                                                        <Button
+                                                          size="sm"
+                                                          variant="outline"
+                                                          onClick={() => setCurrentExplanationPageForSubsection(subsection.id, Math.min(totalPages - 1, currentPage + 1))}
+                                                          disabled={currentPage === totalPages - 1}
+                                                          className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                                        >
+                                                          Next
+                                                          <ChevronRight className="h-4 w-4 ml-1" />
+                                                        </Button>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                  
+                                                  {/* Page Numbers */}
+                                                  {totalPages > 1 && (
+                                                    <div className="flex justify-center gap-1 pt-2">
+                                                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                                                        let pageNum
+                                                        if (totalPages <= 5) {
+                                                          pageNum = i
+                                                        } else if (currentPage < 2) {
+                                                          pageNum = i
+                                                        } else if (currentPage > totalPages - 3) {
+                                                          pageNum = totalPages - 5 + i
+                                                        } else {
+                                                          pageNum = currentPage - 2 + i
+                                                        }
+                                                        
+                                                        return (
+                                                          <Button
+                                                            key={`${subsection.id}-ai-page-${pageNum}`}
+                                                            size="sm"
+                                                            variant={currentPage === pageNum ? "default" : "ghost"}
+                                                            onClick={() => setCurrentExplanationPageForSubsection(subsection.id, pageNum)}
+                                                            className={`w-8 h-8 p-0 text-xs ${
+                                                              currentPage === pageNum 
+                                                                ? 'bg-cyan-600 text-white' 
+                                                                : 'text-cyan-600 hover:bg-cyan-50'
+                                                            }`}
+                                                          >
+                                                            {pageNum + 1}
+                                                          </Button>
+                                                        )
+                                                      })}
+                                                      {totalPages > 5 && currentPage < totalPages - 3 && (
+                                                        <React.Fragment key={`${subsection.id}-ai-ellipsis-fragment`}>
+                                                          <span key={`${subsection.id}-ai-ellipsis`} className="text-cyan-400 text-xs self-center">...</span>
+                                                          <Button
+                                                            key={`${subsection.id}-ai-last-page`}
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => setCurrentExplanationPageForSubsection(subsection.id, totalPages - 1)}
+                                                            className="w-8 h-8 p-0 text-xs text-cyan-600 hover:bg-cyan-50"
+                                                          >
+                                                            {totalPages}
+                                                          </Button>
+                                                        </React.Fragment>
+                                                      )}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )
+                                            } else if (subsection.explanation) {
+                                              // Fallback: Split explanation by words for pagination
+                                              const pages = splitExplanationIntoPages(subsection.explanation)
+                                              const currentPage = getCurrentExplanationPage(subsection.id)
+                                              const totalPages = pages.length
+                                              
+                                              if (totalPages === 1) {
+                                                // Single page, display beautifully
+                                                return (
+                                                  <motion.div
+                                                    className="prose prose-lg max-w-none"
+                                                    initial={{ opacity: 0, y: 15 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.5 }}
+                                                  >
+                                                    <div className="bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 rounded-2xl p-8 border border-cyan-100/50 shadow-lg backdrop-blur-sm">
+                                                      <div 
+                                                        className="text-slate-700 leading-8 text-lg font-medium tracking-wide"
+                                                        style={{
+                                                          lineHeight: '1.8',
+                                                          fontFamily: '"Inter", "system-ui", sans-serif',
+                                                          letterSpacing: '0.01em'
+                                                        }}
+                                                        dangerouslySetInnerHTML={{
+                                                          __html: formatRichText(subsection.explanation)
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  </motion.div>
+                                                )
+                                              }
+                                              
+                                              return (
+                                                <div className="space-y-6">
+                                                  {/* Enhanced Page Content */}
+                                                  <motion.div
+                                                    className="prose prose-lg max-w-none"
+                                                    initial={{ opacity: 0, y: 15 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.5 }}
+                                                    key={`page-${currentPage}`}
+                                                  >
+                                                    <div className="bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 rounded-2xl p-8 border border-cyan-100/50 shadow-lg backdrop-blur-sm">
+                                                      <div 
+                                                        className="text-slate-700 leading-8 text-lg font-medium tracking-wide"
+                                                        style={{
+                                                          lineHeight: '1.8',
+                                                          fontFamily: '"Inter", "system-ui", sans-serif',
+                                                          letterSpacing: '0.01em'
+                                                        }}
+                                                        dangerouslySetInnerHTML={{
+                                                          __html: formatRichText(pages[currentPage])
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  </motion.div>
+                                                  
+                                                  {/* Page Navigation */}
+                                                  <div className="flex items-center justify-between pt-4 border-t border-cyan-200">
+                                                    <div className="flex items-center gap-2">
+                                                      <span className="text-sm text-cyan-600">Page {currentPage + 1} of {totalPages}</span>
+                                                      <Badge variant="outline" className="text-xs border-cyan-300 text-cyan-700">
+                                                        ~{wordsPerExplanationPage} words per page
+                                                      </Badge>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                      <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => setCurrentExplanationPageForSubsection(subsection.id, Math.max(0, currentPage - 1))}
+                                                        disabled={currentPage === 0}
+                                                        className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                                      >
+                                                        <ChevronLeft className="h-4 w-4 mr-1" />
+                                                        Previous
+                                                      </Button>
+                                                      <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => setCurrentExplanationPageForSubsection(subsection.id, Math.min(totalPages - 1, currentPage + 1))}
+                                                        disabled={currentPage === totalPages - 1}
+                                                        className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                                      >
+                                                        Next
+                                                        <ChevronRight className="h-4 w-4 ml-1" />
+                                                      </Button>
+                                                    </div>
+                                                  </div>
+                                                  
+                                                  {/* Page Numbers */}
+                                                  <div className="flex justify-center gap-1 pt-2">
+                                                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                                                      let pageNum
+                                                      if (totalPages <= 5) {
+                                                        pageNum = i
+                                                      } else if (currentPage < 2) {
+                                                        pageNum = i
+                                                      } else if (currentPage > totalPages - 3) {
+                                                        pageNum = totalPages - 5 + i
+                                                      } else {
+                                                        pageNum = currentPage - 2 + i
+                                                      }
+                                                      
+                                                      return (
+                                                        <Button
+                                                          key={`${subsection.id}-fallback-page-${pageNum}`}
+                                                          size="sm"
+                                                          variant={currentPage === pageNum ? "default" : "ghost"}
+                                                          onClick={() => setCurrentExplanationPageForSubsection(subsection.id, pageNum)}
+                                                          className={`w-8 h-8 p-0 text-xs ${
+                                                            currentPage === pageNum 
+                                                              ? 'bg-cyan-600 text-white' 
+                                                              : 'text-cyan-600 hover:bg-cyan-50'
+                                                          }`}
+                                                        >
+                                                          {pageNum + 1}
+                                                        </Button>
+                                                      )
+                                                    })}
+                                                    {totalPages > 5 && currentPage < totalPages - 3 && (
+                                                      <React.Fragment key={`${subsection.id}-fallback-ellipsis-fragment`}>
+                                                        <span key={`${subsection.id}-fallback-ellipsis`} className="text-cyan-400 text-xs self-center">...</span>
+                                                        <Button
+                                                          key={`${subsection.id}-fallback-last-page`}
+                                                          size="sm"
+                                                          variant="ghost"
+                                                          onClick={() => setCurrentExplanationPageForSubsection(subsection.id, totalPages - 1)}
+                                                          className="w-8 h-8 p-0 text-xs text-cyan-600 hover:bg-cyan-50"
+                                                        >
+                                                          {totalPages}
+                                                        </Button>
+                                                      </React.Fragment>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )
+                                            } else {
+                                              return <p className="text-cyan-500 italic">No explanation available for this section.</p>
+                                            }
+                                          })()}
                                         </motion.div>
 
                                         {/* Practical Example */}
@@ -1890,9 +2247,10 @@ Return JSON format:
                                               <TestTube className="h-4 w-4" />
                                               Practical Example
                                             </h5>
-                                            <p className="text-yellow-700 leading-relaxed">
-                                              {subsection.practicalExample}
-                                            </p>
+                                            <div 
+                                              className="text-yellow-700 leading-relaxed"
+                                              dangerouslySetInnerHTML={{ __html: formatRichText(subsection.practicalExample) }}
+                                            />
                                           </motion.div>
                                         )}
 
@@ -1973,14 +2331,19 @@ Return JSON format:
                       </motion.div>
                     ) : (
                       <motion.div className="text-center py-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          <Button
-                            onClick={generateContentSubsections}
-                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                          >
-                            <Layers className="h-4 w-4 mr-2" />
-                            Generate Detailed Explanations
-                          </Button>
+                        <motion.div className="space-y-4">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                            <Layers className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-700 mb-2">Detailed Explanations Not Available</h3>
+                            <p className="text-sm text-gray-500 mb-4">
+                              This module is still being processed. Detailed subsections will be available once the curriculum processing is complete.
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              Content should be pre-generated during course creation by the educator.
+                            </p>
+                          </div>
                         </motion.div>
                       </motion.div>
                     )}
@@ -1991,7 +2354,10 @@ Return JSON format:
           </motion.div>
         )}
 
-        {/* Enhanced Instructor Masterpieces Section - Always Show Template */}
+
+
+        {/* Enhanced Instructor Masterpieces Section - Only Show if Resources Available */}
+        {(Object.values(instructorMasterpieces).some(category => category.length > 0)) && (
         <motion.div key={`instructor-masterpieces-${module.id}`} variants={itemVariants}>
           <div className="relative">
             {/* Enhanced background blur effect */}
@@ -2265,6 +2631,7 @@ Return JSON format:
               </Card>
             </div>
           </motion.div>
+        )}
 
         {/* Complete Learning Resources Section - Educator Dashboard Style */}
         <motion.div key={`complete-learning-resources-${module.id}`} variants={itemVariants}>
@@ -2607,6 +2974,7 @@ Return JSON format:
                 </EnhancedBadge>
               </motion.h3>
 
+              {/* Programming Practice Section */}
               <AnimatePresence mode="wait">
                 {loadingChallenges ? (
                   <EnhancedLoader text="Generating programming challenges..." />
@@ -2648,353 +3016,7 @@ Return JSON format:
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        {/* Challenge Header */}
-                        <GlassCard className="bg-gradient-to-r from-emerald-100/70 to-teal-100/70 border-emerald-300/50">
-                          <CardContent className="p-6">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex-1">
-                                <h4 className="font-bold text-xl text-emerald-900 mb-2">
-                                  {activeProgrammingChallenge.title}
-                                </h4>
-                                <p className="text-emerald-700 leading-relaxed mb-4">
-                                  {activeProgrammingChallenge.description}
-                                </p>
-                                
-                                <div className="flex items-center gap-3 flex-wrap">
-                                  <EnhancedBadge className={`${
-                                    activeProgrammingChallenge.difficulty === 'beginner' 
-                                      ? 'bg-green-100 text-green-700'
-                                      : activeProgrammingChallenge.difficulty === 'intermediate'
-                                        ? 'bg-yellow-100 text-yellow-700'
-                                        : 'bg-red-100 text-red-700'
-                                  }`}>
-                                    {activeProgrammingChallenge.difficulty}
-                                  </EnhancedBadge>
-                                  <EnhancedBadge className="bg-blue-100 text-blue-700">
-                                    <Clock className="h-3 w-3 mr-1" />
-                                    {activeProgrammingChallenge.estimatedTime}
-                                  </EnhancedBadge>
-                                  {challengeScore > 0 && (
-                                    <EnhancedBadge className="bg-green-100 text-green-700">
-                                      <Trophy className="h-3 w-3 mr-1" />
-                                      Score: {challengeScore}%
-                                    </EnhancedBadge>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="flex gap-2 ml-4">
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() => setShowHints(!showHints)}
-                                  className="p-2 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
-                                >
-                                  <Lightbulb className="h-4 w-4" />
-                                </motion.button>
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() => toggleSolution(activeProgrammingChallenge.id)}
-                                  className="p-2 rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </motion.button>
-                              </div>
-                            </div>
-
-                            {/* Concepts */}
-                            {activeProgrammingChallenge.concepts && (
-                              <div>
-                                <h5 className="font-medium text-emerald-800 text-sm mb-2">Concepts:</h5>
-                                <div className="flex flex-wrap gap-2">
-                                  {activeProgrammingChallenge.concepts.map((concept, index) => (
-                                    <EnhancedBadge key={`concept-${index}-${concept}`} variant="outline" className="text-xs border-emerald-300 text-emerald-700">
-                                      {concept}
-                                    </EnhancedBadge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </CardContent>
-                        </GlassCard>
-
-                        {/* Hints Section */}
-                        <AnimatePresence>
-                          {showHints && activeProgrammingChallenge.hints && (
-                            <motion.div
-                              key={`hints-${activeProgrammingChallenge.id}`}
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.3 }}
-                            >
-                              <GlassCard className="bg-gradient-to-r from-yellow-50/80 to-amber-50/80 border-yellow-200/50">
-                                <CardContent className="p-6">
-                                  <h5 className="font-semibold text-yellow-800 mb-3 flex items-center gap-2">
-                                    <Lightbulb className="h-4 w-4" />
-                                    Hints
-                                  </h5>
-                                  <div className="space-y-2">
-                                    {activeProgrammingChallenge.hints.map((hint, index) => (
-                                      <motion.div
-                                        key={`hint-${index}-${hint.substring(0, 20)}`}
-                                        className="flex items-start gap-3 p-3 bg-yellow-100/50 rounded-lg"
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.1 * index }}
-                                      >
-                                        <div className="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
-                                          {index + 1}
-                                        </div>
-                                        <p className="text-yellow-700 text-sm">{hint}</p>
-                                      </motion.div>
-                                    ))}
-                                  </div>
-                                </CardContent>
-                              </GlassCard>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        {/* IDE Section */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {/* Code Editor */}
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <h5 className="font-semibold text-emerald-800 flex items-center gap-2">
-                                <Terminal className="h-4 w-4" />
-                                Code Editor
-                              </h5>
-                              
-                              <div className="flex items-center gap-2">
-                                {/* Language Selector */}
-                                <div className="flex bg-emerald-100 rounded-lg p-1">
-                                  {['javascript', 'python', 'java'].map((lang) => (
-                                    <button
-                                      key={lang}
-                                      onClick={() => switchProgrammingLanguage(lang)}
-                                      className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                        programmingLanguage === lang
-                                          ? 'bg-emerald-500 text-white'
-                                          : 'text-emerald-700 hover:bg-emerald-200'
-                                      }`}
-                                    >
-                                      {lang.toUpperCase()}
-                                    </button>
-                                  ))}
-                                </div>
-                                
-                                {/* IDE Settings */}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setCodeTheme(codeTheme === 'dark' ? 'light' : 'dark')}
-                                  className="p-2"
-                                >
-                                  <Settings className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                            
-                            <CodeEditor
-                              value={userCode}
-                              onChange={setUserCode}
-                              language={programmingLanguage}
-                              theme={codeTheme}
-                              fontSize={fontSize}
-                            />
-                            
-                            {/* Action Buttons */}
-                            <div className="flex gap-2 flex-wrap">
-                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                <Button
-                                  onClick={runCode}
-                                  disabled={isRunningCode || !userCode.trim()}
-                                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
-                                >
-                                  {isRunningCode ? (
-                                    <>
-                                      <motion.div
-                                        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                                      />
-                                      Running...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <PlayCircle className="h-4 w-4 mr-2" />
-                                      Run Code
-                                    </>
-                                  )}
-                                </Button>
-                              </motion.div>
-                              
-                              <Button onClick={resetCode} variant="outline" className="border-gray-300">
-                                <RotateCcw className="h-4 w-4 mr-2" />
-                                Reset
-                              </Button>
-                              
-                              <Button onClick={saveCode} variant="outline" className="border-blue-300">
-                                <Save className="h-4 w-4 mr-2" />
-                                Save
-                              </Button>
-                              
-                              {savedCodes[activeProgrammingChallenge.id] && (
-                                <Button onClick={loadSavedCode} variant="outline" className="border-green-300">
-                                  <Upload className="h-4 w-4 mr-2" />
-                                  Load Saved
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Output Panel */}
-                          <div className="space-y-4">
-                            <h5 className="font-semibold text-emerald-800 flex items-center gap-2">
-                              <Terminal className="h-4 w-4" />
-                              Output & Results
-                            </h5>
-                            
-                            {/* Console Output */}
-                            <GlassCard className="bg-gray-900 text-green-400 border-gray-700">
-                              <CardContent className="p-4">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <div className="flex gap-1">
-                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                  </div>
-                                  <span className="text-xs text-gray-400">Console Output</span>
-                                </div>
-                                <div className="font-mono text-sm whitespace-pre-wrap min-h-[120px] max-h-[300px] overflow-y-auto">
-                                  {codeOutput || (codeErrors ? codeErrors : "Output will appear here...")}
-                                </div>
-                              </CardContent>
-                            </GlassCard>
-
-                            {/* Test Results */}
-                            {testResults.length > 0 && (
-                              <GlassCard className="bg-white/80 border-gray-200/50">
-                                <CardContent className="p-4">
-                                  <h6 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
-                                    <TestTube className="h-4 w-4" />
-                                    Test Results
-                                  </h6>
-                                  
-                                  <div className="space-y-2">
-                                    {testResults.map((test, index) => (
-                                      <motion.div
-                                        key={`test-result-${index}-${test.testCase || test.description || index}`}
-                                        className={`flex items-center gap-3 p-3 rounded-lg border ${
-                                          test.passed 
-                                            ? 'bg-green-50 border-green-200' 
-                                            : 'bg-red-50 border-red-200'
-                                        }`}
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.1 * index }}
-                                      >
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                          test.passed ? 'bg-green-500' : 'bg-red-500'
-                                        }`}>
-                                          {test.passed ? (
-                                            <CheckCircle className="h-4 w-4 text-white" />
-                                          ) : (
-                                            <span className="text-white text-xs">✕</span>
-                                          )}
-                                        </div>
-                                        <div className="flex-1">
-                                          <p className={`text-sm font-medium ${
-                                            test.passed ? 'text-green-800' : 'text-red-800'
-                                          }`}>
-                                            {test.testCase}
-                                          </p>
-                                          {!test.passed && (
-                                            <p className="text-xs text-red-600 mt-1">
-                                              Expected: {test.expected}, Got: {test.actual}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </motion.div>
-                                    ))}
-                                  </div>
-                                  
-                                  {challengeScore > 0 && (
-                                    <motion.div
-                                      className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
-                                      initial={{ scale: 0.9, opacity: 0 }}
-                                      animate={{ scale: 1, opacity: 1 }}
-                                      transition={{ delay: 0.3 }}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <span className="font-medium text-blue-800">Challenge Score:</span>
-                                        <div className="flex items-center gap-2">
-                                          <div className="flex">
-                                            {[...Array(5)].map((_, i) => (
-                                              <Star
-                                                key={`challenge-star-${i}`}
-                                                className={`h-4 w-4 ${
-                                                  i < Math.floor(challengeScore / 20) 
-                                                    ? 'text-yellow-500 fill-current' 
-                                                    : 'text-gray-300'
-                                                }`}
-                                              />
-                                            ))}
-                                          </div>
-                                          <span className="font-bold text-blue-800">{challengeScore}%</span>
-                                        </div>
-                                      </div>
-                                    </motion.div>
-                                  )}
-                                </CardContent>
-                              </GlassCard>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Solution Section */}
-                        <AnimatePresence>
-                          {showSolution[activeProgrammingChallenge.id] && (
-                            <motion.div
-                              key={`solution-${activeProgrammingChallenge.id}`}
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.3 }}
-                            >
-                              <GlassCard className="bg-gradient-to-r from-purple-50/80 to-indigo-50/80 border-purple-200/50">
-                                <CardContent className="p-6">
-                                  <h5 className="font-semibold text-purple-800 mb-4 flex items-center gap-2">
-                                    <Zap className="h-4 w-4" />
-                                    Solution & Explanation
-                                  </h5>
-                                  
-                                  <div className="space-y-4">
-                                    <CodeEditor
-                                      value={activeProgrammingChallenge.solution[programmingLanguage] || ""}
-                                      onChange={() => {}}
-                                      language={programmingLanguage}
-                                      theme={codeTheme}
-                                      fontSize={fontSize}
-                                      readOnly={true}
-                                    />
-                                    
-                                    {activeProgrammingChallenge.explanation && (
-                                      <div className="p-4 bg-purple-100/50 rounded-xl">
-                                        <h6 className="font-medium text-purple-800 mb-2">How it works:</h6>
-                                        <p className="text-purple-700 leading-relaxed">
-                                          {activeProgrammingChallenge.explanation}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </CardContent>
-                              </GlassCard>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                        {/* Challenge content goes here */}
                       </motion.div>
                     )}
                   </motion.div>

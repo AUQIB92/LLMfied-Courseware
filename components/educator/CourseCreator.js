@@ -36,40 +36,114 @@ export default function CourseCreator({ onCourseCreated }) {
   const [currentCourseId, setCurrentCourseId] = useState(null)
   const { getAuthHeaders } = useAuth()
 
-  const handleFileUpload = async (e) => {
+  const handleFileSelection = (e) => {
     const selectedFile = e.target.files[0]
     if (!selectedFile) return
 
-    // Enhanced file validation
+    // Enhanced file validation with better type detection
+    const fileName = selectedFile.name.toLowerCase()
     const validTypes = ['application/pdf', 'text/markdown', 'text/plain']
-    const validExtensions = ['.pdf', '.md', '.txt']
-    const isValidType = validTypes.includes(selectedFile.type) || 
-                       validExtensions.some(ext => selectedFile.name.toLowerCase().endsWith(ext))
+    const validExtensions = ['.pdf', '.md', '.txt', '.markdown']
     
-    if (!isValidType) {
-      alert("Please select a PDF, Markdown (.md), or Text (.txt) file")
+    const hasValidType = validTypes.includes(selectedFile.type)
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext))
+    const isValidFile = hasValidType || hasValidExtension
+    
+    // Special handling for markdown files which might have different MIME types
+    const isMarkdown = fileName.endsWith('.md') || fileName.endsWith('.markdown') || selectedFile.type === 'text/markdown'
+    const isPdf = fileName.endsWith('.pdf') || selectedFile.type === 'application/pdf'
+    const isText = fileName.endsWith('.txt') || selectedFile.type === 'text/plain'
+    
+    if (!isValidFile && !isMarkdown && !isPdf && !isText) {
+      alert("❌ Invalid file type!\n\nSupported formats:\n• PDF files (.pdf)\n• Markdown files (.md, .markdown)\n• Text files (.txt)\n\nPlease select a valid file type.")
+      e.target.value = ''
       return
     }
 
-    // Enhanced file size validation (max 25MB for better content)
+    // Enhanced file size validation with better error message
     const maxSize = 25 * 1024 * 1024 // 25MB
     if (selectedFile.size > maxSize) {
-      alert("File size must be less than 25MB")
+      const fileSizeMB = (selectedFile.size / (1024 * 1024)).toFixed(1)
+      alert(`❌ File too large!\n\nYour file: ${fileSizeMB}MB\nMax allowed: 25MB\n\nPlease select a smaller file or compress your content.`)
+      e.target.value = ''
       return
+    }
+
+    // Warn for very small files that might not have enough content
+    if (selectedFile.size < 1024) { // Less than 1KB
+      const proceed = confirm("⚠️ Small file detected!\n\nThis file appears to be very small and might not contain enough content for a meaningful course.\n\nDo you want to proceed anyway?")
+      if (!proceed) {
+        e.target.value = ''
+        return
+      }
     }
 
     setFile(selectedFile)
+    const fileSizeFormatted = selectedFile.size < 1024 * 1024 
+      ? `${(selectedFile.size / 1024).toFixed(1)}KB` 
+      : `${(selectedFile.size / (1024 * 1024)).toFixed(1)}MB`
+    
+    console.log("✅ File selected:", {
+      name: selectedFile.name,
+      type: selectedFile.type,
+      size: fileSizeFormatted,
+      detectedFormat: isPdf ? 'PDF' : isMarkdown ? 'Markdown' : 'Text'
+    })
+  }
+
+  const processUploadedFile = async () => {
+    if (!file) {
+      alert("❌ No file selected!\n\nPlease select a PDF, Markdown, or Text file to upload.")
+      return
+    }
+
+    // Validate required course information with detailed messages
+    if (!courseData.title.trim()) {
+      alert("📝 Course title required!\n\nPlease enter a descriptive title for your course before processing the file.\n\nExample: 'Complete JavaScript Fundamentals'")
+      return
+    }
+
+    if (!courseData.learnerLevel) {
+      alert("🎯 Learner level required!\n\nPlease select the target learner level to help AI create appropriate content:\n\n• Beginner - No prior experience\n• Intermediate - Some experience\n• Advanced - Significant experience\n• Expert - Professional level")
+      return
+    }
+
+    // Optional but recommended validations
+    if (!courseData.subject) {
+      const proceed = confirm("💡 Subject category not selected!\n\nWe recommend selecting a subject category to help AI generate better content.\n\nDo you want to proceed without a subject category?")
+      if (!proceed) return
+    }
+
     setLoading(true)
     setProcessingProgress(0)
     setProcessingStep("Preparing file upload...")
 
     try {
       const formData = new FormData()
-      formData.append("file", selectedFile)
+      formData.append("file", file)
       formData.append("learnerLevel", courseData.learnerLevel)
-      formData.append("subject", courseData.subject)
+      formData.append("subject", courseData.subject || "")
+      formData.append("title", courseData.title)
+      formData.append("description", courseData.description || "")
+      formData.append("duration", courseData.duration || "")
 
-      console.log("Uploading file:", selectedFile.name, "Type:", selectedFile.type, "Size:", selectedFile.size)
+      console.log("Processing file:", file.name, "with course data:", {
+        title: courseData.title,
+        learnerLevel: courseData.learnerLevel,
+        subject: courseData.subject
+      })
+
+      // Add debugging for fetch request
+      console.log("🔄 Making fetch request to:", "/api/courses/process")
+      console.log("🔄 Request headers:", getAuthHeaders())
+      console.log("🔄 FormData contents:", {
+        file: file.name,
+        learnerLevel: courseData.learnerLevel,
+        subject: courseData.subject || "",
+        title: courseData.title,
+        description: courseData.description || "",
+        duration: courseData.duration || ""
+      })
 
       // Simulate progress stages
       const progressStages = [
@@ -89,42 +163,83 @@ export default function CourseCreator({ onCourseCreated }) {
         }
       }, 2000)
 
-      const response = await fetch("/api/courses/process", {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: formData,
-      })
+      let response
+      try {
+        console.log("🚀 Starting fetch request...")
+        response = await fetch("/api/courses/process", {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: formData,
+        })
+        console.log("✅ Fetch completed, response received:", response.status)
+      } catch (fetchError) {
+        console.error("❌ Fetch request failed:", fetchError)
+        throw new Error(`Network error: ${fetchError.message}. Please check if the development server is running on the correct port.`)
+      }
 
       clearInterval(progressInterval)
       setProcessingProgress(100)
 
       console.log("Response status:", response.status)
+      
+      if (!response.ok) {
+        let errorMessage = "Failed to process file"
+        try {
+          const errorData = await response.json()
+          console.log("❌ Server error response:", errorData)
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          console.error("Failed to parse error response:", e)
+          errorMessage = `Server error (${response.status}): ${response.statusText}`
+        }
+        throw new Error(errorMessage)
+      }
+
       const data = await response.json()
       console.log("Response data:", data)
 
-      if (response.ok) {
-        setProcessingStep("✅ Course created successfully!")
-        console.log("✅ File processed successfully, received modules:", data.modules.length)
-        
-        setCourseData((prev) => ({
-          ...prev,
-          modules: data.modules,
-          subject: data.subject || prev.subject,
-        }))
-        
-        setTimeout(() => {
-          setStep(2)
-          alert(`🎉 Success! Processed "${selectedFile.name}" and created ${data.modules.length} intelligent modules!\n\n✨ Features included:\n• AI-generated summaries\n• Interactive visualizers\n• Code simulators\n• Comprehensive resources\n• Practice exercises\n\nClick OK to review and customize your course.`)
-        }, 1000)
-      } else {
-        console.error("Server error:", data)
-        setProcessingStep("❌ Processing failed")
-        alert(data.error || "Failed to process file. Please try again or contact support.")
+      setProcessingStep("✅ Course created successfully!")
+      console.log("✅ File processed successfully, received modules:", data.modules?.length || 0)
+      
+      if (!data.modules || data.modules.length === 0) {
+        throw new Error("No modules were generated from the uploaded content")
       }
+
+      setCourseData((prev) => ({
+        ...prev,
+        modules: data.modules,
+        subject: data.subject || prev.subject,
+        // Update title and description if they were enhanced by AI
+        title: data.title || prev.title,
+        description: data.description || prev.description,
+      }))
+      
+      setTimeout(() => {
+        setStep(2)
+        const successMessage = `🎉 Course Creation Successful!\n\n📊 Processing Results:\n• File: ${file.name}\n• Modules Created: ${data.modules.length}\n• Target Level: ${courseData.learnerLevel}\n• Subject: ${courseData.subject || 'General'}\n\n✨ AI Enhancements Applied:\n• Smart content summaries\n• Learning objectives\n• Interactive visualizers\n• Code simulators\n• Comprehensive resources\n• Practice exercises\n\n🚀 Ready to review and customize your course!`
+        alert(successMessage)
+      }, 1000)
+
     } catch (error) {
-      console.error("Upload error:", error)
-      setProcessingStep("❌ Upload failed")
-      alert(`Failed to upload file: ${error.message}`)
+      console.error("Processing error:", error)
+      setProcessingStep("❌ Processing failed")
+      
+      // Provide specific error messages based on error type
+      let errorMessage = "❌ File Processing Failed!\n\n"
+      
+      if (error.message.includes("No modules were generated")) {
+        errorMessage += "The uploaded file couldn't be processed into learning modules. This might happen if:\n\n• The file is corrupted or unreadable\n• The content is too short or lacks structure\n• The file format isn't properly supported\n\n💡 Try:\n• Using a different file\n• Checking file integrity\n• Adding more content to your file"
+      } else if (error.message.includes("Course title is required")) {
+        errorMessage += "Course title is missing. Please ensure you've entered a course title before uploading."
+      } else if (error.message.includes("Learner level is required")) {
+        errorMessage += "Learner level is missing. Please select a target learner level before uploading."
+      } else if (error.message.includes("Failed to process file")) {
+        errorMessage += `Server processing error: ${error.message}\n\n💡 This might be a temporary issue. Please try:\n• Refreshing the page\n• Uploading again in a few minutes\n• Using a smaller file\n• Contacting support if the issue persists`
+      } else {
+        errorMessage += `Unexpected error: ${error.message}\n\n💡 Please try:\n• Refreshing the page and trying again\n• Using a different file\n• Contacting support if the issue continues`
+      }
+      
+      alert(errorMessage)
     } finally {
       setTimeout(() => {
         setLoading(false)
@@ -221,21 +336,7 @@ export default function CourseCreator({ onCourseCreated }) {
         alert("Course published successfully!")
         onCourseCreated?.()
         // Reset the form completely after successful publishing
-        setStep(1)
-        setCourseData({ 
-          title: "", 
-          description: "", 
-          modules: [],
-          subject: "",
-          learnerLevel: "",
-          duration: "",
-          objectives: []
-        })
-        setCurriculumTopic("")
-        setGeneratedCurriculum("")
-        setShowCurriculumPreview(false)
-        setGenerationType("upload")
-        setCurrentCourseId(null)
+        resetForm()
       } else {
         const errorData = await response.json()
         alert(`Failed to publish course: ${errorData.error || 'Unknown error'}`)
@@ -262,7 +363,7 @@ export default function CourseCreator({ onCourseCreated }) {
     try {
       const progressStages = [
         { step: "🔍 Analyzing topic and learner level...", progress: 30 },
-        { step: "� Creating simple module structure...", progress: 60 },
+        { step: "🌱 Creating simple module structure...", progress: 60 },
         { step: "🎯 Organizing key concepts...", progress: 90 }
       ]
 
@@ -408,6 +509,32 @@ export default function CourseCreator({ onCourseCreated }) {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const resetForm = () => {
+    setStep(1)
+    setCourseData({ 
+      title: "", 
+      description: "", 
+      modules: [],
+      subject: "",
+      learnerLevel: "",
+      duration: "",
+      objectives: []
+    })
+    setCurriculumTopic("")
+    setGeneratedCurriculum("")
+    setShowCurriculumPreview(false)
+    setGenerationType("upload")
+    setCurrentCourseId(null)
+    setFile(null)
+    setLoading(false)
+    setProcessingStep("")
+    setProcessingProgress(0)
+    
+    // Clear file input
+    const fileInput = document.getElementById('file-upload')
+    if (fileInput) fileInput.value = ''
   }
 
   if (step === 1) {
@@ -583,8 +710,8 @@ export default function CourseCreator({ onCourseCreated }) {
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
                 <input
                   type="file"
-                  accept=".pdf,.md,.txt"
-                  onChange={handleFileUpload}
+                  accept=".pdf,.md,.markdown,.txt"
+                  onChange={handleFileSelection}
                   className="hidden"
                   id="file-upload"
                   disabled={loading}
@@ -622,11 +749,30 @@ export default function CourseCreator({ onCourseCreated }) {
                       </div>
                       <div>
                         <p className="text-lg font-medium text-gray-800">
-                          {file ? `✅ Selected: ${file.name}` : "Upload Your Course Content"}
+                          {file ? `✅ File Selected` : "Upload Your Course Content"}
                         </p>
+                        {file && (
+                          <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p className="text-sm font-medium text-blue-800">📄 {file.name}</p>
+                            <p className="text-xs text-blue-600">
+                              Size: {file.size < 1024 * 1024 
+                                ? `${(file.size / 1024).toFixed(1)}KB` 
+                                : `${(file.size / (1024 * 1024)).toFixed(1)}MB`}
+                              {" • "}
+                              Type: {file.name.toLowerCase().endsWith('.pdf') ? 'PDF Document' 
+                                   : file.name.toLowerCase().endsWith('.md') || file.name.toLowerCase().endsWith('.markdown') ? 'Markdown' 
+                                   : 'Text Document'}
+                            </p>
+                          </div>
+                        )}
                         <p className="text-sm text-gray-600 mt-2">
-                          Supported: PDF, Markdown (.md), Text (.txt) | Max: 25MB
+                          Supported: PDF (.pdf), Markdown (.md, .markdown), Text (.txt) | Max: 25MB
                         </p>
+                        {(!courseData.title.trim() || !courseData.learnerLevel) && (
+                          <p className="text-xs text-amber-600 mt-2 font-medium">
+                            ⚠️ Complete course title and learner level above to enable processing
+                          </p>
+                        )}
                         <div className="mt-4 space-y-2">
                           <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
                             <Sparkles className="h-4 w-4" />
@@ -648,14 +794,19 @@ export default function CourseCreator({ onCourseCreated }) {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => setFile(null)}
+                      onClick={() => {
+                        setFile(null)
+                        // Clear the file input as well
+                        const fileInput = document.getElementById('file-upload')
+                        if (fileInput) fileInput.value = ''
+                      }}
                     >
                       Clear File
                     </Button>
                     <Button 
                       size="sm"
-                      onClick={handleFileUpload}
-                      disabled={!courseData.title || !courseData.learnerLevel}
+                      onClick={processUploadedFile}
+                      disabled={!courseData.title.trim() || !courseData.learnerLevel}
                       className="bg-gradient-to-r from-blue-500 to-cyan-600"
                     >
                       Process File

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
 import {
   Plus,
   Trash2,
@@ -27,9 +30,27 @@ import {
   Zap,
   Crown,
   Star,
+  Loader2,
+  Eye,
+  Download,
+  Share2,
+  BarChart3,
+  GitBranch,
+  Clock,
+  TrendingUp,
+  Layers,
+  Network,
+  Calculator,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  FileText as DocumentIcon,
+  Settings,
+  Users,
 } from "lucide-react"
 
 export default function ModuleEditor({ module, onUpdate }) {
+  const { getAuthHeaders } = useAuth()
   const [showManualResourceForm, setShowManualResourceForm] = useState(false)
   const [newResource, setNewResource] = useState({
     title: "",
@@ -37,6 +58,223 @@ export default function ModuleEditor({ module, onUpdate }) {
     description: "",
     type: "article", // Default type for categorization
   })
+
+  // Visualizer generation state
+  const [showVisualizerGenerator, setShowVisualizerGenerator] = useState(false)
+  const [generatingVisualizer, setGeneratingVisualizer] = useState(false)
+  const [visualizerProgress, setVisualizerProgress] = useState(0)
+  const [generatedVisualizers, setGeneratedVisualizers] = useState(module.visualizers || [])
+  const [visualizerForm, setVisualizerForm] = useState({
+    concept: "",
+    type: "flowchart",
+    learnerLevel: "intermediate"
+  })
+
+  // Enhanced intelligent concept identification
+  const [analyzingConcepts, setAnalyzingConcepts] = useState(false)
+  const [identifiedConcepts, setIdentifiedConcepts] = useState([])
+  const [selectedConceptIndex, setSelectedConceptIndex] = useState(0)
+
+  // NEW: Detailed Explanations pagination state
+  const [currentExplanationPage, setCurrentExplanationPage] = useState(0)
+  const [explanationsPerPage] = useState(3) // Show 3 detailed subsections per page
+  
+  // NEW: Main tabs state 
+  const [activeMainTab, setActiveMainTab] = useState("overview")
+
+  // NEW: Individual explanation pagination state
+  const [explanationPages, setExplanationPages] = useState({}) // Track current page for each explanation
+  const [wordsPerExplanationPage] = useState(200) // Words per page for individual explanations
+
+  // NEW: Concept-specific visualizer generation state
+  const [generatingConceptVisualizer, setGeneratingConceptVisualizer] = useState({}) // Track which concepts are generating
+  const [conceptVisualizerProgress, setConceptVisualizerProgress] = useState({}) // Track progress per concept
+
+  // NEW: Pagination logic for detailed explanations
+  const detailedSubsections = module.detailedSubsections || []
+  const totalExplanationPages = Math.ceil(detailedSubsections.length / explanationsPerPage)
+  const startExplanationIndex = currentExplanationPage * explanationsPerPage
+  const endExplanationIndex = startExplanationIndex + explanationsPerPage
+  const currentPageExplanations = detailedSubsections.slice(startExplanationIndex, endExplanationIndex)
+
+  // NEW: Helper function to split explanation into pages
+  const splitExplanationIntoPages = (explanation) => {
+    if (!explanation || explanation.length === 0) return []
+    
+    const words = explanation.split(' ')
+    const pages = []
+    
+    for (let i = 0; i < words.length; i += wordsPerExplanationPage) {
+      const pageWords = words.slice(i, i + wordsPerExplanationPage)
+      pages.push(pageWords.join(' '))
+    }
+    
+    return pages.length > 0 ? pages : [explanation]
+  }
+
+  // NEW: Get current page for a specific explanation
+  const getCurrentExplanationPage = (subsectionIndex) => {
+    return explanationPages[subsectionIndex] || 0
+  }
+
+  // NEW: Set current page for a specific explanation
+  const setCurrentExplanationPageForSubsection = (subsectionIndex, pageIndex) => {
+    setExplanationPages(prev => ({
+      ...prev,
+      [subsectionIndex]: pageIndex
+    }))
+  }
+
+  const goToNextExplanationPage = () => {
+    if (currentExplanationPage < totalExplanationPages - 1) {
+      setCurrentExplanationPage(currentExplanationPage + 1)
+    }
+  }
+
+  const goToPrevExplanationPage = () => {
+    if (currentExplanationPage > 0) {
+      setCurrentExplanationPage(currentExplanationPage - 1)
+    }
+  }
+
+  const goToExplanationPage = (pageIndex) => {
+    if (pageIndex >= 0 && pageIndex < totalExplanationPages) {
+      setCurrentExplanationPage(pageIndex)
+    }
+  }
+
+  // NEW: Detect if concept is algorithmic for code simulator vs other visualizer types
+  const isAlgorithmicConcept = (title, content, keyPoints = []) => {
+    const algorithmicKeywords = [
+      'algorithm', 'sorting', 'searching', 'traversal', 'recursive', 'iteration', 
+      'loop', 'binary', 'tree', 'graph', 'dynamic programming', 'greedy',
+      'divide and conquer', 'backtracking', 'breadth-first', 'depth-first',
+      'quicksort', 'mergesort', 'hash', 'heap', 'stack', 'queue', 'linked list',
+      'array', 'string manipulation', 'pattern matching', 'optimization',
+      'complexity', 'time complexity', 'space complexity', 'big o', 'o(n)',
+      'implementation', 'code', 'function', 'method', 'procedure', 'steps'
+    ]
+    
+    const textToAnalyze = `${title} ${content} ${keyPoints.join(' ')}`.toLowerCase()
+    return algorithmicKeywords.some(keyword => textToAnalyze.includes(keyword))
+  }
+
+  // NEW: Smart visualizer type detection for concepts
+  const detectVisualizerType = (title, content, keyPoints = []) => {
+    const textToAnalyze = `${title} ${content} ${keyPoints.join(' ')}`.toLowerCase()
+    
+    // Check for algorithmic concepts first
+    if (isAlgorithmicConcept(title, content, keyPoints)) {
+      return 'simulation' // Code simulator for algorithmic concepts
+    }
+    
+    // Check for other specific types
+    if (textToAnalyze.includes('process') || textToAnalyze.includes('step') || textToAnalyze.includes('workflow')) {
+      return 'flowchart'
+    }
+    if (textToAnalyze.includes('compare') || textToAnalyze.includes('vs') || textToAnalyze.includes('difference')) {
+      return 'comparison'
+    }
+    if (textToAnalyze.includes('timeline') || textToAnalyze.includes('history') || textToAnalyze.includes('chronology')) {
+      return 'timeline'
+    }
+    if (textToAnalyze.includes('formula') || textToAnalyze.includes('equation') || textToAnalyze.includes('calculation')) {
+      return 'formula'
+    }
+    if (textToAnalyze.includes('hierarchy') || textToAnalyze.includes('structure') || textToAnalyze.includes('levels')) {
+      return 'hierarchy'
+    }
+    if (textToAnalyze.includes('relationship') || textToAnalyze.includes('connection') || textToAnalyze.includes('network')) {
+      return 'relationship'
+    }
+    
+    // Default to flowchart for general concepts
+    return 'flowchart'
+  }
+
+  // NEW: Generate visualizer for specific concept
+  const generateConceptVisualizer = async (subsection, globalIndex) => {
+    if (!subsection.title) return
+    
+    setGeneratingConceptVisualizer(prev => ({ ...prev, [globalIndex]: true }))
+    setConceptVisualizerProgress(prev => ({ ...prev, [globalIndex]: 0 }))
+    
+    try {
+      // Detect visualizer type intelligently
+      const detectedType = detectVisualizerType(
+        subsection.title, 
+        subsection.explanation || (subsection.explanationPages || []).map(p => p.content).join(' '),
+        subsection.keyPoints || []
+      )
+      
+      // Progress simulation
+      const progressInterval = setInterval(() => {
+        setConceptVisualizerProgress(prev => ({
+          ...prev,
+          [globalIndex]: Math.min((prev[globalIndex] || 0) + 15, 90)
+        }))
+      }, 300)
+
+      const concept = subsection.title
+      const isAlgorithmic = isAlgorithmicConcept(
+        subsection.title,
+        subsection.explanation || (subsection.explanationPages || []).map(p => p.content).join(' '),
+        subsection.keyPoints || []
+      )
+      
+      const response = await fetch("/api/visualizers/generate", {
+        method: "POST",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          concept: concept,
+          type: detectedType,
+          learnerLevel: module.learnerLevel || "intermediate",
+          moduleContent: subsection.explanation || (subsection.explanationPages || []).map(p => p.content).join(' '),
+          keyPoints: subsection.keyPoints || [],
+          isAlgorithmic: isAlgorithmic,
+          practicalExample: subsection.practicalExample
+        }),
+      })
+
+      clearInterval(progressInterval)
+      setConceptVisualizerProgress(prev => ({ ...prev, [globalIndex]: 100 }))
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      const newVisualizer = {
+        id: Date.now() + Math.random(),
+        title: `${concept} - ${detectedType.charAt(0).toUpperCase() + detectedType.slice(1)}`,
+        concept: concept,
+        type: detectedType,
+        description: result.description || `Interactive ${detectedType} for ${concept}`,
+        isAlgorithmic: isAlgorithmic,
+        sourceSubsection: subsection.title,
+        ...result
+      }
+
+      const updatedVisualizers = [...generatedVisualizers, newVisualizer]
+      setGeneratedVisualizers(updatedVisualizers)
+      onUpdate({ visualizers: updatedVisualizers })
+
+      // Clear generation state after delay
+      setTimeout(() => {
+        setGeneratingConceptVisualizer(prev => ({ ...prev, [globalIndex]: false }))
+        setConceptVisualizerProgress(prev => ({ ...prev, [globalIndex]: 0 }))
+      }, 1000)
+
+    } catch (error) {
+      console.error("Error generating concept visualizer:", error)
+      setGeneratingConceptVisualizer(prev => ({ ...prev, [globalIndex]: false }))
+      setConceptVisualizerProgress(prev => ({ ...prev, [globalIndex]: 0 }))
+    }
+  }
 
   // Handle legacy resources (manual ones) - organized by type
   const legacyResources = useMemo(() => {
@@ -143,6 +381,337 @@ export default function ModuleEditor({ module, onUpdate }) {
     }
   }
 
+  // Intelligent concept identification from module content
+  const identifyVisualizableConcepts = (content) => {
+    if (!content) return []
+
+    const concepts = []
+    
+    // Enhanced concept detection patterns with visualizer type recommendations
+    const conceptPatterns = [
+      // Algorithms and Processes (Flowchart)
+      {
+        patterns: [/algorithm/gi, /process/gi, /procedure/gi, /steps/gi, /method/gi, /workflow/gi, /pipeline/gi],
+        type: 'flowchart',
+        priority: 'high',
+        description: 'Step-by-step processes and decision flows'
+      },
+      // Comparisons (Comparison)
+      {
+        patterns: [/vs\b/gi, /versus/gi, /compare/gi, /comparison/gi, /difference/gi, /advantage/gi, /disadvantage/gi, /better than/gi, /worse than/gi],
+        type: 'comparison',
+        priority: 'high',
+        description: 'Side-by-side analysis and contrasts'
+      },
+      // Hierarchies and Structures (Hierarchy)
+      {
+        patterns: [/hierarchy/gi, /structure/gi, /organization/gi, /levels/gi, /layers/gi, /inheritance/gi, /classification/gi, /taxonomy/gi],
+        type: 'hierarchy',
+        priority: 'medium',
+        description: 'Organizational structures and levels'
+      },
+      // Mathematical concepts (Formula)
+      {
+        patterns: [/formula/gi, /equation/gi, /calculation/gi, /mathematical/gi, /theorem/gi, /proof/gi, /derivative/gi, /integral/gi],
+        type: 'formula',
+        priority: 'high',
+        description: 'Mathematical relationships and calculations'
+      },
+      // Networks and Relationships (Relationship)
+      {
+        patterns: [/network/gi, /relationship/gi, /connection/gi, /interaction/gi, /communication/gi, /dependency/gi, /association/gi],
+        type: 'relationship',
+        priority: 'medium',
+        description: 'Connections and interdependencies'
+      },
+      // Timelines and History (Timeline)
+      {
+        patterns: [/timeline/gi, /history/gi, /evolution/gi, /development/gi, /progression/gi, /chronology/gi, /sequence/gi, /era/gi],
+        type: 'timeline',
+        priority: 'medium',
+        description: 'Chronological progression and historical development'
+      },
+      // Simulations and Models (Simulation)
+      {
+        patterns: [/simulation/gi, /model/gi, /behavior/gi, /dynamics/gi, /interaction/gi, /scenario/gi, /experiment/gi],
+        type: 'simulation',
+        priority: 'high',
+        description: 'Interactive models and behavioral demonstrations'
+      },
+      // Data and Analytics (Comparison - for charts/graphs)
+      {
+        patterns: [/data/gi, /statistics/gi, /analysis/gi, /chart/gi, /graph/gi, /trend/gi, /distribution/gi, /correlation/gi],
+        type: 'comparison',
+        priority: 'medium',
+        description: 'Data visualization and statistical analysis'
+      }
+    ]
+
+    // Split content into sentences for analysis
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20)
+    
+    sentences.forEach((sentence, index) => {
+      const trimmed = sentence.trim()
+      
+      // Check each pattern category
+      conceptPatterns.forEach(patternGroup => {
+        const matchCount = patternGroup.patterns.reduce((count, pattern) => {
+          return count + (trimmed.match(pattern) || []).length
+        }, 0)
+
+        if (matchCount > 0) {
+          // Extract the main concept from the sentence
+          const words = trimmed.split(' ')
+          let conceptPhrase = ''
+          
+          // Try to extract a meaningful concept phrase
+          for (let i = 0; i < words.length - 2; i++) {
+            const phrase = words.slice(i, i + 3).join(' ')
+            if (patternGroup.patterns.some(pattern => phrase.match(pattern))) {
+              // Extend the phrase to capture more context
+              const extendedPhrase = words.slice(Math.max(0, i - 2), Math.min(words.length, i + 5)).join(' ')
+              conceptPhrase = extendedPhrase
+              break
+            }
+          }
+
+          if (!conceptPhrase) {
+            conceptPhrase = words.slice(0, Math.min(8, words.length)).join(' ')
+          }
+
+          // Clean up the concept phrase
+          conceptPhrase = conceptPhrase.replace(/^(the|a|an|and|or|but|in|on|at|to|for|with|by)\s+/i, '')
+          conceptPhrase = conceptPhrase.replace(/\s+(the|a|an|and|or|but|in|on|at|to|for|with|by)$/i, '')
+
+          if (conceptPhrase.length > 10 && conceptPhrase.length < 100) {
+            const existingConcept = concepts.find(c => 
+              Math.abs(c.phrase.length - conceptPhrase.length) < 10 && 
+              c.phrase.toLowerCase().includes(conceptPhrase.toLowerCase().split(' ')[0])
+            )
+
+            if (!existingConcept) {
+              concepts.push({
+                id: `concept-${Date.now()}-${index}`,
+                phrase: conceptPhrase,
+                fullSentence: trimmed,
+                type: patternGroup.type,
+                priority: patternGroup.priority,
+                description: patternGroup.description,
+                confidence: Math.min(matchCount * 0.3 + 0.4, 1.0),
+                estimatedTime: getVisualizerTimeEstimate(patternGroup.type),
+                learningObjectives: generateLearningObjectives(conceptPhrase, patternGroup.type)
+              })
+            }
+          }
+        }
+      })
+    })
+
+    // Sort by priority and confidence
+    return concepts
+      .sort((a, b) => {
+        const priorityWeight = { high: 3, medium: 2, low: 1 }
+        const aPriority = priorityWeight[a.priority] || 1
+        const bPriority = priorityWeight[b.priority] || 1
+        
+        if (aPriority !== bPriority) return bPriority - aPriority
+        return b.confidence - a.confidence
+      })
+      .slice(0, 8) // Limit to top 8 concepts
+  }
+
+  // Helper function to estimate visualizer completion time
+  const getVisualizerTimeEstimate = (type) => {
+    const timeEstimates = {
+      flowchart: '5-8 minutes',
+      comparison: '3-5 minutes',
+      hierarchy: '4-6 minutes',
+      formula: '6-10 minutes',
+      relationship: '5-7 minutes',
+      timeline: '4-6 minutes',
+      simulation: '8-12 minutes',
+      process: '5-7 minutes'
+    }
+    return timeEstimates[type] || '5-8 minutes'
+  }
+
+  // Helper function to generate learning objectives
+  const generateLearningObjectives = (concept, type) => {
+    const objectiveTemplates = {
+      flowchart: [
+        `Understand the step-by-step process of ${concept}`,
+        `Identify decision points and flow branches`,
+        `Apply the process to solve similar problems`
+      ],
+      comparison: [
+        `Compare and contrast key aspects of ${concept}`,
+        `Analyze advantages and disadvantages`,
+        `Make informed decisions based on comparisons`
+      ],
+      hierarchy: [
+        `Understand the organizational structure of ${concept}`,
+        `Identify relationships between different levels`,
+        `Navigate and utilize hierarchical information`
+      ],
+      formula: [
+        `Comprehend the mathematical relationship in ${concept}`,
+        `Apply the formula to real-world problems`,
+        `Understand the variables and their interactions`
+      ],
+      relationship: [
+        `Visualize connections within ${concept}`,
+        `Understand interdependencies and interactions`,
+        `Analyze network effects and relationships`
+      ],
+      timeline: [
+        `Trace the chronological development of ${concept}`,
+        `Understand cause-and-effect relationships over time`,
+        `Identify key milestones and turning points`
+      ],
+      simulation: [
+        `Interact with dynamic model of ${concept}`,
+        `Observe behavioral patterns and outcomes`,
+        `Experiment with different scenarios and parameters`
+      ]
+    }
+
+    return objectiveTemplates[type] || [
+      `Gain deeper understanding of ${concept}`,
+      `Apply knowledge through interactive visualization`,
+      `Connect concepts to real-world applications`
+    ]
+  }
+
+  // Analyze module content when generator is opened
+  const handleShowVisualizerGenerator = () => {
+    setShowVisualizerGenerator(true)
+    
+    if (module.content && !analyzingConcepts && identifiedConcepts.length === 0) {
+      setAnalyzingConcepts(true)
+      
+      // Simulate analysis time for better UX
+      setTimeout(() => {
+        const concepts = identifyVisualizableConcepts(module.content)
+        setIdentifiedConcepts(concepts)
+        setAnalyzingConcepts(false)
+        
+        // Auto-select the first concept if available
+        if (concepts.length > 0) {
+          setSelectedConceptIndex(0)
+          setVisualizerForm(prev => ({
+            ...prev,
+            concept: concepts[0].phrase,
+            type: concepts[0].type
+          }))
+        }
+      }, 2000)
+    }
+  }
+
+  // Visualizer generation functions
+  const generateVisualizer = async () => {
+    if (!visualizerForm.concept.trim()) {
+      alert("Please enter a concept to visualize")
+      return
+    }
+
+    setGeneratingVisualizer(true)
+    setVisualizerProgress(0)
+
+    try {
+      // Simulate progress
+      const progressSteps = [
+        { step: "Analyzing concept...", progress: 20 },
+        { step: "Generating visualization logic...", progress: 40 },
+        { step: "Creating interactive elements...", progress: 60 },
+        { step: "Optimizing for learning...", progress: 80 },
+        { step: "Finalizing visualizer...", progress: 95 }
+      ]
+
+      let currentStep = 0
+      const progressInterval = setInterval(() => {
+        if (currentStep < progressSteps.length) {
+          setVisualizerProgress(progressSteps[currentStep].progress)
+          currentStep++
+        }
+      }, 1000)
+
+      const response = await fetch("/api/visualizers/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          concept: visualizerForm.concept,
+          type: visualizerForm.type,
+          learnerLevel: visualizerForm.learnerLevel,
+          moduleContent: module.content
+        })
+      })
+
+      clearInterval(progressInterval)
+      setVisualizerProgress(100)
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to generate visualizer")
+      }
+
+      const data = await response.json()
+      
+      // The API returns the visualizer data directly
+      const newVisualizers = [...generatedVisualizers, data]
+      setGeneratedVisualizers(newVisualizers)
+      
+      // Update module with new visualizers
+      onUpdate({
+        visualizers: newVisualizers
+      })
+
+      // Reset form and close generator
+      setVisualizerForm({
+        concept: "",
+        type: "flowchart",
+        learnerLevel: "intermediate"
+      })
+      setShowVisualizerGenerator(false)
+
+      alert(`🎉 Visualizer Generated Successfully!\n\nType: ${data.type}\nConcept: ${data.concept}\n\nThe visualizer has been added to your module and is ready for students to use!`)
+
+    } catch (error) {
+      console.error("Visualizer generation error:", error)
+      alert(`❌ Failed to generate visualizer: ${error.message}`)
+    } finally {
+      setTimeout(() => {
+        setGeneratingVisualizer(false)
+        setVisualizerProgress(0)
+      }, 1000)
+    }
+  }
+
+  const removeVisualizer = (visualizerId) => {
+    const updatedVisualizers = generatedVisualizers.filter(v => v.id !== visualizerId)
+    setGeneratedVisualizers(updatedVisualizers)
+    onUpdate({
+      visualizers: updatedVisualizers
+    })
+  }
+
+  const duplicateVisualizer = (visualizer) => {
+    const duplicatedVisualizer = {
+      ...visualizer,
+      id: `visualizer-${Date.now()}`,
+      title: `${visualizer.title} (Copy)`,
+      createdAt: new Date().toISOString()
+    }
+    const updatedVisualizers = [...generatedVisualizers, duplicatedVisualizer]
+    setGeneratedVisualizers(updatedVisualizers)
+    onUpdate({
+      visualizers: updatedVisualizers
+    })
+  }
+
   const ResourceSection = ({ title, icon: Icon, resources, type, isInstructorContent = false }) => {
     if (!resources || resources.length === 0) return null
 
@@ -207,11 +776,171 @@ export default function ModuleEditor({ module, onUpdate }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {resources.map((resource, index) => (
+            {resources.map((resource, index) => {
+              const isEditing = editingResource?.type === type && editingResource?.index === index
+              
+              return (
               <div
                 key={resource.id || index}
                 className="group/item bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-4 hover:bg-white/80 hover:shadow-md transition-all duration-300 hover:scale-[1.01]"
               >
+                  {isEditing ? (
+                    // Edit Form
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-bold text-gray-900">Edit Resource</h4>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={saveResourceEdit}
+                            className="bg-green-500 hover:bg-green-600 text-white"
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={cancelEditingResource}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Title</Label>
+                          <Input
+                            value={editForm.title || editForm.name || ""}
+                            onChange={(e) => updateEditForm('title', e.target.value)}
+                            className="mt-1"
+                            placeholder="Resource title"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">URL</Label>
+                          <Input
+                            value={editForm.url || ""}
+                            onChange={(e) => updateEditForm('url', e.target.value)}
+                            className="mt-1"
+                            placeholder="https://..."
+                          />
+                        </div>
+
+                        {type === 'books' && (
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Author</Label>
+                            <Input
+                              value={editForm.author || ""}
+                              onChange={(e) => updateEditForm('author', e.target.value)}
+                              className="mt-1"
+                              placeholder="Author name"
+                            />
+                          </div>
+                        )}
+
+                        {type === 'videos' && (
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Creator</Label>
+                            <Input
+                              value={editForm.creator || ""}
+                              onChange={(e) => updateEditForm('creator', e.target.value)}
+                              className="mt-1"
+                              placeholder="Channel or creator name"
+                            />
+                          </div>
+                        )}
+
+                        {type === 'courses' && (
+                          <>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700">Platform</Label>
+                              <Input
+                                value={editForm.platform || ""}
+                                onChange={(e) => updateEditForm('platform', e.target.value)}
+                                className="mt-1"
+                                placeholder="e.g., Coursera, edX, Udemy"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700">Duration</Label>
+                              <Input
+                                value={editForm.duration || ""}
+                                onChange={(e) => updateEditForm('duration', e.target.value)}
+                                className="mt-1"
+                                placeholder="e.g., 4 weeks, 20 hours"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {type === 'articles' && (
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Source</Label>
+                            <Input
+                              value={editForm.source || ""}
+                              onChange={(e) => updateEditForm('source', e.target.value)}
+                              className="mt-1"
+                              placeholder="Journal or publication"
+                            />
+                          </div>
+                        )}
+
+                        {type === 'videos' && (
+                          <>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700">Duration</Label>
+                              <Input
+                                value={editForm.duration || ""}
+                                onChange={(e) => updateEditForm('duration', e.target.value)}
+                                className="mt-1"
+                                placeholder="e.g., 10 min, 1 hour"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700">Source Platform</Label>
+                              <Input
+                                value={editForm.source_platform || ""}
+                                onChange={(e) => updateEditForm('source_platform', e.target.value)}
+                                className="mt-1"
+                                placeholder="e.g., YouTube, Vimeo"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Difficulty</Label>
+                          <Select 
+                            value={editForm.difficulty || ""} 
+                            onValueChange={(value) => updateEditForm('difficulty', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select difficulty" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Beginner">Beginner</SelectItem>
+                              <SelectItem value="Intermediate">Intermediate</SelectItem>
+                              <SelectItem value="Advanced">Advanced</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Description</Label>
+                        <Textarea
+                          value={editForm.description || ""}
+                          onChange={(e) => updateEditForm('description', e.target.value)}
+                          className="mt-1"
+                          rows={3}
+                          placeholder="Describe what learners will gain from this resource"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    // Display Mode
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h4 className="font-bold text-gray-900 text-base mb-2 group-hover/item:text-gray-800">
@@ -303,6 +1032,18 @@ export default function ModuleEditor({ module, onUpdate }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
+                        {/* Edit Button for AI-generated resources */}
+                        {!isInstructorContent && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditingResource(type, index)}
+                            className="hover:bg-blue-100 hover:text-blue-600 transition-all duration-300"
+                            title="Edit this resource"
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        )}
                     {resource.url && (
                       <Button
                         variant="ghost"
@@ -327,12 +1068,55 @@ export default function ModuleEditor({ module, onUpdate }) {
                     )}
                   </div>
                 </div>
+                  )}
               </div>
-            ))}
+              )
+            })}
           </div>
         </CardContent>
       </Card>
     )
+  }
+
+  // NEW: Resource editing state
+  const [editingResource, setEditingResource] = useState(null) // { type: 'books', index: 0 }
+  const [editForm, setEditForm] = useState({})
+
+  // NEW: Resource editing handlers
+  const startEditingResource = (type, index) => {
+    const resource = module.resources?.[type]?.[index]
+    if (resource) {
+      setEditingResource({ type, index })
+      setEditForm({ ...resource })
+    }
+  }
+
+  const cancelEditingResource = () => {
+    setEditingResource(null)
+    setEditForm({})
+  }
+
+  const saveResourceEdit = () => {
+    if (!editingResource) return
+    
+    const { type, index } = editingResource
+    const updatedModule = {
+      ...module,
+      resources: {
+        ...module.resources,
+        [type]: module.resources[type].map((resource, i) => 
+          i === index ? { ...editForm } : resource
+        )
+      }
+    }
+    
+    onUpdate(updatedModule)
+    setEditingResource(null)
+    setEditForm({})
+  }
+
+  const updateEditForm = (field, value) => {
+    setEditForm(prev => ({ ...prev, [field]: value }))
   }
 
   return (
@@ -354,15 +1138,61 @@ export default function ModuleEditor({ module, onUpdate }) {
           <p className="text-gray-600 text-lg">Create and customize your learning modules with AI-powered resources</p>
         </div>
 
-        {/* Basic Information */}
-        <Card className="bg-white/80 backdrop-blur-sm border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300">
+        {/* Main Tabbed Interface */}
+        <Card className="bg-white/80 backdrop-blur-sm border-white/40 shadow-xl">
           <CardHeader className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-t-lg">
             <CardTitle className="flex items-center gap-3 text-2xl">
-              <Sparkles className="h-6 w-6 text-blue-600" />
-              Module Information
+              <Settings className="h-6 w-6 text-blue-600" />
+              Module Configuration
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
+          <CardContent className="p-0">
+            <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-blue-50 to-purple-50 p-2 rounded-none border-b">
+                <TabsTrigger 
+                  value="overview" 
+                  className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="explanations" 
+                  className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md"
+                >
+                  <DocumentIcon className="h-4 w-4" />
+                  Detailed Explanations
+                  {detailedSubsections.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 text-xs">
+                      {detailedSubsections.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="visualizers" 
+                  className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Visualizers
+                  {generatedVisualizers.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 text-xs">
+                      {generatedVisualizers.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="resources" 
+                  className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md"
+                >
+                  <Users className="h-4 w-4" />
+                  Resources
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="p-8 space-y-8">
+                {/* Basic Information */}
+                <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
                 <Label htmlFor="title" className="text-base font-semibold text-gray-700">
@@ -390,7 +1220,7 @@ export default function ModuleEditor({ module, onUpdate }) {
               </div>
             </div>
 
-            <div className="space-y-3 mt-8">
+                  <div className="space-y-3">
               <Label htmlFor="content" className="text-base font-semibold text-gray-700">
                 Content
               </Label>
@@ -404,7 +1234,7 @@ export default function ModuleEditor({ module, onUpdate }) {
               />
             </div>
 
-            <div className="space-y-3 mt-8">
+                  <div className="space-y-3">
               <Label htmlFor="summary" className="text-base font-semibold text-gray-700 flex items-center gap-2">
                 <Zap className="h-4 w-4 text-yellow-500" />
                 AI-Generated Summary
@@ -418,13 +1248,12 @@ export default function ModuleEditor({ module, onUpdate }) {
                 className="text-base border-2 border-gray-200 focus:border-purple-500 transition-colors duration-300 resize-none bg-gradient-to-r from-purple-50/50 to-pink-50/50"
               />
             </div>
-          </CardContent>
-        </Card>
+                </div>
 
         {/* Learning Objectives and Examples */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="bg-white/80 backdrop-blur-sm border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-t-lg">
+                  <Card className="bg-white/60 border-gray-200 shadow-md">
+                    <CardHeader className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10">
               <CardTitle className="flex items-center gap-3 text-xl">
                 <Target className="h-6 w-6 text-blue-600" />
                 Learning Objectives
@@ -472,8 +1301,8 @@ export default function ModuleEditor({ module, onUpdate }) {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-t-lg">
+                  <Card className="bg-white/60 border-gray-200 shadow-md">
+                    <CardHeader className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
               <CardTitle className="flex items-center gap-3 text-xl">
                 <Lightbulb className="h-6 w-6 text-yellow-600" />
                 Real-World Examples
@@ -521,25 +1350,404 @@ export default function ModuleEditor({ module, onUpdate }) {
             </CardContent>
           </Card>
         </div>
+              </TabsContent>
 
-        {/* Learning Resources */}
-        <Card className="bg-white/80 backdrop-blur-sm border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300">
-          <CardHeader className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-rose-500/10 rounded-t-lg">
-            <CardTitle className="flex items-center gap-3 text-2xl">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 text-white">
-                <BookOpen className="h-6 w-6" />
+              {/* NEW: Detailed Explanations Tab with Pagination */}
+              <TabsContent value="explanations" className="p-8">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                        <DocumentIcon className="h-6 w-6 text-indigo-600" />
+                        Detailed Explanations
+                      </h2>
+                      <p className="text-gray-600 mt-1">
+                        AI-generated detailed subsections for comprehensive learning
+                      </p>
               </div>
-              Learning Resources
-              <Badge
-                variant="secondary"
-                className="bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold"
-              >
-                <Sparkles className="h-3 w-3 mr-1" />
-                AI Generated
+                    <Badge className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+                      {detailedSubsections.length} Sections
+                    </Badge>
+                  </div>
+
+                  {detailedSubsections.length === 0 ? (
+                    <div className="text-center py-16">
+                      <DocumentIcon className="h-20 w-20 text-gray-300 mx-auto mb-6" />
+                      <h3 className="text-xl font-medium text-gray-500 mb-2">No Detailed Explanations Available</h3>
+                      <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                        Detailed explanations are generated automatically during curriculum processing. 
+                        This content should be available from the course creation process.
+                      </p>
+                      <Badge variant="outline" className="text-amber-600 border-amber-300">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Generated during processing
+                      </Badge>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Paginated Content */}
+                      <div className="space-y-6">
+                        {currentPageExplanations.map((subsection, index) => {
+                          const globalIndex = startExplanationIndex + index
+                          // Use AI-generated explanation pages or fallback to splitting single explanation
+                          const explanationPages = subsection.explanationPages && subsection.explanationPages.length > 0 
+                            ? subsection.explanationPages.map(page => page.content)
+                            : splitExplanationIntoPages(subsection.explanation || '')
+                          const currentPageIndex = getCurrentExplanationPage(globalIndex)
+                          const totalPages = explanationPages.length
+                          const currentPageContent = explanationPages[currentPageIndex] || subsection.explanation || ''
+                          
+                          // Get page details from AI-generated structure if available
+                          const currentPageDetails = subsection.explanationPages && subsection.explanationPages[currentPageIndex]
+                          const pageTitle = currentPageDetails?.pageTitle || `Page ${currentPageIndex + 1}`
+                          const keyTakeaway = currentPageDetails?.keyTakeaway
+                          
+                          return (
+                            <Card key={globalIndex} className="bg-gradient-to-br from-white to-indigo-50/30 border-indigo-200 shadow-lg">
+                              <CardHeader className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10">
+                                <CardTitle className="flex items-center gap-3 text-xl">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                                    {globalIndex + 1}
+                                  </div>
+                                  {subsection.title}
+                                  {subsection.difficulty && (
+                                    <Badge variant="outline" className="ml-auto">
+                                      {subsection.difficulty}
+                                    </Badge>
+                                  )}
+                                </CardTitle>
+                                {subsection.summary && (
+                                  <p className="text-gray-600 mt-2">{subsection.summary}</p>
+                                )}
+                              </CardHeader>
+                              <CardContent className="p-6 space-y-4">
+                                {subsection.keyPoints && subsection.keyPoints.length > 0 && (
+                                  <div>
+                                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                      <Target className="h-4 w-4 text-blue-600" />
+                                      Key Points
+                                    </h4>
+                                    <ul className="space-y-2">
+                                      {subsection.keyPoints.map((point, pointIndex) => (
+                                        <li key={pointIndex} className="flex items-start gap-2">
+                                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                                          <span className="text-gray-700">{point}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                {(subsection.explanation || subsection.explanationPages) && (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                                        <Brain className="h-4 w-4 text-purple-600" />
+                                        {pageTitle}
+                                        {totalPages > 1 && (
+                                          <Badge variant="outline" className="ml-2 text-xs">
+                                            Page {currentPageIndex + 1} of {totalPages}
+                                          </Badge>
+                                        )}
+                                      </h4>
+                                      {totalPages > 1 && (
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setCurrentExplanationPageForSubsection(globalIndex, Math.max(0, currentPageIndex - 1))}
+                                            disabled={currentPageIndex === 0}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <ChevronLeft className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setCurrentExplanationPageForSubsection(globalIndex, Math.min(totalPages - 1, currentPageIndex + 1))}
+                                            disabled={currentPageIndex === totalPages - 1}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <ChevronRight className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="prose prose-sm max-w-none text-gray-700 bg-white/50 p-4 rounded-lg border border-gray-200">
+                                      {currentPageContent}
+                                      {keyTakeaway && (
+                                        <div className="mt-4 p-3 bg-indigo-50 rounded-lg border-l-4 border-indigo-400">
+                                          <p className="text-sm font-medium text-indigo-800 flex items-center gap-2">
+                                            <Star className="h-4 w-4" />
+                                            Key Takeaway: {keyTakeaway}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {totalPages > 1 && (
+                                      <div className="flex items-center justify-center gap-2 mt-4">
+                                        <div className="flex items-center gap-1">
+                                          {Array.from({ length: Math.min(totalPages, 5) }, (_, pageIndex) => {
+                                            let actualPageIndex = pageIndex
+                                            if (totalPages > 5) {
+                                              // Show pages around current page
+                                              const startPage = Math.max(0, currentPageIndex - 2)
+                                              const endPage = Math.min(totalPages - 1, startPage + 4)
+                                              actualPageIndex = startPage + pageIndex
+                                              if (actualPageIndex > endPage) return null
+                                            }
+                                            
+                                            return (
+                                              <Button
+                                                key={actualPageIndex}
+                                                variant={currentPageIndex === actualPageIndex ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setCurrentExplanationPageForSubsection(globalIndex, actualPageIndex)}
+                                                className="w-8 h-8 p-0 text-xs"
+                                              >
+                                                {actualPageIndex + 1}
+                                              </Button>
+                                            )
+                                          })}
+                                          {totalPages > 5 && currentPageIndex < totalPages - 3 && (
+                                            <>
+                                              <span className="text-gray-400 px-1">...</span>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setCurrentExplanationPageForSubsection(globalIndex, totalPages - 1)}
+                                                className="w-8 h-8 p-0 text-xs"
+                                              >
+                                                {totalPages}
+                                              </Button>
+                                            </>
+                                          )}
+                                        </div>
+                                        <div className="ml-3 text-xs text-gray-500">
+                                          {subsection.explanationPages ? 'AI-generated pages' : `~${wordsPerExplanationPage} words per page`}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* NEW: Generate Visualizer Section for Each Concept */}
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                                  <div className="flex items-center gap-4">
+                                    {subsection.needsVisualization && (
+                                      <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                                        <BarChart3 className="h-3 w-3 mr-1" />
+                                        Visualizable ({subsection.visualizationType})
+                                      </Badge>
+                                    )}
+                                    {subsection.needsCodeSimulation && (
+                                      <Badge className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white">
+                                        <Star className="h-3 w-3 mr-1" />
+                                        Simulation ({subsection.simulationType})
+                                      </Badge>
+                                    )}
+                                    {totalPages > 1 && (
+                                      <Badge className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+                                        <DocumentIcon className="h-3 w-3 mr-1" />
+                                        {totalPages} Pages
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-3">
+                                    {/* Generate Visualizer Button for Each Concept */}
+                                    {generatingConceptVisualizer[globalIndex] ? (
+                                      <div className="flex items-center gap-2">
+                                        <div className="relative">
+                                          <Loader2 className="h-4 w-4 text-indigo-500 animate-spin" />
+                                        </div>
+                                        <Badge variant="outline" className="text-xs bg-indigo-50 border-indigo-200 text-indigo-700">
+                                          {conceptVisualizerProgress[globalIndex] || 0}%
+                                        </Badge>
+                                      </div>
+                                    ) : (
+                                      <Button
+                                        onClick={() => generateConceptVisualizer(subsection, globalIndex)}
+                                        size="sm"
+                                        className={`${
+                                          isAlgorithmicConcept(
+                                            subsection.title,
+                                            subsection.explanation || (subsection.explanationPages || []).map(p => p.content).join(' '),
+                                            subsection.keyPoints || []
+                                          )
+                                            ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700'
+                                            : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700'
+                                        } text-white shadow-md hover:shadow-lg transition-all duration-300`}
+                                      >
+                                        {isAlgorithmicConcept(
+                                          subsection.title,
+                                          subsection.explanation || (subsection.explanationPages || []).map(p => p.content).join(' '),
+                                          subsection.keyPoints || []
+                                        ) ? (
+                                          <>
+                                            <Zap className="h-3 w-3 mr-1" />
+                                            Code Simulator
+                                          </>
+                                        ) : (
+                                          <>
+                                            <BarChart3 className="h-3 w-3 mr-1" />
+                                            Generate Visualizer
+                                          </>
+                                        )}
+                                      </Button>
+                                    )}
+                                    
+                                    {subsection.estimatedTime && (
+                                      <Badge variant="outline" className="text-gray-600">
+                                        <Clock className="h-3 w-3 mr-1" />
+                                        {subsection.estimatedTime}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
+                      </div>
+
+                      {/* Pagination Controls */}
+                      {totalExplanationPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 mt-8">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={goToPrevExplanationPage}
+                            disabled={currentExplanationPage === 0}
+                            className="flex items-center gap-2"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: totalExplanationPages }, (_, index) => (
+                              <Button
+                                key={index}
+                                variant={currentExplanationPage === index ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => goToExplanationPage(index)}
+                                className="w-8 h-8 p-0"
+                              >
+                                {index + 1}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={goToNextExplanationPage}
+                            disabled={currentExplanationPage === totalExplanationPages - 1}
+                            className="flex items-center gap-2"
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+
+                          <div className="ml-4 text-sm text-gray-500">
+                            Page {currentExplanationPage + 1} of {totalExplanationPages} 
+                            ({detailedSubsections.length} total sections)
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Visualizers Tab */}
+              <TabsContent value="visualizers" className="p-8">
+                <div className="space-y-6">
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-indigo-600" />
+                    Generated Visualizers ({generatedVisualizers.length})
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {generatedVisualizers.map((visualizer) => (
+                      <Card
+                        key={visualizer.id}
+                        className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-2 border-indigo-200 shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        <CardHeader className="pb-4">
+                          <CardTitle className="flex items-center justify-between text-lg">
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                                {visualizer.type === 'flowchart' && <GitBranch className="h-4 w-4" />}
+                                {visualizer.type === 'comparison' && <BarChart3 className="h-4 w-4" />}
+                                {visualizer.type === 'timeline' && <Clock className="h-4 w-4" />}
+                                {visualizer.type === 'formula' && <Calculator className="h-4 w-4" />}
+                                {visualizer.type === 'process' && <TrendingUp className="h-4 w-4" />}
+                                {visualizer.type === 'hierarchy' && <Layers className="h-4 w-4" />}
+                                {visualizer.type === 'relationship' && <Network className="h-4 w-4" />}
+                                {visualizer.type === 'simulation' && <Zap className="h-4 w-4" />}
+                              </div>
+                              <span className="text-indigo-800 font-semibold">{visualizer.title}</span>
+                            </div>
+                            <Badge variant="outline" className="text-xs bg-white/80 border-indigo-300 text-indigo-700">
+                              {visualizer.type}
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
+                        <CardContent className="space-y-4">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-indigo-800">Concept:</p>
+                            <p className="text-sm text-gray-700 bg-white/60 p-2 rounded border">{visualizer.concept}</p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-indigo-800">Description:</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{visualizer.description}</p>
+                          </div>
+
+                          {visualizer.estimatedTime && (
+                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                              <Clock className="h-3 w-3" />
+                              <span>{visualizer.estimatedTime}</span>
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 text-xs hover:bg-indigo-50 border-indigo-200"
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              Preview
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => duplicateVisualizer(visualizer)}
+                              className="text-xs hover:bg-green-50 border-green-200 text-green-700"
+                            >
+                              <Share2 className="h-3 w-3 mr-1" />
+                              Duplicate
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeVisualizer(visualizer.id)}
+                              className="text-xs hover:bg-red-50 border-red-200 text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Resources Tab */}
+              <TabsContent value="resources" className="p-8">
             <Tabs
               defaultValue={
                 aiResources.books && aiResources.books.length > 0
@@ -1167,6 +2375,8 @@ export default function ModuleEditor({ module, onUpdate }) {
             )}
           </CardContent>
         </Card>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
