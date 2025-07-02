@@ -1104,26 +1104,16 @@ Return JSON format:
       return hasId && hasRequiredFields
     })
     
-    // Combine educator-added resources with AI-generated resources
+    // ONLY include educator-added resources - NO AI-generated resources
+    // This ensures the section is hidden when there are no actual instructor resources
     const allResources = [...educatorAddedResources]
     
-    // Add AI-generated resources from curriculum processing
-    Object.keys(aiResources).forEach(category => {
-      if (Array.isArray(aiResources[category])) {
-        aiResources[category].forEach(resource => {
-          // Only add resources that have proper titles and URLs
-          if (resource && (resource.title || resource.name) && (resource.url || resource.link)) {
-            // Mark AI resources for special handling and ensure proper URL
-            allResources.push({
-              ...resource,
-              isAIGenerated: true,
-              url: resource.url || resource.link,
-              type: category.slice(0, -1) // Remove 's' from category name (e.g., 'articles' -> 'article')
-            })
-          }
-        })
-      }
-    })
+    // AI resources are NOT included in instructor masterpieces
+    // Only manually added educator resources should appear in this section
+    // This ensures the section is hidden when there are no actual instructor resources
+    
+    // Remove AI resources section - instructor masterpieces should only show manually added resources
+    // This ensures the section is hidden when there are no actual instructor resources
     
     const masterpieces = {
       articles: allResources.filter(r => 
@@ -1172,6 +1162,16 @@ Return JSON format:
     
     return masterpieces
   }, [legacyResources, aiResources])
+
+  // Check if there are any manually added educator resources (not AI-generated)
+  const hasManualInstructorResources = useMemo(() => {
+    const manualResources = legacyResources.filter(resource => {
+      const hasId = resource.id && resource.id !== null && resource.id !== undefined
+      const hasRequiredFields = (resource.title || resource.name) && resource.url
+      return hasId && hasRequiredFields
+    })
+    return manualResources.length > 0
+  }, [legacyResources])
 
   // Enhanced Resource Card Component with Educator Masterpiece Design
   const ResourceCard = ({ resource, type, isInstructorChoice = false }) => {
@@ -2356,8 +2356,8 @@ Return JSON format:
 
 
 
-        {/* Enhanced Instructor Masterpieces Section - Only Show if Resources Available */}
-        {(Object.values(instructorMasterpieces).some(category => category.length > 0)) && (
+        {/* Enhanced Instructor Masterpieces Section - Only Show if Manual Resources Available */}
+        {hasManualInstructorResources && (
         <motion.div key={`instructor-masterpieces-${module.id}`} variants={itemVariants}>
           <div className="relative">
             {/* Enhanced background blur effect */}
