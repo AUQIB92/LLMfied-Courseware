@@ -1,13 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -34,21 +32,13 @@ import {
   FileText,
   ArrowRight,
   Trophy,
-  Camera,
-  Upload,
-  CheckCircle,
-  AlertCircle,
-  Mail,
-  Briefcase,
-  Building2,
-  Phone,
-  MapPin,
-  Globe,
-  Save,
 } from "lucide-react"
 import CourseCreator from "./CourseCreator"
 import CourseList from "./CourseList"
 import CourseEditor from "./CourseEditor"
+import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm"
+import PreferencesSettings from "@/components/profile/PreferencesSettings"
+import NotificationsSettings from "@/components/profile/NotificationsSettings"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,9 +52,7 @@ export default function EducatorDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [courses, setCourses] = useState([])
   const [editingCourseId, setEditingCourseId] = useState(null)
-  const [showProfileSettings, setShowProfileSettings] = useState(false)
-  const [showPreferences, setShowPreferences] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
+  const [avatarKey, setAvatarKey] = useState(Date.now())
   const [stats, setStats] = useState({
     totalCourses: 0,
     publishedCourses: 0,
@@ -78,75 +66,21 @@ export default function EducatorDashboard() {
   const { user, getAuthHeaders, logout, updateProfile, updateUser } = useAuth()
   const router = useRouter()
 
-  // Profile state management
-  const [profile, setProfile] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    bio: "",
-    location: "",
-    website: "",
-    avatar: user?.avatar || "",
-    phone: "",
-    organization: "",
-    title: "",
-    expertise: [],
-  })
 
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    darkMode: false,
-    language: "en",
-    timezone: "UTC",
-    autoSave: true,
-    publicProfile: true,
-  })
 
-  const [notifications, setNotifications] = useState([])
-  const [profileLoading, setProfileLoading] = useState(false)
 
-  // Add missing state variables for ProfileSettings functionality
-  const [localProfile, setLocalProfile] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    bio: "",
-    location: "",
-    website: "",
-    avatar: user?.avatar || "",
-    phone: "",
-    organization: "",
-    title: "",
-    expertise: [],
-  })
-  const [errors, setErrors] = useState({})
-  const [saveLoading, setSaveLoading] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
 
-  // Sync localProfile with profile and user data
+  const dataFetched = useRef(false)
+
   useEffect(() => {
-    if (user) {
-      setLocalProfile(prev => ({
-        ...prev,
-        name: user.name || "",
-        email: user.email || "",
-        avatar: user.avatar || ""
-      }))
+    if (user && !dataFetched.current) {
+      dataFetched.current = true
+      fetchCourses()
+      fetchStats()
+    } else if (!user) {
+      dataFetched.current = false
     }
-  }, [user])
-
-  useEffect(() => {
-    setLocalProfile(prev => ({ ...prev, ...profile }))
-  }, [profile])
-
-  useEffect(() => {
-    fetchCourses()
-    fetchStats()
-    if (user) {
-      fetchProfile()
-      fetchPreferences()
-      fetchNotifications()
-    }
-  }, [user])
+  }, [user?._id])
 
   const fetchCourses = async () => {
     try {
@@ -216,50 +150,9 @@ export default function EducatorDashboard() {
     }
   }
 
-  const fetchProfile = async () => {
-    setProfileLoading(true)
-    try {
-      const response = await fetch("/api/profile", {
-        headers: getAuthHeaders(),
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setProfile((prev) => ({ ...prev, ...data.user }))
-      }
-    } catch (error) {
-      console.error("Failed to fetch profile:", error)
-    } finally {
-      setProfileLoading(false)
-    }
-  }
 
-  const fetchPreferences = async () => {
-    try {
-      const response = await fetch("/api/preferences", {
-        headers: getAuthHeaders(),
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setPreferences((prev) => ({ ...prev, ...(data.preferences || data) }))
-      }
-    } catch (error) {
-      console.error("Failed to fetch preferences:", error)
-    }
-  }
 
-  const fetchNotifications = async () => {
-    try {
-      const response = await fetch("/api/notifications", {
-        headers: getAuthHeaders(),
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setNotifications(Array.isArray(data) ? data : [])
-      }
-    } catch (error) {
-      console.error("Failed to fetch notifications:", error)
-    }
-  }
+
 
   const handleEditCourse = (courseId) => {
     setEditingCourseId(courseId)
@@ -291,23 +184,14 @@ export default function EducatorDashboard() {
   }
 
   const navigateToProfile = () => {
-    setShowProfileSettings(true)
-    setShowPreferences(false)
-    setShowNotifications(false)
     setActiveTab("profile")
   }
 
   const navigateToPreferences = () => {
-    setShowPreferences(true)
-    setShowProfileSettings(false)
-    setShowNotifications(false)
     setActiveTab("preferences")
   }
 
   const navigateToNotifications = () => {
-    setShowNotifications(true)
-    setShowProfileSettings(false)
-    setShowPreferences(false)
     setActiveTab("notifications")
   }
 
@@ -547,824 +431,6 @@ export default function EducatorDashboard() {
     )
   }
 
-  // Completely reimplemented Profile Components
-  const ProfileSettings = () => {
-    // Initialize state only once with current user data
-    const [educatorProfile, setEducatorProfile] = useState(() => ({
-      name: user?.name || '',
-      email: user?.email || '',
-      bio: user?.bio || '',
-      avatar: user?.avatar || '',
-      phone: user?.phone || '',
-      location: user?.location || '',
-      website: user?.website || '',
-      title: user?.title || '',
-      organization: user?.organization || '',
-      expertise: user?.expertise || []
-    }))
-    
-    const [isUploading, setIsUploading] = useState(false)
-    const [saveLoading, setSaveLoading] = useState(false)
-    const [formErrors, setFormErrors] = useState({})
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-
-    // Only update form if user data changes significantly (not on every render)
-    const userDataRef = useRef()
-    useEffect(() => {
-      const currentUserKey = user ? `${user._id}-${user.name}-${user.email}` : null
-      if (currentUserKey && currentUserKey !== userDataRef.current) {
-        userDataRef.current = currentUserKey
-        // Only update if we don't have unsaved changes
-        if (!hasUnsavedChanges) {
-          setEducatorProfile({
-            name: user?.name || '',
-            email: user?.email || '',
-            bio: user?.bio || '',
-            avatar: user?.avatar || '',
-            phone: user?.phone || '',
-            location: user?.location || '',
-            website: user?.website || '',
-            title: user?.title || '',
-            organization: user?.organization || '',
-            expertise: user?.expertise || []
-          })
-        }
-      }
-    }, [user?._id, user?.name, user?.email, hasUnsavedChanges])
-
-    const validateForm = () => {
-      const errors = {}
-      if (!educatorProfile.name?.trim()) {
-        errors.name = 'Name is required'
-      }
-      if (!educatorProfile.email?.trim()) {
-        errors.email = 'Email is required'
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(educatorProfile.email)) {
-        errors.email = 'Please enter a valid email address'
-      }
-      if (educatorProfile.website && !/^https?:\/\/.+\..+/.test(educatorProfile.website)) {
-        errors.website = 'Please enter a valid website URL (include http:// or https://)'
-      }
-      setFormErrors(errors)
-      return Object.keys(errors).length === 0
-    }
-
-    const handleFieldChange = (fieldName, value) => {
-      setEducatorProfile(prev => ({
-        ...prev,
-        [fieldName]: value
-      }))
-      setHasUnsavedChanges(true)
-      
-      // Clear specific field error when user starts typing
-      if (formErrors[fieldName]) {
-        setFormErrors(prev => ({
-          ...prev,
-          [fieldName]: undefined
-        }))
-      }
-    }
-
-    const handleProfileUpdate = async (e) => {
-      e.preventDefault()
-      
-      if (!validateForm()) {
-        return
-      }
-
-      setSaveLoading(true)
-      try {
-        const response = await fetch("/api/profile", {
-          method: "PUT",
-          headers: {
-            ...getAuthHeaders(),
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(educatorProfile),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          updateUser(data.user)
-          setHasUnsavedChanges(false)
-          
-          // Show success notification
-          showNotification('Profile updated successfully!', 'success')
-          
-          fetchProfile() // Refresh profile data
-        } else {
-          const errorData = await response.json()
-          console.error("Profile update failed:", errorData)
-          showNotification(`Failed to update profile: ${errorData.error || "Unknown error"}`, 'error')
-        }
-      } catch (error) {
-        console.error("Error updating profile:", error)
-        showNotification(`Error updating profile: ${error.message}`, 'error')
-      } finally {
-        setSaveLoading(false)
-      }
-    }
-
-    const showNotification = (message, type = 'info') => {
-      const notification = document.createElement('div')
-      notification.className = `fixed top-8 right-8 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500 ${
-        type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 
-        type === 'error' ? 'bg-gradient-to-r from-red-500 to-pink-600' : 
-        'bg-gradient-to-r from-blue-500 to-purple-600'
-      }`
-      
-      notification.innerHTML = `
-        <div class="flex items-center gap-3">
-          <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-            ${type === 'success' ? 
-              '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>' : 
-              '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>'
-            }
-          </div>
-          <span class="font-semibold">${message}</span>
-        </div>
-      `
-      
-      document.body.appendChild(notification)
-      
-      setTimeout(() => {
-        notification.style.transform = 'translateX(0)'
-      }, 100)
-      
-      setTimeout(() => {
-        notification.style.transform = 'translateX(100%)'
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification)
-          }
-        }, 500)
-      }, 3000)
-    }
-
-    const handleAvatarUpload = async (e) => {
-      const file = e.target.files?.[0]
-      if (!file) return
-
-      setIsUploading(true)
-      const formData = new FormData()
-      formData.append("avatar", file)
-
-      try {
-        const response = await fetch("/api/upload/avatar", {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: formData,
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          const newAvatarUrl = data.avatarUrl
-
-          handleFieldChange('avatar', newAvatarUrl)
-          updateUser({ ...user, avatar: newAvatarUrl })
-          showNotification('Avatar uploaded successfully!', 'success')
-        } else {
-          const errorData = await response.json()
-          showNotification(`Failed to upload avatar: ${errorData.error || "Unknown error"}`, 'error')
-        }
-      } catch (error) {
-        console.error("Error uploading avatar:", error)
-        showNotification(`Error uploading avatar: ${error.message}`, 'error')
-      } finally {
-        setIsUploading(false)
-      }
-    }
-
-    return (
-      <div className="space-y-8">
-        {/* Enhanced Header */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 to-purple-100/50 rounded-3xl blur-3xl"></div>
-          <div className="relative bg-gradient-to-r from-white/80 to-blue-50/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 shadow-xl">
-            <div className="flex items-center gap-6">
-              <Button 
-                variant="ghost" 
-                onClick={() => setActiveTab("overview")} 
-                className="group flex items-center gap-3 hover:bg-blue-50 text-blue-600 px-6 py-4 rounded-2xl font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
-              >
-                <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full group-hover:scale-110 transition-transform duration-300"></div>
-                <ArrowRight className="h-5 w-5 rotate-180 group-hover:-translate-x-2 transition-transform duration-300" />
-                Back to Dashboard
-              </Button>
-              <div className="flex-1">
-                <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Profile Settings
-                </h2>
-                <p className="text-slate-600 text-lg mt-2">Manage your educator profile and professional information</p>
-                <div className="flex items-center gap-4 mt-4">
-                  <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                    Profile Active
-                  </div>
-                  <div className="text-sm text-slate-500">
-                    Last updated: {new Date().toLocaleDateString()}
-                  </div>
-                  {hasUnsavedChanges && (
-                    <div className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full font-medium">
-                      Unsaved changes
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Enhanced Profile Card */}
-        <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-blue-50/80 via-purple-50/60 to-indigo-50/80 rounded-t-3xl border-b border-white/40">
-            <CardTitle className="flex items-center gap-4 text-3xl">
-              <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 rounded-2xl shadow-lg">
-                <User className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Educator Profile
-                </span>
-                <p className="text-lg text-slate-600 font-normal mt-1">
-                  Shape your professional presence
-                </p>
-              </div>
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent className="p-10">
-            <form onSubmit={handleProfileUpdate} className="space-y-10">
-              {/* Enhanced Avatar Upload Section */}
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-3xl blur-xl"></div>
-                <div className="relative bg-gradient-to-br from-white/80 to-blue-50/50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-white/60">
-                  <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 lg:gap-10">
-                    <div className="relative group shrink-0">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                      <div className="relative">
-                        <Avatar className="h-28 w-28 sm:h-32 sm:w-32 lg:h-36 lg:w-36 ring-4 ring-blue-200 group-hover:ring-blue-300 transition-all duration-300 shadow-2xl">
-                          <AvatarImage src={educatorProfile.avatar || "/placeholder.svg"} alt={educatorProfile.name} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-3xl sm:text-4xl font-bold">
-                            {educatorProfile.name?.charAt(0)?.toUpperCase() || "U"}
-                          </AvatarFallback>
-                        </Avatar>
-                        {isUploading && (
-                          <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
-                            <div className="animate-spin rounded-full h-8 w-8 border-3 border-white border-t-transparent"></div>
-                          </div>
-                        )}
-                        <div className="absolute -bottom-2 -right-2 p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-xl group-hover:scale-110 transition-transform duration-300">
-                          <Camera className="h-5 w-5 text-white" />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 space-y-6">
-                      <div>
-                        <h3 className="text-2xl font-bold text-slate-800 mb-2">Profile Picture</h3>
-                        <p className="text-slate-600 leading-relaxed">
-                          Upload a professional photo to help students and colleagues recognize you. 
-                          A clear, high-quality image works best for building trust and engagement.
-                        </p>
-                      </div>
-                      
-                      <label className="block">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="group cursor-pointer hover:bg-blue-50 border-2 border-blue-200 hover:border-blue-400 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                          disabled={isUploading}
-                          asChild
-                        >
-                          <span className="flex items-center gap-3">
-                            {isUploading ? (
-                              <>
-                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-                                Uploading...
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
-                                Choose New Photo
-                              </>
-                            )}
-                          </span>
-                        </Button>
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          onChange={handleAvatarUpload} 
-                          className="hidden" 
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-8">
-                {/* Basic Information */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/50 to-blue-50/50 rounded-2xl blur-xl"></div>
-                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
-                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                      <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-blue-600 rounded-full"></div>
-                      Basic Information
-                    </h4>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                        <Label htmlFor="name" className="text-slate-700 font-semibold flex items-center gap-2">
-                          <div className="p-1 bg-blue-100 rounded-lg">
-                            <User className="h-4 w-4 text-blue-600" />
-                          </div>
-                          Full Name *
-                        </Label>
-                        <Input
-                          id="name"
-                          value={educatorProfile.name}
-                          onChange={(e) => handleFieldChange('name', e.target.value)}
-                          className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                            formErrors.name ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
-                          }`}
-                          placeholder="Enter your full name"
-                        />
-                        {formErrors.name && (
-                          <p className="text-red-500 text-sm flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4" />
-                            {formErrors.name}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <Label htmlFor="email" className="text-slate-700 font-semibold flex items-center gap-2">
-                          <div className="p-1 bg-purple-100 rounded-lg">
-                            <Mail className="h-4 w-4 text-purple-600" />
-                          </div>
-                          Email Address *
-                        </Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={educatorProfile.email}
-                          onChange={(e) => handleFieldChange('email', e.target.value)}
-                          className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                            formErrors.email ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
-                          }`}
-                          placeholder="Enter your email address"
-                        />
-                        {formErrors.email && (
-                          <p className="text-red-500 text-sm flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4" />
-                            {formErrors.email}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Professional Information */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 rounded-2xl blur-xl"></div>
-                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
-                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                      <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
-                      Professional Details
-                    </h4>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                        <Label htmlFor="title" className="text-slate-700 font-semibold flex items-center gap-2">
-                          <div className="p-1 bg-indigo-100 rounded-lg">
-                            <Briefcase className="h-4 w-4 text-indigo-600" />
-                          </div>
-                          Professional Title
-                        </Label>
-                        <Input
-                          id="title"
-                          value={educatorProfile.title}
-                          onChange={(e) => handleFieldChange('title', e.target.value)}
-                          placeholder="e.g., Senior Developer, Math Professor"
-                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 hover:border-slate-300 transition-all duration-300"
-                        />
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <Label htmlFor="organization" className="text-slate-700 font-semibold flex items-center gap-2">
-                          <div className="p-1 bg-purple-100 rounded-lg">
-                            <Building2 className="h-4 w-4 text-purple-600" />
-                          </div>
-                          Organization
-                        </Label>
-                        <Input
-                          id="organization"
-                          value={educatorProfile.organization}
-                          onChange={(e) => handleFieldChange('organization', e.target.value)}
-                          placeholder="e.g., Tech University, ABC Company"
-                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-purple-500 hover:border-slate-300 transition-all duration-300"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact Information */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-2xl blur-xl"></div>
-                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
-                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                      <div className="w-1 h-6 bg-gradient-to-b from-amber-500 to-orange-600 rounded-full"></div>
-                      Contact Information
-                    </h4>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                        <Label htmlFor="phone" className="text-slate-700 font-semibold flex items-center gap-2">
-                          <div className="p-1 bg-amber-100 rounded-lg">
-                            <Phone className="h-4 w-4 text-amber-600" />
-                          </div>
-                          Phone Number
-                        </Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          value={educatorProfile.phone}
-                          onChange={(e) => handleFieldChange('phone', e.target.value)}
-                          placeholder="+1 (555) 123-4567"
-                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-amber-500 hover:border-slate-300 transition-all duration-300"
-                        />
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <Label htmlFor="location" className="text-slate-700 font-semibold flex items-center gap-2">
-                          <div className="p-1 bg-orange-100 rounded-lg">
-                            <MapPin className="h-4 w-4 text-orange-600" />
-                          </div>
-                          Location
-                        </Label>
-                        <Input
-                          id="location"
-                          value={educatorProfile.location}
-                          onChange={(e) => handleFieldChange('location', e.target.value)}
-                          placeholder="e.g., New York, USA"
-                          className="h-14 rounded-2xl border-2 border-slate-200 focus:border-orange-500 hover:border-slate-300 transition-all duration-300"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-8 space-y-3">
-                      <Label htmlFor="website" className="text-slate-700 font-semibold flex items-center gap-2">
-                        <div className="p-1 bg-emerald-100 rounded-lg">
-                          <Globe className="h-4 w-4 text-emerald-600" />
-                        </div>
-                        Website
-                      </Label>
-                      <Input
-                        id="website"
-                        type="url"
-                        value={educatorProfile.website}
-                        onChange={(e) => handleFieldChange('website', e.target.value)}
-                        placeholder="https://yourwebsite.com"
-                        className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                          formErrors.website ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-emerald-500 hover:border-slate-300'
-                        }`}
-                      />
-                      {formErrors.website && (
-                        <p className="text-red-500 text-sm flex items-center gap-2">
-                          <AlertCircle className="h-4 w-4" />
-                          {formErrors.website}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bio Section */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-rose-50/50 to-pink-50/50 rounded-2xl blur-xl"></div>
-                  <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60">
-                    <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                      <div className="w-1 h-6 bg-gradient-to-b from-rose-500 to-pink-600 rounded-full"></div>
-                      About You
-                    </h4>
-                    
-                    <div className="space-y-3">
-                      <Label htmlFor="bio" className="text-slate-700 font-semibold flex items-center gap-2">
-                        <div className="p-1 bg-rose-100 rounded-lg">
-                          <FileText className="h-4 w-4 text-rose-600" />
-                        </div>
-                        Professional Bio
-                      </Label>
-                      <Textarea
-                        id="bio"
-                        value={educatorProfile.bio}
-                        onChange={(e) => handleFieldChange('bio', e.target.value)}
-                        placeholder="Tell us about your background, expertise, and teaching philosophy..."
-                        rows={6}
-                        className="rounded-2xl border-2 border-slate-200 focus:border-rose-500 hover:border-slate-300 transition-all duration-300 resize-none"
-                      />
-                      <p className="text-sm text-slate-500 mt-2">
-                        Share your teaching philosophy, areas of expertise, and what makes you passionate about education.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Enhanced Save Button */}
-              <div className="flex items-center justify-between pt-8">
-                <div className="text-sm text-slate-500">
-                  <span className="text-red-500">*</span> Required fields
-                  {hasUnsavedChanges && (
-                    <span className="ml-4 text-amber-600 font-medium">
-                      You have unsaved changes
-                    </span>
-                  )}
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={saveLoading}
-                  className="group relative bg-gradient-to-r from-blue-500 via-purple-600 to-indigo-600 hover:from-blue-600 hover:via-purple-700 hover:to-indigo-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                  {/* Button background effects */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  
-                  <div className="relative flex items-center gap-3">
-                    {saveLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
-                        Saving Changes...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
-                        Save Profile Changes
-                      </>
-                    )}
-                  </div>
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const Preferences = () => {
-    const [localPreferences, setLocalPreferences] = useState(preferences)
-
-    useEffect(() => {
-      setLocalPreferences(preferences)
-    }, [preferences])
-
-    const handlePreferenceUpdate = async () => {
-      try {
-        const response = await fetch("/api/preferences", {
-          method: "PUT",
-          headers: {
-            ...getAuthHeaders(),
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(localPreferences),
-        })
-        if (response.ok) {
-          alert("Preferences updated successfully!")
-          fetchPreferences() // Refresh preferences data
-        } else {
-          alert("Failed to update preferences")
-        }
-      } catch (error) {
-        console.error("Error updating preferences:", error)
-        alert("Error updating preferences")
-      }
-    }
-
-    return (
-      <div className="space-y-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => setActiveTab("overview")}
-            className="hover:bg-purple-50 text-purple-600"
-          >
-            ← Back to Dashboard
-          </Button>
-          <div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Preferences
-            </h2>
-            <p className="text-slate-600">Customize your experience</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-purple-600" />
-                Notification Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Email Notifications</p>
-                  <p className="text-sm text-slate-500">Receive updates via email</p>
-                </div>
-                <Switch
-                  checked={localPreferences.emailNotifications}
-                  onCheckedChange={(checked) =>
-                    setLocalPreferences((prev) => ({ ...prev, emailNotifications: checked }))
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Push Notifications</p>
-                  <p className="text-sm text-slate-500">Receive browser notifications</p>
-                </div>
-                <Switch
-                  checked={localPreferences.pushNotifications}
-                  onCheckedChange={(checked) =>
-                    setLocalPreferences((prev) => ({ ...prev, pushNotifications: checked }))
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50">
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-indigo-600" />
-                Display Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="space-y-2">
-                <Label>Language</Label>
-                <select
-                  value={localPreferences.language}
-                  onChange={(e) => setLocalPreferences((prev) => ({ ...prev, language: e.target.value }))}
-                  className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="en">English</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
-                  <option value="de">German</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Timezone</Label>
-                <select
-                  value={localPreferences.timezone}
-                  onChange={(e) => setLocalPreferences((prev) => ({ ...prev, timezone: e.target.value }))}
-                  className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="UTC">UTC</option>
-                  <option value="America/New_York">Eastern Time</option>
-                  <option value="America/Chicago">Central Time</option>
-                  <option value="America/Denver">Mountain Time</option>
-                  <option value="America/Los_Angeles">Pacific Time</option>
-                  <option value="Europe/London">London</option>
-                  <option value="Europe/Paris">Paris</option>
-                  <option value="Asia/Tokyo">Tokyo</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Dark Mode</p>
-                  <p className="text-sm text-slate-500">Toggle dark theme</p>
-                </div>
-                <Switch
-                  checked={localPreferences.darkMode}
-                  onCheckedChange={(checked) => setLocalPreferences((prev) => ({ ...prev, darkMode: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Public Profile</p>
-                  <p className="text-sm text-slate-500">Make your profile visible to students</p>
-                </div>
-                <Switch
-                  checked={localPreferences.publicProfile}
-                  onCheckedChange={(checked) => setLocalPreferences((prev) => ({ ...prev, publicProfile: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Auto Save</p>
-                  <p className="text-sm text-slate-500">Automatically save your work</p>
-                </div>
-                <Switch
-                  checked={localPreferences.autoSave}
-                  onCheckedChange={(checked) => setLocalPreferences((prev) => ({ ...prev, autoSave: checked }))}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex justify-end">
-          <Button
-            onClick={handlePreferenceUpdate}
-            className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-8 py-3"
-          >
-            Save Preferences
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  const Notifications = () => {
-    const [localNotifications, setLocalNotifications] = useState(notifications)
-
-    useEffect(() => {
-      setLocalNotifications(notifications)
-    }, [notifications])
-
-    const markAsRead = (id) => {
-      setLocalNotifications((prev) => prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)))
-    }
-
-    const markAllAsRead = () => {
-      setLocalNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })))
-    }
-
-    return (
-      <div className="space-y-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={() => setActiveTab("overview")} className="hover:bg-amber-50 text-amber-600">
-            ← Back to Dashboard
-          </Button>
-          <div className="flex-1">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-              Notifications
-            </h2>
-            <p className="text-slate-600">Stay updated with your latest activities</p>
-          </div>
-          <Button onClick={markAllAsRead} variant="outline" className="hover:bg-amber-50 bg-transparent">
-            Mark All as Read
-          </Button>
-        </div>
-
-        <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-          <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50">
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-amber-600" />
-              Recent Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-gray-100">
-              {localNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-6 hover:bg-gray-50 transition-colors duration-200 ${
-                    !notification.read ? "bg-blue-50/50" : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`w-3 h-3 rounded-full mt-2 ${
-                        !notification.read ? "bg-blue-500 animate-pulse" : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-semibold text-gray-900">{notification.title}</h4>
-                          <p className="text-gray-600 mt-1">{notification.message}</p>
-                          <p className="text-sm text-gray-500 mt-2">{notification.time}</p>
-                        </div>
-                        {!notification.read && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => markAsRead(notification.id)}
-                            className="text-blue-600 hover:bg-blue-50"
-                          >
-                            Mark as read
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
@@ -1562,13 +628,30 @@ export default function EducatorDashboard() {
         )
 
       case "profile":
-        return <ProfileSettings />
+        return (
+          <ProfileSettingsForm 
+            onBack={() => setActiveTab("overview")} 
+            isEducator={true}
+            avatarKey={avatarKey}
+            setAvatarKey={setAvatarKey}
+          />
+        )
 
       case "preferences":
-        return <Preferences />
+        return (
+          <PreferencesSettings 
+            onBack={() => setActiveTab("overview")} 
+            isEducator={true}
+          />
+        )
 
       case "notifications":
-        return <Notifications />
+        return (
+          <NotificationsSettings 
+            onBack={() => setActiveTab("overview")} 
+            isEducator={true}
+          />
+        )
 
       default:
         return null
@@ -1626,7 +709,7 @@ export default function EducatorDashboard() {
                         <div className="relative">
                           <Avatar
                             className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-white/30 group-hover:ring-white/50 transition-all duration-300"
-                            key={`header-avatar-${user?.avatar}-${user?._avatarTimestamp || Date.now()}`}
+                            key={`header-avatar-${avatarKey}`}
                           >
                             <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
                             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-sm sm:text-base">
@@ -1652,7 +735,7 @@ export default function EducatorDashboard() {
                       <div className="flex items-center gap-3">
                         <Avatar
                           className="h-12 w-12 ring-2 ring-blue-200"
-                          key={`dropdown-avatar-${user?.avatar}-${user?._avatarTimestamp || Date.now()}`}
+                          key={`dropdown-avatar-${avatarKey}`}
                         >
                           <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
                           <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-lg">

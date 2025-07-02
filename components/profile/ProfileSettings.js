@@ -29,14 +29,16 @@ import {
   Monitor
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useProfile } from "@/hooks/useProfile"
 
 export default function ProfileSettings() {
-  const { user, updateProfile, getAuthHeaders, refreshUser } = useAuth()
+  const { updateProfile: ctxUpdateProfile, getAuthHeaders } = useAuth()
+  const { profile, updateProfile, refresh } = useProfile()
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: "", text: "" })
-  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || "")
+  const [avatarPreview, setAvatarPreview] = useState(profile?.avatar || "")
   const [avatarFile, setAvatarFile] = useState(null)
   const fileInputRef = useRef(null)
   const [preferences, setPreferences] = useState({
@@ -46,19 +48,35 @@ export default function ProfileSettings() {
   })
   
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    location: user?.location || "",
-    bio: user?.bio || "",
-    specialization: user?.specialization || "",
-    experience: user?.experience || "",
-    website: user?.website || "",
+    name: profile?.name || "",
+    email: profile?.email || "",
+    phone: profile?.phone || "",
+    location: profile?.location || "",
+    bio: profile?.bio || "",
+    specialization: profile?.specialization || "",
+    experience: profile?.experience || "",
+    website: profile?.website || "",
   })
 
   useEffect(() => {
     fetchPreferences()
   }, [])
+
+  useEffect(() => {
+    if (profile && !loading) {
+      setFormData({
+        name: profile.name || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        location: profile.location || "",
+        bio: profile.bio || "",
+        specialization: profile.specialization || "",
+        experience: profile.experience || "",
+        website: profile.website || "",
+      })
+      setAvatarPreview(profile.avatar || "")
+    }
+  }, [profile])
 
   const fetchPreferences = async () => {
     try {
@@ -151,7 +169,7 @@ export default function ProfileSettings() {
       
       if (response.ok) {
         // Refresh user context to get updated avatar
-        await refreshUser()
+        await refresh()
         return data.avatarUrl
       } else {
         throw new Error(data.error || "Failed to upload avatar")
@@ -173,7 +191,7 @@ export default function ProfileSettings() {
     setMessage({ type: "", text: "" })
 
     try {
-      let avatarUrl = user?.avatar
+      let avatarUrl = profile?.avatar
 
       // Upload avatar first if there's a new file
       if (avatarFile) {
@@ -188,7 +206,7 @@ export default function ProfileSettings() {
 
       const updateData = {
         ...formData,
-        ...(avatarUrl && avatarUrl !== user?.avatar && { avatar: avatarUrl })
+        ...(avatarUrl && avatarUrl !== profile?.avatar && { avatar: avatarUrl })
       }
 
       const result = await updateProfile(updateData)
@@ -293,10 +311,10 @@ export default function ProfileSettings() {
 
             <div className="space-y-2">
               <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                {user?.role === "educator" ? "Educator" : "Learner"}
+                {profile?.role === "educator" ? "Educator" : "Learner"}
               </Badge>
               <p className="text-sm text-slate-600 dark:text-slate-300">
-                Member since {new Date(user?.createdAt || Date.now()).toLocaleDateString()}
+                Member since {new Date(profile?.createdAt || Date.now()).toLocaleDateString()}
               </p>
             </div>
 
@@ -419,7 +437,7 @@ export default function ProfileSettings() {
                 </div>
               </div>
 
-              {user?.role === "educator" && (
+              {profile?.role === "educator" && (
                 <>
                   <Separator />
                   <div className="space-y-4">

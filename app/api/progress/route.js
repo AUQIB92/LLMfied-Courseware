@@ -16,8 +16,38 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const courseId = searchParams.get("courseId")
 
+    if (!courseId) {
+      return NextResponse.json({ error: "Course ID is required" }, { status: 400 })
+    }
+
     const client = await clientPromise
     const db = client.db("llmfied")
+
+    // Check enrollment status for learners
+    if (user.role === "learner") {
+      const enrollment = await db.collection("enrollments").findOne({
+        learnerId: new ObjectId(user.userId),
+        courseId: new ObjectId(courseId)
+      })
+      
+      if (!enrollment) {
+        return NextResponse.json({ 
+          error: "Access denied: You must be enrolled in this course to view progress" 
+        }, { status: 403 })
+      }
+    } else if (user.role === "educator") {
+      // Educators can view progress for their own courses
+      const course = await db.collection("courses").findOne({
+        _id: new ObjectId(courseId),
+        educatorId: new ObjectId(user.userId)
+      })
+      
+      if (!course) {
+        return NextResponse.json({ 
+          error: "Access denied: You can only view progress for your own courses" 
+        }, { status: 403 })
+      }
+    }
 
     const progress = await db.collection("progress").findOne({
       learnerId: new ObjectId(user.userId),
@@ -26,6 +56,7 @@ export async function GET(request) {
 
     return NextResponse.json(progress || { moduleProgress: [], overallProgress: 0 })
   } catch (error) {
+    console.error("Progress fetch error:", error)
     return NextResponse.json({ error: "Failed to fetch progress" }, { status: 500 })
   }
 }
@@ -35,8 +66,30 @@ export async function POST(request) {
     const user = await verifyToken(request)
     const { courseId, moduleId, completed, timeSpent, quizScore } = await request.json()
 
+    if (!courseId || !moduleId) {
+      return NextResponse.json({ error: "Course ID and Module ID are required" }, { status: 400 })
+    }
+
     const client = await clientPromise
     const db = client.db("llmfied")
+
+    // Check enrollment status for learners
+    if (user.role === "learner") {
+      const enrollment = await db.collection("enrollments").findOne({
+        learnerId: new ObjectId(user.userId),
+        courseId: new ObjectId(courseId)
+      })
+      
+      if (!enrollment) {
+        return NextResponse.json({ 
+          error: "Access denied: You must be enrolled in this course to update progress" 
+        }, { status: 403 })
+      }
+    } else {
+      return NextResponse.json({ 
+        error: "Access denied: Only learners can update progress" 
+      }, { status: 403 })
+    }
 
     const filter = {
       learnerId: new ObjectId(user.userId),
@@ -88,6 +141,7 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error("Progress update error:", error)
     return NextResponse.json({ error: "Failed to update progress" }, { status: 500 })
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
+import { createCoursePublishedNotification } from "@/lib/notificationService"
 
 async function verifyToken(request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "")
@@ -16,6 +17,7 @@ export async function GET(request, { params }) {
     const client = await clientPromise
     const db = client.db("llmfied")
 
+    // Get course basic info first
     const course = await db.collection("courses").findOne({
       _id: new ObjectId(resolvedParams.id),
     })
@@ -24,8 +26,79 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 })
     }
 
-    return NextResponse.json(course)
+    // Check if user is authenticated
+    try {
+      const user = await verifyToken(request)
+      
+      // If user is the educator who created the course, return full content
+      if (user.role === "educator" && course.educatorId.toString() === user.userId.toString()) {
+        return NextResponse.json(course)
+      }
+      
+      // If user is a learner, check enrollment status
+      if (user.role === "learner") {
+        const enrollment = await db.collection("enrollments").findOne({
+          learnerId: new ObjectId(user.userId),
+          courseId: new ObjectId(resolvedParams.id)
+        })
+        
+        // If enrolled, return full course content
+        if (enrollment) {
+          return NextResponse.json(course)
+        }
+        
+        // If not enrolled, return limited course info (no modules/content)
+        const limitedCourse = {
+          _id: course._id,
+          title: course.title,
+          description: course.description,
+          status: course.status,
+          createdAt: course.createdAt,
+          updatedAt: course.updatedAt,
+          enrollmentCount: course.enrollmentCount || 0,
+          // Don't include modules, content, or other sensitive data
+          isEnrolled: false
+        }
+        
+        return NextResponse.json(limitedCourse)
+      }
+      
+      // For other roles or unknown users, return limited info
+      const limitedCourse = {
+        _id: course._id,
+        title: course.title,
+        description: course.description,
+        status: course.status,
+        createdAt: course.createdAt,
+        updatedAt: course.updatedAt,
+        enrollmentCount: course.enrollmentCount || 0,
+        isEnrolled: false
+      }
+      
+      return NextResponse.json(limitedCourse)
+      
+    } catch (tokenError) {
+      // If no valid token, return limited public info only
+      if (course.status === "published") {
+        const publicCourse = {
+          _id: course._id,
+          title: course.title,
+          description: course.description,
+          status: course.status,
+          createdAt: course.createdAt,
+          enrollmentCount: course.enrollmentCount || 0,
+          isEnrolled: false
+        }
+        
+        return NextResponse.json(publicCourse)
+      } else {
+        // Don't show draft courses to unauthenticated users
+        return NextResponse.json({ error: "Course not found" }, { status: 404 })
+      }
+    }
+    
   } catch (error) {
+    console.error("Error in GET /api/courses/[id]:", error)
     return NextResponse.json({ error: "Failed to fetch course" }, { status: 500 })
   }
 }

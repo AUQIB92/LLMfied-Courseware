@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
+import { createProfileUpdateNotification } from "@/lib/notificationService"
 
 export async function PUT(request) {
   try {
@@ -168,6 +169,9 @@ export async function PUT(request) {
 
     console.log("✅ Profile updated successfully")
     console.log("👤 Updated user data:", JSON.stringify(updatedUser, null, 2))
+
+    // Create notification
+    await createProfileUpdateNotification(decoded.userId, updatedUser)
 
     return NextResponse.json({
       message: "Profile updated successfully",

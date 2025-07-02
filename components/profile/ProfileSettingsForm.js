@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -29,6 +30,7 @@ import {
 
 export default function ProfileSettingsForm({ onBack, isEducator = false, avatarKey, setAvatarKey }) {
   const { user, getAuthHeaders, updateUser } = useAuth()
+  const { toast } = useToast()
   
   // Initialize form state only once with current user data
   const [profileData, setProfileData] = useState(() => ({
@@ -77,7 +79,7 @@ export default function ProfileSettingsForm({ onBack, isEducator = false, avatar
         })
       }
     }
-  }, [user?._id, user?.name, user?.email, hasUnsavedChanges])
+  }, [user?._id, user?.name, user?.email])
 
   const validateForm = () => {
     const errors = {}
@@ -137,54 +139,30 @@ export default function ProfileSettingsForm({ onBack, isEducator = false, avatar
         if (setAvatarKey) setAvatarKey(Date.now())
         
         // Show success notification
-        showNotification('Profile updated successfully!', 'success')
+        toast({
+          title: "Success!",
+          description: "Profile updated successfully!",
+          variant: "default",
+        })
       } else {
         const errorData = await response.json()
         console.error('Profile update failed:', errorData)
-        showNotification(`Failed to update profile: ${errorData.error || 'Unknown error'}`, 'error')
+        toast({
+          title: "Error",
+          description: `Failed to update profile: ${errorData.error || 'Unknown error'}`,
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error('Error updating profile:', error)
-      showNotification(`Error updating profile: ${error.message}`, 'error')
+      toast({
+        title: "Error",
+        description: `Error updating profile: ${error.message}`,
+        variant: "destructive",
+      })
     } finally {
       setSaveLoading(false)
     }
-  }
-
-  const showNotification = (message, type = 'info') => {
-    const notification = document.createElement('div')
-    notification.className = `fixed top-8 right-8 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500 ${
-      type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 
-      type === 'error' ? 'bg-gradient-to-r from-red-500 to-pink-600' : 
-      'bg-gradient-to-r from-blue-500 to-purple-600'
-    }`
-    
-    notification.innerHTML = `
-      <div class="flex items-center gap-3">
-        <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-          ${type === 'success' ? 
-            '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>' : 
-            '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>'
-          }
-        </div>
-        <span class="font-semibold">${message}</span>
-      </div>
-    `
-    
-    document.body.appendChild(notification)
-    
-    setTimeout(() => {
-      notification.style.transform = 'translateX(0)'
-    }, 100)
-    
-    setTimeout(() => {
-      notification.style.transform = 'translateX(100%)'
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification)
-        }
-      }, 500)
-    }, 3000)
   }
 
   const handleAvatarUpload = async (e) => {
@@ -209,13 +187,25 @@ export default function ProfileSettingsForm({ onBack, isEducator = false, avatar
         handleFieldChange('avatar', newAvatarUrl)
         updateUser({ ...user, avatar: newAvatarUrl })
         if (setAvatarKey) setAvatarKey(Date.now())
-        showNotification('Avatar uploaded successfully!', 'success')
+        toast({
+          title: "Success!",
+          description: "Avatar uploaded successfully!",
+          variant: "default",
+        })
       } else {
-        showNotification('Failed to upload avatar', 'error')
+        toast({
+          title: "Error",
+          description: "Failed to upload avatar",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error('Error uploading avatar:', error)
-      showNotification('Error uploading avatar', 'error')
+      toast({
+        title: "Error",
+        description: "Error uploading avatar",
+        variant: "destructive",
+      })
     } finally {
       setIsUploading(false)
     }

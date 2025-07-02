@@ -167,10 +167,10 @@ export default function CourseCreator({ onCourseCreated }) {
       try {
         console.log("🚀 Starting fetch request...")
         response = await fetch("/api/courses/process", {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: formData,
-        })
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: formData,
+      })
         console.log("✅ Fetch completed, response received:", response.status)
       } catch (fetchError) {
         console.error("❌ Fetch request failed:", fetchError)
@@ -198,31 +198,31 @@ export default function CourseCreator({ onCourseCreated }) {
       const data = await response.json()
       console.log("Response data:", data)
 
-      setProcessingStep("✅ Course created successfully!")
+        setProcessingStep("✅ Course created successfully!")
       console.log("✅ File processed successfully, received modules:", data.modules?.length || 0)
       
       if (!data.modules || data.modules.length === 0) {
         throw new Error("No modules were generated from the uploaded content")
       }
-
-      setCourseData((prev) => ({
-        ...prev,
-        modules: data.modules,
-        subject: data.subject || prev.subject,
+        
+        setCourseData((prev) => ({
+          ...prev,
+          modules: data.modules,
+          subject: data.subject || prev.subject,
         // Update title and description if they were enhanced by AI
         title: data.title || prev.title,
         description: data.description || prev.description,
-      }))
-      
-      setTimeout(() => {
-        setStep(2)
+        }))
+        
+        setTimeout(() => {
+          setStep(2)
         const successMessage = `🎉 Course Creation Successful!\n\n📊 Processing Results:\n• File: ${file.name}\n• Modules Created: ${data.modules.length}\n• Target Level: ${courseData.learnerLevel}\n• Subject: ${courseData.subject || 'General'}\n\n✨ AI Enhancements Applied:\n• Smart content summaries\n• Learning objectives\n• Interactive visualizers\n• Code simulators\n• Comprehensive resources\n• Practice exercises\n\n🚀 Ready to review and customize your course!`
         alert(successMessage)
-      }, 1000)
+        }, 1000)
 
     } catch (error) {
       console.error("Processing error:", error)
-      setProcessingStep("❌ Processing failed")
+        setProcessingStep("❌ Processing failed")
       
       // Provide specific error messages based on error type
       let errorMessage = "❌ File Processing Failed!\n\n"
@@ -434,11 +434,12 @@ export default function CourseCreator({ onCourseCreated }) {
 
     try {
       const progressStages = [
-        { step: "📖 Extracting modules from curriculum...", progress: 20 },
-        { step: "🧠 Generating detailed content with AI...", progress: 40 },
-        { step: "📚 Adding resources and examples...", progress: 60 },
-        { step: "🎨 Creating visualizers and simulators...", progress: 80 },
-        { step: "✨ Finalizing interactive elements...", progress: 95 }
+        { step: "🧠 Analyzing curriculum structure...", progress: 15, description: "Understanding your course outline and identifying key modules" },
+        { step: "📚 Generating comprehensive content...", progress: 30, description: "Creating detailed explanations, examples, and learning materials" },
+        { step: "🎨 Building interactive elements...", progress: 50, description: "Adding quizzes, exercises, and hands-on activities" },
+        { step: "📊 Creating visual aids...", progress: 70, description: "Generating charts, diagrams, and visual learning tools" },
+        { step: "🔗 Adding resources & references...", progress: 85, description: "Curating additional materials and external resources" },
+        { step: "✨ Finalizing course structure...", progress: 95, description: "Optimizing content flow and learning progression" }
       ]
 
       let currentStage = 0
@@ -448,7 +449,7 @@ export default function CourseCreator({ onCourseCreated }) {
           setProcessingProgress(progressStages[currentStage].progress)
           currentStage++
         }
-      }, 2000)
+      }, 3000) // Slower transitions for better UX
 
       const response = await fetch("/api/courses/process-curriculum", {
         method: "POST",
@@ -473,26 +474,32 @@ export default function CourseCreator({ onCourseCreated }) {
           ...prev,
           modules: data.modules,
         }))
+        
+        // Show completion message immediately
+        setTimeout(() => {
         setStep(2)
         setShowCurriculumPreview(false)
         
+          // Enhanced success message
         setTimeout(() => {
-          alert(`🎉 Curriculum Fully Processed!\n\n✨ Generated: ${data.modules.length} detailed modules\n📚 Each module includes:\n  • Rich content & explanations\n  • Interactive resources\n  • Visual learning aids\n  • Practice exercises\n  • Real-world examples\n\n🚀 Ready to review and publish!`)
+            alert(`🎉 Curriculum Transformation Complete!\n\n✨ Successfully generated ${data.modules.length} detailed modules\n\n📚 Your course now includes:\n  • Rich content & explanations\n  • Interactive learning activities\n  • Visual aids & diagrams\n  • Practice exercises & quizzes\n  • Real-world examples & case studies\n  • Curated resources & references\n\n🚀 Ready to review, customize, and publish!\n\n💡 Tip: You can edit any module content to match your teaching style.`)
         }, 1000)
+        }, 500)
       } else {
-        alert(data.error || "Failed to process curriculum")
+        console.error("Curriculum processing error:", data)
+        alert(`❌ Processing Failed\n\n${data.error || "Unable to process curriculum at this time."}\n\nPlease try again or contact support if the issue persists.`)
         setProcessingStep("❌ Processing failed")
       }
     } catch (error) {
       console.error("Curriculum processing error:", error)
-      alert(`Failed to process curriculum: ${error.message}`)
-      setProcessingStep("❌ Processing failed")
+      alert(`🚫 Connection Error\n\nFailed to process curriculum: ${error.message}\n\nPlease check your internet connection and try again.`)
+      setProcessingStep("❌ Connection failed")
     } finally {
       setTimeout(() => {
         setLoading(false)
         setProcessingStep("")
         setProcessingProgress(0)
-      }, 2000)
+      }, 3000) // Keep loading state visible longer for better UX
     }
   }
 
@@ -880,7 +887,81 @@ export default function CourseCreator({ onCourseCreated }) {
 
         {/* Curriculum Preview Modal */}
         {showCurriculumPreview && generatedCurriculum && (
-          <Card className="bg-white shadow-2xl border-2 border-purple-200">
+          <Card className="relative bg-white shadow-2xl border-2 border-purple-200">
+            {loading && (
+              <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+                <div className="text-center space-y-8 p-8">
+                  {/* Beautiful Animated Spinner */}
+                  <div className="relative flex items-center justify-center">
+                    {/* Outer rotating ring */}
+                    <div className="absolute w-32 h-32 border-4 border-purple-200 rounded-full animate-spin"></div>
+                    {/* Inner pulsing ring */}
+                    <div className="absolute w-24 h-24 border-4 border-purple-400 border-t-transparent rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+                    {/* Center icon */}
+                    <div className="relative w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center animate-pulse">
+                      <Brain className="h-8 w-8 text-white animate-bounce" />
+                    </div>
+                    {/* Floating particles */}
+                    <div className="absolute w-2 h-2 bg-purple-400 rounded-full animate-ping" style={{ top: '10%', left: '20%', animationDelay: '0s' }}></div>
+                    <div className="absolute w-1 h-1 bg-pink-400 rounded-full animate-ping" style={{ top: '80%', right: '15%', animationDelay: '1s' }}></div>
+                    <div className="absolute w-1.5 h-1.5 bg-blue-400 rounded-full animate-ping" style={{ bottom: '20%', left: '10%', animationDelay: '2s' }}></div>
+                    <div className="absolute w-1 h-1 bg-indigo-400 rounded-full animate-ping" style={{ top: '30%', right: '25%', animationDelay: '0.5s' }}></div>
+                  </div>
+
+                  {/* Processing Status */}
+                  <div className="space-y-6 max-w-md mx-auto">
+                    <div className="space-y-3">
+                      <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        🤖 AI is Crafting Your Course
+                      </h3>
+                      <p className="text-lg font-semibold text-purple-800 animate-pulse">
+                        {processingStep}
+                      </p>
+                    </div>
+
+                    {/* Enhanced Progress Bar */}
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Progress 
+                          value={processingProgress} 
+                          className="w-full h-4 bg-purple-100"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full animate-pulse"></div>
+                      </div>
+                      <div className="flex justify-between text-sm text-purple-600 font-medium">
+                        <span>0%</span>
+                        <span className="animate-pulse">{processingProgress}% Complete</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+
+                    {/* Motivational Message */}
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Sparkles className="h-6 w-6 text-white animate-spin" style={{ animationDuration: '3s' }} />
+                        </div>
+                        <div className="text-left">
+                          <h4 className="font-bold text-purple-800 mb-2">✨ Creating Magic</h4>
+                          <p className="text-sm text-purple-700 leading-relaxed">
+                            Our AI is transforming your curriculum into an engaging, interactive learning experience with rich content, visual aids, and hands-on activities.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fun Facts */}
+                    <div className="text-center space-y-2">
+                      <p className="text-xs text-purple-600 font-medium">💡 Did you know?</p>
+                      <p className="text-sm text-purple-700">
+                        Interactive courses have <span className="font-bold text-purple-800">75% higher</span> completion rates!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
@@ -909,6 +990,7 @@ export default function CourseCreator({ onCourseCreated }) {
                   variant="outline" 
                   onClick={handleDownloadCurriculum}
                   className="flex items-center gap-2"
+                  disabled={loading}
                 >
                   <Download className="h-4 w-4" />
                   Download .md
@@ -916,14 +998,25 @@ export default function CourseCreator({ onCourseCreated }) {
                 <Button 
                   variant="outline" 
                   onClick={() => setShowCurriculumPreview(false)}
+                  disabled={loading}
                 >
                   Cancel
                 </Button>
                 <Button 
                   onClick={handleUseCurriculum}
-                  className="bg-gradient-to-r from-purple-500 to-pink-600"
+                  disabled={loading}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing...
+                    </div>
+                  ) : (
+                    <>
                   🚀 Create Detailed Course Content
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>

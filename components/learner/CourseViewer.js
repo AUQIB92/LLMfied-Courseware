@@ -299,10 +299,26 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
       const response = await fetch(`/api/progress?courseId=${course._id}`, {
         headers: getAuthHeaders(),
       })
-      const data = await response.json()
-      setProgress(data)
+      
+      if (response.ok) {
+        const data = await response.json()
+        // Ensure the data has the expected structure
+        if (data && typeof data === 'object') {
+          setProgress({
+            moduleProgress: Array.isArray(data.moduleProgress) ? data.moduleProgress : [],
+            overallProgress: typeof data.overallProgress === 'number' ? data.overallProgress : 0
+          })
+        } else {
+          // Fallback to default structure
+          setProgress({ moduleProgress: [], overallProgress: 0 })
+        }
+      } else {
+        console.error("Failed to fetch progress:", response.status)
+        setProgress({ moduleProgress: [], overallProgress: 0 })
+      }
     } catch (error) {
       console.error("Failed to fetch progress:", error)
+      setProgress({ moduleProgress: [], overallProgress: 0 })
     }
   }
 
@@ -362,6 +378,9 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
   }
 
   const getModuleProgress = (moduleId) => {
+    if (!progress || !progress.moduleProgress || !Array.isArray(progress.moduleProgress)) {
+      return { completed: false, timeSpent: 0, quizScores: [] }
+    }
     const moduleProgress = progress.moduleProgress.find((p) => p.moduleId === moduleId)
     return moduleProgress || { completed: false, timeSpent: 0, quizScores: [] }
   }

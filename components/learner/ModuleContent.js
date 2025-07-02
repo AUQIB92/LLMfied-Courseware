@@ -435,6 +435,9 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
   
   const { getAuthHeaders } = useAuth()
   const codeEditorRef = useRef(null)
+  const [loading, setLoading] = useState(false)
+  const [enrollmentVerified, setEnrollmentVerified] = useState(false)
+  const [verifyingEnrollment, setVerifyingEnrollment] = useState(true)
 
   // NEW: Enhanced Rich text formatting helper for beautiful text display
   const formatRichText = (text) => {
@@ -620,7 +623,7 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
             uniqueId = subsection.id.trim()
           } else if (subsection.title && typeof subsection.title === 'string' && subsection.title.trim() !== '') {
             uniqueId = subsection.title.trim().replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
-          } else {
+      } else {
             uniqueId = `subsection-${module.id || 'unknown'}-${index}`
           }
           
@@ -1045,8 +1048,8 @@ Return JSON format:
     setExpandedSubsections((prev) => {
       // Create new state with only the clicked subsection toggled
       const newState = {
-        ...prev,
-        [subsectionId]: !prev[subsectionId],
+      ...prev,
+      [subsectionId]: !prev[subsectionId],
       }
       
       console.log('✅ New expandedSubsections state:', newState)
@@ -1277,12 +1280,12 @@ Return JSON format:
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
-                    <CardTitle className={`${design.titleColor} group-hover:${design.titleColor.replace('700', '800')} transition-colors duration-300 text-lg font-bold leading-tight mb-2`}>
-                      {resource.title || resource.name}
-                    </CardTitle>
-                    {resource.creator && (
-                      <p className="text-slate-600 text-sm font-medium">by {resource.creator}</p>
-                    )}
+                <CardTitle className={`${design.titleColor} group-hover:${design.titleColor.replace('700', '800')} transition-colors duration-300 text-lg font-bold leading-tight mb-2`}>
+                  {resource.title || resource.name}
+                </CardTitle>
+                {resource.creator && (
+                  <p className="text-slate-600 text-sm font-medium">by {resource.creator}</p>
+                )}
                   </div>
                   
                   {/* Edit button for AI-generated resources */}
@@ -1444,6 +1447,74 @@ Return JSON format:
   const cancelEditingResource = () => {
     setEditingResource(null)
     setEditedResourceData({})
+  }
+
+  // Verify enrollment status on component mount
+  useEffect(() => {
+    const verifyEnrollment = async () => {
+      try {
+        const response = await fetch(`/api/enrollment?courseId=${course._id}`, {
+          headers: getAuthHeaders(),
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.isEnrolled) {
+            setEnrollmentVerified(true)
+          } else {
+            console.warn("User not enrolled in course, blocking access to module content")
+            setEnrollmentVerified(false)
+          }
+        } else {
+          console.error("Failed to verify enrollment")
+          setEnrollmentVerified(false)
+        }
+      } catch (error) {
+        console.error("Error verifying enrollment:", error)
+        setEnrollmentVerified(false)
+      } finally {
+        setVerifyingEnrollment(false)
+      }
+    }
+
+    verifyEnrollment()
+  }, [course._id, getAuthHeaders])
+
+  // Show loading while verifying enrollment
+  if (verifyingEnrollment) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <p className="text-slate-600">Verifying course access...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Block access if not enrolled
+  if (!enrollmentVerified) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-6 max-w-md mx-auto p-8">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+            <X className="h-8 w-8 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Access Denied</h3>
+            <p className="text-slate-600">
+              You must be enrolled in this course to access module content. Please enroll first to continue learning.
+            </p>
+          </div>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -3095,8 +3166,8 @@ Return JSON format:
                         transition={{ duration: 0.3 }}
                       >
                         {/* Challenge content goes here */}
-                      </motion.div>
-                    )}
+                            </motion.div>
+                          )}
                   </motion.div>
                 ) : (
                   <motion.div className="text-center py-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

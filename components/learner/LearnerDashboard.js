@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -46,6 +47,8 @@ import {
 import CourseLibrary from "./CourseLibrary"
 import CourseViewer from "./CourseViewer"
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm"
+import PreferencesSettings from "@/components/profile/PreferencesSettings"
+import NotificationsSettings from "@/components/profile/NotificationsSettings"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,6 +80,7 @@ export default function LearnerDashboard() {
   })
   const { user, getAuthHeaders, logout, updateUser } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchEnrolledCourses()
@@ -181,14 +185,38 @@ export default function LearnerDashboard() {
   }
 
   const fetchStats = async () => {
-    setStats({
-      coursesEnrolled: 8,
-      coursesCompleted: 5,
-      totalTimeSpent: 2847, // minutes
-      averageScore: 92,
-      streak: 12,
-      certificates: 5
-    })
+    try {
+      const response = await fetch("/api/stats?type=learner", {
+        headers: getAuthHeaders(),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      } else {
+        console.error("Failed to fetch stats:", await response.text())
+        // Fallback to default stats if API fails
+        setStats({
+          coursesEnrolled: 0,
+          coursesCompleted: 0,
+          totalTimeSpent: 0,
+          averageScore: 0,
+          streak: 0,
+          certificates: 0
+        })
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error)
+      // Fallback to default stats if API fails
+      setStats({
+        coursesEnrolled: 0,
+        coursesCompleted: 0,
+        totalTimeSpent: 0,
+        averageScore: 0,
+        streak: 0,
+        certificates: 0
+      })
+    }
   }
 
   const handleLogout = () => {
@@ -594,11 +622,28 @@ export default function LearnerDashboard() {
           />
         )
       case "profile":
-        return <ProfileSettings />
+        return (
+          <ProfileSettingsForm 
+            onBack={() => setActiveTab("overview")} 
+            isEducator={false}
+            avatarKey={avatarKey}
+            setAvatarKey={setAvatarKey}
+          />
+        )
       case "preferences":
-        return <Preferences />
+        return (
+          <PreferencesSettings 
+            onBack={() => setActiveTab("overview")} 
+            isEducator={false}
+          />
+        )
       case "notifications":
-        return <Notifications />
+        return (
+          <NotificationsSettings 
+            onBack={() => setActiveTab("overview")} 
+            isEducator={false}
+          />
+        )
       default:
         return null
     }
@@ -663,26 +708,32 @@ export default function LearnerDashboard() {
 
     // Only update form if user data changes significantly (not on every render)
     const userDataRef = useRef()
+    const profileInitialized = useRef(false)
+    
     useEffect(() => {
-      const currentUserKey = user ? `${user._id}-${user.name}-${user.email}` : null
-      if (currentUserKey && currentUserKey !== userDataRef.current) {
-        userDataRef.current = currentUserKey
-        // Only update if we don't have unsaved changes
-        if (!hasUnsavedChanges) {
-          setProfileForm({
-            name: user?.name || '',
-            email: user?.email || '',
-            bio: user?.bio || '',
-            avatar: user?.avatar || '',
-            phone: user?.phone || '',
-            location: user?.location || '',
-            website: user?.website || '',
-            learningGoals: user?.learningGoals || '',
-            interests: user?.interests || []
-          })
-        }
+      // Only initialize once when user data is first available
+      if (user && !profileInitialized.current && !hasUnsavedChanges) {
+        profileInitialized.current = true
+        setProfileForm({
+          name: user?.name || '',
+          email: user?.email || '',
+          bio: user?.bio || '',
+          avatar: user?.avatar || '',
+          phone: user?.phone || '',
+          location: user?.location || '',
+          website: user?.website || '',
+          learningGoals: user?.learningGoals || '',
+          interests: user?.interests || []
+        })
       }
-    }, [user?._id, user?.name, user?.email, hasUnsavedChanges])
+    }, [user?._id, hasUnsavedChanges])
+    
+    // Reset profileInitialized when user changes (login/logout)
+    useEffect(() => {
+      if (!user) {
+        profileInitialized.current = false
+      }
+    }, [user])
 
     const validateForm = () => {
       const errors = {}
@@ -742,15 +793,27 @@ export default function LearnerDashboard() {
           setAvatarKey(Date.now())
           
           // Show success notification
-          showNotification('Profile updated successfully!', 'success')
+          toast({
+            title: "Success!",
+            description: "Profile updated successfully!",
+            variant: "default",
+          })
         } else {
           const errorData = await response.json()
           console.error('Profile update failed:', errorData)
-          showNotification(`Failed to update profile: ${errorData.error || 'Unknown error'}`, 'error')
+          toast({
+            title: "Error",
+            description: `Failed to update profile: ${errorData.error || 'Unknown error'}`,
+            variant: "destructive",
+          })
         }
       } catch (error) {
         console.error('Error updating profile:', error)
-        showNotification(`Error updating profile: ${error.message}`, 'error')
+        toast({
+          title: "Error",
+          description: `Error updating profile: ${error.message}`,
+          variant: "destructive",
+        })
       } finally {
         setSaveLoading(false)
       }

@@ -2,6 +2,10 @@ import { NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
+import { 
+  createCourseEnrollmentNotification, 
+  createStudentEnrolledNotification 
+} from "@/lib/notificationService"
 
 async function verifyToken(request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "")
@@ -127,6 +131,26 @@ export async function POST(request) {
       { _id: new ObjectId(courseId) },
       { $inc: { enrollmentCount: 1 } }
     )
+    
+    // Create notifications
+    try {
+      // Notify the learner about successful enrollment
+      await createCourseEnrollmentNotification(user.userId, course.title, courseId)
+      
+      // Notify the educator about new student enrollment
+      const learner = await db.collection("users").findOne({ _id: new ObjectId(user.userId) })
+      if (learner && course.educatorId) {
+        await createStudentEnrolledNotification(
+          course.educatorId.toString(), 
+          learner.name || learner.email, 
+          course.title, 
+          courseId
+        )
+      }
+    } catch (notificationError) {
+      console.error("Failed to create enrollment notifications:", notificationError)
+      // Don't fail the enrollment if notifications fail
+    }
     
     return NextResponse.json({
       message: "Successfully enrolled in course",

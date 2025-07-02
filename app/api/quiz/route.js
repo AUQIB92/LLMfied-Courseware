@@ -19,12 +19,38 @@ export async function POST(request) {
     const client = await clientPromise
     const db = client.db("llmfied")
 
+    // Check if course exists
     const course = await db.collection("courses").findOne({
       _id: new ObjectId(courseId),
     })
 
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 })
+    }
+
+    // Check enrollment status for learners
+    if (user.role === "learner") {
+      const enrollment = await db.collection("enrollments").findOne({
+        learnerId: new ObjectId(user.userId),
+        courseId: new ObjectId(courseId)
+      })
+      
+      if (!enrollment) {
+        return NextResponse.json({ 
+          error: "Access denied: You must be enrolled in this course to access quizzes" 
+        }, { status: 403 })
+      }
+    } else if (user.role === "educator") {
+      // Educators can only access quizzes for their own courses
+      if (course.educatorId.toString() !== user.userId.toString()) {
+        return NextResponse.json({ 
+          error: "Access denied: You can only access quizzes for your own courses" 
+        }, { status: 403 })
+      }
+    } else {
+      return NextResponse.json({ 
+        error: "Access denied: Invalid user role" 
+      }, { status: 403 })
     }
 
     const module = course.modules.find((m) => m.id === moduleId)
@@ -36,6 +62,7 @@ export async function POST(request) {
 
     return NextResponse.json(quiz)
   } catch (error) {
+    console.error("Quiz generation error:", error)
     return NextResponse.json({ error: "Failed to generate quiz" }, { status: 500 })
   }
 }
