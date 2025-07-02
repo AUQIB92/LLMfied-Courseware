@@ -60,6 +60,7 @@ import {
   Minimize2,
   RefreshCw,
   ChevronLeft,
+  X,
 } from "lucide-react"
 import QuizModal from "./QuizModal"
 
@@ -425,6 +426,12 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
   // NEW: Multi-page detailed explanations state
   const [explanationPages, setExplanationPages] = useState({}) // Track current page for each subsection
   const [wordsPerExplanationPage] = useState(200) // Words per page for individual explanations
+  
+  // NEW: State for editing AI resources
+  const [editingResource, setEditingResource] = useState(null)
+  const [editedResourceData, setEditedResourceData] = useState({})
+  const [isUpdatingResource, setIsUpdatingResource] = useState(false)
+  const [localAiResources, setLocalAiResources] = useState(null) // Local copy for editing
   
   const { getAuthHeaders } = useAuth()
   const codeEditorRef = useRef(null)
@@ -1174,7 +1181,7 @@ Return JSON format:
   }, [legacyResources])
 
   // Enhanced Resource Card Component with Educator Masterpiece Design
-  const ResourceCard = ({ resource, type, isInstructorChoice = false }) => {
+  const ResourceCard = ({ resource, type, isInstructorChoice = false, resourceIndex = 0 }) => {
     const getIcon = () => {
       const iconMap = {
         books: <BookOpen className="h-6 w-6 text-white" />,
@@ -1268,12 +1275,29 @@ Return JSON format:
               </motion.div>
               
               <div className="flex-1 min-w-0">
-                <CardTitle className={`${design.titleColor} group-hover:${design.titleColor.replace('700', '800')} transition-colors duration-300 text-lg font-bold leading-tight mb-2`}>
-                  {resource.title || resource.name}
-                </CardTitle>
-                {resource.creator && (
-                  <p className="text-slate-600 text-sm font-medium">by {resource.creator}</p>
-                )}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <CardTitle className={`${design.titleColor} group-hover:${design.titleColor.replace('700', '800')} transition-colors duration-300 text-lg font-bold leading-tight mb-2`}>
+                      {resource.title || resource.name}
+                    </CardTitle>
+                    {resource.creator && (
+                      <p className="text-slate-600 text-sm font-medium">by {resource.creator}</p>
+                    )}
+                  </div>
+                  
+                  {/* Edit button for AI-generated resources */}
+                  {resource.isAIGenerated && (
+                    <motion.button
+                      onClick={() => startEditingResource(resource, type, resourceIndex)}
+                      className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-2 rounded-full bg-white/80 hover:bg-white shadow-lg hover:shadow-xl"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      title="Edit Resource"
+                    >
+                      <Settings className="h-4 w-4 text-slate-600 hover:text-blue-600 transition-colors duration-200" />
+                    </motion.button>
+                  )}
+                </div>
                 
                 {/* Special badges for different resource types */}
                 {resource.isAIGenerated ? (
@@ -1366,6 +1390,60 @@ Return JSON format:
         </Card>
       </motion.div>
     )
+  }
+
+  // Function to start editing a resource
+  const startEditingResource = (resource, type, index) => {
+    setEditingResource({ resource, type, index })
+    setEditedResourceData({
+      title: resource.title || resource.name || '',
+      url: resource.url || resource.link || '',
+      description: resource.description || '',
+      difficulty: resource.difficulty || 'Beginner',
+      author: resource.author || resource.creator || '',
+      duration: resource.duration || '',
+      platform: resource.platform || resource.source || '',
+      ...resource
+    })
+  }
+
+  // Function to save edited resource
+  const saveEditedResource = async () => {
+    if (!editingResource) return
+
+    setIsUpdatingResource(true)
+    try {
+      // Update the resource in the local state
+      const { type, index } = editingResource
+      const updatedResources = { ...aiResources }
+      
+      if (updatedResources[type] && updatedResources[type][index]) {
+        updatedResources[type][index] = {
+          ...updatedResources[type][index],
+          ...editedResourceData
+        }
+        
+        // Update the aiResources state
+        setAiResources(updatedResources)
+        
+        // Close the edit modal
+        setEditingResource(null)
+        setEditedResourceData({})
+        
+        // Show success message
+        console.log('Resource updated successfully!')
+      }
+    } catch (error) {
+      console.error('Error updating resource:', error)
+    } finally {
+      setIsUpdatingResource(false)
+    }
+  }
+
+  // Function to cancel editing
+  const cancelEditingResource = () => {
+    setEditingResource(null)
+    setEditedResourceData({})
   }
 
   return (
@@ -2830,7 +2908,7 @@ Return JSON format:
                         >
                           {aiResources.books.map((resource, index) => (
                             <motion.div key={`books-${index}-${resource.title || resource.name || index}`} variants={itemVariants}>
-                              <ResourceCard resource={resource} type="books" />
+                              <ResourceCard resource={resource} type="books" resourceIndex={index} />
                             </motion.div>
                           ))}
                         </motion.div>
@@ -2848,7 +2926,7 @@ Return JSON format:
                         >
                           {aiResources.courses.map((resource, index) => (
                             <motion.div key={`courses-${index}-${resource.title || resource.name || index}`} variants={itemVariants}>
-                              <ResourceCard resource={resource} type="courses" />
+                              <ResourceCard resource={resource} type="courses" resourceIndex={index} />
                             </motion.div>
                           ))}
                         </motion.div>
@@ -2866,7 +2944,7 @@ Return JSON format:
                         >
                           {aiResources.videos.map((resource, index) => (
                             <motion.div key={`videos-${index}-${resource.title || resource.name || index}`} variants={itemVariants}>
-                              <ResourceCard resource={resource} type="videos" />
+                              <ResourceCard resource={resource} type="videos" resourceIndex={index} />
                             </motion.div>
                           ))}
                         </motion.div>
@@ -2884,7 +2962,7 @@ Return JSON format:
                         >
                           {aiResources.articles.map((resource, index) => (
                             <motion.div key={`articles-${index}-${resource.title || resource.name || index}`} variants={itemVariants}>
-                              <ResourceCard resource={resource} type="articles" />
+                              <ResourceCard resource={resource} type="articles" resourceIndex={index} />
                             </motion.div>
                           ))}
                         </motion.div>
@@ -2902,7 +2980,7 @@ Return JSON format:
                         >
                           {aiResources.tools.map((resource, index) => (
                             <motion.div key={`tools-${index}-${resource.title || resource.name || index}`} variants={itemVariants}>
-                              <ResourceCard resource={resource} type="tools" />
+                              <ResourceCard resource={resource} type="tools" resourceIndex={index} />
                             </motion.div>
                           ))}
                         </motion.div>
@@ -2920,7 +2998,7 @@ Return JSON format:
                         >
                           {aiResources.websites.map((resource, index) => (
                             <motion.div key={`websites-${index}-${resource.title || resource.name || index}`} variants={itemVariants}>
-                              <ResourceCard resource={resource} type="websites" />
+                              <ResourceCard resource={resource} type="websites" resourceIndex={index} />
                             </motion.div>
                           ))}
                         </motion.div>
@@ -2938,7 +3016,7 @@ Return JSON format:
                         >
                           {aiResources.exercises.map((resource, index) => (
                             <motion.div key={`exercises-${index}-${resource.title || resource.name || index}`} variants={itemVariants}>
-                              <ResourceCard resource={resource} type="exercises" />
+                              <ResourceCard resource={resource} type="exercises" resourceIndex={index} />
                             </motion.div>
                           ))}
                         </motion.div>
@@ -3081,6 +3159,164 @@ Return JSON format:
           </GlassCard>
         </motion.div>
       </div>
+
+      {/* Edit Resource Modal */}
+      <AnimatePresence>
+        {editingResource && (
+          <motion.div
+            key="edit-modal"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg">
+                    <Settings className="h-5 w-5 text-white" />
+                  </div>
+                  Edit AI Curated Resource
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={cancelEditingResource}
+                  className="text-slate-500 hover:text-slate-700"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-title" className="text-sm font-semibold text-slate-700">Title</Label>
+                  <Input
+                    id="edit-title"
+                    value={editedResourceData.title || ''}
+                    onChange={(e) => setEditedResourceData(prev => ({ ...prev, title: e.target.value }))}
+                    className="mt-1"
+                    placeholder="Enter resource title"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-url" className="text-sm font-semibold text-slate-700">URL</Label>
+                  <Input
+                    id="edit-url"
+                    value={editedResourceData.url || ''}
+                    onChange={(e) => setEditedResourceData(prev => ({ ...prev, url: e.target.value }))}
+                    className="mt-1"
+                    placeholder="https://example.com"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-description" className="text-sm font-semibold text-slate-700">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editedResourceData.description || ''}
+                    onChange={(e) => setEditedResourceData(prev => ({ ...prev, description: e.target.value }))}
+                    className="mt-1"
+                    placeholder="Describe this resource..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-difficulty" className="text-sm font-semibold text-slate-700">Difficulty</Label>
+                    <select
+                      id="edit-difficulty"
+                      value={editedResourceData.difficulty || 'Beginner'}
+                      onChange={(e) => setEditedResourceData(prev => ({ ...prev, difficulty: e.target.value }))}
+                      className="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-author" className="text-sm font-semibold text-slate-700">Author/Creator</Label>
+                    <Input
+                      id="edit-author"
+                      value={editedResourceData.author || ''}
+                      onChange={(e) => setEditedResourceData(prev => ({ ...prev, author: e.target.value }))}
+                      className="mt-1"
+                      placeholder="Author name"
+                    />
+                  </div>
+                </div>
+
+                {(editingResource?.type === 'videos' || editingResource?.type === 'courses') && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-duration" className="text-sm font-semibold text-slate-700">Duration</Label>
+                      <Input
+                        id="edit-duration"
+                        value={editedResourceData.duration || ''}
+                        onChange={(e) => setEditedResourceData(prev => ({ ...prev, duration: e.target.value }))}
+                        className="mt-1"
+                        placeholder="e.g., 2h 30m"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-platform" className="text-sm font-semibold text-slate-700">Platform/Source</Label>
+                      <Input
+                        id="edit-platform"
+                        value={editedResourceData.platform || ''}
+                        onChange={(e) => setEditedResourceData(prev => ({ ...prev, platform: e.target.value }))}
+                        className="mt-1"
+                        placeholder="e.g., YouTube, Coursera"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 mt-8 pt-4 border-t border-slate-200">
+                <Button
+                  onClick={saveEditedResource}
+                  disabled={isUpdatingResource}
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  {isUpdatingResource ? (
+                    <>
+                      <motion.div
+                        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={cancelEditingResource}
+                  className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Quiz Modal */}
       <AnimatePresence>

@@ -583,27 +583,63 @@ export default function LearnerDashboard() {
         )
 
       case "library":
-        return <CourseLibrary 
-          onCourseSelect={(course, enrollmentStatus) => {
-            setSelectedCourse(course)
-            // If enrollment status is provided, we'll use it in the CourseViewer
-          }} 
-          onEnrollmentChange={handleEnrollmentChange}
-        />
-
+        return (
+          <CourseLibrary 
+            onCourseSelect={(course) => {
+              setSelectedCourse(course)
+              setHideHeader(true)
+            }}
+            enrolledCourses={enrolledCourses}
+            onEnrollmentChange={handleEnrollmentChange}
+          />
+        )
       case "profile":
         return <ProfileSettings />
-
       case "preferences":
         return <Preferences />
-
       case "notifications":
         return <Notifications />
-
       default:
         return null
     }
   }
+
+  const renderTabNavigation = () => (
+    <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 space-y-4 sm:space-y-0">
+          {/* Navigation Tabs */}
+          <div className="flex flex-wrap gap-2 sm:gap-1 w-full sm:w-auto">
+            {[
+              { id: "overview", label: "Dashboard", icon: BookOpen },
+              { id: "library", label: "Library", icon: BookMarked },
+              { id: "profile", label: "Profile", icon: User },
+              { id: "preferences", label: "Settings", icon: Settings },
+              { id: "notifications", label: "Updates", icon: Bell }
+            ].map((tab) => {
+              const IconComponent = tab.icon
+              return (
+                <Button
+                  key={tab.id}
+                  variant={activeTab === tab.id ? "default" : "ghost"}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`group flex items-center gap-2 px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-medium transition-all duration-300 text-sm sm:text-base ${
+                    activeTab === tab.id
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl"
+                      : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                  }`}
+                >
+                  <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden sm:inline lg:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                </Button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   // Enhanced Profile Components - Completely reimplemented
   const ProfileSettings = () => {
