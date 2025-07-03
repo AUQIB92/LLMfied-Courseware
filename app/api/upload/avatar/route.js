@@ -4,6 +4,7 @@ import path from "path"
 import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
+import crypto from "crypto" // ✅ added for UUID generation
 
 export async function POST(request) {
   try {
@@ -62,8 +63,8 @@ export async function POST(request) {
 
       // Generate unique filename
       const timestamp = Date.now()
-      const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-      const fileName = `${decoded.userId}_${timestamp}_${originalName}`
+      const ext = file.type.split("/")[1] || "png"
+      const fileName = `${decoded.userId}_${timestamp}_${crypto.randomUUID()}.${ext}`
       const filePath = path.join(uploadsDir, fileName)
 
       // Write file
