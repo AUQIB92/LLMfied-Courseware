@@ -496,14 +496,14 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
               
               {isEnrolled && (
                 checkPremiumFeature(user, 'aiTutor') ? (
-                  <Button 
-                    variant="outline"
-                    onClick={() => setShowTutor(!showTutor)} 
-                    className="border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 touch-manipulation min-h-[44px]"
-                  >
-                    <Brain className="h-4 w-4 sm:mr-2 text-purple-600" />
-                    <span className="hidden sm:inline">AI Tutor</span>
-                  </Button>
+              <Button 
+                  variant="outline"
+                onClick={() => setShowTutor(!showTutor)} 
+                  className="border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 touch-manipulation min-h-[44px]"
+                >
+                  <Brain className="h-4 w-4 sm:mr-2 text-purple-600" />
+                  <span className="hidden sm:inline">AI Tutor</span>
+              </Button>
                 ) : (
                   <PremiumFeatureButton 
                     feature="aiTutor"
