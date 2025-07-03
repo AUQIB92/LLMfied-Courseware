@@ -34,7 +34,9 @@ import {
   X,
   Menu,
   ChevronDown,
-  MessageCircle
+  MessageCircle,
+  AlertCircle,
+  Scale
 } from "lucide-react"
 
 export default function Home() {
@@ -1344,6 +1346,188 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Follow Us Section */}
+      <section className="py-24 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+        
+        {/* Animated Particles */}
+        <div className="absolute inset-0">
+          {isClient && [...Array(25)].map((_, i) => (
+            <div 
+              key={i}
+              className="absolute w-1.5 h-1.5 bg-white/20 rounded-full"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 5}s`
+              }}
+            ></div>
+          ))}
+        </div>
+        
+        <div className="container mx-auto px-6 lg:px-8 text-center relative z-10">
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="mb-16">
+              <div className="relative inline-block mb-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/30 to-purple-600/30 rounded-full blur-xl"></div>
+                <Badge className="relative bg-white/20 text-white border-white/30 backdrop-blur-sm px-8 py-4 text-sm font-bold shadow-2xl">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <Users className="w-5 h-5 text-white" />
+                    <span className="font-extrabold">Stay Connected</span>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+                  </div>
+                </Badge>
+              </div>
+              
+              <h2 className="text-4xl lg:text-6xl font-black text-white mb-8 leading-tight">
+                <span className="block mb-4">Follow Our Journey</span>
+                <span className="block bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 bg-clip-text text-transparent">
+                  & Stay Updated
+                </span>
+              </h2>
+              <p className="text-xl lg:text-2xl text-blue-100 max-w-3xl mx-auto leading-relaxed font-medium">
+                Join our growing community across social platforms and 
+                <span className="font-bold text-white"> never miss updates, tips, and insights </span>
+                about the future of AI-powered education.
+              </p>
+            </div>
+
+            {/* Social Media Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+              {/* X (Twitter) */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-500/20 to-slate-600/20 rounded-3xl blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+                <div className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 group-hover:border-white/40 transition-all duration-500 group-hover:scale-105">
+                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl flex items-center justify-center shadow-lg mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3">Follow on X</h3>
+                  <p className="text-blue-200 text-sm mb-6 leading-relaxed">Get real-time updates, AI education tips, and join the conversation</p>
+                  <a 
+                    href="https://x.com/Auqib92" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-slate-600 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                  >
+                    <span>@LLMfied</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+
+              {/* LinkedIn */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-3xl blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+                <div className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 group-hover:border-white/40 transition-all duration-500 group-hover:scale-105">
+                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3">Connect on LinkedIn</h3>
+                  <p className="text-blue-200 text-sm mb-6 leading-relaxed">Professional insights, company news, and networking opportunities</p>
+                  <a 
+                    href="https://www.linkedin.com/in/dr-auqib-hamid-lone-45996067/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                  >
+                    <span>Connect</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+
+              {/* YouTube Channel */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-3xl blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+                <div className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 group-hover:border-white/40 transition-all duration-500 group-hover:scale-105">
+                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center shadow-lg mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3">Subscribe to @LLMfied</h3>
+                  <p className="text-blue-200 text-sm mb-6 leading-relaxed">Tutorials, demos, and deep dives into AI-powered education</p>
+                  <a 
+                    href="https://youtube.com/@LLMfied" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                  >
+                    <span>Subscribe</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+
+              {/* GitHub */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-500/20 to-slate-600/20 rounded-3xl blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+                <div className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 group-hover:border-white/40 transition-all duration-500 group-hover:scale-105">
+                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex items-center justify-center shadow-lg mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3">Star on GitHub</h3>
+                  <p className="text-blue-200 text-sm mb-6 leading-relaxed">Explore our open-source projects and contribute to the community</p>
+                  <a 
+                    href="https://github.com/LLMfied" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                  >
+                    <span>Star Us</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Community Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">5K+</div>
+                <div className="text-blue-200 text-sm">X Followers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">2K+</div>
+                <div className="text-blue-200 text-sm">LinkedIn Connections</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">100+</div>
+                <div className="text-blue-200 text-sm">YouTube Subscribers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">2+</div>
+                <div className="text-blue-200 text-sm">GitHub Stars</div>
+              </div>
+            </div>
+
+            {/* Call to Action */}
+            <div className="text-center">
+              <p className="text-blue-100 text-lg mb-6">
+                🔔 Don't miss out! Follow us on all platforms for the latest updates
+              </p>
+              <Badge className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 border-emerald-400/30 px-6 py-2 text-sm font-semibold">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                  <span>Join 20+ community members worldwide</span>
+                </div>
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA Section */}
       <section className="py-28 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
         {/* Background Pattern */}
@@ -1401,6 +1585,194 @@ export default function Home() {
               <span className="font-medium">✓ Start learning immediately</span>
               <span className="mx-4">•</span>
               <span className="font-medium">✓ Join 10,000+ learners</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Disclaimer Section */}
+      <section className="py-20 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-white/40 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
+        
+        {/* Subtle Pattern */}
+        <div className="absolute inset-0 opacity-30">
+          <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="disclaimerPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                <circle cx="1" cy="1" r="1" fill="currentColor" className="text-blue-200/50"/>
+              </pattern>
+            </defs>
+            <rect width="100" height="100" fill="url(#disclaimerPattern)"/>
+          </svg>
+        </div>
+        
+        <div className="container mx-auto px-6 lg:px-8 relative z-10">
+          <div className="max-w-5xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-16">
+              <div className="relative inline-block mb-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-full blur-lg"></div>
+                <Badge className="relative bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 border-amber-200 px-8 py-4 text-sm font-bold shadow-lg">
+                  <div className="flex items-center space-x-3">
+                    <Shield className="w-5 h-5 text-amber-600" />
+                    <span className="font-extrabold">Legal Disclaimer</span>
+                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                  </div>
+                </Badge>
+              </div>
+              
+              <h2 className="text-3xl lg:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+                <span className="bg-gradient-to-r from-slate-800 via-blue-700 to-purple-700 bg-clip-text text-transparent">
+                  Transparency & Accountability
+                </span>
+              </h2>
+              <p className="text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+                At LLMfied Courseware, we are committed to enhancing the learning experience through 
+                <span className="font-semibold text-slate-800"> AI-driven personalization</span> and 
+                <span className="font-semibold text-slate-800"> seamless course creation</span>. 
+                Please note the following important information:
+              </p>
+            </div>
+
+            {/* Disclaimer Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+              {/* Content Ownership */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-100/50 to-indigo-100/50 rounded-3xl blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/60 group-hover:border-blue-200/80 transition-all duration-500 hover:shadow-xl">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+                      <BookOpen className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">Content Ownership</h3>
+                      <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
+                    </div>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed mb-4">
+                    All external resources (including but not limited to videos, articles, tutorials, and reference materials) used or recommended within our platform remain the 
+                    <span className="font-semibold text-blue-700"> intellectual property of their respective creators</span> and copyright holders.
+                  </p>
+                  <p className="text-slate-600 text-sm font-medium">
+                    LLMfied makes no claim of ownership or authorship over such third-party content.
+                  </p>
+                </div>
+              </div>
+
+              {/* Educational Intent */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/50 to-green-100/50 rounded-3xl blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/60 group-hover:border-emerald-200/80 transition-all duration-500 hover:shadow-xl">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+                      <GraduationCap className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">Educational Intent</h3>
+                      <div className="w-16 h-1 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full"></div>
+                    </div>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed mb-4">
+                    Any use of external links, resources, or media is strictly for 
+                    <span className="font-semibold text-emerald-700"> educational and informational purposes only</span>, 
+                    aimed at enriching the learning journey of students and educators alike.
+                  </p>
+                  <p className="text-slate-600 text-sm font-medium">
+                    Our mission is to democratize access to quality education worldwide.
+                  </p>
+                </div>
+              </div>
+
+              {/* No Affiliation */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-100/50 to-pink-100/50 rounded-3xl blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/60 group-hover:border-purple-200/80 transition-all duration-500 hover:shadow-xl">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+                      <AlertCircle className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">No Affiliation or Endorsement</h3>
+                      <div className="w-16 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                    </div>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed mb-4">
+                    Unless explicitly stated, LLMfied is 
+                    <span className="font-semibold text-purple-700"> not affiliated, sponsored, or endorsed</span> by any third-party resource providers featured on the platform.
+                  </p>
+                  <p className="text-slate-600 text-sm font-medium">
+                    All partnerships and affiliations are clearly disclosed when applicable.
+                  </p>
+                </div>
+              </div>
+
+              {/* User-Generated Content */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-100/50 to-orange-100/50 rounded-3xl blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/60 group-hover:border-amber-200/80 transition-all duration-500 hover:shadow-xl">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">User-Generated Content</h3>
+                      <div className="w-16 h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"></div>
+                    </div>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed mb-4">
+                    Courses created and published by educators on LLMfied represent their own 
+                    <span className="font-semibold text-amber-700"> expertise, views, and materials</span>. 
+                    While we strive for quality and accuracy, LLMfied is not liable for individual course content.
+                  </p>
+                  <p className="text-slate-600 text-sm font-medium">
+                    We maintain quality standards through community feedback and moderation.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Notice */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-100/50 to-blue-100/50 rounded-2xl blur-lg"></div>
+              <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/60 text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl flex items-center justify-center shadow-lg">
+                    <Scale className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <h4 className="text-lg font-bold text-slate-900 mb-3">Commitment to Transparency</h4>
+                <p className="text-slate-700 leading-relaxed max-w-2xl mx-auto mb-6">
+                  We believe in building trust through transparency. If you have any questions about our policies, 
+                  content attribution, or platform guidelines, please don't hesitate to reach out to our team.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Badge className="bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border-emerald-200 px-4 py-2 text-sm font-semibold">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Ethical AI Usage
+                  </Badge>
+                  <Badge className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200 px-4 py-2 text-sm font-semibold">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Content Protection
+                  </Badge>
+                  <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 px-4 py-2 text-sm font-semibold">
+                    <Users className="w-4 h-4 mr-2" />
+                    Community First
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Legal Footer */}
+            <div className="mt-12 text-center">
+              <p className="text-slate-500 text-sm leading-relaxed">
+                This disclaimer was last updated on <span className="font-semibold">{new Date().toLocaleDateString()}</span>. 
+                For questions or concerns, please contact our legal team at 
+                <a href="mailto:legal@llmfied.com" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-300 ml-1">
+                  legal@llmfied.com
+                </a>
+              </p>
             </div>
           </div>
         </div>
@@ -1470,17 +1842,34 @@ export default function Home() {
               
               {/* Enhanced Social Links */}
               <div className="flex space-x-4">
-                <a href="#" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-blue-300/60">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd"></path></svg>
+                {/* X (Twitter) */}
+                <a href="https://x.com/LLMfied" target="_blank" rel="noopener noreferrer" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-slate-400/60" title="Follow us on X">
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 to-slate-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <svg className="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                  </svg>
                 </a>
-                <a href="#" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-purple-300/60">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="w-5 h-5 text-slate-600 group-hover:text-purple-600 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path></svg>
+                
+                {/*  In */}
+                <a href="https://www.linkedin.com/in/dr-auqib-hamid-lone-45996067/" target="_blank" rel="noopener noreferrer" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-blue-300/60" title="Connect on LinkedIn">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <svg className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
+                  </svg>
                 </a>
-                <a href="#" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-emerald-300/60">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="w-5 h-5 text-slate-600 group-hover:text-emerald-600 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd"></path></svg>
+                
+                {/* YouTube Channel */}
+                <a href="https://youtube.com/@LLMfied" target="_blank" rel="noopener noreferrer" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-red-300/60" title="Subscribe to @LLMfied">
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-red-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <svg className="w-5 h-5 text-slate-600 group-hover:text-red-600 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path>
+                  </svg>
+                </a>
+                
+                {/* GitHub */}
+                <a href="https://github.com/auqib92" target="_blank" rel="noopener noreferrer" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-slate-400/60" title="Star us on GitHub">
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 to-slate-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <svg className="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd"></path></svg>
                 </a>
               </div>
             </div>

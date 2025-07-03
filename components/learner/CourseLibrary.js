@@ -78,8 +78,8 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
           console.log(`🔄 Updating enrollment state for course ${data.courseId}:`, data.isEnrolled ? 'ENROLLED' : 'NOT ENROLLED')
           setEnrollments(prev => {
             const newState = {
-              ...prev,
-              [data.courseId]: data.isEnrolled ? data.enrollment : null
+            ...prev,
+            [data.courseId]: data.isEnrolled ? data.enrollment : null
             }
             console.log(`📋 New enrollment state:`, newState)
             return newState
@@ -414,7 +414,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
         setTimeout(() => notification.style.transform = 'translateX(0)', 100)
         setTimeout(() => {
           notification.style.transform = 'translateX(100%)'
-          setTimeout(() => {
+        setTimeout(() => {
             if (document.body.contains(notification)) {
               document.body.removeChild(notification)
             }
@@ -593,57 +593,57 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Simple Search and Filters */}
-        <div className="space-y-4">
-          {/* Search Bar */}
+          <div className="space-y-4">
+              {/* Search Bar */}
           <div className="relative max-w-xl">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <Input
-              placeholder="Search courses..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+                <Input
+                  placeholder="Search courses..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 h-12 rounded-xl border-2 border-slate-200 focus:border-blue-500 bg-white"
-            />
-          </div>
+                />
+              </div>
 
           {/* Simple Filters */}
           <div className="flex flex-wrap gap-3">
-            {/* Category Filters */}
-            {categories.map((category) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                onClick={() => setSelectedCategory(category)}
+                {/* Category Filters */}
+                  {categories.map((category) => (
+                    <Button
+                      key={category}
+                      variant={selectedCategory === category ? "default" : "outline"}
+                      onClick={() => setSelectedCategory(category)}
                 size="sm"
                 className={`capitalize ${
-                  selectedCategory === category 
+                        selectedCategory === category 
                     ? 'bg-blue-600 text-white' 
                     : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {category}
-              </Button>
-            ))}
-            
+                      }`}
+                    >
+                      {category}
+                    </Button>
+                  ))}
+
             <div className="w-px h-6 bg-slate-300 self-center"></div>
-            
-            {/* Level Filters */}
-            {levels.map((level) => (
-              <Button
-                key={level}
-                variant={selectedLevel === level ? "default" : "outline"}
-                onClick={() => setSelectedLevel(level)}
+
+                {/* Level Filters */}
+                  {levels.map((level) => (
+                    <Button
+                      key={level}
+                      variant={selectedLevel === level ? "default" : "outline"}
+                      onClick={() => setSelectedLevel(level)}
                 size="sm"
                 className={`capitalize ${
-                  selectedLevel === level 
+                        selectedLevel === level 
                     ? 'bg-emerald-600 text-white' 
                     : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {level}
-              </Button>
-            ))}
-          </div>
-        </div>
+                      }`}
+                    >
+                      {level}
+                    </Button>
+                  ))}
+                </div>
+              </div>
 
         {/* Course Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

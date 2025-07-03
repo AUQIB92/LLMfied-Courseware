@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { PremiumFeatureButton } from "@/components/ui/premium-upgrade"
+import { checkPremiumFeature } from "@/lib/models"
 import {
   Atom,
   BookOpen,
@@ -433,7 +435,7 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
   const [isUpdatingResource, setIsUpdatingResource] = useState(false)
   const [localAiResources, setLocalAiResources] = useState(null) // Local copy for editing
   
-  const { getAuthHeaders } = useAuth()
+  const { getAuthHeaders, user } = useAuth()
   const codeEditorRef = useRef(null)
   const [loading, setLoading] = useState(false)
   const [enrollmentVerified, setEnrollmentVerified] = useState(false)
@@ -1567,24 +1569,41 @@ Return JSON format:
         transition={{ delay: 1, type: "spring", stiffness: 300 }}
       >
         {/* Quiz Challenge Button */}
-        <motion.button
-          onClick={() => setShowQuiz(true)}
-          className="group relative w-16 h-16 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 rounded-2xl shadow-2xl hover:shadow-emerald-500/25 flex items-center justify-center text-white transition-all duration-500 overflow-hidden"
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          whileTap={{ scale: 0.9 }}
-          variants={floatingVariants}
-          animate="floating"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <TestTube className="h-7 w-7 relative z-10 group-hover:scale-110 transition-transform duration-300" />
-          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-          
-          {/* Tooltip */}
-          <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
-            Take Quiz Challenge
-            <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-black/80"></div>
-          </div>
-        </motion.button>
+        {checkPremiumFeature(user, 'quizGeneration') ? (
+          <motion.button
+            onClick={() => setShowQuiz(true)}
+            className="group relative w-16 h-16 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 rounded-2xl shadow-2xl hover:shadow-emerald-500/25 flex items-center justify-center text-white transition-all duration-500 overflow-hidden"
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
+            variants={floatingVariants}
+            animate="floating"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <TestTube className="h-7 w-7 relative z-10 group-hover:scale-110 transition-transform duration-300" />
+            <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+            
+            {/* Tooltip */}
+            <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
+              Take Quiz Challenge
+              <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-black/80"></div>
+            </div>
+          </motion.button>
+        ) : (
+          <PremiumFeatureButton
+            feature="quizGeneration"
+            className="group relative w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 rounded-2xl shadow-2xl hover:shadow-amber-500/25 flex items-center justify-center text-white transition-all duration-500 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <Crown className="h-7 w-7 relative z-10 group-hover:scale-110 transition-transform duration-300" />
+            <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+            
+            {/* Tooltip */}
+            <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
+              Quiz Challenge (Premium)
+              <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-black/80"></div>
+            </div>
+          </PremiumFeatureButton>
+        )}
 
         {/* Enhanced Bookmark Button */}
         <motion.button
@@ -2453,40 +2472,53 @@ Return JSON format:
                                           animate={{ opacity: 1, y: 0 }}
                                           transition={{ delay: 0.4 }}
                                         >
-                                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                            <Button
-                                              onClick={() =>
-                                                generateSimplifiedExplanation({
-                                                  id: subsection.id,
-                                                  name: subsection.title,
-                                                  content: subsection.explanation,
-                                                })
-                                              }
-                                              disabled={loadingExplanation[subsection.id]}
-                                              size="sm"
-                                              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                                            >
-                                              {loadingExplanation[subsection.id] ? (
-                                                <>
-                                                  <motion.div
-                                                    className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                                                    animate={{ rotate: 360 }}
-                                                    transition={{
-                                                      duration: 1,
-                                                      repeat: Number.POSITIVE_INFINITY,
-                                                      ease: "linear",
-                                                    }}
-                                                  />
-                                                  Generating...
-                                                </>
-                                              ) : (
-                                                <>
-                                                  <Brain className="h-4 w-4 mr-2" />
-                                                  Get More Details
-                                                </>
-                                              )}
-                                            </Button>
-                                          </motion.div>
+                                          {checkPremiumFeature(user, 'getMoreDetails') ? (
+                                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                              <Button
+                                                onClick={() =>
+                                                  generateSimplifiedExplanation({
+                                                    id: subsection.id,
+                                                    name: subsection.title,
+                                                    content: subsection.explanation,
+                                                  })
+                                                }
+                                                disabled={loadingExplanation[subsection.id]}
+                                                size="sm"
+                                                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                              >
+                                                {loadingExplanation[subsection.id] ? (
+                                                  <>
+                                                    <motion.div
+                                                      className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
+                                                      animate={{ rotate: 360 }}
+                                                      transition={{
+                                                        duration: 1,
+                                                        repeat: Number.POSITIVE_INFINITY,
+                                                        ease: "linear",
+                                                      }}
+                                                    />
+                                                    Generating...
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Brain className="h-4 w-4 mr-2" />
+                                                    Get More Details
+                                                  </>
+                                                )}
+                                              </Button>
+                                            </motion.div>
+                                          ) : (
+                                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                              <PremiumFeatureButton
+                                                feature="getMoreDetails"
+                                                size="sm"
+                                                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                              >
+                                                <Crown className="h-4 w-4 mr-2" />
+                                                Get More Details (Premium)
+                                              </PremiumFeatureButton>
+                                            </motion.div>
+                                          )}
                                         </motion.div>
 
                                         {/* Enhanced Explanation Display */}
@@ -3257,15 +3289,27 @@ Return JSON format:
           <GlassCard className="bg-gradient-to-r from-green-50/80 to-emerald-50/80 border-green-200/50">
             <CardContent className="p-8">
               <div className="flex flex-wrap gap-4 justify-center">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    onClick={() => setShowQuiz(true)}
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3"
-                  >
-                    <TestTube className="h-5 w-5 mr-2" />
-                    Take Quiz
-                  </Button>
-                </motion.div>
+                {checkPremiumFeature(user, 'quizGeneration') ? (
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      onClick={() => setShowQuiz(true)}
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3"
+                    >
+                      <TestTube className="h-5 w-5 mr-2" />
+                      Take Quiz
+                    </Button>
+                  </motion.div>
+                ) : (
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <PremiumFeatureButton
+                      feature="quizGeneration"
+                      className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3"
+                    >
+                      <Crown className="h-5 w-5 mr-2" />
+                      Take Quiz (Premium)
+                    </PremiumFeatureButton>
+                  </motion.div>
+                )}
 
                 {!moduleProgress.completed && (
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>

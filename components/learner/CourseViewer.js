@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { PremiumFeatureButton, PremiumUpgradeModal } from "@/components/ui/premium-upgrade"
+import { checkPremiumFeature } from "@/lib/models"
 import { 
   ArrowLeft, 
   Brain, 
@@ -36,7 +38,8 @@ import {
   Globe,
   Link,
   Loader2,
-  UserPlus
+  UserPlus,
+  Crown
 } from "lucide-react"
 import ModuleContent from "./ModuleContent"
 import AITutor from "./AITutor"
@@ -53,7 +56,7 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [enrollmentLoading, setEnrollmentLoading] = useState(false)
   const [checkingEnrollment, setCheckingEnrollment] = useState(true)
-  const { getAuthHeaders } = useAuth()
+  const { getAuthHeaders, user } = useAuth()
 
   // Initialize enrollment status - respect explicit prop first, then use cache
   useEffect(() => {
@@ -492,14 +495,25 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
               )}
               
               {isEnrolled && (
-              <Button 
-                  variant="outline"
-                onClick={() => setShowTutor(!showTutor)} 
-                  className="border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 touch-manipulation min-h-[44px]"
-                >
-                  <Brain className="h-4 w-4 sm:mr-2 text-purple-600" />
-                  <span className="hidden sm:inline">AI Tutor</span>
-              </Button>
+                checkPremiumFeature(user, 'aiTutor') ? (
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowTutor(!showTutor)} 
+                    className="border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 touch-manipulation min-h-[44px]"
+                  >
+                    <Brain className="h-4 w-4 sm:mr-2 text-purple-600" />
+                    <span className="hidden sm:inline">AI Tutor</span>
+                  </Button>
+                ) : (
+                  <PremiumFeatureButton 
+                    feature="aiTutor"
+                    variant="outline"
+                    className="border-2 border-amber-200 hover:border-amber-300 hover:bg-amber-50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 touch-manipulation min-h-[44px]"
+                  >
+                    <Brain className="h-4 w-4 sm:mr-2 text-amber-600" />
+                    <span className="hidden sm:inline">AI Tutor</span>
+                  </PremiumFeatureButton>
+                )
               )}
             </div>
           </div>
