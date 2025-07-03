@@ -301,7 +301,7 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
       })
       
       if (response.ok) {
-        const data = await response.json()
+      const data = await response.json()
         // Ensure the data has the expected structure
         if (data && typeof data === 'object') {
           setProgress({
@@ -1188,7 +1188,7 @@ function ConceptCard({ concept, index, expandedConcept, setExpandedConcept, show
       isExpanded ? 'ring-2 ring-purple-200' : ''
     } ${viewMode === 'list' ? 'hover:-translate-y-1' : 'hover:-translate-y-2'}`}>
       <CardHeader 
-        className="cursor-pointer bg-gradient-to-r from-slate-50 to-blue-50 hover:from-blue-50 hover:to-purple-50 transition-all duration-300" 
+        className="cursor-pointer bg-gradient-to-r from-slate-50 to-blue-50 hover:from-blue-50 hover:to-purple-50 transition-all duration-300 hover:shadow-lg group" 
         onClick={() => setExpandedConcept(isExpanded ? null : concept.id)}
       >
         <div className="flex items-center justify-between">
@@ -1197,7 +1197,7 @@ function ConceptCard({ concept, index, expandedConcept, setExpandedConcept, show
               {index + 1}
             </div>
             <div className="flex-1">
-              <CardTitle className="text-xl text-slate-800 mb-2">{concept.name}</CardTitle>
+              <CardTitle className="text-xl text-slate-800 mb-2 group-hover:text-blue-700 transition-colors duration-300">{concept.name}</CardTitle>
               <div className="flex flex-wrap gap-2">
                 <Badge className={getDifficultyColor(concept.difficulty)}>
                   {concept.difficulty}
@@ -1251,34 +1251,34 @@ function ConceptCard({ concept, index, expandedConcept, setExpandedConcept, show
         <CardContent className="space-y-6 p-8 animate-in slide-in-from-top-2 duration-300">
           {/* Simplified Explanation */}
           {concept.simplifiedExplanation && (
-            <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
-              <h4 className="font-bold text-green-800 mb-4 flex items-center gap-3">
-                <div className="p-2 bg-green-500/10 rounded-xl">
-                  <Lightbulb className="h-5 w-5 text-green-600" />
+            <div className="group p-8 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 rounded-2xl border border-emerald-200 hover:border-emerald-300 hover:shadow-xl transition-all duration-500 hover:bg-gradient-to-br hover:from-emerald-100 hover:via-green-100 hover:to-teal-100">
+              <h4 className="font-bold text-emerald-900 mb-6 flex items-center gap-3 text-lg group-hover:text-emerald-800 transition-colors duration-300">
+                <div className="p-3 bg-emerald-500/15 rounded-xl group-hover:bg-emerald-500/25 transition-colors duration-300">
+                  <Lightbulb className="h-6 w-6 text-emerald-700 group-hover:text-emerald-600" />
                 </div>
-                Simple Explanation
+                💡 Simple Explanation
               </h4>
-              <div className="space-y-4">
-                <div>
-                  <h5 className="font-semibold text-green-700 mb-2">📖 Definition:</h5>
-                  <p className="text-green-800 leading-relaxed">{concept.simplifiedExplanation.definition}</p>
+              <div className="space-y-6">
+                <div className="group/item hover:bg-emerald-50 p-4 rounded-xl transition-all duration-300">
+                  <h5 className="font-semibold text-emerald-800 mb-3 text-base group-hover/item:text-emerald-700">📖 Definition:</h5>
+                  <p className="text-slate-700 leading-relaxed text-base font-medium group-hover/item:text-slate-800 transition-colors duration-300">{concept.simplifiedExplanation.definition}</p>
                 </div>
                 {concept.simplifiedExplanation.analogy && (
-                  <div>
-                    <h5 className="font-semibold text-green-700 mb-2">🔗 Think of it like:</h5>
-                    <p className="text-green-800 italic leading-relaxed">{concept.simplifiedExplanation.analogy}</p>
+                  <div className="group/item hover:bg-emerald-50 p-4 rounded-xl transition-all duration-300">
+                    <h5 className="font-semibold text-emerald-800 mb-3 text-base group-hover/item:text-emerald-700">🔗 Think of it like:</h5>
+                    <p className="text-slate-700 italic leading-relaxed text-base font-medium group-hover/item:text-slate-800 transition-colors duration-300">{concept.simplifiedExplanation.analogy}</p>
                   </div>
                 )}
                 {concept.simplifiedExplanation.example && (
-                  <div>
-                    <h5 className="font-semibold text-green-700 mb-2">💡 Example:</h5>
-                    <p className="text-green-800 leading-relaxed">{concept.simplifiedExplanation.example}</p>
+                  <div className="group/item hover:bg-emerald-50 p-4 rounded-xl transition-all duration-300">
+                    <h5 className="font-semibold text-emerald-800 mb-3 text-base group-hover/item:text-emerald-700">💡 Example:</h5>
+                    <p className="text-slate-700 leading-relaxed text-base font-medium group-hover/item:text-slate-800 transition-colors duration-300">{concept.simplifiedExplanation.example}</p>
                   </div>
                 )}
                 {concept.simplifiedExplanation.whyItMatters && (
-                  <div>
-                    <h5 className="font-semibold text-green-700 mb-2">🎯 Why it matters:</h5>
-                    <p className="text-green-800 leading-relaxed">{concept.simplifiedExplanation.whyItMatters}</p>
+                  <div className="group/item hover:bg-emerald-50 p-4 rounded-xl transition-all duration-300">
+                    <h5 className="font-semibold text-emerald-800 mb-3 text-base group-hover/item:text-emerald-700">🎯 Why it matters:</h5>
+                    <p className="text-slate-700 leading-relaxed text-base font-medium group-hover/item:text-slate-800 transition-colors duration-300">{concept.simplifiedExplanation.whyItMatters}</p>
                   </div>
                 )}
               </div>
@@ -1287,48 +1287,71 @@ function ConceptCard({ concept, index, expandedConcept, setExpandedConcept, show
 
           {/* Detailed Explanation */}
           {concept.detailedExplanation && (
-            <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
-              <h4 className="font-bold text-blue-800 mb-4 flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-xl">
-                  <FileText className="h-5 w-5 text-blue-600" />
+            <div className="group p-8 bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 rounded-2xl border border-indigo-200 hover:border-indigo-300 hover:shadow-xl transition-all duration-500 hover:bg-gradient-to-br hover:from-indigo-100 hover:via-blue-100 hover:to-cyan-100">
+              <h4 className="font-bold text-indigo-900 mb-6 flex items-center gap-3 text-lg group-hover:text-indigo-800 transition-colors duration-300">
+                <div className="p-3 bg-indigo-500/15 rounded-xl group-hover:bg-indigo-500/25 transition-colors duration-300">
+                  <FileText className="h-6 w-6 text-indigo-700 group-hover:text-indigo-600" />
                 </div>
-                Detailed Explanation
+                📚 Detailed Explanation
               </h4>
-              <p className="text-blue-800 leading-relaxed">{concept.detailedExplanation}</p>
+              <div className="prose prose-lg max-w-none">
+                <div className="text-slate-700 leading-relaxed text-base font-medium tracking-wide space-y-4 group-hover:text-slate-800 transition-colors duration-300">
+                  {concept.detailedExplanation.split('\n\n').map((paragraph, index) => (
+                    <p key={index} className="mb-4 text-justify hyphens-auto indent-4 first:indent-0">
+                      {paragraph.trim()}
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-6 pt-4 border-t border-indigo-200 group-hover:border-indigo-300 transition-colors duration-300">
+                <div className="flex items-center gap-2 text-sm text-indigo-600 group-hover:text-indigo-700 transition-colors duration-300">
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+                  <span className="italic">Click to expand for more learning resources</span>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Code Example */}
           {concept.codeExample && (
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-2xl border border-slate-700">
-              <h4 className="font-bold text-white mb-4 flex items-center gap-3">
-                <div className="p-2 bg-white/10 rounded-xl">
-                  <Code className="h-5 w-5 text-green-400" />
+            <div className="group bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 p-8 rounded-2xl border border-slate-700 hover:border-slate-600 hover:shadow-2xl transition-all duration-500 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative z-10">
+                <h4 className="font-bold text-white mb-6 flex items-center gap-3 text-lg group-hover:text-green-300 transition-colors duration-300">
+                  <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors duration-300">
+                    <Code className="h-6 w-6 text-green-400 group-hover:text-green-300" />
                 </div>
-                Code Example
+                  💻 Code Example
               </h4>
-              <pre className="text-green-400 text-sm overflow-x-auto leading-relaxed">
+                <div className="bg-slate-950/50 rounded-xl p-6 border border-slate-700 group-hover:border-slate-600 transition-colors duration-300">
+                  <pre className="text-green-400 text-base overflow-x-auto leading-relaxed font-mono group-hover:text-green-300 transition-colors duration-300">
                 <code>{concept.codeExample}</code>
               </pre>
+                </div>
+                <div className="mt-4 text-sm text-slate-400 group-hover:text-slate-300 transition-colors duration-300 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="italic">Try running this code to see it in action</span>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Key Points */}
           {concept.keyPoints && concept.keyPoints.length > 0 && (
-            <div className="p-6 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl border border-yellow-200">
-              <h4 className="font-bold text-yellow-800 mb-4 flex items-center gap-3">
-                <div className="p-2 bg-yellow-500/10 rounded-xl">
-                  <Star className="h-5 w-5 text-yellow-600" />
+            <div className="group p-8 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border border-amber-200 hover:border-amber-300 hover:shadow-xl transition-all duration-500 hover:bg-gradient-to-br hover:from-amber-100 hover:via-yellow-100 hover:to-orange-100">
+              <h4 className="font-bold text-amber-900 mb-6 flex items-center gap-3 text-lg group-hover:text-amber-800 transition-colors duration-300">
+                <div className="p-3 bg-amber-500/15 rounded-xl group-hover:bg-amber-500/25 transition-colors duration-300">
+                  <Star className="h-6 w-6 text-amber-700 group-hover:text-amber-600" />
                 </div>
-                Key Points
+                ⭐ Key Points to Remember
               </h4>
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {concept.keyPoints.map((point, pointIndex) => (
-                  <li key={pointIndex} className="flex items-start gap-3 text-yellow-800">
-                    <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                  <li key={pointIndex} className="group/item flex items-start gap-4 p-4 rounded-xl hover:bg-amber-50 transition-all duration-300">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white text-sm font-bold mt-0.5 group-hover/item:scale-110 transition-transform duration-300">
                       ★
                     </div>
-                    <span className="leading-relaxed">{point}</span>
+                    <span className="text-slate-700 leading-relaxed text-base font-medium group-hover/item:text-slate-800 transition-colors duration-300">{point}</span>
                   </li>
                 ))}
               </ul>
@@ -1337,20 +1360,25 @@ function ConceptCard({ concept, index, expandedConcept, setExpandedConcept, show
 
           {/* Common Mistakes */}
           {concept.commonMistakes && concept.commonMistakes.length > 0 && (
-            <div className="p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl border border-red-200">
-              <h4 className="font-bold text-red-800 mb-4 flex items-center gap-3">
-                <div className="p-2 bg-red-500/10 rounded-xl">
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+            <div className="group p-8 bg-gradient-to-br from-rose-50 via-red-50 to-pink-50 rounded-2xl border border-rose-200 hover:border-rose-300 hover:shadow-xl transition-all duration-500 hover:bg-gradient-to-br hover:from-rose-100 hover:via-red-100 hover:to-pink-100">
+              <h4 className="font-bold text-rose-900 mb-6 flex items-center gap-3 text-lg group-hover:text-rose-800 transition-colors duration-300">
+                <div className="p-3 bg-rose-500/15 rounded-xl group-hover:bg-rose-500/25 transition-colors duration-300">
+                  <AlertTriangle className="h-6 w-6 text-rose-700 group-hover:text-rose-600" />
                 </div>
-                Common Mistakes to Avoid
+                ⚠️ Common Mistakes to Avoid
               </h4>
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {concept.commonMistakes.map((mistake, mistakeIndex) => (
-                  <li key={mistakeIndex} className="flex items-start gap-3 text-red-800">
-                    <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                  <li key={mistakeIndex} className="group/item flex items-start gap-4 p-4 rounded-xl hover:bg-rose-50 transition-all duration-300 border border-transparent hover:border-rose-200">
+                    <div className="w-8 h-8 bg-gradient-to-br from-rose-500 to-pink-600 rounded-full flex items-center justify-center text-white text-sm font-bold mt-0.5 group-hover/item:scale-110 transition-transform duration-300 shadow-lg">
                       ⚠
                     </div>
-                    <span className="leading-relaxed">{mistake}</span>
+                    <div className="flex-1">
+                      <span className="text-slate-700 leading-relaxed text-base font-medium group-hover/item:text-slate-800 transition-colors duration-300 block">{mistake}</span>
+                      <div className="mt-2 text-sm text-rose-600 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
+                        🛡️ Stay alert to avoid this pitfall
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -1359,20 +1387,25 @@ function ConceptCard({ concept, index, expandedConcept, setExpandedConcept, show
 
           {/* Practice Questions */}
           {concept.practiceQuestions && concept.practiceQuestions.length > 0 && (
-            <div className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border border-purple-200">
-              <h4 className="font-bold text-purple-800 mb-4 flex items-center gap-3">
-                <div className="p-2 bg-purple-500/10 rounded-xl">
-                  <HelpCircle className="h-5 w-5 text-purple-600" />
+            <div className="group p-8 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 rounded-2xl border border-violet-200 hover:border-violet-300 hover:shadow-xl transition-all duration-500 hover:bg-gradient-to-br hover:from-violet-100 hover:via-purple-100 hover:to-indigo-100">
+              <h4 className="font-bold text-violet-900 mb-6 flex items-center gap-3 text-lg group-hover:text-violet-800 transition-colors duration-300">
+                <div className="p-3 bg-violet-500/15 rounded-xl group-hover:bg-violet-500/25 transition-colors duration-300">
+                  <HelpCircle className="h-6 w-6 text-violet-700 group-hover:text-violet-600" />
                 </div>
-                Practice Questions
+                🤔 Practice Questions
               </h4>
-              <ol className="space-y-4">
+              <ol className="space-y-5">
                 {concept.practiceQuestions.map((question, questionIndex) => (
-                  <li key={questionIndex} className="flex items-start gap-4 text-purple-800">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  <li key={questionIndex} className="group/item flex items-start gap-4 p-5 rounded-xl hover:bg-violet-50 transition-all duration-300 border border-transparent hover:border-violet-200">
+                    <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 text-white rounded-full flex items-center justify-center text-base font-bold group-hover/item:scale-110 transition-transform duration-300 shadow-lg">
                       {questionIndex + 1}
                     </div>
-                    <span className="leading-relaxed">{question}</span>
+                    <div className="flex-1">
+                      <span className="text-slate-700 leading-relaxed text-base font-medium group-hover/item:text-slate-800 transition-colors duration-300 block">{question}</span>
+                      <div className="mt-3 text-sm text-violet-600 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
+                        💭 Take your time to think through this question
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ol>

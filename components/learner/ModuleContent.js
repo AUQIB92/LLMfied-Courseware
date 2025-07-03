@@ -461,6 +461,9 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
         // Format italic text (*text* -> <em>text</em>)
         formatted = formatted.replace(/\*([^*]+)\*/g, '<em class="italic text-slate-600">$1</em>')
         
+        // Format single-quoted text ('text' -> <em>text</em>)
+        formatted = formatted.replace(/'([^']+)'/g, '<em class="italic text-slate-600">$1</em>')
+        
         return `<p class="mb-6 last:mb-0">${formatted}</p>`
       })
       .join('')
@@ -2121,18 +2124,29 @@ Return JSON format:
                                                       animate={{ opacity: 1, y: 0 }}
                                                       transition={{ duration: 0.5, delay: 0.1 }}
                                                     >
-                                                      <div className="bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 rounded-2xl p-8 border border-cyan-100/50 shadow-lg backdrop-blur-sm">
+                                                      <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
                                                         <div 
-                                                          className="text-slate-700 leading-8 text-lg font-medium tracking-wide"
+                                                          className="text-slate-800 leading-relaxed text-xl font-medium tracking-wide selection:bg-blue-200 selection:text-blue-900 hover:text-slate-900 transition-all duration-500 cursor-default"
                                                           style={{
-                                                            lineHeight: '1.8',
-                                                            fontFamily: '"Inter", "system-ui", sans-serif',
-                                                            letterSpacing: '0.01em'
+                                                            lineHeight: '2.0',
+                                                            fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
+                                                            letterSpacing: '0.025em',
+                                                            textRendering: 'optimizeLegibility',
+                                                            WebkitFontSmoothing: 'antialiased',
+                                                            MozOsxFontSmoothing: 'grayscale',
+                                                            wordSpacing: '0.1em'
                                                           }}
                                                           dangerouslySetInnerHTML={{
                                                             __html: formatRichText(currentPageData.content)
                                                           }}
                                                         />
+                                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                                                        <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
+                                                          <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
+                                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                            <span className="text-xs font-medium text-blue-700">Enhanced Reading</span>
+                                                          </div>
+                                                        </div>
                                                       </div>
                                                     </motion.div>
                                                     
@@ -2257,18 +2271,29 @@ Return JSON format:
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ duration: 0.5 }}
                                                   >
-                                                    <div className="bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 rounded-2xl p-8 border border-cyan-100/50 shadow-lg backdrop-blur-sm">
+                                                    <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
                                                       <div 
-                                                        className="text-slate-700 leading-8 text-lg font-medium tracking-wide"
+                                                        className="text-slate-800 leading-relaxed text-xl font-medium tracking-wide selection:bg-blue-200 selection:text-blue-900 hover:text-slate-900 transition-all duration-500 cursor-default"
                                                         style={{
-                                                          lineHeight: '1.8',
-                                                          fontFamily: '"Inter", "system-ui", sans-serif',
-                                                          letterSpacing: '0.01em'
+                                                          lineHeight: '2.0',
+                                                          fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
+                                                          letterSpacing: '0.025em',
+                                                          textRendering: 'optimizeLegibility',
+                                                          WebkitFontSmoothing: 'antialiased',
+                                                          MozOsxFontSmoothing: 'grayscale',
+                                                          wordSpacing: '0.1em'
                                                         }}
                                                         dangerouslySetInnerHTML={{
                                                           __html: formatRichText(subsection.explanation)
                                                         }}
                                                       />
+                                                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                                                      <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
+                                                        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
+                                                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                          <span className="text-xs font-medium text-blue-700">Enhanced Reading</span>
+                                                        </div>
+                                                      </div>
                                                     </div>
                                                   </motion.div>
                                                 )
@@ -2284,18 +2309,29 @@ Return JSON format:
                                                     transition={{ duration: 0.5 }}
                                                     key={`page-${currentPage}`}
                                                   >
-                                                    <div className="bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 rounded-2xl p-8 border border-cyan-100/50 shadow-lg backdrop-blur-sm">
+                                                    <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
                                                       <div 
-                                                        className="text-slate-700 leading-8 text-lg font-medium tracking-wide"
+                                                        className="text-slate-800 leading-relaxed text-xl font-medium tracking-wide selection:bg-blue-200 selection:text-blue-900 hover:text-slate-900 transition-all duration-500 cursor-default"
                                                         style={{
-                                                          lineHeight: '1.8',
-                                                          fontFamily: '"Inter", "system-ui", sans-serif',
-                                                          letterSpacing: '0.01em'
+                                                          lineHeight: '2.0',
+                                                          fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
+                                                          letterSpacing: '0.025em',
+                                                          textRendering: 'optimizeLegibility',
+                                                          WebkitFontSmoothing: 'antialiased',
+                                                          MozOsxFontSmoothing: 'grayscale',
+                                                          wordSpacing: '0.1em'
                                                         }}
                                                         dangerouslySetInnerHTML={{
                                                           __html: formatRichText(pages[currentPage])
                                                         }}
                                                       />
+                                                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                                                      <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
+                                                        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
+                                                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                          <span className="text-xs font-medium text-blue-700">Enhanced Reading</span>
+                                                        </div>
+                                                      </div>
                                                     </div>
                                                   </motion.div>
                                                   
@@ -2461,9 +2497,29 @@ Return JSON format:
                                                 <Zap className="h-4 w-4" />
                                                 Enhanced Explanation
                                               </h5>
-                                              <div className="prose prose-sm max-w-none">
-                                                <div className="text-emerald-700 leading-relaxed whitespace-pre-wrap">
+                                              <div className="prose prose-lg max-w-none">
+                                                <div className="group/text relative bg-gradient-to-br from-white via-emerald-50/20 to-teal-50/30 rounded-2xl p-8 border border-emerald-200/30 shadow-lg backdrop-blur-sm hover:shadow-xl hover:bg-gradient-to-br hover:from-white hover:via-emerald-50/40 hover:to-teal-50/50 transition-all duration-700 hover:scale-[1.01] transform-gpu">
+                                                  <div 
+                                                    className="text-emerald-800 leading-relaxed text-lg font-medium tracking-wide selection:bg-emerald-200 selection:text-emerald-900 hover:text-emerald-900 transition-all duration-500 cursor-default whitespace-pre-wrap"
+                                                    style={{
+                                                      lineHeight: '1.9',
+                                                      fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
+                                                      letterSpacing: '0.02em',
+                                                      textRendering: 'optimizeLegibility',
+                                                      WebkitFontSmoothing: 'antialiased',
+                                                      MozOsxFontSmoothing: 'grayscale',
+                                                      wordSpacing: '0.05em'
+                                                    }}
+                                                  >
                                                   {simplifiedExplanations[subsection.id]}
+                                                  </div>
+                                                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-teal-500/5 to-green-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                                                  <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
+                                                    <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-emerald-200 shadow-lg">
+                                                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                                      <span className="text-xs font-medium text-emerald-700">AI Enhanced</span>
+                                                    </div>
+                                                  </div>
                                                 </div>
                                               </div>
                                             </motion.div>
