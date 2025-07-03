@@ -40,6 +40,7 @@ import {
 } from "lucide-react"
 import ModuleContent from "./ModuleContent"
 import AITutor from "./AITutor"
+import enrollmentCache from "@/lib/enrollmentCache"
 
 export default function CourseViewer({ course, onBack, onModuleView, isEnrolled: initialEnrollmentStatus, onEnrollmentChange }) {
   const [selectedModule, setSelectedModule] = useState(null)
@@ -49,125 +50,130 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
   const [processedContent, setProcessedContent] = useState(null)
   const [showContentUpload, setShowContentUpload] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true) // Start with sidebar hidden for full-page experience
-  const [isEnrolled, setIsEnrolled] = useState(initialEnrollmentStatus || false)
+  const [isEnrolled, setIsEnrolled] = useState(false)
   const [enrollmentLoading, setEnrollmentLoading] = useState(false)
-  const [checkingEnrollment, setCheckingEnrollment] = useState(!initialEnrollmentStatus) // Only check if not already provided
+  const [checkingEnrollment, setCheckingEnrollment] = useState(true)
   const { getAuthHeaders } = useAuth()
 
+  // Initialize enrollment status - respect explicit prop first, then use cache
   useEffect(() => {
-    if (initialEnrollmentStatus !== undefined) {
-      setIsEnrolled(initialEnrollmentStatus)
-      setCheckingEnrollment(false)
-    } else {
-      checkEnrollmentStatus()
-    }
-    fetchProgress()
-  }, [course._id, initialEnrollmentStatus])
-
-  // Listen for real-time enrollment changes (especially unenrollment)
-  useEffect(() => {
-    const handleEnrollmentChange = async (event) => {
-      const { courseId, isEnrolled: newEnrollmentStatus } = event.detail
+    const initializeEnrollment = async () => {
+      setCheckingEnrollment(true)
       
-      // If this event is for the current course
-      if (courseId === course._id) {
-        console.log(`Enrollment change detected for current course: ${newEnrollmentStatus}`)
+      try {
+        // Check if we have explicit enrollment status from parent component
+        const hasExplicitEnrollment = initialEnrollmentStatus !== undefined && initialEnrollmentStatus !== null
+        const hasCourseVerification = course.enrollmentVerified === true || course.accessGranted === true || course.isEnrolled === true
         
-        if (!newEnrollmentStatus) {
-          // User unenrolled - immediately revoke access
-          setIsEnrolled(false)
-          setSelectedModule(null) // Clear any selected module
-          setProgress({ moduleProgress: [], overallProgress: 0 }) // Clear progress
-          setProcessedContent(null) // Clear any processed content
+        console.log(`🔍 Enrollment initialization for course ${course._id}:`, {
+          initialEnrollmentStatus,
+          hasExplicitEnrollment,
+          hasCourseVerification,
+          fromContinueLearning: course.fromContinueLearning,
+          courseFlags: {
+            isEnrolled: course.isEnrolled,
+            enrollmentVerified: course.enrollmentVerified,
+            accessGranted: course.accessGranted
+          }
+        })
+        
+        // Special handling for Continue Learning flow
+        if (course.fromContinueLearning) {
+          console.log(`🚀 CONTINUE LEARNING FLOW: Bypassing enrollment checks for course ${course.title}`)
+        }
+        
+        if (hasExplicitEnrollment || hasCourseVerification) {
+          // Trust the explicit enrollment status from parent (e.g., "Continue Learning" button)
+          console.log(`✅ Using explicit enrollment status: ${initialEnrollmentStatus || true}`)
+          setIsEnrolled(initialEnrollmentStatus !== false)
           
-          // Show notification about access revocation
-          const warningNotification = document.createElement('div')
-          warningNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
-          warningNotification.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                </svg>
-              </div>
-              <span class="font-semibold">Course access revoked - Please re-enroll to continue</span>
-            </div>
-          `
-          document.body.appendChild(warningNotification)
-          
-          setTimeout(() => {
-            warningNotification.style.transform = 'translateX(0)'
-          }, 100)
-          
-          setTimeout(() => {
-            warningNotification.style.transform = 'translateX(100%)'
-            setTimeout(() => {
-              if (document.body.contains(warningNotification)) {
-                document.body.removeChild(warningNotification)
-              }
-            }, 500)
-          }, 5000)
-          
-          // Hide header if viewing module
-          if (onModuleView) {
-            onModuleView(false)
+          // If enrolled, fetch progress data
+          if (initialEnrollmentStatus !== false) {
+            await fetchProgress()
           }
         } else {
-          // User enrolled - grant access and refresh data
-          setIsEnrolled(true)
-          fetchProgress()
+          // Fall back to cache checking when status is uncertain
+          console.log(`🔄 Checking enrollment status via cache for course ${course._id}`)
+          const enrollmentData = await enrollmentCache.getEnrollmentStatus(course._id)
+          
+          console.log(`🎯 Cache enrollment data for course ${course._id}:`, enrollmentData)
+          setIsEnrolled(enrollmentData.isEnrolled)
+          
+          // If enrolled, fetch progress data
+          if (enrollmentData.isEnrolled) {
+            await fetchProgress()
+          }
         }
+      } catch (error) {
+        console.error('Failed to initialize enrollment status:', error)
+        setIsEnrolled(false)
+      } finally {
+        setCheckingEnrollment(false)
       }
     }
 
-    // Listen for enrollment events
-    window.addEventListener('courseEnrolled', handleEnrollmentChange)
-    window.addEventListener('courseUnenrolled', handleEnrollmentChange)
+    initializeEnrollment()
+  }, [course._id, initialEnrollmentStatus, course.enrollmentVerified, course.accessGranted, course.isEnrolled])
 
-    return () => {
-      window.removeEventListener('courseEnrolled', handleEnrollmentChange)
-      window.removeEventListener('courseUnenrolled', handleEnrollmentChange)
-    }
-  }, [course._id, onModuleView])
-
-  // Enhanced enrollment status checking with real-time verification
+  // Subscribe to enrollment cache updates
   useEffect(() => {
-    const verifyEnrollmentStatus = async () => {
-      try {
-        const response = await fetch(`/api/enrollment?courseId=${course._id}`, {
-          headers: getAuthHeaders(),
-        })
+    const unsubscribe = enrollmentCache.subscribe((event, data) => {
+      if (data.courseId === course._id) {
+        console.log(`📡 Enrollment cache event for course ${course._id}:`, event, data)
         
-        if (response.ok) {
-          const data = await response.json()
-          const currentEnrollmentStatus = data.isEnrolled
-          
-          // If enrollment status changed, update immediately
-          if (currentEnrollmentStatus !== isEnrolled) {
-            setIsEnrolled(currentEnrollmentStatus)
+        // Track if this is a Continue Learning flow to suppress false notifications
+        const isContinueLearningFlow = course.fromContinueLearning || course.accessGranted
+        
+        switch (event) {
+                      case 'enrollment_updated':
+              const wasEnrolled = isEnrolled
+              setIsEnrolled(data.isEnrolled)
             
-            if (!currentEnrollmentStatus) {
-              // Access revoked
+            if (data.isEnrolled) {
+              // User enrolled - fetch progress
+              fetchProgress()
+              
+              // Only show success notification if this is a NEW enrollment (state change) and not from Continue Learning
+              if (!wasEnrolled && !isContinueLearningFlow) {
+                console.log('🎉 New enrollment detected - showing success notification')
+                showEnrollmentNotification('Successfully enrolled! You now have access.', 'success')
+              } else if (isContinueLearningFlow) {
+                console.log('🔕 Continue Learning flow - suppressing enrollment notification')
+              } else {
+                console.log('📖 Already enrolled - no notification needed')
+              }
+            } else {
+              // User unenrolled - clear data and show warning
               setSelectedModule(null)
               setProgress({ moduleProgress: [], overallProgress: 0 })
               setProcessedContent(null)
+              
+              // Only show unenrollment warning if user was previously enrolled
+              if (wasEnrolled) {
+                showEnrollmentNotification('Course access revoked - Please re-enroll to continue', 'warning')
+              }
               
               if (onModuleView) {
                 onModuleView(false)
               }
             }
-          }
+            
+            // Notify parent component
+            if (onEnrollmentChange) {
+              onEnrollmentChange(course._id, data.isEnrolled)
+            }
+            break
+            
+          case 'enrollment_error':
+            console.error('Enrollment error:', data.error)
+            showEnrollmentNotification(`Enrollment error: ${data.error}`, 'error')
+            break
         }
-      } catch (error) {
-        console.error('Failed to verify enrollment status:', error)
       }
-    }
+    })
 
-    // Verify enrollment status every 30 seconds to catch any changes
-    const interval = setInterval(verifyEnrollmentStatus, 30000)
-    
-    return () => clearInterval(interval)
-  }, [course._id, isEnrolled, getAuthHeaders, onModuleView])
+    return unsubscribe
+  }, [course._id, onEnrollmentChange, onModuleView])
 
   // Auto-select first module only for enrolled users
   useEffect(() => {
@@ -179,139 +185,23 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
     }
   }, [isEnrolled, course.modules, selectedModule])
 
-  // Simplified enrollment handling - trust the props and check enrollment status
-  useEffect(() => {
-    if (course.isEnrolled === true) {
-      console.log('Course marked as enrolled, updating state')
-      setIsEnrolled(true)
-      setCheckingEnrollment(false)
-    }
-  }, [course.isEnrolled])
-
-  const checkEnrollmentStatus = async () => {
-    try {
-      const response = await fetch(`/api/enrollment?courseId=${course._id}`, {
-        headers: getAuthHeaders(),
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Enrollment status check result:', data)
-        setIsEnrolled(data.isEnrolled)
-      } else {
-        console.error('Failed to check enrollment status:', response.status)
-        setIsEnrolled(false)
-      }
-    } catch (error) {
-      console.error('Failed to check enrollment status:', error)
-      setIsEnrolled(false)
-    } finally {
-      setCheckingEnrollment(false)
-    }
-  }
-
-  const handleEnrollment = async () => {
-    setEnrollmentLoading(true)
-    
-    try {
-      const response = await fetch('/api/enrollment', {
-        method: 'POST',
-        headers: {
-          ...getAuthHeaders(),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ courseId: course._id }),
-      })
-
-      if (response.ok) {
-        // Update local state immediately
-        setIsEnrolled(true)
-        
-        // Notify parent component about enrollment change
-        if (onEnrollmentChange) {
-          onEnrollmentChange(course._id, true)
-        }
-        
-        // Show success notification
-        const successNotification = document.createElement('div')
-        successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
-        successNotification.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-              </svg>
-            </div>
-            <span class="font-semibold">Successfully enrolled! You now have access.</span>
-          </div>
-        `
-        document.body.appendChild(successNotification)
-        
-        setTimeout(() => {
-          successNotification.style.transform = 'translateX(0)'
-        }, 100)
-        
-        setTimeout(() => {
-          successNotification.style.transform = 'translateX(100%)'
-          setTimeout(() => {
-            if (document.body.contains(successNotification)) {
-              document.body.removeChild(successNotification)
-            }
-          }, 500)
-        }, 4000)
-        
-      } else {
-        const error = await response.json()
-        alert(`Failed to enroll: ${error.error}`)
-      }
-    } catch (error) {
-      console.error('Enrollment failed:', error)
-      alert('Failed to enroll in course')
-    } finally {
-      setEnrollmentLoading(false)
-    }
-  }
-
-  // Helper function to handle module selection and notify parent
-  const handleSelectModule = (module) => {
-    // Verify enrollment before allowing module access
-    if (!isEnrolled) {
-      alert('You must be enrolled in this course to access module content.')
-      return
-    }
-    
-    setSelectedModule(module)
-    if (onModuleView) {
-      onModuleView(true) // Hide header when viewing a module
-    }
-  }
-
-  // Helper function to go back to module list
-  const handleBackToModules = () => {
-    setSelectedModule(null)
-    if (onModuleView) {
-      onModuleView(false) // Show header when back to module list
-    }
-  }
-
   const fetchProgress = async () => {
     try {
       const response = await fetch(`/api/progress?courseId=${course._id}`, {
         headers: getAuthHeaders(),
       })
-      
+
       if (response.ok) {
-      const data = await response.json()
-        // Ensure the data has the expected structure
-        if (data && typeof data === 'object') {
-          setProgress({
-            moduleProgress: Array.isArray(data.moduleProgress) ? data.moduleProgress : [],
-            overallProgress: typeof data.overallProgress === 'number' ? data.overallProgress : 0
-          })
-        } else {
-          // Fallback to default structure
-          setProgress({ moduleProgress: [], overallProgress: 0 })
+        const data = await response.json()
+        console.log("Progress data:", data)
+        
+        // Ensure progress has the expected structure
+        const validatedProgress = {
+          moduleProgress: Array.isArray(data.moduleProgress) ? data.moduleProgress : [],
+          overallProgress: typeof data.overallProgress === 'number' ? data.overallProgress : 0
         }
+        
+        setProgress(validatedProgress)
       } else {
         console.error("Failed to fetch progress:", response.status)
         setProgress({ moduleProgress: [], overallProgress: 0 })
@@ -320,6 +210,73 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
       console.error("Failed to fetch progress:", error)
       setProgress({ moduleProgress: [], overallProgress: 0 })
     }
+  }
+
+  const handleEnrollment = async () => {
+    // Safety guard: Never allow enrollment for courses accessed via "Continue Learning"
+    if (course.fromContinueLearning || course.accessGranted || initialEnrollmentStatus === true) {
+      console.log('🚫 Enrollment blocked: User already has access to this course')
+      showEnrollmentNotification('You already have access to this course!', 'info')
+      return
+    }
+    
+    setEnrollmentLoading(true)
+    
+    try {
+      console.log('📝 Attempting enrollment for course:', course._id)
+      // Use enrollment cache for optimistic updates
+      await enrollmentCache.updateEnrollment(course._id, true)
+      
+      // The cache will handle the server sync and notify subscribers
+      // UI will update automatically via the subscription
+      
+    } catch (error) {
+      console.error('Enrollment failed:', error)
+      showEnrollmentNotification('Failed to enroll in course', 'error')
+    } finally {
+      setEnrollmentLoading(false)
+    }
+  }
+
+  const showEnrollmentNotification = (message, type = 'info') => {
+    const notification = document.createElement('div')
+    const colors = {
+      success: 'from-emerald-500 to-green-600',
+      warning: 'from-red-500 to-pink-600',
+      error: 'from-red-500 to-pink-600',
+      info: 'from-blue-500 to-indigo-600'
+    }
+    
+    const icons = {
+      success: '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>',
+      warning: '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>',
+      error: '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>',
+      info: '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>'
+    }
+    
+    notification.className = `fixed top-8 right-8 bg-gradient-to-r ${colors[type]} text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500`
+    notification.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+          ${icons[type]}
+        </div>
+        <span class="font-semibold">${message}</span>
+      </div>
+    `
+    document.body.appendChild(notification)
+    
+    setTimeout(() => {
+      notification.style.transform = 'translateX(0)'
+    }, 100)
+    
+    setTimeout(() => {
+      notification.style.transform = 'translateX(100%)'
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification)
+        }
+      }, 500)
+    }, type === 'error' ? 6000 : 4000)
   }
 
   const updateProgress = async (moduleId, completed, timeSpent) => {
@@ -343,18 +300,33 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
     }
   }
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files?.[0]
+  const handleSelectModule = (module) => {
+    setSelectedModule(module)
+    setShowTutor(false)
+    if (onModuleView) {
+      onModuleView(true)
+    }
+  }
+
+  const handleBackToOverview = () => {
+    setSelectedModule(null)
+    setShowTutor(false)
+    if (onModuleView) {
+      onModuleView(false)
+    }
+  }
+
+  const handleContentUpload = async (event) => {
+    const file = event.target.files[0]
     if (!file) return
 
     setUploadingContent(true)
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('content', file)
     formData.append('courseId', course._id)
-    formData.append('moduleId', selectedModule?.id || '')
 
     try {
-      const response = await fetch('/api/upload/content', {
+      const response = await fetch('/api/courses/process', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData,
@@ -385,9 +357,8 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
     return moduleProgress || { completed: false, timeSpent: 0, quizScores: [] }
   }
 
-  // Check if user is enrolled before allowing access
+  // Show loading spinner while checking enrollment
   if (checkingEnrollment) {
-    // Show loading spinner while checking enrollment
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -463,148 +434,6 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
     )
   }
 
-  // Show loading while checking enrollment
-  if (checkingEnrollment) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-slate-600">Checking course access...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show enrollment required message if not enrolled
-  if (!isEnrolled) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-        {/* Header */}
-        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center gap-6">
-              <Button 
-                variant="ghost" 
-                onClick={onBack}
-                className="group flex items-center gap-3 hover:bg-blue-50 text-blue-600 px-4 py-2 rounded-xl font-medium transition-all duration-300"
-              >
-                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform duration-300" />
-                Back to Library
-              </Button>
-              <div className="h-6 w-px bg-slate-200"></div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {course.title}
-                </h1>
-                <p className="text-slate-600 text-sm">Course Preview</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-6 py-12">
-          {/* Course Preview */}
-          <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-sm overflow-hidden">
-            <div className="relative h-64 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700">
-              <div className="absolute inset-0 bg-black/20"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
-              <div className="relative z-10 p-8 h-full flex flex-col justify-center">
-                <h2 className="text-4xl font-bold text-white mb-4">{course.title}</h2>
-                <p className="text-white/90 text-lg max-w-2xl">{course.description}</p>
-              </div>
-            </div>
-
-            <CardContent className="p-8">
-              {/* Enrollment Required Message */}
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <AlertTriangle className="h-10 w-10 text-amber-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-slate-800 mb-4">Enrollment Required</h3>
-                <p className="text-slate-600 text-lg mb-6 max-w-2xl mx-auto">
-                  To access this course content, modules, and interactive features, you need to enroll first. 
-                  Enrollment gives you full access to all materials and progress tracking.
-                </p>
-                
-                <Button 
-                  onClick={handleEnrollment}
-                  disabled={enrollmentLoading}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-12 py-4 text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                >
-                  {enrollmentLoading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                      Enrolling...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-5 w-5 mr-3" />
-                      Enroll in Course
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {/* Course Preview Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="text-center p-4 bg-slate-50 rounded-xl">
-                  <BookOpen className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                  <div className="font-semibold text-slate-800">{course.modules?.length || 0}</div>
-                  <div className="text-sm text-slate-600">Modules</div>
-                </div>
-                <div className="text-center p-4 bg-slate-50 rounded-xl">
-                  <Users className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                  <div className="font-semibold text-slate-800">{course.enrollmentCount || 0}</div>
-                  <div className="text-sm text-slate-600">Students</div>
-                </div>
-                <div className="text-center p-4 bg-slate-50 rounded-xl">
-                  <Clock className="h-8 w-8 text-amber-600 mx-auto mb-2" />
-                  <div className="font-semibold text-slate-800">{course.duration || '4-6 hours'}</div>
-                  <div className="text-sm text-slate-600">Duration</div>
-                </div>
-                <div className="text-center p-4 bg-slate-50 rounded-xl">
-                  <Star className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                  <div className="font-semibold text-slate-800">{course.learnerLevel || 'Beginner'}</div>
-                  <div className="text-sm text-slate-600">Level</div>
-                </div>
-              </div>
-
-              {/* Module Preview */}
-              {course.modules && course.modules.length > 0 && (
-                <div>
-                  <h4 className="text-xl font-bold text-slate-800 mb-4">Course Modules Preview</h4>
-                  <div className="space-y-3">
-                    {course.modules.slice(0, 3).map((module, index) => (
-                      <div key={module.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                        <div className="flex items-center gap-4">
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <h5 className="font-semibold text-slate-800">{module.title}</h5>
-                            <p className="text-sm text-slate-600 line-clamp-1">{module.content?.substring(0, 80)}...</p>
-                          </div>
-                        </div>
-                        <div className="text-slate-400">
-                          <Eye className="h-5 w-5" />
-                        </div>
-                      </div>
-                    ))}
-                    {course.modules.length > 3 && (
-                      <div className="text-center py-4 text-slate-500">
-                        ... and {course.modules.length - 3} more modules
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50">
       {/* Enhanced Mobile-First Header */}
@@ -612,8 +441,8 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between py-3 sm:py-4 lg:py-6">
             <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-              <Button
-                variant="ghost"
+              <Button 
+                variant="ghost" 
                 onClick={onBack}
                 className="group p-2 sm:p-3 hover:bg-slate-100 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 touch-manipulation min-h-[44px] min-w-[44px]"
               >
@@ -640,11 +469,11 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
                 </div>
               </div>
             </div>
-
+            
             {/* Mobile-Optimized Action Buttons */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {!isEnrolled && !enrollmentLoading && (
-                <Button
+              <Button
                   onClick={handleEnrollment}
                   className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm sm:text-base font-semibold touch-manipulation min-h-[44px]"
                 >
@@ -659,18 +488,18 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
                   <Loader2 className="h-4 w-4 mr-1 sm:mr-2 animate-spin" />
                   <span className="hidden sm:inline">Processing...</span>
                   <span className="sm:hidden">...</span>
-                </Button>
+              </Button>
               )}
-
+              
               {isEnrolled && (
-                <Button
+              <Button 
                   variant="outline"
-                  onClick={() => setShowTutor(!showTutor)}
+                onClick={() => setShowTutor(!showTutor)} 
                   className="border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 touch-manipulation min-h-[44px]"
                 >
                   <Brain className="h-4 w-4 sm:mr-2 text-purple-600" />
                   <span className="hidden sm:inline">AI Tutor</span>
-                </Button>
+              </Button>
               )}
             </div>
           </div>
@@ -816,7 +645,7 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
                       <input
                         type="file"
                         accept=".md,.txt,.pdf"
-                        onChange={handleFileUpload}
+                        onChange={handleContentUpload}
                         className="hidden"
                         disabled={uploadingContent}
                       />

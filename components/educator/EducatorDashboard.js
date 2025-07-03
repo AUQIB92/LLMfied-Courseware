@@ -82,6 +82,22 @@ export default function EducatorDashboard() {
     }
   }, [user?._id])
 
+  // Listen for user update events to refresh avatar
+  useEffect(() => {
+    const handleUserUpdate = (event) => {
+      console.log('User update event detected in EducatorDashboard:', event.detail)
+      // Update avatar key to force re-render of avatar components
+      setAvatarKey(Date.now())
+    }
+
+    // Listen for user update events
+    window.addEventListener('userUpdated', handleUserUpdate)
+
+    return () => {
+      window.removeEventListener('userUpdated', handleUserUpdate)
+    }
+  }, [])
+
   const fetchCourses = async () => {
     try {
       console.log("Fetching courses for educator:", user.id)

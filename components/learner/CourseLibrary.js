@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,8 +27,19 @@ import {
   GraduationCap,
   BarChart3,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  BookMarked,
+  Heart,
+  Share2,
+  Eye,
+  Calendar,
+  ArrowRight,
+  Lightbulb,
+  Globe,
+  Code,
+  Palette
 } from "lucide-react"
+import enrollmentCache from "@/lib/enrollmentCache"
 
 export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   const [searchTerm, setSearchTerm] = useState("")
@@ -37,15 +48,17 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   const [courses, setCourses] = useState([])
   const [enrollments, setEnrollments] = useState({})
   const [enrollmentLoading, setEnrollmentLoading] = useState({})
+  const [enrollmentAttempts, setEnrollmentAttempts] = useState(new Set()) // Track enrollment attempts
   const [instructors, setInstructors] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const { getAuthHeaders } = useAuth()
+  const [uiUpdateTrigger, setUiUpdateTrigger] = useState(0) // Force UI updates
+  const { getAuthHeaders, user } = useAuth()
 
   // Fetch all published courses and enrollment status on component mount
   useEffect(() => {
     fetchCourses()
-    fetchEnrollmentStatus()
+    initializeEnrollments()
   }, [])
 
   // Fetch instructor details when courses change
@@ -54,6 +67,65 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
       fetchInstructorDetails()
     }
   }, [courses])
+
+  // Subscribe to enrollment cache updates
+  useEffect(() => {
+    const unsubscribe = enrollmentCache.subscribe((event, data) => {
+      console.log(`📡 CourseLibrary received enrollment event:`, event, data)
+      
+      switch (event) {
+        case 'enrollment_updated':
+          console.log(`🔄 Updating enrollment state for course ${data.courseId}:`, data.isEnrolled ? 'ENROLLED' : 'NOT ENROLLED')
+          setEnrollments(prev => {
+            const newState = {
+              ...prev,
+              [data.courseId]: data.isEnrolled ? data.enrollment : null
+            }
+            console.log(`📋 New enrollment state:`, newState)
+            return newState
+          })
+          
+          // Force UI update to reflect enrollment changes
+          setUiUpdateTrigger(prev => prev + 1)
+          
+          // Notify parent component
+          if (onEnrollmentChange) {
+            onEnrollmentChange(data.courseId, data.isEnrolled)
+          }
+          break
+          
+        case 'enrollment_error':
+          console.error(`❌ Enrollment error for course ${data.courseId}:`, data.error)
+          
+          // Clear loading state for the failed course
+          setEnrollmentLoading(prev => ({
+            ...prev,
+            [data.courseId]: false
+          }))
+          
+          // Clear enrollment attempt tracking
+          setEnrollmentAttempts(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(data.courseId)
+            return newSet
+          })
+          
+          // Force UI re-render to update button states
+          setUiUpdateTrigger(prev => prev + 1)
+          
+          // The enrollment cache already shows the error notification,
+          // so we don't need to show another one here
+          break
+          
+        case 'enrollments_synced':
+          // Refresh enrollment data after bulk sync
+          initializeEnrollments()
+          break
+      }
+    })
+
+    return unsubscribe
+  }, [onEnrollmentChange])
 
   const fetchInstructorDetails = async () => {
     const instructorIds = [...new Set(courses.map(course => course.educatorId).filter(Boolean))]
@@ -161,59 +233,74 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
     }
   }
 
-  const fetchEnrollmentStatus = async () => {
-    console.log('🔍 Fetching enrollment status...')
+  const initializeEnrollments = async () => {
     try {
-      const response = await fetch('/api/enrollment', {
-        headers: getAuthHeaders(),
+      console.log('🚀 Initializing enrollments using cache system (force refresh from DB)')
+      
+      // Force refresh from database to ensure we have the latest enrollment data
+      const { enrollments: enrollmentMap } = await enrollmentCache.getAllEnrollments(true)
+      
+      // Convert Map to object for state
+      const enrollmentObj = {}
+      enrollmentMap.forEach((enrollment, courseId) => {
+        enrollmentObj[courseId] = enrollment
       })
       
-      console.log('📡 Enrollment API response status:', response.status)
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('📊 Enrollment API response data:', data)
-        
-        const enrollmentMap = {}
-        
-        // Handle different response formats
-        if (data && Array.isArray(data.enrollments)) {
-          console.log('📋 Processing enrollments array:', data.enrollments.length, 'items')
-          data.enrollments.forEach(enrollment => {
-            enrollmentMap[enrollment.courseId] = enrollment
-          })
-        } else if (data && Array.isArray(data.courses)) {
-          console.log('📚 Processing courses array:', data.courses.length, 'items')
-          // Handle case where courses are returned directly
-          data.courses.forEach(course => {
-            enrollmentMap[course._id || course.id] = { courseId: course._id || course.id }
-          })
-        } else if (Array.isArray(data)) {
-          console.log('📄 Processing direct array:', data.length, 'items')
-          // Handle case where enrollments are returned as array
-          data.forEach(enrollment => {
-            enrollmentMap[enrollment.courseId] = enrollment
-          })
-        }
-        
-        console.log('✅ Final enrollment map:', enrollmentMap)
-        console.log('📈 Number of enrollments:', Object.keys(enrollmentMap).length)
-        setEnrollments(enrollmentMap)
-      } else {
-        console.warn(`❌ Failed to fetch enrollment status. Status: ${response.status}`)
-        setEnrollments({})
-      }
+      console.log('✅ Enrollments initialized from database:', enrollmentObj)
+      setEnrollments(enrollmentObj)
     } catch (error) {
-      console.warn('🔥 Error fetching enrollment status:', error)
+      console.error('Failed to initialize enrollments:', error)
       setEnrollments({})
     }
   }
 
   const handleEnrollment = async (courseId) => {
     console.log('🎯 Starting enrollment for course:', courseId)
+    
+    // Prevent double-enrollment by checking current state first
+    if (isEnrolled(courseId)) {
+      console.log('🚨 Already enrolled in this course, no action needed')
+      
+      // Show notification that user is already enrolled
+      const notification = document.createElement('div')
+      notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          <span class="font-semibold">Already enrolled in this course!</span>
+        </div>
+      `
+      document.body.appendChild(notification)
+      
+      setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)'
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification)
+          }
+        }, 500)
+      }, 3000)
+      
+      return
+    }
+    
+    // Prevent multiple simultaneous enrollment attempts
+    if (isEnrollmentInProgress(courseId)) {
+      console.log('🔄 Enrollment already in progress for this course')
+      return
+    }
+    
+    // Mark enrollment attempt as started - this immediately prevents duplicate attempts
+    setEnrollmentAttempts(prev => new Set([...prev, courseId]))
     setEnrollmentLoading(prev => ({ ...prev, [courseId]: true }))
     
     try {
+      console.log('📡 Making enrollment API request...')
       const response = await fetch('/api/enrollment', {
         method: 'POST',
         headers: {
@@ -223,122 +310,154 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
         body: JSON.stringify({ courseId }),
       })
 
-      console.log('📡 Enrollment POST response status:', response.status)
+      const data = await response.json()
+      
+      if (response.status === 409) {
+        // Server detected duplicate enrollment
+        console.log('🚨 Server prevented duplicate enrollment')
+        
+        // Show "already enrolled" notification
+        const notification = document.createElement('div')
+        notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        notification.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <span class="font-semibold">Already enrolled in this course!</span>
+          </div>
+        `
+        document.body.appendChild(notification)
+        
+        setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+        setTimeout(() => {
+          notification.style.transform = 'translateX(100%)'
+          setTimeout(() => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification)
+            }
+          }, 500)
+        }, 3000)
+        
+        // Force refresh enrollment state from server
+        await enrollmentCache.getEnrollmentStatus(courseId, true)
+        setUiUpdateTrigger(prev => prev + 1)
+        
+        return
+      }
 
       if (response.ok) {
-        const data = await response.json()
         console.log('✅ Enrollment successful:', data)
         
-        // Update local enrollment state immediately
-        setEnrollments(prev => {
-          const newState = {
-            ...prev,
-            [courseId]: data.enrollment
-          }
-          console.log('🔄 Updated local enrollment state:', newState)
-          return newState
-        })
+        // Update local state immediately
+        setEnrollments(prev => ({
+          ...prev,
+          [courseId]: data.enrollment
+        }))
         
-        // Call parent's onEnrollmentChange for state sync
+        // Update cache
+        await enrollmentCache.updateEnrollment(courseId, true, data.enrollment)
+        
+        // Force UI update
+        setUiUpdateTrigger(prev => prev + 1)
+        
+        // Notify parent component of enrollment change
         if (onEnrollmentChange) {
-          console.log('📢 Notifying parent of enrollment change')
           onEnrollmentChange(courseId, true)
-        } else {
-          console.warn('⚠️ onEnrollmentChange callback not provided')
         }
         
-        // Find the enrolled course data
-        const enrolledCourse = courses.find(course => course._id === courseId)
-        
-        if (enrolledCourse && onCourseSelect) {
-          console.log('🚀 Navigating to enrolled course:', enrolledCourse.title)
-          // Show enrollment success notification
-          const successNotification = document.createElement('div')
-          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
-          successNotification.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
-              </div>
-              <span class="font-semibold">Successfully enrolled! Opening course...</span>
+        // Show success notification
+        const notification = document.createElement('div')
+        notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        notification.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+              </svg>
             </div>
-          `
-          document.body.appendChild(successNotification)
-          
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(0)'
-          }, 100)
-          
-          // Auto-dismiss notification
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(100%)'
-            setTimeout(() => {
-              if (document.body.contains(successNotification)) {
-                document.body.removeChild(successNotification)
-              }
-            }, 500)
-          }, 2500)
-          
-          // Navigate to course content after showing success message
-          setTimeout(() => {
-            // Get instructor info for the course
-            const instructorInfo = getInstructorInfo(enrolledCourse)
-            
-            // Pass the course with enrollment status and instructor info
-            onCourseSelect({
-              ...enrolledCourse,
-              instructorName: instructorInfo.name,
-              instructorAvatar: instructorInfo.avatar,
-              isEnrolled: true, // Explicitly set enrollment status
-              enrolledAt: new Date().toISOString()
-            })
-          }, 1000)
-        } else {
-          console.log('📝 Showing standalone success message')
-          // If no course selection handler, show success message
-          const successNotification = document.createElement('div')
-          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
-          successNotification.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
-              </div>
-              <span class="font-semibold">Successfully enrolled in course!</span>
-            </div>
-          `
-          document.body.appendChild(successNotification)
-          
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(0)'
-          }, 100)
-          
-          setTimeout(() => {
-            successNotification.style.transform = 'translateX(100%)'
-            setTimeout(() => {
-              if (document.body.contains(successNotification)) {
-                document.body.removeChild(successNotification)
-              }
-            }, 500)
-          }, 3000)
-        }
+            <span class="font-semibold">Successfully enrolled!</span>
+          </div>
+        `
+        document.body.appendChild(notification)
         
-        // Refresh courses to get updated enrollment count
-        console.log('🔄 Refreshing courses list')
-        fetchCourses()
+        setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+        setTimeout(() => {
+          notification.style.transform = 'translateX(100%)'
+          setTimeout(() => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification)
+            }
+          }, 500)
+        }, 2500)
+        
       } else {
-        const error = await response.json()
-        console.error('❌ Enrollment failed:', error)
-        alert(`Failed to enroll: ${error.error}`)
+        console.error('❌ Enrollment failed:', data)
+        
+        // Show error notification
+        const notification = document.createElement('div')
+        notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        notification.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <span class="font-semibold">Enrollment failed: ${data.error || 'Unknown error'}</span>
+          </div>
+        `
+        document.body.appendChild(notification)
+        
+        setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+        setTimeout(() => {
+          notification.style.transform = 'translateX(100%)'
+          setTimeout(() => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification)
+            }
+          }, 500)
+        }, 4000)
       }
+      
     } catch (error) {
       console.error('🔥 Enrollment error:', error)
-      alert('Failed to enroll in course')
+      
+      // Show network error notification
+      const notification = document.createElement('div')
+      notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          <span class="font-semibold">Network error. Please try again.</span>
+        </div>
+      `
+      document.body.appendChild(notification)
+      
+      setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)'
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification)
+          }
+        }, 500)
+             }, 4000)
+       
     } finally {
       setEnrollmentLoading(prev => ({ ...prev, [courseId]: false }))
+      // Clear enrollment attempt tracking
+      setEnrollmentAttempts(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(courseId)
+        return newSet
+      })
     }
   }
 
@@ -347,77 +466,48 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
       return
     }
 
-    console.log('🗑️ Starting unenrollment for course:', courseId)
+    console.log('🗑️ Starting unenrollment for course using cache system:', courseId)
     setEnrollmentLoading(prev => ({ ...prev, [courseId]: true }))
     
     try {
-      const response = await fetch('/api/enrollment', {
-        method: 'DELETE',
-        headers: {
-          ...getAuthHeaders(),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ courseId }),
-      })
-
-      console.log('📡 Unenrollment DELETE response status:', response.status)
-
-      if (response.ok) {
-        const data = await response.json()
-        console.log('✅ Unenrollment successful:', data)
-        
-        // Update local enrollment state immediately
-        setEnrollments(prev => {
-          const newEnrollments = { ...prev }
-          delete newEnrollments[courseId]
-          console.log('🔄 Updated local enrollment state after unenrollment:', newEnrollments)
-          return newEnrollments
-        })
-        
-        // Call parent's onEnrollmentChange for state sync
-        if (onEnrollmentChange) {
-          console.log('📢 Notifying parent of unenrollment change')
-          onEnrollmentChange(courseId, false)
-        } else {
-          console.warn('⚠️ onEnrollmentChange callback not provided')
-        }
-        
-        // Show unenrollment notification
-        const warningNotification = document.createElement('div')
-        warningNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
-        warningNotification.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-              </svg>
-            </div>
-            <span class="font-semibold">Successfully unenrolled from course</span>
+      // Use enrollment cache for optimistic updates
+      await enrollmentCache.updateEnrollment(courseId, false)
+      
+      // The cache will handle the server sync and notify subscribers
+      // UI will update automatically via the subscription
+      
+      // Show unenrollment notification
+      const warningNotification = document.createElement('div')
+      warningNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+      warningNotification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
           </div>
-        `
-        document.body.appendChild(warningNotification)
-        
+          <span class="font-semibold">Successfully unenrolled from course</span>
+        </div>
+      `
+      document.body.appendChild(warningNotification)
+      
+      setTimeout(() => {
+        warningNotification.style.transform = 'translateX(0)'
+      }, 100)
+      
+      setTimeout(() => {
+        warningNotification.style.transform = 'translateX(100%)'
         setTimeout(() => {
-          warningNotification.style.transform = 'translateX(0)'
-        }, 100)
-        
-        setTimeout(() => {
-          warningNotification.style.transform = 'translateX(100%)'
-          setTimeout(() => {
-            if (document.body.contains(warningNotification)) {
-              document.body.removeChild(warningNotification)
-            }
-          }, 500)
-        }, 3000)
-        
-        // Refresh courses to get updated enrollment count
-        console.log('🔄 Refreshing courses list')
-        fetchCourses()
-      } else {
-        const error = await response.json()
-        console.error('❌ Unenrollment failed:', error)
-        alert(`Failed to unenroll: ${error.error}`)
-      }
+          if (document.body.contains(warningNotification)) {
+            document.body.removeChild(warningNotification)
+          }
+        }, 500)
+      }, 3000)
+      
+      // Refresh courses to get updated enrollment count
+      console.log('🔄 Refreshing courses list after unenrollment')
+      fetchCourses()
+      
     } catch (error) {
       console.error('🔥 Unenrollment error:', error)
       alert('Failed to unenroll from course')
@@ -428,14 +518,15 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
 
   const isEnrolled = (courseId) => {
     const enrolled = !!enrollments[courseId]
-    if (courseId === Object.keys(enrollments)[0]) { // Only log for the first course to avoid spam
-      console.log(`🔍 Checking enrollment for course ${courseId}:`, enrolled, 'Enrollments:', enrollments)
-    }
     return enrolled
   }
 
   const isLoading = (courseId) => {
     return !!enrollmentLoading[courseId]
+  }
+
+  const isEnrollmentInProgress = (courseId) => {
+    return enrollmentAttempts.has(courseId) || isLoading(courseId)
   }
 
   // Enhanced filtering
@@ -500,203 +591,62 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50">
-      {/* Mobile-First Header */}
-      <div className="bg-white/90 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40 shadow-lg">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Course Library
-                </h1>
-                <p className="text-slate-600 mt-1 text-sm sm:text-base">Discover amazing courses to advance your skills</p>
-              </div>
-              
-              {/* Mobile-Optimized Stats */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
-                <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-xl border border-blue-200">
-                  <BookOpen className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-700">{courses.length} courses</span>
-                </div>
-                <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-xl border border-green-200">
-                  <Users className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-700">{Object.keys(enrollments).length} enrolled</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile-First Search and Filters */}
-            <div className="space-y-3 sm:space-y-4">
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search courses..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-3 w-full rounded-xl border-2 border-slate-200 focus:border-blue-300 focus:ring-blue-100 text-base touch-manipulation min-h-[44px]"
-                />
-              </div>
-
-              {/* Mobile-Optimized Filter Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                {/* Category Filter */}
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-3 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-300 focus:ring-blue-100 text-base touch-manipulation min-h-[44px] bg-white"
-                  >
-                    <option value="all">All Categories</option>
-                    <option value="programming">Programming</option>
-                    <option value="design">Design</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="business">Business</option>
-                    <option value="data-science">Data Science</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                {/* Level Filter */}
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Level</label>
-                  <select
-                    value={selectedLevel}
-                    onChange={(e) => setSelectedLevel(e.target.value)}
-                    className="w-full px-3 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-300 focus:ring-blue-100 text-base touch-manipulation min-h-[44px] bg-white"
-                  >
-                    <option value="all">All Levels</option>
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                  </select>
-                </div>
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Simple Search and Filters */}
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative max-w-xl">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+            <Input
+              placeholder="Search courses..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 h-12 rounded-xl border-2 border-slate-200 focus:border-blue-500 bg-white"
+            />
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Beautiful Header */}
-        <div className="text-center space-y-6 mb-8">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-emerald-600/20 blur-3xl"></div>
-            <div className="relative">
-              <h2 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent mb-4 animate-fade-in-up">
-                Course Library
-              </h2>
-              <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed animate-fade-in-up stagger-1">
-                Discover world-class courses designed to accelerate your learning journey and unlock your potential
-              </p>
-            </div>
-          </div>
-          
-          {/* Stats Bar */}
-          <div className="flex justify-center animate-fade-in-up stagger-2">
-            <div className="inline-flex items-center gap-8 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl px-8 py-4 shadow-xl">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-slate-800">{courses.length}</div>
-                <div className="text-sm text-slate-600">Published Courses</div>
-              </div>
-              <div className="w-px h-8 bg-slate-200"></div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-slate-800">
-                  {courses.reduce((acc, course) => acc + (course.enrollmentCount || 0), 0)}
-                </div>
-                <div className="text-sm text-slate-600">Total Enrollments</div>
-              </div>
-              <div className="w-px h-8 bg-slate-200"></div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-slate-800">
-                  {Object.keys(enrollments).length}
-                </div>
-                <div className="text-sm text-slate-600">Your Enrollments</div>
-              </div>
-              <div className="w-px h-8 bg-slate-200"></div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-slate-800">
-                  {courses.length > 0 ? 
-                    (courses.reduce((acc, course) => acc + (course.rating || 0), 0) / courses.length).toFixed(1) : 
-                    '0.0'
-                  }
-                </div>
-                <div className="text-sm text-slate-600">Avg Rating</div>
-              </div>
-            </div>
+          {/* Simple Filters */}
+          <div className="flex flex-wrap gap-3">
+            {/* Category Filters */}
+            {categories.map((category) => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                onClick={() => setSelectedCategory(category)}
+                size="sm"
+                className={`capitalize ${
+                  selectedCategory === category 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {category}
+              </Button>
+            ))}
+            
+            <div className="w-px h-6 bg-slate-300 self-center"></div>
+            
+            {/* Level Filters */}
+            {levels.map((level) => (
+              <Button
+                key={level}
+                variant={selectedLevel === level ? "default" : "outline"}
+                onClick={() => setSelectedLevel(level)}
+                size="sm"
+                className={`capitalize ${
+                  selectedLevel === level 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {level}
+              </Button>
+            ))}
           </div>
         </div>
 
-        {/* Enhanced Search and Filters */}
-        <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-xl overflow-hidden animate-fade-in-up stagger-3">
-          <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-emerald-50 p-8">
-            <div className="space-y-6">
-              {/* Search Bar */}
-              <div className="relative max-w-2xl mx-auto">
-                <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                  <Search className="h-6 w-6 text-slate-400" />
-                </div>
-                <Input
-                  placeholder="Search for courses, topics, or instructors..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-16 pr-6 h-16 text-lg rounded-2xl border-2 border-slate-200 focus:border-blue-500 bg-white/80 backdrop-blur-sm shadow-lg transition-all duration-300 focus:shadow-xl"
-                />
-                <div className="absolute inset-y-0 right-0 pr-6 flex items-center">
-                  <kbd className="hidden sm:inline-flex items-center px-3 py-1 border border-slate-200 rounded-lg text-sm text-slate-500 bg-slate-50">
-                    ⌘K
-                  </kbd>
-                </div>
-              </div>
-
-              {/* Filter Buttons */}
-              <div className="flex flex-wrap justify-center gap-3">
-                {/* Category Filters */}
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((category) => (
-                    <Button
-                      key={category}
-                      variant={selectedCategory === category ? "default" : "outline"}
-                      onClick={() => setSelectedCategory(category)}
-                      className={`capitalize px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
-                        selectedCategory === category 
-                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
-                          : 'hover:bg-blue-50 border-blue-200 text-slate-700 hover:border-blue-300'
-                      }`}
-                    >
-                      <Filter className="h-4 w-4 mr-2" />
-                      {category}
-                    </Button>
-                  ))}
-                </div>
-
-                <div className="w-px h-8 bg-slate-300"></div>
-
-                {/* Level Filters */}
-                <div className="flex flex-wrap gap-2">
-                  {levels.map((level) => (
-                    <Button
-                      key={level}
-                      variant={selectedLevel === level ? "default" : "outline"}
-                      onClick={() => setSelectedLevel(level)}
-                      className={`capitalize px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
-                        selectedLevel === level 
-                          ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
-                          : 'hover:bg-emerald-50 border-emerald-200 text-slate-700 hover:border-emerald-300'
-                      }`}
-                    >
-                      {level}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Beautiful Course Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 animate-fade-in-up stagger-4">
+        {/* Course Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {coursesArray.map((course, index) => {
             const courseData = getDefaultData(course)
             const LevelIcon = getLevelIcon(course.level)
@@ -704,9 +654,8 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
             
             return (
               <Card 
-                key={course._id} 
-                className="group border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/95 backdrop-blur-sm overflow-hidden cursor-pointer transform hover:scale-[1.02]"
-                onClick={() => onCourseSelect({...course, ...courseData})}
+                key={`${course._id}-${uiUpdateTrigger}-${isEnrolled(course._id)}`} 
+                className="group border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/95 backdrop-blur-sm overflow-hidden transform hover:scale-[1.02]"
               >
                 {/* Course Header with Gradient */}
                 <div className="relative h-56 bg-gradient-to-br from-blue-500 via-purple-600 to-emerald-500 overflow-hidden">
@@ -840,7 +789,16 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                             className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                             onClick={(e) => {
                               e.stopPropagation()
-                              onCourseSelect({...course, ...courseData})
+                              console.log('📖 Opening enrolled course from Continue Learning button:', course.title)
+                              const instructorInfo = getInstructorInfo(course)
+                              onCourseSelect({
+                                ...course, 
+                                ...courseData,
+                                instructorName: instructorInfo.name,
+                                instructorAvatar: instructorInfo.avatar,
+                                isEnrolled: true,
+                                enrolledAt: enrollments[course._id]?.enrolledAt || new Date().toISOString()
+                              })
                             }}
                           >
                             <Play className="h-4 w-4 mr-2" />
@@ -854,9 +812,9 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                               e.stopPropagation()
                               handleUnenrollment(course._id)
                             }}
-                            disabled={isLoading(course._id)}
+                            disabled={isEnrollmentInProgress(course._id)}
                           >
-                            {isLoading(course._id) ? (
+                            {isEnrollmentInProgress(course._id) ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               'Unenroll'
@@ -870,9 +828,9 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                             e.stopPropagation()
                             handleEnrollment(course._id)
                           }}
-                          disabled={isLoading(course._id)}
+                          disabled={isEnrollmentInProgress(course._id)}
                         >
-                          {isLoading(course._id) ? (
+                          {isEnrollmentInProgress(course._id) ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               Enrolling...

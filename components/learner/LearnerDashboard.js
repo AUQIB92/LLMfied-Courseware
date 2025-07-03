@@ -1,10 +1,11 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
+import enrollmentCache from "@/lib/enrollmentCache"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -62,6 +63,7 @@ export default function LearnerDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [enrolledCourses, setEnrolledCourses] = useState([])
+  const [enrollmentDataLoaded, setEnrollmentDataLoaded] = useState(false) // Track if enrollment data is loaded
   const [showProfileSettings, setShowProfileSettings] = useState(false)
   const [showPreferences, setShowPreferences] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -101,14 +103,43 @@ export default function LearnerDashboard() {
       setEnrollmentUpdated(prev => prev + 1)
     }
 
+    const handleUserUpdate = (event) => {
+      console.log('User update event detected:', event.detail)
+      // Update avatar key to force re-render of avatar components
+      setAvatarKey(Date.now())
+    }
+
     // Listen for custom enrollment events
     window.addEventListener('courseEnrolled', handleEnrollmentEvent)
     window.addEventListener('courseUnenrolled', handleEnrollmentEvent)
+    // Listen for user update events
+    window.addEventListener('userUpdated', handleUserUpdate)
 
     return () => {
       window.removeEventListener('courseEnrolled', handleEnrollmentEvent)
       window.removeEventListener('courseUnenrolled', handleEnrollmentEvent)
+      window.removeEventListener('userUpdated', handleUserUpdate)
     }
+  }, [])
+
+  // Subscribe to enrollment cache updates
+  useEffect(() => {
+    const unsubscribe = enrollmentCache.subscribe((event, data) => {
+      console.log(`📡 LearnerDashboard received enrollment event:`, event, data)
+      
+      switch (event) {
+        case 'enrollment_updated':
+          // Refresh enrolled courses when enrollment changes
+          fetchEnrolledCourses()
+          break
+        case 'enrollments_synced':
+          // Refresh when bulk sync completes
+          fetchEnrolledCourses()
+          break
+      }
+    })
+
+    return unsubscribe
   }, [])
 
   // Scroll event listener for header visibility
@@ -150,37 +181,87 @@ export default function LearnerDashboard() {
 
   const fetchEnrolledCourses = async () => {
     try {
-      console.log("Fetching enrolled courses...")
-      const response = await fetch("/api/enrollment", {
+      console.log("🚀 Fetching enrolled courses using API...")
+      setEnrollmentDataLoaded(false) // Mark as loading
+      
+      // Fetch enrolled courses directly from API
+      const response = await fetch('/api/enrollment', {
         headers: getAuthHeaders(),
       })
       
-      console.log("Response status:", response.status)
-      console.log("Response ok:", response.ok)
-      
-      const data = await response.json()
-      console.log("API Response:", data)
-      
-      if (!response.ok || data.error) {
-        console.error("API error:", data.error || "Unknown error")
+      if (response.ok) {
+        const data = await response.json()
+        console.log("📡 API Response:", data)
+        
+        // Handle different response formats
+        let coursesArray = []
+        
+        if (data && Array.isArray(data.courses)) {
+          // API returns courses directly
+          coursesArray = data.courses || []
+        } else if (data && Array.isArray(data.enrollments)) {
+          // API returns enrollments, need to fetch course details
+          const courseIds = data.enrollments.map(e => e.courseId).filter(Boolean)
+          
+          if (courseIds.length > 0) {
+            // Fetch course details for each enrolled course
+            const coursePromises = courseIds.map(async (courseId) => {
+              try {
+                const courseResponse = await fetch(`/api/courses/${courseId}`, {
+                  headers: getAuthHeaders(),
+                })
+                if (courseResponse.ok) {
+                  const courseData = await courseResponse.json()
+                  // Find corresponding enrollment data
+                  const enrollment = data.enrollments.find(e => e.courseId === courseId)
+                  return {
+                    ...courseData,
+                    enrolledAt: enrollment?.enrolledAt || new Date().toISOString(),
+                    progress: enrollment?.progress || 0,
+                    isEnrolled: true // Explicitly mark as enrolled
+                  }
+                }
+                return null
+              } catch (error) {
+                console.error(`Failed to fetch course ${courseId}:`, error)
+                return null
+              }
+            })
+            
+            const courseResults = await Promise.all(coursePromises)
+            coursesArray = courseResults.filter(Boolean) // Remove null results
+          }
+        }
+        
+        // Ensure all courses in enrolled list are marked as enrolled
+        coursesArray = coursesArray.map(course => ({
+          ...course,
+          isEnrolled: true,
+          enrollmentVerified: true // Add verification flag
+        }))
+        
+        console.log("✅ Setting enrolled courses:", coursesArray?.length || 0, "courses")
+        setEnrolledCourses(coursesArray || [])
+        
+        // Update stats based on enrolled courses
+        setStats(prev => ({
+          ...prev,
+          coursesEnrolled: coursesArray?.length || 0,
+          coursesCompleted: coursesArray?.filter(c => c.completionRate === 100).length || 0
+        }))
+        
+      } else {
+        console.error("Failed to fetch enrollments:", await response.text())
         setEnrolledCourses([])
-        return
       }
       
-      // Get enrolled courses from the API response
-      const coursesArray = Array.isArray(data.courses) ? data.courses : []
-      console.log("Setting enrolled courses:", coursesArray.length, "courses")
-      setEnrolledCourses(coursesArray)
-      
-      // Update stats based on enrolled courses
-      setStats(prev => ({
-        ...prev,
-        coursesEnrolled: coursesArray.length,
-        coursesCompleted: coursesArray.filter(c => c.completionRate === 100).length
-      }))
     } catch (error) {
       console.error("Failed to fetch enrolled courses:", error)
       setEnrolledCourses([])
+    } finally {
+      // Always mark as loaded, even if there are no courses
+      setEnrollmentDataLoaded(true)
+      console.log("📊 Enrollment data loading completed")
     }
   }
 
@@ -196,7 +277,7 @@ export default function LearnerDashboard() {
       } else {
         console.error("Failed to fetch stats:", await response.text())
         // Fallback to default stats if API fails
-        setStats({
+    setStats({
           coursesEnrolled: 0,
           coursesCompleted: 0,
           totalTimeSpent: 0,
@@ -246,7 +327,7 @@ export default function LearnerDashboard() {
   }
 
   const handleEnrollmentChange = async (courseId, isEnrolled) => {
-    console.log('Enrollment change detected:', { courseId, isEnrolled })
+    console.log('🔄 Enrollment change detected:', { courseId, isEnrolled })
     
     if (isEnrolled) {
       // Add the course to enrolled courses immediately
@@ -258,14 +339,24 @@ export default function LearnerDashboard() {
         if (courseResponse.ok) {
           const courseData = await courseResponse.json()
           
-          // Add to enrolled courses immediately
+          // Add to enrolled courses immediately with full verification flags
           setEnrolledCourses(prev => {
+            const prevCourses = Array.isArray(prev) ? prev : []
             // Check if already enrolled to avoid duplicates
-            const isAlreadyEnrolled = prev.some(course => course._id === courseId)
+            const isAlreadyEnrolled = prevCourses.some(course => course._id === courseId)
             if (!isAlreadyEnrolled) {
-              return [...prev, { ...courseData, enrolledAt: new Date().toISOString() }]
+              const newCourse = {
+                ...courseData,
+                enrolledAt: new Date().toISOString(),
+                isEnrolled: true,
+                enrollmentVerified: true,
+                progress: 0
+              }
+              console.log('✅ Adding newly enrolled course to list:', newCourse.title)
+              return [...prevCourses, newCourse]
             }
-            return prev
+            console.log('⚠️ Course already in enrolled list:', courseData.title)
+            return prevCourses
           })
           
           // Update stats immediately
@@ -274,10 +365,10 @@ export default function LearnerDashboard() {
             coursesEnrolled: prev.coursesEnrolled + 1
           }))
           
-          console.log('Successfully updated enrolled courses and stats')
+          console.log('✅ Successfully updated enrolled courses and stats')
         }
       } catch (error) {
-        console.error('Error getting course data for immediate update:', error)
+        console.error('❌ Error getting course data for immediate update:', error)
       }
       
       // Trigger enrollment update counter for additional refresh
@@ -285,7 +376,11 @@ export default function LearnerDashboard() {
       
     } else {
       // Handle unenrollment - immediate access revocation
-      setEnrolledCourses(prev => prev.filter(course => course._id !== courseId))
+      console.log('🗑️ Removing course from enrolled list:', courseId)
+      setEnrolledCourses(prev => {
+        const prevCourses = Array.isArray(prev) ? prev : []
+        return prevCourses.filter(course => course._id !== courseId)
+      })
       setStats(prev => ({
         ...prev,
         coursesEnrolled: Math.max(0, prev.coursesEnrolled - 1)
@@ -293,8 +388,9 @@ export default function LearnerDashboard() {
       
       // If user is currently viewing the unenrolled course, kick them out
       if (selectedCourse && selectedCourse._id === courseId) {
+        console.log('🚪 Kicking user out of unenrolled course')
         setSelectedCourse(null)
-        setActiveTab('overview') // Go back to dashboard overview
+        setActiveTab('overview')
         
         // Show immediate access revocation warning
         const warningNotification = document.createElement('div')
@@ -332,23 +428,34 @@ export default function LearnerDashboard() {
 
   const renderContent = () => {
     if (selectedCourse) {
-      // Enhanced enrollment check - also check if the course object itself has enrollment status
-      const isEnrolledInList = enrolledCourses.some(enrolledCourse => 
+      // Enhanced enrollment check with multiple verification layers
+      const isEnrolledInList = Array.isArray(enrolledCourses) && enrolledCourses.some(enrolledCourse => 
         enrolledCourse._id === selectedCourse._id || enrolledCourse.id === selectedCourse.id
       )
       
-      // Also check if the course was passed with immediate enrollment status
+      // Check if the course was passed with explicit enrollment verification
+      const hasEnrollmentVerification = selectedCourse.enrollmentVerified === true || selectedCourse.accessGranted === true
+      
+      // Check if the course was passed with immediate enrollment status
       const hasImmediateEnrollment = selectedCourse.isEnrolled === true
       
-      // Final enrollment status - enrolled if in list OR has immediate enrollment
-      const finalEnrollmentStatus = isEnrolledInList || hasImmediateEnrollment
+      // Final enrollment status - enrolled if ANY of the checks pass
+      const finalEnrollmentStatus = isEnrolledInList || hasEnrollmentVerification || hasImmediateEnrollment
       
-      console.log('Course selection debug:', {
+      console.log('🔍 Course selection debug:', {
         courseId: selectedCourse._id,
+        courseTitle: selectedCourse.title,
         isEnrolledInList,
+        hasEnrollmentVerification,
         hasImmediateEnrollment,
         finalEnrollmentStatus,
-        enrolledCoursesCount: enrolledCourses.length
+        enrolledCoursesCount: Array.isArray(enrolledCourses) ? enrolledCourses.length : 0,
+        enrollmentDataLoaded,
+        courseFlags: {
+          isEnrolled: selectedCourse.isEnrolled,
+          enrollmentVerified: selectedCourse.enrollmentVerified,
+          accessGranted: selectedCourse.accessGranted
+        }
       })
       
       return (
@@ -476,28 +583,59 @@ export default function LearnerDashboard() {
               </Card>
             </div>
 
-            {/* Continue Learning Section */}
+            {/* My Enrolled Courses Section */}
             <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
               <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-t-2xl px-4 sm:px-6 py-4 sm:py-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex-1">
                     <CardTitle className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-3">
                       <div className="p-2 bg-blue-500/10 rounded-xl">
-                        <Play className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                        <BookMarked className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                       </div>
-                      Continue Learning
+                      My Enrolled Courses
                     </CardTitle>
-                    <CardDescription className="text-slate-600 mt-2 text-sm sm:text-base">Pick up where you left off and keep building momentum</CardDescription>
+                    <CardDescription className="text-slate-600 mt-2 text-sm sm:text-base">
+                      {Array.isArray(enrolledCourses) && enrolledCourses.length > 0 
+                        ? `You're enrolled in ${enrolledCourses.length} course${enrolledCourses.length > 1 ? 's' : ''} - continue your learning journey`
+                        : "Start your learning journey by exploring our course library"
+                      }
+                    </CardDescription>
                   </div>
-                  <Button variant="outline" className="hover:bg-blue-50 border-blue-200 w-full sm:w-auto touch-manipulation min-h-[44px]">
-                    View All
+                  <Button 
+                    variant="outline" 
+                    className="hover:bg-blue-50 border-blue-200 w-full sm:w-auto touch-manipulation min-h-[44px]"
+                    onClick={() => setActiveTab("library")}
+                  >
+                    Browse More Courses
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="p-4 sm:p-8">
                 <div className="space-y-4 sm:space-y-6">
-                  {Array.isArray(enrolledCourses) && enrolledCourses.slice(0, 3).map((course, index) => {
+                  {!enrollmentDataLoaded ? (
+                    // Loading state for enrolled courses
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((index) => (
+                        <div key={index} className="animate-pulse p-6 border border-slate-200 rounded-2xl bg-gradient-to-r from-white to-slate-50/50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4 flex-1">
+                              <div className="p-3 bg-slate-200 rounded-2xl">
+                                <div className="h-6 w-6 bg-slate-300 rounded"></div>
+                              </div>
+                              <div className="flex-1 space-y-2">
+                                <div className="h-6 bg-slate-200 rounded w-3/4"></div>
+                                <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                                <div className="h-3 bg-slate-200 rounded w-full"></div>
+                              </div>
+                            </div>
+                            <div className="h-12 w-24 bg-slate-200 rounded-2xl"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : Array.isArray(enrolledCourses) && enrolledCourses.length > 0 ? (
+                    enrolledCourses.map((course, index) => {
                     const progress = Math.random() * 100
                     const timeLeft = Math.floor(Math.random() * 120) + 30
                     
@@ -544,18 +682,45 @@ export default function LearnerDashboard() {
                           </div>
                           
                           <Button 
-                            onClick={() => setSelectedCourse(course)}
-                            className="ml-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105"
+                            onClick={() => {
+                              console.log("🎯 Continue Learning clicked for enrolled course:", course.title)
+                              console.log("📊 Course enrollment status:", {
+                                isEnrolled: course.isEnrolled,
+                                enrollmentVerified: course.enrollmentVerified,
+                                enrolledAt: course.enrolledAt
+                              })
+                              console.log("🔒 IMPORTANT: This is a CONTINUE LEARNING action - user is already enrolled!")
+                              
+                              // Pass course with explicit enrollment confirmation
+                              setSelectedCourse({
+                                ...course,
+                                isEnrolled: true,
+                                enrollmentVerified: true,
+                                accessGranted: true, // Explicit access flag
+                                fromContinueLearning: true // Flag to indicate this came from Continue Learning
+                              })
+                            }}
+                            disabled={!enrollmentDataLoaded}
+                            className="ml-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                           >
-                            Continue
-                            <Play className="h-4 w-4 ml-2" />
+                            {!enrollmentDataLoaded ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                Loading...
+                              </>
+                            ) : (
+                              <>
+                                Continue
+                                <Play className="h-4 w-4 ml-2" />
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
                     )
-                  })}
-                  
-                  {(!Array.isArray(enrolledCourses) || enrolledCourses.length === 0) && (
+                  })
+                  ) : (
+                    // Empty state when no enrolled courses and data is loaded
                     <div className="text-center py-12">
                       <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <BookOpen className="h-12 w-12 text-blue-500" />
@@ -614,10 +779,12 @@ export default function LearnerDashboard() {
         return (
           <CourseLibrary 
             onCourseSelect={(course) => {
+              console.log("🎯 Course selected from library:", course.title)
               setSelectedCourse(course)
               setHideHeader(true)
-            }}
+            }} 
             enrolledCourses={enrolledCourses}
+            enrollmentDataLoaded={enrollmentDataLoaded}
             onEnrollmentChange={handleEnrollmentChange}
           />
         )
@@ -714,18 +881,18 @@ export default function LearnerDashboard() {
       // Only initialize once when user data is first available
       if (user && !profileInitialized.current && !hasUnsavedChanges) {
         profileInitialized.current = true
-        setProfileForm({
-          name: user?.name || '',
-          email: user?.email || '',
-          bio: user?.bio || '',
-          avatar: user?.avatar || '',
-          phone: user?.phone || '',
-          location: user?.location || '',
-          website: user?.website || '',
-          learningGoals: user?.learningGoals || '',
-          interests: user?.interests || []
-        })
-      }
+          setProfileForm({
+            name: user?.name || '',
+            email: user?.email || '',
+            bio: user?.bio || '',
+            avatar: user?.avatar || '',
+            phone: user?.phone || '',
+            location: user?.location || '',
+            website: user?.website || '',
+            learningGoals: user?.learningGoals || '',
+            interests: user?.interests || []
+          })
+        }
     }, [user?._id, hasUnsavedChanges])
     
     // Reset profileInitialized when user changes (login/logout)
