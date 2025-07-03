@@ -606,71 +606,72 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Button 
-                variant="ghost" 
-                onClick={onBack}
-                className="group flex items-center gap-3 hover:bg-blue-50 text-blue-600 px-4 py-2 rounded-xl font-medium transition-all duration-300"
-              >
-                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform duration-300" />
-                Back
-              </Button>
-              <div className="h-6 w-px bg-slate-200"></div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {course.title}
-                </h1>
-                <p className="text-slate-600 text-sm">
-                  {selectedModule 
-                    ? `Module ${course.modules?.findIndex(m => m.id === selectedModule.id) + 1} of ${course.modules?.length}` 
-                    : `${course.modules?.length || 0} modules available`
-                  }
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Module Navigation Toggle */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50">
+      {/* Enhanced Mobile-First Header */}
+      <div className="bg-white/90 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40 shadow-lg">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between py-3 sm:py-4 lg:py-6">
+            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
               <Button
-                variant="outline"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg ${
-                  sidebarCollapsed 
-                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-700 hover:from-blue-100 hover:to-indigo-100 hover:border-blue-400' 
-                    : 'bg-gradient-to-r from-slate-50 to-gray-50 border-slate-300 text-slate-700 hover:from-slate-100 hover:to-gray-100 hover:border-slate-400'
-                }`}
-                title={sidebarCollapsed ? "Show module navigation panel" : "Hide module navigation panel"}
+                variant="ghost"
+                onClick={onBack}
+                className="group p-2 sm:p-3 hover:bg-slate-100 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 touch-manipulation min-h-[44px] min-w-[44px]"
               >
-                {sidebarCollapsed ? (
-                  <>
-                    <Eye className="h-4 w-4" />
-                    Show Modules
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="h-4 w-4" />
-                    Hide Modules
-                  </>
-                )}
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 group-hover:text-slate-800 transition-colors duration-300" />
+                <span className="sr-only">Back to dashboard</span>
               </Button>
               
-              {/* AI Tutor Toggle */}
-              <Button 
-                onClick={() => setShowTutor(!showTutor)} 
-                className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 ${
-                  showTutor 
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg' 
-                    : 'bg-white border-2 border-purple-200 text-purple-600 hover:bg-purple-50'
-                }`}
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                AI Tutor
-              </Button>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 truncate">
+                  {course.title}
+                </h1>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs sm:text-sm text-slate-600 font-medium">
+                      {course.modules?.length || 0} modules
+                    </span>
+                  </div>
+                  {progress.overallProgress > 0 && (
+                    <Badge className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border-blue-200 text-xs self-start">
+                      {Math.round(progress.overallProgress)}% complete
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile-Optimized Action Buttons */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {!isEnrolled && !enrollmentLoading && (
+                <Button
+                  onClick={handleEnrollment}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm sm:text-base font-semibold touch-manipulation min-h-[44px]"
+                >
+                  <UserPlus className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Enroll Now</span>
+                  <span className="sm:hidden">Enroll</span>
+                </Button>
+              )}
+              
+              {enrollmentLoading && (
+                <Button disabled className="bg-gray-400 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl min-h-[44px]">
+                  <Loader2 className="h-4 w-4 mr-1 sm:mr-2 animate-spin" />
+                  <span className="hidden sm:inline">Processing...</span>
+                  <span className="sm:hidden">...</span>
+                </Button>
+              )}
+
+              {isEnrolled && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowTutor(!showTutor)}
+                  className="border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 touch-manipulation min-h-[44px]"
+                >
+                  <Brain className="h-4 w-4 sm:mr-2 text-purple-600" />
+                  <span className="hidden sm:inline">AI Tutor</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>

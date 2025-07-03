@@ -372,30 +372,30 @@ export default function LearnerDashboard() {
         return (
           <div className="space-y-8">
             {/* Welcome Section */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 text-white">
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-8 text-white">
               <div className="absolute inset-0 bg-black/20"></div>
-              <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-48 translate-x-48"></div>
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl translate-y-32 -translate-x-32"></div>
+              <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-white/10 rounded-full blur-3xl -translate-y-32 sm:-translate-y-48 translate-x-32 sm:translate-x-48"></div>
+              <div className="absolute bottom-0 left-0 w-48 sm:w-64 h-48 sm:h-64 bg-white/10 rounded-full blur-3xl translate-y-24 sm:translate-y-32 -translate-x-24 sm:-translate-x-32"></div>
               
               <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
-                    <Sparkles className="h-8 w-8 text-white" />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <div className="p-2 sm:p-3 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-sm">
+                    <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <div>
-                    <h2 className="text-3xl font-bold">Welcome back, {user?.name}!</h2>
-                    <p className="text-white/80 text-lg">Ready to continue your learning journey?</p>
+                  <div className="flex-1">
+                    <h2 className="text-xl sm:text-3xl font-bold leading-tight">Welcome back, {user?.name}!</h2>
+                    <p className="text-white/80 text-sm sm:text-lg mt-1">Ready to continue your learning journey?</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-6 mt-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 mt-4 sm:mt-6">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-white/90 font-medium">{stats.streak} day streak</span>
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-white/90 font-medium text-sm sm:text-base">{stats.streak} day streak</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-300" />
-                    <span className="text-white/90 font-medium">{stats.certificates} certificates earned</span>
+                    <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300" />
+                    <span className="text-white/90 font-medium text-sm sm:text-base">{stats.certificates} certificates earned</span>
                   </div>
                 </div>
               </div>
@@ -403,69 +403,69 @@ export default function LearnerDashboard() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-indigo-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-indigo-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 touch-manipulation">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 relative z-10">
-                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700">Courses Enrolled</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 relative z-10 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Courses<br className="sm:hidden" /> Enrolled</CardTitle>
                   <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg sm:rounded-xl group-hover:bg-blue-500/20 transition-colors duration-300">
                     <BookOpen className="h-3 w-3 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10 pt-0 sm:pt-6">
+                <CardContent className="relative z-10 pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{stats.coursesEnrolled}</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
                     <span className="hidden sm:inline">+2 this month</span>
-                    <span className="sm:hidden">+2</span>
+                    <span className="sm:hidden">+2 month</span>
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-emerald-50 to-green-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-emerald-50 to-green-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 touch-manipulation">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 relative z-10">
-                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700">Completed</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 relative z-10 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Completed</CardTitle>
                   <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg sm:rounded-xl group-hover:bg-emerald-500/20 transition-colors duration-300">
                     <Trophy className="h-3 w-3 sm:h-5 sm:w-5 text-emerald-600" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10 pt-0 sm:pt-6">
+                <CardContent className="relative z-10 pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{stats.coursesCompleted}</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" />
-                    <span className="hidden sm:inline">{Math.round((stats.coursesCompleted / stats.coursesEnrolled) * 100)}% completion rate</span>
-                    <span className="sm:hidden">{Math.round((stats.coursesCompleted / stats.coursesEnrolled) * 100)}%</span>
+                    <span className="hidden sm:inline">{Math.round((stats.coursesCompleted / Math.max(stats.coursesEnrolled, 1)) * 100)}% completion rate</span>
+                    <span className="sm:hidden">{Math.round((stats.coursesCompleted / Math.max(stats.coursesEnrolled, 1)) * 100)}%</span>
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-amber-50 to-orange-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-amber-50 to-orange-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 touch-manipulation">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 relative z-10">
-                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700">Time Spent</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 relative z-10 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Time<br className="sm:hidden" /> Spent</CardTitle>
                   <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded-lg sm:rounded-xl group-hover:bg-amber-500/20 transition-colors duration-300">
                     <Clock className="h-3 w-3 sm:h-5 sm:w-5 text-amber-600" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10 pt-0 sm:pt-6">
+                <CardContent className="relative z-10 pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{Math.floor(stats.totalTimeSpent / 60)}h</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <Zap className="h-3 w-3" />
                     <span className="hidden sm:inline">{stats.totalTimeSpent % 60}m this week</span>
-                    <span className="sm:hidden">{stats.totalTimeSpent % 60}m</span>
+                    <span className="sm:hidden">{stats.totalTimeSpent % 60}m week</span>
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-pink-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-pink-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 touch-manipulation">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 relative z-10">
-                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700">Average Score</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 relative z-10 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Average<br className="sm:hidden" /> Score</CardTitle>
                   <div className="p-1.5 sm:p-2 bg-purple-500/10 rounded-lg sm:rounded-xl group-hover:bg-purple-500/20 transition-colors duration-300">
                     <Star className="h-3 w-3 sm:h-5 sm:w-5 text-purple-600" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10 pt-0 sm:pt-6">
+                <CardContent className="relative z-10 pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{stats.averageScore}%</div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <Award className="h-3 w-3" />
@@ -478,53 +478,53 @@ export default function LearnerDashboard() {
 
             {/* Continue Learning Section */}
             <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-t-2xl">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+              <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-t-2xl px-4 sm:px-6 py-4 sm:py-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-3">
                       <div className="p-2 bg-blue-500/10 rounded-xl">
-                        <Play className="h-6 w-6 text-blue-600" />
+                        <Play className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                       </div>
                       Continue Learning
                     </CardTitle>
-                    <CardDescription className="text-slate-600 mt-2">Pick up where you left off and keep building momentum</CardDescription>
+                    <CardDescription className="text-slate-600 mt-2 text-sm sm:text-base">Pick up where you left off and keep building momentum</CardDescription>
                   </div>
-                  <Button variant="outline" className="hover:bg-blue-50 border-blue-200">
+                  <Button variant="outline" className="hover:bg-blue-50 border-blue-200 w-full sm:w-auto touch-manipulation min-h-[44px]">
                     View All
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="p-8">
-                <div className="space-y-6">
+              <CardContent className="p-4 sm:p-8">
+                <div className="space-y-4 sm:space-y-6">
                   {Array.isArray(enrolledCourses) && enrolledCourses.slice(0, 3).map((course, index) => {
                     const progress = Math.random() * 100
                     const timeLeft = Math.floor(Math.random() * 120) + 30
                     
                     return (
-                      <div key={course._id} className="group relative overflow-hidden p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-blue-300 bg-gradient-to-r from-white to-slate-50/50">
+                      <div key={course._id} className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-blue-300 bg-gradient-to-r from-white to-slate-50/50 touch-manipulation">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         
-                        <div className="flex items-center justify-between relative z-10">
-                          <div className="flex-1 space-y-4">
-                            <div className="flex items-center gap-4">
-                              <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
-                                <BookMarked className="h-6 w-6 text-white" />
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between relative z-10 gap-4">
+                          <div className="flex-1 space-y-3 sm:space-y-4 w-full">
+                            <div className="flex items-start gap-3 sm:gap-4">
+                              <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl shadow-lg shrink-0">
+                                <BookMarked className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                               </div>
-                              <div className="flex-1">
-                                <h4 className="font-bold text-lg text-slate-800 group-hover:text-blue-600 transition-colors duration-300">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-base sm:text-lg text-slate-800 group-hover:text-blue-600 transition-colors duration-300 line-clamp-2">
                                   {course.title}
                                 </h4>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <span className="text-sm text-slate-600 flex items-center gap-1">
-                                    <BookOpen className="h-4 w-4" />
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+                                  <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                    <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
                                     {course.modules?.length || 0} modules
                                   </span>
-                                  <span className="text-sm text-slate-600 flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
+                                  <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                                     ~{timeLeft} min left
                                   </span>
-                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs self-start">
                                     {Math.floor(progress)}% complete
                                   </Badge>
                                 </div>

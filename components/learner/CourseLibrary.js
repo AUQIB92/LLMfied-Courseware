@@ -499,7 +499,85 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   const coursesArray = filteredCourses
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50">
+      {/* Mobile-First Header */}
+      <div className="bg-white/90 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40 shadow-lg">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Course Library
+                </h1>
+                <p className="text-slate-600 mt-1 text-sm sm:text-base">Discover amazing courses to advance your skills</p>
+              </div>
+              
+              {/* Mobile-Optimized Stats */}
+              <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+                <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-xl border border-blue-200">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">{courses.length} courses</span>
+                </div>
+                <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-xl border border-green-200">
+                  <Users className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-700">{Object.keys(enrollments).length} enrolled</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile-First Search and Filters */}
+            <div className="space-y-3 sm:space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search courses..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-3 w-full rounded-xl border-2 border-slate-200 focus:border-blue-300 focus:ring-blue-100 text-base touch-manipulation min-h-[44px]"
+                />
+              </div>
+
+              {/* Mobile-Optimized Filter Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                {/* Category Filter */}
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-3 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-300 focus:ring-blue-100 text-base touch-manipulation min-h-[44px] bg-white"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="programming">Programming</option>
+                    <option value="design">Design</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="business">Business</option>
+                    <option value="data-science">Data Science</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {/* Level Filter */}
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Level</label>
+                  <select
+                    value={selectedLevel}
+                    onChange={(e) => setSelectedLevel(e.target.value)}
+                    className="w-full px-3 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-300 focus:ring-blue-100 text-base touch-manipulation min-h-[44px] bg-white"
+                  >
+                    <option value="all">All Levels</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Beautiful Header */}
         <div className="text-center space-y-6 mb-8">
