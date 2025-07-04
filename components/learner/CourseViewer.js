@@ -521,6 +521,84 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Beautiful Sidebar Toggle Button - Always Visible */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8">
+          <div className="relative group">
+            {/* Animated Background Glow */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-all duration-700 animate-pulse"></div>
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 rounded-xl opacity-20 group-hover:opacity-40 transition-all duration-500"></div>
+            
+            {/* Main Button */}
+            <Button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              size="lg"
+              className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white border-0 px-8 py-4 rounded-xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105 group overflow-hidden"
+            >
+              {/* Shimmer Effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              
+              {/* Button Content */}
+              <div className="relative z-10 flex items-center gap-3">
+                {sidebarCollapsed ? (
+                  <>
+                    <div className="p-2 bg-white/20 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                      <Eye className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
+                    </div>
+                    <span className="group-hover:tracking-wide transition-all duration-300">Show Modules</span>
+                    <div className="w-6 h-6 bg-emerald-400 rounded-full flex items-center justify-center animate-bounce">
+                      <span className="text-white text-xs font-bold">{course.modules?.length || 0}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-2 bg-white/20 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                      <EyeOff className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
+                    </div>
+                    <span className="group-hover:tracking-wide transition-all duration-300">Hide Modules</span>
+                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                  </>
+                )}
+              </div>
+              
+              {/* Floating Particles */}
+              <div className="absolute top-2 right-2 w-2 h-2 bg-white/40 rounded-full opacity-0 group-hover:opacity-100 animate-bounce transition-opacity duration-500" style={{animationDelay: '0.1s'}}></div>
+              <div className="absolute bottom-2 left-8 w-1.5 h-1.5 bg-white/30 rounded-full opacity-0 group-hover:opacity-100 animate-bounce transition-opacity duration-700" style={{animationDelay: '0.3s'}}></div>
+              <div className="absolute top-1/2 right-8 w-1 h-1 bg-white/50 rounded-full opacity-0 group-hover:opacity-100 animate-pulse transition-opacity duration-600" style={{animationDelay: '0.5s'}}></div>
+            </Button>
+          </div>
+          
+          {isEnrolled && course.modules && course.modules.length > 0 && (
+            <div className="relative group">
+              {/* Background Glow */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-2xl blur-lg opacity-20 group-hover:opacity-40 transition-all duration-500"></div>
+              
+              {/* Module Count Badge */}
+              <div className="relative bg-gradient-to-r from-emerald-50 to-teal-50 backdrop-blur-xl px-6 py-4 rounded-xl border-2 border-emerald-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-lg">
+                    <BookOpen className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-emerald-800">{course.modules.length}</span>
+                    <span className="text-sm font-medium text-emerald-600">modules available</span>
+                  </div>
+                  {/* Progress Ring */}
+                  <div className="relative">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-ping"></div>
+                  </div>
+                </div>
+                
+                {/* Decorative Elements */}
+                <div className="absolute top-2 right-2 w-2 h-2 bg-emerald-300 rounded-full opacity-60 animate-pulse"></div>
+                <div className="absolute bottom-2 left-2 w-1.5 h-1.5 bg-teal-400 rounded-full opacity-40 animate-bounce" style={{animationDelay: '0.5s'}}></div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className={`grid gap-8 transition-all duration-500 ease-in-out ${sidebarCollapsed ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
           {/* Sidebar - Module Navigation */}
           {!sidebarCollapsed && (
@@ -734,18 +812,24 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
                   <BookOpen className="h-10 w-10 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-800 mb-4">Ready to Start Learning!</h3>
-                <p className="text-slate-600 mb-6">Select a module from the navigation panel to begin your learning journey.</p>
-                {!sidebarCollapsed ? (
-                  <p className="text-slate-500 text-sm">👈 Choose a module from the left panel</p>
-                ) : (
-                  <Button
-                    onClick={() => setSidebarCollapsed(false)}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Show Modules
-                  </Button>
-                )}
+                <p className="text-slate-600 mb-6">
+                  {sidebarCollapsed 
+                    ? "Use the 'Show Modules' button above to view all available modules and start your learning journey."
+                    : "Select a module from the navigation panel on the left to begin your learning journey."
+                  }
+                </p>
+                <div className="flex items-center justify-center gap-4 text-sm text-slate-500">
+                  {sidebarCollapsed ? (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      <span>Click "Show Modules" above to explore course content</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>👈 Choose a module from the left panel</span>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 

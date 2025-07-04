@@ -54,37 +54,88 @@ Generate a clean, simple curriculum structure with:
 
 Keep it simple and focused. This curriculum will later be processed to generate detailed content, resources, and interactive elements.
 
-Format as clean Markdown with clear module sections:
-
-# Course Title
-
-## Course Overview
-[Brief description and objectives]
-
-## Module 1: [Title]
-**Objective:** [One sentence objective]
-**Key Concepts:**
-- Concept 1
-- Concept 2
-- Concept 3
-- Concept 4
-
-## Module 2: [Title]
-... and so on
-
 Please ensure the curriculum is:
 - Appropriately scaled for ${learnerLevel} level
 - Progressive in difficulty from basic to advanced concepts
 - Logically structured
 - Industry-relevant
 
-Format as a clean Markdown document with clear module structure.
+CRITICAL OUTPUT REQUIREMENTS:
+Please return the output in a markdown code block. If the output is large, break it into pieces no larger than 9000 characters each.
+
+Use this structure for large responses:
+\`\`\`json
+{
+  "part1": "# Course Title\\n\\n## Course Overview\\n[Brief description and objectives]\\n\\n## Module 1: [Title]\\n**Objective:** [One sentence objective]\\n**Key Concepts:**\\n- Concept 1\\n- Concept 2",
+  "part2": "## Module 5: [Title]\\n**Objective:** [One sentence objective]\\n**Key Concepts:**\\n- Concept 1\\n- Concept 2"
+}
+\`\`\`
+
+For smaller responses, use a single part:
+\`\`\`json
+{
+  "complete": "# Course Title\\n\\n## Course Overview\\n[Brief description and objectives]\\n\\n## Module 1: [Title]\\n**Objective:** [One sentence objective]\\n**Key Concepts:**\\n- Concept 1\\n- Concept 2\\n- Concept 3\\n- Concept 4\\n\\n## Module 2: [Title]\\n... and so on"
+}
+\`\`\`
+
+IMPORTANT OUTPUT FORMAT:
+• Respond with ONLY valid JSON inside a single Markdown code block.
+• Begin the response with three backticks followed by the word json (\`\`\`json) on its own line.
+• End the response with three backticks (\`\`\`).
+• Do NOT include any additional commentary, explanation, or prose outside the code block.
+• Ensure the JSON is completely valid and self-contained.
+• If content is too large, break it into numbered parts (part1, part2, etc.) within the JSON structure.
+• Use proper Markdown formatting with clear module sections.
     `
 
     // Generate curriculum using Gemini AI
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
     const result = await model.generateContent(curriculumPrompt)
-    const curriculum = result.response.text()
+    let responseText = result.response.text()
+    
+    // Extract JSON from markdown code block
+    const codeBlockMatch = responseText.match(/```json\s*\n([\s\S]*?)\n\s*```/);
+    let curriculum = "";
+    
+    if (!codeBlockMatch) {
+      console.log("No JSON code block found in curriculum response, using direct response...");
+      // If no JSON structure, return the text directly as fallback
+      curriculum = responseText;
+    } else {
+      responseText = codeBlockMatch[1];
+      console.log("Successfully extracted JSON from markdown code block for curriculum");
+      
+      try {
+        // Parse the JSON with safeguards
+        let parsed = JSON.parse(responseText);
+        
+        // Handle chunked response format
+        if (parsed.part1 || parsed.part2) {
+          console.log("Detected chunked curriculum response, merging parts...");
+          let mergedCurriculum = "";
+          
+          // Merge all parts into a single curriculum string
+          Object.keys(parsed).forEach(partKey => {
+            if (partKey.startsWith('part') && parsed[partKey]) {
+              mergedCurriculum += parsed[partKey] + "\\n\\n";
+            }
+          });
+          
+          curriculum = mergedCurriculum.trim();
+          console.log("Successfully merged chunked curriculum response parts");
+        } else if (parsed.complete) {
+          // Handle single complete response
+          curriculum = parsed.complete;
+          console.log("Using complete curriculum response format");
+        } else {
+          // Fallback to original text if JSON doesn't have expected structure
+          curriculum = responseText;
+        }
+      } catch (parseError) {
+        console.log("Failed to parse curriculum response JSON, using raw response...");
+        curriculum = responseText;
+      }
+    }
 
     // Count estimated modules from the generated content
     const moduleMatches = curriculum.match(/## Module \d+/g) || curriculum.match(/### Module \d+/g) || []
