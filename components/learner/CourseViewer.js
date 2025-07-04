@@ -183,7 +183,12 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
     if (isEnrolled && course.modules && course.modules.length > 0 && !selectedModule) {
       // Add a small delay to ensure the UI has rendered properly
       setTimeout(() => {
-        handleSelectModule(course.modules[0])
+        // Auto-select first module without hiding sidebar
+        setSelectedModule(course.modules[0])
+        setShowTutor(false)
+        if (onModuleView) {
+          onModuleView(true)
+        }
       }, 500)
     }
   }, [isEnrolled, course.modules, selectedModule])
@@ -306,6 +311,8 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
   const handleSelectModule = (module) => {
     setSelectedModule(module)
     setShowTutor(false)
+    // Auto-hide the modules panel after manual selection for better UX
+    setSidebarCollapsed(true)
     if (onModuleView) {
       onModuleView(true)
     }
