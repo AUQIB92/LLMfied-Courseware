@@ -63,14 +63,14 @@ export const PremiumUpgradeModal = ({ isOpen, onClose, highlightFeature }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-md sm:max-w-lg mx-auto p-0 gap-0">
+      <DialogContent className="w-[60vw] max-w-md mx-auto p-0 gap-0">
         <DialogHeader className="p-6 pb-4">
           <div className="text-center">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Crown className="w-8 h-8 text-yellow-300" />
             </div>
             <DialogTitle className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-              Choose Your Plan
+              Upgrade to Premium
             </DialogTitle>
             <DialogDescription className="text-slate-600 text-base">
               Unlock powerful AI features and take your learning to the next level
@@ -117,96 +117,56 @@ export const PremiumUpgradeModal = ({ isOpen, onClose, highlightFeature }) => {
             </div>
           </div>
 
-          {/* Pricing Plans */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* Premium Plan */}
-            <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-500 shadow-lg">
+          {/* Single Premium Plan */}
+          <div className="flex justify-center">
+            <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-500 shadow-lg max-w-sm w-full">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 px-4 py-1 text-sm font-bold">
                   <Star className="w-4 h-4 mr-1 fill-current" />
-                  Popular
+                  Best Value
                 </Badge>
               </div>
               
               <div className="text-center">
                 <h3 className="text-xl font-bold text-slate-900 mb-2">Premium</h3>
-                <div className="text-3xl font-black text-slate-900 mb-1">
+                <div className="text-4xl font-black text-slate-900 mb-1">
                   ₹100<span className="text-lg text-slate-600">/month</span>
                 </div>
-                <p className="text-sm text-slate-600 mb-4">Perfect for students</p>
+                <p className="text-sm text-slate-600 mb-6">Perfect for students & learners</p>
                 
                 {/* Features */}
-                <div className="text-left mb-6 space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-green-600 shrink-0" />
-                    <span className="text-slate-700">AI Tutor Assistant</span>
+                <div className="text-left mb-6 space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Check className="w-5 h-5 text-green-600 shrink-0" />
+                    <span className="text-slate-700 font-medium">AI Tutor Assistant</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-green-600 shrink-0" />
-                    <span className="text-slate-700">Quiz Generation</span>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Check className="w-5 h-5 text-green-600 shrink-0" />
+                    <span className="text-slate-700 font-medium">Unlimited Quiz Generation</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-green-600 shrink-0" />
-                    <span className="text-slate-700">Get More Details</span>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Check className="w-5 h-5 text-green-600 shrink-0" />
+                    <span className="text-slate-700 font-medium">Get More Details</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-green-600 shrink-0" />
-                    <span className="text-slate-700">Email Support</span>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Check className="w-5 h-5 text-green-600 shrink-0" />
+                    <span className="text-slate-700 font-medium">Priority Email Support</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Check className="w-5 h-5 text-green-600 shrink-0" />
+                    <span className="text-slate-700 font-medium">Advanced Learning Analytics</span>
                   </div>
                 </div>
                 
                 <Button 
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-4 text-sm rounded-lg transition-all duration-300 min-h-[48px] touch-manipulation"
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-6 text-base rounded-lg transition-all duration-300 min-h-[52px] touch-manipulation shadow-lg hover:shadow-xl"
                   onClick={() => {
                     alert('Premium plan selected! ₹100/month - Payment integration would be implemented here.')
                     onClose()
                   }}
                 >
-                  <CreditCard className="w-4 h-4 mr-2 shrink-0" />
-                  Choose Premium
-                </Button>
-              </div>
-            </div>
-
-            {/* Pro Plan */}
-            <div className="bg-white rounded-xl p-6 border-2 border-slate-200 hover:border-purple-300 transition-colors duration-300 shadow-lg">
-              <div className="text-center">
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Pro</h3>
-                <div className="text-3xl font-black text-slate-900 mb-1">
-                  ₹200<span className="text-lg text-slate-600">/month</span>
-                </div>
-                <p className="text-sm text-slate-600 mb-4">For educators & professionals</p>
-                
-                {/* Features */}
-                <div className="text-left mb-6 space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-green-600 shrink-0" />
-                    <span className="text-slate-700">Everything in Premium</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-green-600 shrink-0" />
-                    <span className="text-slate-700">Advanced AI Features</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-green-600 shrink-0" />
-                    <span className="text-slate-700">Course Creation Tools</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-green-600 shrink-0" />
-                    <span className="text-slate-700">Priority Support</span>
-                  </div>
-                </div>
-                
-                <Button 
-                  variant="outline"
-                  className="w-full border-2 border-purple-500 text-purple-600 hover:bg-purple-50 font-semibold py-3 px-4 text-sm rounded-lg transition-all duration-300 min-h-[48px] touch-manipulation"
-                  onClick={() => {
-                    alert('Pro plan selected! ₹200/month - Payment integration would be implemented here.')
-                    onClose()
-                  }}
-                >
-                  <Rocket className="w-4 h-4 mr-2 shrink-0" />
-                  Choose Pro
+                  <CreditCard className="w-5 h-5 mr-2 shrink-0" />
+                  Get Premium for ₹100/month
                 </Button>
               </div>
             </div>
