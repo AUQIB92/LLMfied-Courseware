@@ -169,6 +169,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
+          title: curriculumTopic,
           topic: curriculumTopic,
           examType: courseData.examType,
           subject: courseData.subject,
@@ -275,6 +276,9 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
     try {
       setLoading(true)
       
+      // Test toast to verify it's working
+      toast.info("🔍 Starting save draft process...")
+      
       // Validate required fields
       if (!courseData.title || !courseData.examType || !courseData.subject) {
         toast.error("❌ Please fill in all required fields (Title, Exam Type, Subject)")
@@ -286,12 +290,22 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         return
       }
 
-      console.log("Saving draft course data:", {
+      console.log("🔍 DEBUG: Saving draft course data:", {
         title: courseData.title,
         examType: courseData.examType,
         subject: courseData.subject,
         modules: courseData.modules.length,
         hasAuth: !!getAuthHeaders()?.authorization
+      })
+      
+      console.log("🔍 DEBUG: Auth headers:", getAuthHeaders())
+      console.log("🔍 DEBUG: Course payload:", {
+        course: { 
+          ...courseData, 
+          status: "draft",
+          isExamGenius: true,
+          isCompetitiveExam: true
+        }
       })
       
       const response = await fetch("/api/exam-genius/save-course", {
@@ -310,16 +324,25 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         }),
       })
 
-      console.log("Save draft response:", response.status, response.statusText)
+      console.log("🔍 DEBUG: Save draft response:", response.status, response.statusText)
+      console.log("🔍 DEBUG: Response headers:", Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const data = await response.json()
-        console.log("Draft saved successfully:", data)
+        console.log("🔍 DEBUG: Draft saved successfully:", data)
         setCurrentCourseId(data.course._id)
-        toast.success("📝 Course saved as draft!")
+        
+        // Create detailed success message
+        const moduleCount = courseData.modules?.length || 0
+        const subsectionCount = courseData.modules?.reduce((total, module) => 
+          total + (module.detailedSubsections?.length || 0), 0) || 0
+        
+        toast.success(`📝 Draft Saved Successfully! 🎯 "${courseData.title}" • 📚 ${courseData.examType} • 📖 ${courseData.subject} • 📋 ${moduleCount} modules${subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ''} • ✨ Ready for editing or publishing!`, {
+          duration: 6000,
+        })
       } else {
         const errorText = await response.text()
-        console.error("Save draft failed:", response.status, response.statusText, errorText)
+        console.error("🔍 DEBUG: Save draft failed:", response.status, response.statusText, errorText)
         
         let errorMessage = "Failed to save draft"
         try {
@@ -349,8 +372,11 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         throw new Error(errorMessage)
       }
     } catch (error) {
-      console.error("Save error:", error)
-      toast.error(`${error.message}`)
+      console.error("🔍 DEBUG: Save error:", error)
+      console.error("🔍 DEBUG: Error name:", error.name)
+      console.error("🔍 DEBUG: Error message:", error.message)
+      console.error("🔍 DEBUG: Error stack:", error.stack)
+      toast.error(`❌ Save Draft Failed: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -359,6 +385,9 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
   const handlePublishCourse = async () => {
     try {
       setLoading(true)
+      
+      // Test toast to verify it's working
+      toast.info("🔍 Starting publish process...")
       
       // Validate required fields
       if (!courseData.title || !courseData.examType || !courseData.subject) {
@@ -381,13 +410,28 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         return
       }
 
-      console.log("Publishing course data:", {
+      console.log("🔍 DEBUG: Publishing course data:", {
         title: courseData.title,
         examType: courseData.examType,
         subject: courseData.subject,
         modules: courseData.modules.length,
+        currentCourseId: currentCourseId,
         hasAuth: !!getAuthHeaders()?.authorization
       })
+      
+      console.log("🔍 DEBUG: Auth headers:", getAuthHeaders())
+      
+      const coursePayload = {
+        ...courseData, 
+        status: "published",
+        isExamGenius: true,
+        isCompetitiveExam: true
+      }
+
+      // If we have a currentCourseId, include it for update
+      if (currentCourseId) {
+        coursePayload._id = currentCourseId
+      }
       
       const response = await fetch("/api/exam-genius/save-course", {
         method: "POST",
@@ -396,21 +440,36 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          course: { 
-            ...courseData, 
-            status: "published",
-            isExamGenius: true,
-            isCompetitiveExam: true
-          }
+          course: coursePayload
         }),
       })
 
-      console.log("Publish response:", response.status, response.statusText)
+      console.log("🔍 DEBUG: Publish response:", response.status, response.statusText)
+      console.log("🔍 DEBUG: Response headers:", Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const data = await response.json()
-        console.log("Course published successfully:", data)
-        toast.success("🎉 Course published successfully!")
+        console.log("🔍 DEBUG: Course published successfully:", data)
+        
+        // Set currentCourseId if it wasn't already set
+        if (!currentCourseId && data.course._id) {
+          setCurrentCourseId(data.course._id)
+        }
+        
+        // Create detailed publish success message
+        const moduleCount = courseData.modules?.length || 0
+        const subsectionCount = courseData.modules?.reduce((total, module) => 
+          total + (module.detailedSubsections?.length || 0), 0) || 0
+        const quizCount = courseData.modules?.reduce((total, module) => {
+          if (module.subsectionQuizzes) {
+            return total + Object.keys(module.subsectionQuizzes).length
+          }
+          return total + (module.quiz ? 1 : 0)
+        }, 0) || 0
+        
+        toast.success(`🎉 Course Published Successfully! 🏆 "${courseData.title}" is now live • 📚 ${courseData.examType} • 📖 ${courseData.subject} • 📋 ${moduleCount} modules${subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ''}${quizCount > 0 ? ` • 🎯 ${quizCount} quizzes` : ''} • 🚀 Students can now enroll and learn!`, {
+          duration: 8000,
+        })
         
         if (onCourseCreated) {
           onCourseCreated(data.course)
@@ -429,10 +488,11 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
           isExamGenius: true,
           isCompetitiveExam: true
         })
+        setCurrentCourseId(null)
         setStep(1)
       } else {
         const errorText = await response.text()
-        console.error("Publish failed:", response.status, response.statusText, errorText)
+        console.error("🔍 DEBUG: Publish failed:", response.status, response.statusText, errorText)
         
         let errorMessage = "Failed to publish course"
         try {
@@ -462,8 +522,11 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         throw new Error(errorMessage)
       }
     } catch (error) {
-      console.error("Publish error:", error)
-      toast.error(`${error.message}`)
+      console.error("🔍 DEBUG: Publish error:", error)
+      console.error("🔍 DEBUG: Error name:", error.name)
+      console.error("🔍 DEBUG: Error message:", error.message)
+      console.error("🔍 DEBUG: Error stack:", error.stack)
+      toast.error(`❌ Publish Failed: ${error.message}`)
     } finally {
       setLoading(false)
     }

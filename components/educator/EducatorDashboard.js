@@ -692,9 +692,9 @@ export default function EducatorDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-indigo-400/10 to-cyan-600/10 rounded-full blur-3xl animate-pulse delay-500"></div>
+                      <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-600/20 rounded-full blur-3xl"></div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-indigo-400/10 to-cyan-600/10 rounded-full blur-3xl"></div>
       </div>
 
       {/* Header Section */}
@@ -709,7 +709,7 @@ export default function EducatorDashboard() {
               </h1>
               <div className="text-blue-200 text-sm sm:text-base lg:text-xl flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                   <span>Welcome back, <span className="font-semibold text-white">{user?.name}</span></span>
                 </div>
               </div>
@@ -757,7 +757,7 @@ export default function EducatorDashboard() {
                               {user?.name?.charAt(0)?.toUpperCase() || "U"}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
+                          <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full"></div>
                         </div>
                         <div className="hidden sm:block text-left">
                           <p className="text-white font-semibold text-xs sm:text-sm leading-none truncate max-w-32 lg:max-w-none">{user?.name || "Educator"}</p>
@@ -834,7 +834,7 @@ export default function EducatorDashboard() {
                         <p className="font-medium text-slate-900">Notifications</p>
                         <p className="text-xs text-slate-500">Manage alerts</p>
                       </div>
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator className="bg-slate-200 my-2" />

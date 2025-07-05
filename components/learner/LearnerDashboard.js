@@ -47,6 +47,7 @@ import {
 } from "lucide-react"
 import CourseLibrary from "./CourseLibrary"
 import CourseViewer from "./CourseViewer"
+import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer"
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm"
 import PreferencesSettings from "@/components/profile/PreferencesSettings"
 import NotificationsSettings from "@/components/profile/NotificationsSettings"
@@ -458,7 +459,24 @@ export default function LearnerDashboard() {
         }
       })
       
-      return (
+      // Check if this is an ExamGenius/Competitive Exam course
+      const isExamGeniusCourse = selectedCourse.isExamGenius || selectedCourse.examType || selectedCourse.subject
+      
+      return isExamGeniusCourse ? (
+        <ExamGeniusCourseViewer 
+          course={selectedCourse} 
+          onBack={() => {
+            setSelectedCourse(null)
+            setHideHeader(false)
+            setIsHeaderVisible(true) // Reset scroll-based header visibility
+            setLastScrollY(0) // Reset scroll position tracking
+          }}
+          onProgress={(progress) => {
+            // Handle progress updates for exam courses
+            console.log('Exam course progress:', progress)
+          }}
+        />
+      ) : (
         <CourseViewer 
           course={selectedCourse} 
           isEnrolled={finalEnrollmentStatus}
@@ -612,7 +630,7 @@ export default function LearnerDashboard() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 sm:p-8">
-                <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-6 sm:space-y-8">
                   {!enrollmentDataLoaded ? (
                     // Loading state for enrolled courses
                     <div className="space-y-4">
@@ -635,7 +653,31 @@ export default function LearnerDashboard() {
                       ))}
                     </div>
                   ) : Array.isArray(enrolledCourses) && enrolledCourses.length > 0 ? (
-                    enrolledCourses.map((course, index) => {
+                    (() => {
+                      // Categorize courses
+                      const technicalCourses = enrolledCourses.filter(course => 
+                        !course.isExamGenius && !course.examType && !course.subject
+                      )
+                      const competitiveExamCourses = enrolledCourses.filter(course => 
+                        course.isExamGenius || course.examType || course.subject
+                      )
+
+                      return (
+                        <div className="space-y-8">
+                          {/* Technical Courses Section */}
+                          {technicalCourses.length > 0 && (
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-blue-500/10 rounded-xl">
+                                  <GraduationCap className="h-5 w-5 text-blue-600" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800">Technical Courses</h3>
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                  {technicalCourses.length} course{technicalCourses.length > 1 ? 's' : ''}
+                                </Badge>
+                              </div>
+                              <div className="space-y-4">
+                                {technicalCourses.map((course, index) => {
                     const progress = Math.random() * 100
                     const timeLeft = Math.floor(Math.random() * 120) + 30
                     
@@ -683,21 +725,13 @@ export default function LearnerDashboard() {
                           
                           <Button 
                             onClick={() => {
-                              console.log("🎯 Continue Learning clicked for enrolled course:", course.title)
-                              console.log("📊 Course enrollment status:", {
-                                isEnrolled: course.isEnrolled,
-                                enrollmentVerified: course.enrollmentVerified,
-                                enrolledAt: course.enrolledAt
-                              })
-                              console.log("🔒 IMPORTANT: This is a CONTINUE LEARNING action - user is already enrolled!")
-                              
-                              // Pass course with explicit enrollment confirmation
+                                            console.log("🎯 Continue Learning clicked for technical course:", course.title)
                               setSelectedCourse({
                                 ...course,
                                 isEnrolled: true,
                                 enrollmentVerified: true,
-                                accessGranted: true, // Explicit access flag
-                                fromContinueLearning: true // Flag to indicate this came from Continue Learning
+                                              accessGranted: true,
+                                              fromContinueLearning: true
                               })
                             }}
                             disabled={!enrollmentDataLoaded}
@@ -718,7 +752,132 @@ export default function LearnerDashboard() {
                         </div>
                       </div>
                     )
-                  })
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Competitive Exam Courses Section */}
+                          {competitiveExamCourses.length > 0 && (
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-orange-500/10 rounded-xl">
+                                  <Trophy className="h-5 w-5 text-orange-600" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800">Competitive Exams</h3>
+                                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                                  {competitiveExamCourses.length} course{competitiveExamCourses.length > 1 ? 's' : ''}
+                                </Badge>
+                              </div>
+                              <div className="space-y-4">
+                                {competitiveExamCourses.map((course, index) => {
+                                  const progress = Math.random() * 100
+                                  const timeLeft = Math.floor(Math.random() * 120) + 30
+                                  
+                                  return (
+                                    <div key={course._id} className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-orange-300 bg-gradient-to-r from-orange-50/50 to-red-50/50 touch-manipulation">
+                                      <div className="absolute top-0 right-0 w-32 h-32 bg-orange-100/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                      
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between relative z-10 gap-4">
+                                        <div className="flex-1 space-y-3 sm:space-y-4 w-full">
+                                          <div className="flex items-start gap-3 sm:gap-4">
+                                            <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl sm:rounded-2xl shadow-lg shrink-0">
+                                              <Trophy className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <h4 className="font-bold text-base sm:text-lg text-slate-800 group-hover:text-orange-600 transition-colors duration-300 line-clamp-2">
+                                                {course.title}
+                                              </h4>
+                                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+                                                {course.examType && (
+                                                  <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                    <Target className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                    {course.examType}
+                                                  </span>
+                                                )}
+                                                {course.subject && (
+                                                  <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                    <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                    {course.subject}
+                                                  </span>
+                                                )}
+                                                <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                  <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                  ~{timeLeft} min left
+                                                </span>
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs self-start">
+                                                  {Math.floor(progress)}% complete
+                                                </Badge>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="space-y-2">
+                                            <div className="flex items-center justify-between text-sm">
+                                              <span className="text-slate-600 font-medium">Progress</span>
+                                              <span className="text-slate-800 font-semibold">{Math.floor(progress)}%</span>
+                                            </div>
+                                            <Progress 
+                                              value={progress} 
+                                              className="h-3 bg-slate-100"
+                                            />
+                                          </div>
+                                        </div>
+                                        
+                                        <Button 
+                                          onClick={() => {
+                                            console.log("🎯 Continue Learning clicked for competitive exam course:", course.title)
+                                            setSelectedCourse({
+                                              ...course,
+                                              isEnrolled: true,
+                                              enrollmentVerified: true,
+                                              accessGranted: true,
+                                              fromContinueLearning: true
+                                            })
+                                          }}
+                                          disabled={!enrollmentDataLoaded}
+                                          className="ml-6 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                        >
+                                          {!enrollmentDataLoaded ? (
+                                            <>
+                                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                              Loading...
+                                            </>
+                                          ) : (
+                                            <>
+                                              Continue
+                                              <Play className="h-4 w-4 ml-2" />
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* If no courses in either category */}
+                          {technicalCourses.length === 0 && competitiveExamCourses.length === 0 && (
+                            <div className="text-center py-12">
+                              <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <BookOpen className="h-12 w-12 text-blue-500" />
+                              </div>
+                              <h3 className="text-xl font-semibold text-slate-800 mb-2">No courses yet</h3>
+                              <p className="text-slate-600 mb-6">Start your learning journey by exploring our course library</p>
+                              <Button 
+                                onClick={() => setActiveTab("library")}
+                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl"
+                              >
+                                Browse Courses
+                                <ArrowRight className="h-4 w-4 ml-2" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()
                   ) : (
                     // Empty state when no enrolled courses and data is loaded
                     <div className="text-center py-12">

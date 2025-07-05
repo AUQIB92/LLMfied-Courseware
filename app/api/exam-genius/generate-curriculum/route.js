@@ -22,6 +22,7 @@ export async function POST(request) {
     const client = await clientPromise
     const db = client.db("llmfied")
 
+    const requestBody = await request.json()
     const { 
       title, 
       examType, 
@@ -32,10 +33,33 @@ export async function POST(request) {
       teachingNotes, 
       estimatedTime,
       description 
-    } = await request.json()
+    } = requestBody
+
+    console.log("📝 Request body received:", {
+      title,
+      examType,
+      subject,
+      learnerLevel,
+      numberOfModules,
+      allFields: Object.keys(requestBody)
+    })
 
     if (!title || !examType || !subject || !learnerLevel) {
-      return NextResponse.json({ error: "Title, exam type, subject, and learner level are required" }, { status: 400 })
+      console.error("❌ Missing required fields:", {
+        title: !!title,
+        examType: !!examType,
+        subject: !!subject,
+        learnerLevel: !!learnerLevel
+      })
+      return NextResponse.json({ 
+        error: "Title, exam type, subject, and learner level are required",
+        missing: {
+          title: !title,
+          examType: !examType,
+          subject: !subject,
+          learnerLevel: !learnerLevel
+        }
+      }, { status: 400 })
     }
 
     console.log(`📚 Generating competitive exam curriculum for: ${examType} - ${subject}`)

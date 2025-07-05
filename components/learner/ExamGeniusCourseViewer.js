@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -32,6 +34,7 @@ import {
   Timer,
   Medal,
   AlertCircle,
+  AlertTriangle,
   Lock,
   Unlock,
   TrendingUp,
@@ -41,10 +44,57 @@ import {
   Users,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  ExternalLink,
+  Crown,
+  Settings
 } from "lucide-react"
 
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut",
+    },
+  },
+}
+
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut",
+    },
+  },
+  hover: {
+    scale: 1.02,
+    transition: {
+      duration: 0.2,
+      ease: "easeInOut",
+    },
+  },
+}
+
 export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
+  const { getAuthHeaders } = useAuth()
   const [currentModule, setCurrentModule] = useState(0)
   const [currentSubsection, setCurrentSubsection] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
@@ -57,7 +107,11 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const [isQuizLoading, setIsQuizLoading] = useState(false)
   const [expandedSections, setExpandedSections] = useState(new Set())
   const [sidebarVisible, setSidebarVisible] = useState(false)
+  const [sidebarManuallyToggled, setSidebarManuallyToggled] = useState(false)
   const [showModuleList, setShowModuleList] = useState(true)
+  const [detailedContent, setDetailedContent] = useState(null)
+  const [loadingDetailedContent, setLoadingDetailedContent] = useState(false)
+  const [currentPageTabs, setCurrentPageTabs] = useState({})
 
   const modules = course.modules || []
   const currentModuleData = modules[currentModule]
@@ -66,6 +120,13 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const pages = currentSubsectionData?.pages || []
 
   useEffect(() => {
+    console.log("🔍 DEBUG: useEffect triggered for course:", course._id, course.title)
+    console.log("🔍 DEBUG: Course properties:", {
+      isExamGenius: course.isExamGenius,
+      status: course.status,
+      modules: course.modules?.length || 0
+    })
+    
     // Initialize progress tracking
     const savedProgress = localStorage.getItem(`exam-progress-${course._id}`)
     if (savedProgress) {
@@ -73,7 +134,60 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
       setCompletedModules(new Set(progress.completedModules || []))
       setCompletedSubsections(new Set(progress.completedSubsections || []))
     }
+
+    // Fetch detailed content for ExamGenius courses
+    if (course.isExamGenius) {
+      console.log("🔍 DEBUG: Fetching detailed content because course.isExamGenius is true")
+      fetchDetailedContent()
+    } else {
+      console.log("🔍 DEBUG: NOT fetching detailed content because course.isExamGenius is", course.isExamGenius)
+    }
   }, [course._id])
+
+  const fetchDetailedContent = async () => {
+    try {
+      setLoadingDetailedContent(true)
+      console.log("🔍 DEBUG: Fetching detailed content for course:", course._id, course.title)
+      console.log("🔍 DEBUG: Course is ExamGenius:", course.isExamGenius)
+      console.log("🔍 DEBUG: Auth headers:", getAuthHeaders())
+      
+      const response = await fetch(`/api/courses/${course._id}/detailed-content`, {
+        headers: getAuthHeaders(),
+      })
+
+      console.log("🔍 DEBUG: Response status:", response.status, response.statusText)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("📚 DEBUG: Detailed content API response:", data)
+        console.log("📚 DEBUG: Detailed content structure:", Object.keys(data.detailedContent || {}))
+        
+        // Log each module's content
+        if (data.detailedContent) {
+          Object.keys(data.detailedContent).forEach(moduleIndex => {
+            console.log(`📚 DEBUG: Module ${moduleIndex} subsections:`, Object.keys(data.detailedContent[moduleIndex]))
+            Object.keys(data.detailedContent[moduleIndex]).forEach(subsectionIndex => {
+              const subsectionContent = data.detailedContent[moduleIndex][subsectionIndex]
+              console.log(`📚 DEBUG: Module ${moduleIndex}, Subsection ${subsectionIndex}:`, {
+                pages: subsectionContent.pages?.length || 0,
+                hasContent: !!subsectionContent.pages,
+                subsectionTitle: subsectionContent.subsectionTitle
+              })
+            })
+          })
+        }
+        
+        setDetailedContent(data.detailedContent)
+      } else {
+        const errorText = await response.text()
+        console.error("🔍 DEBUG: Failed to fetch detailed content:", response.status, response.statusText, errorText)
+      }
+    } catch (error) {
+      console.error("🔍 DEBUG: Error fetching detailed content:", error)
+    } finally {
+      setLoadingDetailedContent(false)
+    }
+  }
 
   const saveProgress = () => {
     const progress = {
@@ -213,43 +327,35 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
     })
   }
 
-  // Enhanced Rich text formatting helper for beautiful text display
+  // Enhanced Rich text formatting helper for beautiful text display (same as technical courses)
   const formatRichText = (text) => {
-    if (!text) return ''
+    if (!text || typeof text !== 'string') return ''
     
     return text
       .split('\n\n')
       .map(paragraph => {
         let formatted = paragraph.trim()
         
-        // Handle markdown headers (# ## ### #### ##### ######)
+        // Handle markdown headers (# ## ### #### ######)
         if (formatted.match(/^#{1,6}\s/)) {
           const headerLevel = formatted.match(/^(#{1,6})/)[1].length
           const headerText = formatted.replace(/^#{1,6}\s/, '')
           
           const headerStyles = {
-            1: 'text-3xl font-bold text-orange-700 mb-6 mt-8 first:mt-0 border-b-2 border-orange-200 pb-2',
-            2: 'text-2xl font-bold text-orange-600 mb-5 mt-7 first:mt-0',
-            3: 'text-xl font-bold text-emerald-700 mb-4 mt-6 first:mt-0 flex items-center gap-2',
-            4: 'text-lg font-bold text-emerald-600 mb-3 mt-5 first:mt-0',
-            5: 'text-base font-bold text-gray-700 mb-2 mt-4 first:mt-0',
-            6: 'text-sm font-bold text-gray-600 mb-2 mt-3 first:mt-0'
+            1: 'text-base font-bold text-gray-800 mb-2 mt-3 first:mt-0',  // Size 16 (text-base) bold
+            2: 'text-base font-bold text-gray-700 mb-2 mt-3 first:mt-0',
+            3: 'text-lg font-bold text-emerald-700 mb-3 mt-4 first:mt-0',
+            4: 'text-base font-bold text-emerald-600 mb-2 mt-3 first:mt-0',
+            5: 'text-sm font-bold text-gray-600 mb-2 mt-2 first:mt-0',
+            6: 'text-xs font-bold text-gray-500 mb-1 mt-2 first:mt-0'
           }
           
           const headerClass = headerStyles[headerLevel] || headerStyles[3]
-          
-          if (headerLevel === 3) {
-            return `<h${headerLevel} class="${headerClass}">
-              <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-              ${headerText}
-            </h${headerLevel}>`
-          } else {
-            return `<h${headerLevel} class="${headerClass}">${headerText}</h${headerLevel}>`
-          }
+          return `<h${Math.min(headerLevel, 6)} class="${headerClass}">${headerText}</h${Math.min(headerLevel, 6)}>`
         }
         
-        // Check if this is a section header (starts with ** and ends with ** on its own line)
-        if (formatted.match(/^\*\*[^*]+\*\*$/) && formatted.trim().length > 4 && !formatted.includes(' **')) {
+        // Check if this is a section header (starts with ** and ends with **)
+        if (formatted.match(/^\*\*.*\*\*$/)) {
           const headerText = formatted.replace(/\*\*/g, '')
           return `<h4 class="text-xl font-bold text-emerald-700 mb-4 mt-6 first:mt-0 flex items-center gap-2">
             <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
@@ -257,8 +363,8 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           </h4>`
         }
         
-        // Format bold text (**text** -> <strong>text</strong>) - handle inline bold
-        formatted = formatted.replace(/\*\*([^*\n]+?)\*\*/g, '<strong class="font-bold text-emerald-800 bg-emerald-50 px-1 rounded">$1</strong>')
+        // Format bold text (**text** -> <strong>text</strong>)
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-emerald-800 bg-emerald-50 px-1 rounded">$1</strong>')
         
         // Format inline math ($equation$ -> styled math)
         formatted = formatted.replace(/\$([^$]+)\$/g, '<span class="inline-flex items-center bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 text-blue-900 px-4 py-2 rounded-xl font-mono text-sm border-2 border-blue-300 mx-1 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">✨ $1</span>')
@@ -275,9 +381,6 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
         // Format single-quoted text ('text' -> <em>text</em>)
         formatted = formatted.replace(/'([^']+)'/g, '<em class="italic text-emerald-600">$1</em>')
         
-        // Format links [text](url) -> styled links
-        formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline hover:no-underline transition-colors duration-200">$1 <span class="text-xs">↗</span></a>')
-        
         // Format numbered lists (1. item -> styled list)
         if (formatted.match(/^\d+\.\s/)) {
           formatted = formatted.replace(/^(\d+)\.\s(.*)/, '<div class="flex items-start gap-3 mb-3"><div class="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">$1</div><div>$2</div></div>')
@@ -290,18 +393,34 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           return formatted
         }
         
-        return `<p class="mb-4 last:mb-0 leading-relaxed text-gray-700">${formatted}</p>`
+        return `<p class="mb-4 last:mb-0 leading-relaxed">${formatted}</p>`
       })
       .join('')
   }
 
+  // Toggle sidebar visibility
+  const toggleSidebar = () => {
+    const newVisibility = !sidebarVisible
+    setSidebarVisible(newVisibility)
+    setSidebarManuallyToggled(true)
+    
+    // If user manually hides it, allow hover to work again after a delay
+    if (!newVisibility) {
+      setTimeout(() => setSidebarManuallyToggled(false), 2000)
+    }
+  }
+
   // Handle mouse hover for sidebar
   const handleMouseEnter = () => {
+    if (!sidebarManuallyToggled) {
     setSidebarVisible(true)
+    }
   }
 
   const handleMouseLeave = () => {
+    if (!sidebarManuallyToggled) {
     setSidebarVisible(false)
+    }
   }
 
   const handleModuleSelect = (moduleIndex) => {
@@ -309,7 +428,236 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
     setCurrentSubsection(0)
     setCurrentPage(0)
     setShowModuleList(false)
-    setSidebarVisible(false)
+    // Keep sidebar visible after module selection
+  }
+
+  // Enhanced Resource Card Component (same as technical courses)
+  const ResourceCard = ({ resource, type, isInstructorChoice = false, resourceIndex = 0 }) => {
+    const getIcon = () => {
+      const iconMap = {
+        books: <BookOpen className="h-6 w-6 text-white" />,
+        courses: <Video className="h-6 w-6 text-white" />,
+        videos: <Play className="h-6 w-6 text-white" />,
+        articles: <FileText className="h-6 w-6 text-white" />,
+        tools: <Wrench className="h-6 w-6 text-white" />,
+        websites: <Globe className="h-6 w-6 text-white" />,
+        exercises: <Target className="h-6 w-6 text-white" />,
+      }
+      return iconMap[type] || <ExternalLink className="h-6 w-6 text-white" />
+    }
+
+    const getGradientAndColors = () => {
+      const designMap = {
+        books: {
+          gradient: "from-blue-500/10 via-indigo-500/10 to-purple-500/10",
+          border: "border-blue-200/50",
+          iconBg: "from-blue-500 to-indigo-600",
+          titleColor: "text-blue-700",
+          accent: "blue"
+        },
+        courses: {
+          gradient: "from-purple-500/10 via-pink-500/10 to-rose-500/10",
+          border: "border-purple-200/50",
+          iconBg: "from-purple-500 to-pink-600",
+          titleColor: "text-purple-700",
+          accent: "purple"
+        },
+        videos: {
+          gradient: "from-red-500/10 via-orange-500/10 to-yellow-500/10",
+          border: "border-red-200/50",
+          iconBg: "from-red-500 to-orange-600",
+          titleColor: "text-red-700",
+          accent: "red"
+        },
+        articles: {
+          gradient: "from-green-500/10 via-emerald-500/10 to-teal-500/10",
+          border: "border-green-200/50",
+          iconBg: "from-green-500 to-emerald-600",
+          titleColor: "text-green-700",
+          accent: "green"
+        },
+        tools: {
+          gradient: "from-orange-500/10 via-amber-500/10 to-yellow-500/10",
+          border: "border-orange-200/50",
+          iconBg: "from-orange-500 to-amber-600",
+          titleColor: "text-orange-700",
+          accent: "orange"
+        },
+        websites: {
+          gradient: "from-indigo-500/10 via-blue-500/10 to-cyan-500/10",
+          border: "border-indigo-200/50",
+          iconBg: "from-indigo-500 to-blue-600",
+          titleColor: "text-indigo-700",
+          accent: "indigo"
+        },
+        exercises: {
+          gradient: "from-pink-500/10 via-rose-500/10 to-red-500/10",
+          border: "border-pink-200/50",
+          iconBg: "from-pink-500 to-rose-600",
+          titleColor: "text-pink-700",
+          accent: "pink"
+        }
+      }
+      return designMap[type] || designMap.articles
+    }
+
+    const design = getGradientAndColors()
+
+    return (
+      <motion.div 
+        variants={cardVariants} 
+        whileHover="hover" 
+        className="group h-full"
+      >
+        <Card className={`h-full bg-gradient-to-br ${design.gradient} backdrop-blur-sm border ${design.border} transition-all duration-300 hover:shadow-xl hover:scale-[1.02] overflow-hidden relative`}>
+          {/* Subtle background animation for instructor choice */}
+          {isInstructorChoice && (
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          )}
+          
+          <CardHeader className="pb-4 relative z-10">
+            <div className="flex items-start gap-4">
+              <motion.div
+                className={`p-3 rounded-2xl bg-gradient-to-br ${design.iconBg} shadow-lg group-hover:shadow-xl transition-all duration-300`}
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                {getIcon()}
+              </motion.div>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <CardTitle className={`${design.titleColor} group-hover:${design.titleColor.replace('700', '800')} transition-colors duration-300 text-lg font-bold leading-tight mb-2`}>
+                      {resource.title || resource.name}
+                    </CardTitle>
+                    {resource.creator && (
+                      <p className="text-slate-600 text-sm font-medium">by {resource.creator}</p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Special badges for different resource types */}
+                {resource.isAIGenerated ? (
+                  <motion.div
+                    className="mt-2"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, type: "spring" }}
+                  >
+                    <Badge className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0 shadow-md">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI Curated
+                    </Badge>
+                  </motion.div>
+                ) : isInstructorChoice && (
+                  <motion.div
+                    className="mt-2"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, type: "spring" }}
+                  >
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 shadow-md">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Instructor's Choice
+                    </Badge>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="pt-0 space-y-4 relative z-10">
+            {resource.description && (
+              <div className="p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/40 group-hover:bg-white/80 transition-all duration-300">
+                <p className="text-slate-700 text-sm leading-relaxed line-clamp-3">{resource.description}</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {resource.difficulty && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-600">Difficulty:</span>
+                  <Badge
+                    className={`font-semibold ${
+                      resource.difficulty === "Beginner"
+                        ? "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 border-emerald-300"
+                        : resource.difficulty === "Intermediate"
+                          ? "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 border-amber-300"
+                          : "bg-gradient-to-r from-red-100 to-pink-100 text-red-700 border-red-300"
+                    }`}
+                  >
+                    {resource.difficulty}
+                  </Badge>
+                </div>
+              )}
+
+              {resource.url && (
+                <motion.div 
+                  whileHover={{ scale: 1.02 }} 
+                  whileTap={{ scale: 0.98 }}
+                  className="pt-2"
+                >
+                  <Button
+                    className={`w-full bg-gradient-to-r ${design.iconBg} hover:from-${design.accent}-600 hover:to-${design.accent}-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 group/button`}
+                    asChild
+                  >
+                    <a
+                      href={resource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4 group-hover/button:scale-110 transition-transform duration-300" />
+                      <span className="font-semibold">Explore Resource</span>
+                    </a>
+                  </Button>
+                </motion.div>
+              )}
+            </div>
+          </CardContent>
+          
+          {/* Floating accent elements */}
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          {resource.isAIGenerated && (
+            <div className="absolute -top-4 -left-4 w-16 h-16 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          )}
+          {isInstructorChoice && (
+            <div className="absolute -top-4 -left-4 w-16 h-16 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          )}
+        </Card>
+      </motion.div>
+    )
+  }
+
+  // Helper function to get detailed content for a specific subsection
+  const getDetailedSubsectionContent = (moduleIndex, subsectionIndex) => {
+    console.log(`🔍 DEBUG: Getting detailed content for module ${moduleIndex}, subsection ${subsectionIndex}:`, {
+      hasDetailedContent: !!detailedContent,
+      hasModule: !!detailedContent?.[moduleIndex],
+      hasSubsection: !!detailedContent?.[moduleIndex]?.[subsectionIndex],
+      availableModules: detailedContent ? Object.keys(detailedContent) : [],
+      availableSubsections: detailedContent?.[moduleIndex] ? Object.keys(detailedContent[moduleIndex]) : []
+    })
+    
+    if (!detailedContent || !detailedContent[moduleIndex] || !detailedContent[moduleIndex][subsectionIndex]) {
+      return null
+    }
+    return detailedContent[moduleIndex][subsectionIndex]
+  }
+
+  // Helper functions for page tab navigation
+  const getCurrentPageTab = (moduleIndex, subsectionIndex) => {
+    const key = `${moduleIndex}-${subsectionIndex}`
+    return currentPageTabs[key] || 0
+  }
+
+  const setCurrentPageTab = (moduleIndex, subsectionIndex, pageIndex) => {
+    const key = `${moduleIndex}-${subsectionIndex}`
+    setCurrentPageTabs(prev => ({
+      ...prev,
+      [key]: pageIndex
+    }))
   }
 
   if (showQuiz && quizData) {
@@ -354,6 +702,8 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+
+      
       {/* Hover trigger for sidebar */}
       <div 
         className="fixed left-0 top-0 w-4 h-full z-50 bg-transparent"
@@ -373,6 +723,22 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
               >
                 <ChevronLeft className="h-5 w-5 mr-2" />
                 Back to Library
+              </Button>
+              <div className="h-8 w-px bg-white/30"></div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSidebar}
+                className="text-white hover:bg-white/20"
+                title={sidebarVisible ? "Hide Modules" : "Show Modules"}
+              >
+                <BookOpen className="h-5 w-5 mr-2" />
+                <span className="hidden sm:inline">Modules</span>
+                {sidebarVisible ? (
+                  <ChevronLeft className="h-4 w-4 ml-1" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                )}
               </Button>
               <div className="h-8 w-px bg-white/30"></div>
               <div>
@@ -398,12 +764,12 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
+        <div className="flex gap-4 lg:gap-8">
           {/* Sidebar - Module Navigation */}
           <div 
             className={`transition-all duration-300 ${
-              sidebarVisible ? 'w-80 opacity-100' : 'w-0 opacity-0'
-            } overflow-hidden`}
+              sidebarVisible ? 'w-80 lg:w-80 md:w-72 sm:w-64 xs:w-full opacity-100' : 'w-0 opacity-0'
+            } overflow-hidden flex-shrink-0`}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
@@ -415,7 +781,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="space-y-1 p-4">
+                <div className="space-y-6 p-6 min-h-[calc(100vh-8rem)]">
                   {modules.map((module, index) => (
                     <div key={index} className="space-y-2">
                       <Button
@@ -463,7 +829,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
               <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 text-white">
                 <div className="flex items-center justify-between">
@@ -586,12 +952,12 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                   </TabsContent>
 
                   {/* Subsections Tab */}
-                  <TabsContent value="subsections" className="p-6">
-                    <div className="space-y-6">
+                  <TabsContent value="subsections" className="p-3 sm:p-6">
+                    <div className="space-y-4 sm:space-y-6">
                       {subsections.length === 0 ? (
-                        <div className="text-center py-12">
-                          <Sparkles className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                          <p className="text-gray-500 text-lg">No detailed subsections available</p>
+                        <div className="text-center py-8 sm:py-12">
+                          <Sparkles className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
+                          <p className="text-gray-500 text-base sm:text-lg">No detailed subsections available</p>
                         </div>
                       ) : (
                         subsections.map((subsection, index) => {
@@ -606,32 +972,33 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                 ? 'border-green-300 bg-green-50' 
                                 : 'border-gray-200 hover:border-orange-300'
                             }`}>
-                              <CardHeader className="pb-3">
+                              <CardHeader className="pb-3 p-4 sm:p-6">
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                  <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                                       isCompleted 
                                         ? 'bg-green-500 text-white' 
                                         : 'bg-orange-500 text-white'
                                     }`}>
                                       {isCompleted ? (
-                                        <CheckCircle className="h-5 w-5" />
+                                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                                       ) : (
-                                        <span className="font-bold">{index + 1}</span>
+                                        <span className="font-bold text-sm sm:text-base">{index + 1}</span>
                                       )}
                                     </div>
-                                    <div>
-                                      <CardTitle className="text-lg">{subsection.title}</CardTitle>
-                                      <p className="text-sm text-gray-600 mt-1">
+                                    <div className="flex-1 min-w-0">
+                                      <CardTitle className="text-base sm:text-lg truncate">{subsection.title}</CardTitle>
+                                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
                                         {subsection.estimatedTime || 15} min • {subsection.difficulty || 'medium'}
                                       </p>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-shrink-0">
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => toggleSection(sectionKey)}
+                                      className="w-8 h-8 sm:w-10 sm:h-10"
                                     >
                                       {isExpanded ? (
                                         <ChevronUp className="h-4 w-4" />
@@ -644,101 +1011,279 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                               </CardHeader>
                               
                               {isExpanded && (
-                                <CardContent className="space-y-6">
-                                  {/* Subsection Content */}
-                                  <div className="bg-white p-4 rounded-lg border">
-                                    <h4 className="font-semibold text-gray-800 mb-3">Content</h4>
-                                    <div className="prose max-w-none">
-                                      {/* Display pages if available */}
-                                      {subsection.pages && subsection.pages.length > 0 ? (
-                                        <div className="space-y-6">
-                                          {subsection.pages.map((page, pageIndex) => (
-                                            <div key={pageIndex} className="border-l-4 border-orange-500 pl-4 py-2">
-                                              <h5 className="font-bold text-gray-800 mb-2">
+                                <CardContent className="p-3 sm:p-4 lg:p-6">
+                                  {/* Subsection Content Container - Remove nested background and simplify */}
+                                  <div className="space-y-4 sm:space-y-6">
+                                    {loadingDetailedContent ? (
+                                      <div className="flex items-center justify-center py-8 sm:py-12">
+                                        <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-orange-500"></div>
+                                        <span className="ml-2 text-gray-600 text-sm sm:text-base">Loading detailed content...</span>
+                                      </div>
+                                    ) : (
+                                      <div className="w-full">
+                                        {(() => {
+                                          // Get detailed content for this subsection
+                                          const detailedSubsectionContent = getDetailedSubsectionContent(currentModule, index)
+                                          const pages = detailedSubsectionContent?.pages || subsection.pages || []
+                                          
+                                          console.log(`🔍 DEBUG: Subsection ${index} content check:`, {
+                                            currentModule,
+                                            subsectionIndex: index,
+                                            hasDetailedContent: !!detailedSubsectionContent,
+                                            detailedPages: detailedSubsectionContent?.pages?.length || 0,
+                                            subsectionPages: subsection.pages?.length || 0,
+                                            totalPages: pages.length,
+                                            subsectionTitle: subsection.title,
+                                            detailedTitle: detailedSubsectionContent?.subsectionTitle
+                                          })
+                                          
+                                          return pages.length > 0 ? (
+                                            <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+                                              {/* Page Tabs Navigation - Mobile First */}
+                                              <div className="border-b border-gray-200 bg-gradient-to-r from-orange-50 to-red-50 rounded-t-xl shadow-sm">
+                                                <div className="flex space-x-1 overflow-x-auto pb-3 px-3 sm:px-4 scrollbar-hide">
+                                                  {pages.map((page, pageIndex) => (
+                                                    <button
+                                                      key={pageIndex}
+                                                      onClick={() => setCurrentPageTab(currentModule, index, pageIndex)}
+                                                      className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-t-lg whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
+                                                        getCurrentPageTab(currentModule, index) === pageIndex
+                                                          ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-md'
+                                                          : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
+                                                      }`}
+                                                    >
+                                                      <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                        getCurrentPageTab(currentModule, index) === pageIndex
+                                                          ? 'bg-white/20 text-white'
+                                                          : 'bg-gray-200 text-gray-600'
+                                                      }`}>
+                                                        {page.pageNumber || pageIndex + 1}
+                                                      </div>
+                                                      <span className="hidden sm:block">
                                                 {page.pageTitle || `Page ${page.pageNumber || pageIndex + 1}`}
+                                                      </span>
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              </div>
+
+                                              {/* Current Page Content - Mobile First Responsive */}
+                                              {(() => {
+                                                const currentPageIndex = getCurrentPageTab(currentModule, index)
+                                                const currentPage = pages[currentPageIndex]
+                                                
+                                                if (!currentPage) return null
+
+                                                return (
+                                                  <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+                                                    {/* Page Header - Mobile Optimized */}
+                                                    <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 sm:p-4 rounded-xl border border-orange-200">
+                                                      <div className="flex items-center gap-2 sm:gap-3">
+                                                        <div className="w-7 h-7 sm:w-9 sm:h-9 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                                          {currentPage.pageNumber || currentPageIndex + 1}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <h5 className="text-base sm:text-lg lg:text-xl font-bold text-gray-800 line-clamp-2">
+                                                            {currentPage.pageTitle || `Page ${currentPage.pageNumber || currentPageIndex + 1}`}
                                               </h5>
-                                              <div 
-                                                className="whitespace-pre-wrap text-gray-700 mb-3"
-                                                dangerouslySetInnerHTML={{ __html: formatRichText(page.content || '') }}
-                                              />
-                                              {page.keyTakeaway && (
-                                                <div className="bg-orange-50 p-3 rounded-lg">
-                                                  <p className="text-sm font-medium text-orange-800">
-                                                    <span className="font-bold">Key Takeaway:</span> {page.keyTakeaway}
-                                                  </p>
+                                                          <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
+                                                            Page {currentPageIndex + 1} of {pages.length}
+                                                          </p>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+
+                                                    {/* Page Content - Mobile First */}
+                                                    <div className="bg-gradient-to-br from-gray-50 to-white p-3 sm:p-4 lg:p-6 rounded-xl border-l-4 border-orange-500 shadow-sm">
+                                                      <div 
+                                                        className="text-gray-800 leading-relaxed prose prose-sm sm:prose lg:prose-lg max-w-none"
+                                                        dangerouslySetInnerHTML={{ __html: formatRichText(currentPage.content || '') }}
+                                                      />
+                                                    </div>
+
+                                                    {/* Enhanced Sections Container - Mobile First Grid */}
+                                                    <div className="space-y-3 sm:space-y-4">
+                                                      {/* Key Takeaway */}
+                                                      {currentPage.keyTakeaway && (
+                                                        <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 sm:p-4 rounded-lg border border-orange-200">
+                                                          <div className="flex items-start gap-2 sm:gap-3">
+                                                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                              <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                              <h6 className="font-bold text-orange-800 mb-1 sm:mb-2 text-sm sm:text-base">Key Takeaway</h6>
+                                                              <p className="text-orange-700 text-sm leading-relaxed">{currentPage.keyTakeaway}</p>
+                                                            </div>
+                                                          </div>
                                                 </div>
                                               )}
-                                              {page.mathematicalContent && page.mathematicalContent.length > 0 && (
-                                                <div className="mt-3 space-y-2">
-                                                  {page.mathematicalContent.map((math, mathIndex) => (
-                                                    <div key={mathIndex} className="bg-blue-50 p-3 rounded-lg">
-                                                      <p className="text-sm font-bold text-blue-800">{math.title}</p>
-                                                      <p className="text-sm text-blue-700 mt-1">{math.content}</p>
+
+                                                      {/* Mathematical Content */}
+                                                      {currentPage.mathematicalContent && currentPage.mathematicalContent.length > 0 && (
+                                                        <div className="space-y-2 sm:space-y-3">
+                                                          <h6 className="font-bold text-blue-800 flex items-center gap-2 text-sm sm:text-base">
+                                                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded flex items-center justify-center">
+                                                              <span className="text-white text-xs font-bold">Σ</span>
+                                                            </div>
+                                                            Mathematical Content
+                                                          </h6>
+                                                          {currentPage.mathematicalContent.map((math, mathIndex) => (
+                                                            <div key={mathIndex} className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-lg border border-blue-200">
+                                                              <p className="font-bold text-blue-800 mb-2 text-sm">{math.title}</p>
+                                                              <div className="bg-white p-2 sm:p-3 rounded border border-blue-100 mb-2 overflow-x-auto">
+                                                                <code className="text-blue-700 font-mono text-xs break-all">{math.content}</code>
+                                                              </div>
                                                       {math.explanation && (
-                                                        <p className="text-sm text-gray-600 mt-2">{math.explanation}</p>
+                                                                <p className="text-blue-600 text-sm leading-relaxed">{math.explanation}</p>
                                                       )}
                                                     </div>
                                                   ))}
                                                 </div>
                                               )}
+
+                                                      {/* Practical Example */}
+                                                      {detailedSubsectionContent?.practicalExample && (
+                                                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-lg border border-green-200">
+                                                          <div className="flex items-start gap-2 sm:gap-3">
+                                                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                              <Target className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                                             </div>
-                                          ))}
+                                                            <div className="flex-1 min-w-0">
+                                                              <h6 className="font-bold text-green-800 mb-1 sm:mb-2 text-sm sm:text-base">Practical Example</h6>
+                                                              <div 
+                                                                className="text-green-700 text-sm leading-relaxed prose prose-sm max-w-none"
+                                                                dangerouslySetInnerHTML={{ __html: formatRichText(detailedSubsectionContent.practicalExample) }}
+                                                              />
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      )}
+
+                                                      {/* Common Pitfalls */}
+                                                      {detailedSubsectionContent?.commonPitfalls && (
+                                                        <div className="bg-gradient-to-r from-red-50 to-pink-50 p-3 sm:p-4 rounded-lg border border-red-200">
+                                                          <div className="flex items-start gap-2 sm:gap-3">
+                                                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                              <h6 className="font-bold text-red-800 mb-1 sm:mb-2 text-sm sm:text-base">Common Pitfalls</h6>
+                                                              <div 
+                                                                className="text-red-700 text-sm leading-relaxed prose prose-sm max-w-none"
+                                                                dangerouslySetInnerHTML={{ __html: formatRichText(detailedSubsectionContent.commonPitfalls) }}
+                                                              />
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      )}
+                                                    </div>
+
+                                                    {/* Page Navigation - Mobile First */}
+                                                    <div className="flex flex-col sm:flex-row items-center justify-between pt-3 sm:pt-4 border-t border-gray-200 gap-3 sm:gap-0">
+                                                      <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCurrentPageTab(currentModule, index, Math.max(0, currentPageIndex - 1))}
+                                                        disabled={currentPageIndex === 0}
+                                                        className="flex items-center gap-2 w-full sm:w-auto text-sm"
+                                                      >
+                                                        <ChevronLeft className="h-4 w-4" />
+                                                        <span className="hidden sm:inline">Previous</span>
+                                                        <span className="sm:hidden">Prev</span>
+                                                      </Button>
+                                                      
+                                                      <div className="flex items-center gap-2 order-first sm:order-none">
+                                                        {pages.map((_, pageIdx) => (
+                                                          <button
+                                                            key={pageIdx}
+                                                            onClick={() => setCurrentPageTab(currentModule, index, pageIdx)}
+                                                            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-200 ${
+                                                              pageIdx === currentPageIndex
+                                                                ? 'bg-orange-500 w-3 sm:w-4'
+                                                                : 'bg-gray-300 hover:bg-orange-300'
+                                                            }`}
+                                                          />
+                                                        ))}
+                                                      </div>
+                                                      
+                                                      <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCurrentPageTab(currentModule, index, Math.min(pages.length - 1, currentPageIndex + 1))}
+                                                        disabled={currentPageIndex === pages.length - 1}
+                                                        className="flex items-center gap-2 w-full sm:w-auto text-sm"
+                                                      >
+                                                        <span className="hidden sm:inline">Next</span>
+                                                        <span className="sm:hidden">Next</span>
+                                                        <ChevronRight className="h-4 w-4" />
+                                                      </Button>
+                                                    </div>
+                                                  </div>
+                                                )
+                                              })()}
                                         </div>
                                       ) : (
-                                        /* Fallback to other content fields */
-                                        <>
+                                            /* Fallback to other content fields - Mobile First */
+                                            <div className="space-y-3 sm:space-y-4">
                                           {(subsection.content || subsection.explanation || subsection.summary) ? (
                                             <div 
-                                              className="whitespace-pre-wrap text-gray-700"
+                                                  className="whitespace-pre-wrap text-gray-700 bg-gradient-to-br from-gray-50 to-white p-3 sm:p-4 lg:p-6 rounded-xl border-l-4 border-orange-500 shadow-sm"
                                               dangerouslySetInnerHTML={{ 
                                                 __html: formatRichText(subsection.content || subsection.explanation || subsection.summary) 
                                               }}
                                             />
                                           ) : (
-                                            <p className="text-gray-500 italic">No content available</p>
-                                          )}
-                                        </>
+                                                <div className="text-center py-6 sm:py-8">
+                                                  <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 mx-auto mb-3" />
+                                                  <p className="text-gray-500 italic text-sm">No content available for this subsection</p>
+                                                </div>
                                       )}
                                     </div>
+                                          )
+                                        })()}
+                                      </div>
+                                    )}
                                   </div>
 
-                                  {/* Quiz Section */}
-                                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl">
-                                    <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                      <Brain className="h-5 w-5 text-purple-600" />
+                                  {/* Quiz Section - Mobile First */}
+                                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-xl">
+                                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                                      <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                                       Practice Quizzes
                                     </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                       {['Easy', 'Medium', 'Hard'].map((difficulty) => {
                                         const result = quizResults[difficulty]
                                         const hasQuiz = hasQuizForSubsection(currentModule, index, difficulty)
                                         const quizData = getQuizForSubsection(currentModule, index, difficulty)
                                         
                                         return (
-                                          <div key={difficulty} className="bg-white p-4 rounded-lg border">
-                                            <div className="flex items-center justify-between mb-3">
-                                              <Badge className={`${
+                                          <div key={difficulty} className="bg-white p-3 rounded-lg border">
+                                            <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+                                              <Badge className={`text-xs ${
                                                 difficulty === 'Easy' ? 'bg-green-100 text-green-800' :
                                                 difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                                                 'bg-red-100 text-red-800'
                                               }`}>
                                                 {difficulty}
                                               </Badge>
+                                              <div className="flex gap-1">
                                               {result && (
-                                                <Badge className="bg-blue-100 text-blue-800">
+                                                  <Badge className="bg-blue-100 text-blue-800 text-xs">
                                                   {result.score}%
                                                 </Badge>
                                               )}
                                               {hasQuiz && (
-                                                <Badge className="bg-purple-100 text-purple-800">
+                                                  <Badge className="bg-purple-100 text-purple-800 text-xs">
                                                   {quizData?.totalQuestions || quizData?.questions?.length || 0} Q
                                                 </Badge>
                                               )}
+                                              </div>
                                             </div>
                                             {hasQuiz ? (
                                               <Button
                                                 size="sm"
-                                                className={`w-full ${
+                                                className={`w-full text-xs h-8 ${
                                                   difficulty === 'Easy' ? 'bg-green-500 hover:bg-green-600' :
                                                   difficulty === 'Medium' ? 'bg-yellow-500 hover:bg-yellow-600' :
                                                   'bg-red-500 hover:bg-red-600'
@@ -748,12 +1293,12 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                               >
                                                 {isQuizLoading && selectedQuizDifficulty === difficulty ? (
                                                   <>
-                                                    <Timer className="h-4 w-4 mr-2 animate-spin" />
+                                                    <Timer className="h-3 w-3 mr-1 animate-spin" />
                                                     Loading...
                                                   </>
                                                 ) : (
                                                   <>
-                                                    <Trophy className="h-4 w-4 mr-2" />
+                                                    <Trophy className="h-3 w-3 mr-1" />
                                                     {result ? 'Retake' : 'Take'} Quiz
                                                   </>
                                                 )}
@@ -762,10 +1307,10 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="w-full cursor-not-allowed opacity-50"
+                                                className="w-full cursor-not-allowed opacity-50 text-xs h-8"
                                                 disabled
                                               >
-                                                <X className="h-4 w-4 mr-2" />
+                                                <X className="h-3 w-3 mr-1" />
                                                 No Quiz Available
                                               </Button>
                                             )}
@@ -787,66 +1332,135 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                   <TabsContent value="resources" className="p-6">
                     <div className="space-y-6">
                       {currentModuleData?.resources && Object.keys(currentModuleData.resources).length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="relative">
+                          {/* Enhanced background blur effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-indigo-600/10 to-blue-600/10 rounded-3xl blur-3xl"></div>
+                          
+                          <Card className="relative border-0 bg-gradient-to-br from-purple-50/90 via-indigo-50/90 to-blue-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
+                            {/* Animated background elements */}
+                            <div className="absolute inset-0 overflow-hidden">
+                              <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 to-indigo-100/30"></div>
+                              <motion.div
+                                className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 rounded-full blur-2xl"
+                                animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+                                transition={{ duration: 15, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                              />
+                              <motion.div
+                                className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-indigo-400/20 to-blue-400/20 rounded-full blur-2xl"
+                                animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
+                                transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                              />
+                            </div>
+
+                            <CardHeader className="relative z-10 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border-b border-purple-200/50 p-8">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <motion.div
+                                    className="w-16 h-16 bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl"
+                                    whileHover={{ scale: 1.1, rotate: 5 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                  >
+                                    <Sparkles className="h-8 w-8 text-white" />
+                                  </motion.div>
+                                  
+                                  <div>
+                                    <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 bg-clip-text text-transparent mb-2">
+                                      Learning Resources
+                                    </CardTitle>
+                                    <CardDescription className="text-purple-700 text-lg font-medium">
+                                      Comprehensive collection of exam preparation materials
+                                    </CardDescription>
+                                  </div>
+                                </div>
+                                
+                                <motion.div
+                                  initial={{ scale: 0, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  transition={{ delay: 0.3, type: "spring" }}
+                                >
+                                  <Badge className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
+                                    <Brain className="h-4 w-4 mr-2" />
+                                    Exam Focused
+                                  </Badge>
+                                </motion.div>
+                              </div>
+                            </CardHeader>
+                            
+                            <CardContent className="relative z-10 p-8">
+                              <Tabs
+                                defaultValue={
+                                  currentModuleData.resources.articles && currentModuleData.resources.articles.length > 0
+                                    ? "articles"
+                                    : currentModuleData.resources.videos && currentModuleData.resources.videos.length > 0
+                                      ? "videos"
+                                      : currentModuleData.resources.books && currentModuleData.resources.books.length > 0
+                                        ? "books"
+                                        : currentModuleData.resources.courses && currentModuleData.resources.courses.length > 0
+                                          ? "courses"
+                                          : currentModuleData.resources.tools && currentModuleData.resources.tools.length > 0
+                                            ? "tools"
+                                            : currentModuleData.resources.websites && currentModuleData.resources.websites.length > 0
+                                              ? "websites"
+                                              : currentModuleData.resources.exercises && currentModuleData.resources.exercises.length > 0
+                                                ? "exercises"
+                                                : "articles"
+                                }
+                                className="w-full"
+                              >
+                                {/* Enhanced TabsList with Educator Design */}
+                                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-lg">
                           {Object.entries(resourceCategories).map(([category, { icon: Icon, label, color }]) => {
                             const resources = currentModuleData.resources[category]
                             if (!resources || resources.length === 0) return null
                             
                             return (
-                              <Card key={category} className="border-2 hover:border-blue-300 transition-colors">
-                                <CardHeader className="pb-3">
-                                  <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Icon className={`h-5 w-5 text-${color}-500`} />
-                                    {label}
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="space-y-3">
-                                    {resources.map((resource, index) => (
-                                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                        <div className={`w-8 h-8 rounded-full bg-${color}-100 flex items-center justify-center`}>
-                                          <Icon className={`h-4 w-4 text-${color}-600`} />
+                                      <TabsTrigger
+                                        key={category}
+                                        value={category}
+                                        className={`group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-${color}-500 data-[state=active]:to-${color}-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-${color}-50`}
+                                      >
+                                        <div className={`p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300`}>
+                                          <Icon className={`h-5 w-5 text-${color}-600 group-data-[state=active]:text-white`} />
                                         </div>
-                                        <div className="flex-1">
-                                          {typeof resource === 'string' ? (
-                                            <p className="text-sm font-medium text-gray-800">{resource}</p>
-                                          ) : resource && typeof resource === 'object' ? (
-                                            <div className="space-y-1">
-                                              <p className="text-sm font-medium text-gray-800">
-                                                {resource.title || resource.name || 'Untitled Resource'}
-                                              </p>
-                                              {resource.author && (
-                                                <p className="text-xs text-gray-600">by {resource.author}</p>
-                                              )}
-                                              {resource.description && (
-                                                <p className="text-xs text-gray-500 line-clamp-2">{resource.description}</p>
-                                              )}
-                                              <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                {resource.year && <span>{resource.year}</span>}
-                                                {resource.difficulty && <span>• {resource.difficulty}</span>}
-                                                {resource.examRelevance && <span>• {resource.examRelevance}</span>}
-                                              </div>
-                                            </div>
-                                          ) : (
-                                            <p className="text-sm font-medium text-gray-800">Invalid resource</p>
-                                          )}
-                                        </div>
-                                        <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-700">
-                                          {typeof resource === 'object' && resource?.url ? (
-                                            <a href={resource.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                                              <ArrowRight className="h-4 w-4" />
-                                            </a>
-                                          ) : (
-                                            <ArrowRight className="h-4 w-4" />
-                                          )}
-                                        </Button>
-                                      </div>
-                                    ))}
+                                        <span className="text-xs font-semibold">{label}</span>
+                                        <Badge variant="secondary" className={`text-xs bg-${color}-100 text-${color}-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white`}>
+                                          {resources.length}
+                                        </Badge>
+                                      </TabsTrigger>
+                                    )
+                                  })}
+                                </TabsList>
+
+                                <div className="mt-8">
+                                  {Object.entries(resourceCategories).map(([category, { icon: Icon, label, color }]) => {
+                                    const resources = currentModuleData.resources[category]
+                                    if (!resources || resources.length === 0) return null
+                                    
+                                    return (
+                                      <TabsContent key={category} value={category}>
+                                        <motion.div
+                                          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                          variants={containerVariants}
+                                          initial="hidden"
+                                          animate="visible"
+                                        >
+                                          {resources.map((resource, index) => (
+                                            <motion.div key={`${category}-${index}`} variants={itemVariants}>
+                                              <ResourceCard 
+                                                resource={typeof resource === 'string' ? { title: resource } : resource} 
+                                                type={category} 
+                                                resourceIndex={index} 
+                                              />
+                                            </motion.div>
+                                          ))}
+                                        </motion.div>
+                                      </TabsContent>
+                                    )
+                                  })}
                                   </div>
+                              </Tabs>
                                 </CardContent>
                               </Card>
-                            )
-                          })}
                         </div>
                       ) : (
                         <div className="text-center py-12">
@@ -919,6 +1533,18 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           </div>
         </div>
       </div>
+      
+      {/* Custom styles for scrollbar hiding */}
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, and Opera */
+        }
+      `}</style>
     </div>
   )
 }

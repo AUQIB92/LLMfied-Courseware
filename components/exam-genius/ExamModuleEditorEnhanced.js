@@ -430,7 +430,16 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
 
       if (response.ok) {
         const data = await response.json()
-        toast.success("📝 Course saved as draft!")
+        
+        // Create detailed draft success message
+        const moduleCount = course.modules?.length || 0
+        const subsectionCount = course.modules?.reduce((total, module) => 
+          total + (module.detailedSubsections?.length || 0), 0) || 0
+        
+        toast.success(`📝 Draft Saved Successfully! 🎯 "${course.title}" • 📚 ${course.examType} • 📖 ${course.subject} • 📋 ${moduleCount} modules${subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ''} • ✨ Continue editing or publish when ready!`, {
+          duration: 6000,
+        })
+        
         if (onSaveSuccess) onSaveSuccess(data.course, "draft")
       } else {
         const errorText = await response.text()
@@ -464,10 +473,15 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
       subject: course?.subject
     })
 
-    if (!course || !courseId) {
+    if (!course) {
       toast.error("❌ Course information missing. Cannot publish.")
-      console.error("Missing course data:", { course: !!course, courseId })
+      console.error("Missing course data:", course)
       return
+    }
+
+    // If no courseId, we're creating a new course (not updating)
+    if (!courseId) {
+      console.log("⚠️  No courseId found, will create new course instead of updating")
     }
 
     if (!course.title || !course.examType || !course.subject) {
@@ -501,12 +515,16 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
       const publishPayload = {
         course: {
           ...course,
-          _id: courseId,
           status: "published",
           isExamGenius: true,
           isCompetitiveExam: true,
           modules: course.modules
         }
+      }
+
+      // Only include _id if we have a courseId (for updates)
+      if (courseId) {
+        publishPayload.course._id = courseId
       }
 
       console.log("🚀 Publishing course:", {
@@ -536,7 +554,22 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
       if (response.ok) {
         const data = await response.json()
         console.log("✅ Course published successfully:", data)
-        toast.success("🎉 Course published successfully!")
+        
+        // Create detailed publish success message
+        const moduleCount = course.modules?.length || 0
+        const subsectionCount = course.modules?.reduce((total, module) => 
+          total + (module.detailedSubsections?.length || 0), 0) || 0
+        const quizCount = course.modules?.reduce((total, module) => {
+          if (module.subsectionQuizzes) {
+            return total + Object.keys(module.subsectionQuizzes).length
+          }
+          return total + (module.quiz ? 1 : 0)
+        }, 0) || 0
+        
+        toast.success(`🎉 Course Published Successfully! 🏆 "${course.title}" is now live • 📚 ${course.examType} • 📖 ${course.subject} • 📋 ${moduleCount} modules${subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ''}${quizCount > 0 ? ` • 🎯 ${quizCount} quizzes` : ''} • 🚀 Students can now enroll and learn!`, {
+          duration: 8000,
+        })
+        
         if (onSaveSuccess) onSaveSuccess(data.course, "published")
       } else {
         const errorText = await response.text()
