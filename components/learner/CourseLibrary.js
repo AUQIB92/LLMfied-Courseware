@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer"
 import { 
   Search, 
   BookOpen, 
@@ -37,7 +38,8 @@ import {
   Lightbulb,
   Globe,
   Code,
-  Palette
+  Palette,
+  Trophy
 } from "lucide-react"
 import enrollmentCache from "@/lib/enrollmentCache"
 
@@ -45,6 +47,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedLevel, setSelectedLevel] = useState("all")
+  const [showCompetitiveOnly, setShowCompetitiveOnly] = useState(false)
   const [courses, setCourses] = useState([])
   const [enrollments, setEnrollments] = useState({})
   const [enrollmentLoading, setEnrollmentLoading] = useState({})
@@ -53,6 +56,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [uiUpdateTrigger, setUiUpdateTrigger] = useState(0) // Force UI updates
+  const [viewingExamGeniusCourse, setViewingExamGeniusCourse] = useState(null)
   const { getAuthHeaders, user } = useAuth()
 
   // Fetch all published courses and enrollment status on component mount
@@ -529,17 +533,36 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
     return enrollmentAttempts.has(courseId) || isLoading(courseId)
   }
 
-  // Enhanced filtering
-  const filteredCourses = courses.filter((course) => {
+  // Enhanced filtering - separate ExamGenius courses from general courses
+  const examGeniusCourses = courses.filter((course) => {
+    const matchesSearch =
+      course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    // Only show ExamGenius courses
+    return (course.isExamGenius || course.isCompetitiveExam) && matchesSearch
+  })
+
+  const generalCourses = courses.filter((course) => {
     const matchesSearch =
       course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesCategory = selectedCategory === "all" || course.category === selectedCategory
     const matchesLevel = selectedLevel === "all" || course.level === selectedLevel
+    const matchesCompetitive = !showCompetitiveOnly || course.isCompetitiveExam
     
-    return matchesSearch && matchesCategory && matchesLevel
+    // Exclude ExamGenius courses from general section
+    return matchesSearch && matchesCategory && matchesLevel && matchesCompetitive && 
+           !course.isExamGenius && !course.isCompetitiveExam
   })
+
+  const filteredCourses = showCompetitiveOnly ? courses.filter((course) => {
+    const matchesSearch =
+      course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesSearch && course.isCompetitiveExam
+  }) : generalCourses
 
   // Get unique categories and levels for filters
   const categories = ["all", ...new Set(courses.map(course => course.category).filter(Boolean))]
@@ -589,61 +612,350 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   // Use only real courses from the API
   const coursesArray = filteredCourses
 
+  // If viewing an ExamGenius course, render the special viewer
+  if (viewingExamGeniusCourse) {
+    return (
+      <ExamGeniusCourseViewer
+        course={viewingExamGeniusCourse}
+        onBack={() => setViewingExamGeniusCourse(null)}
+        onProgress={(progress) => {
+          console.log('📊 ExamGenius course progress:', progress)
+        }}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Simple Search and Filters */}
-          <div className="space-y-4">
-              {/* Search Bar */}
+        <div className="space-y-4">
+          {/* Search Bar */}
           <div className="relative max-w-xl">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <Input
-                  placeholder="Search courses..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+            <Input
+              placeholder="Search courses..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 h-12 rounded-xl border-2 border-slate-200 focus:border-blue-500 bg-white"
-                />
-              </div>
+            />
+          </div>
 
           {/* Simple Filters */}
           <div className="flex flex-wrap gap-3">
-                {/* Category Filters */}
-                  {categories.map((category) => (
-                    <Button
-                      key={category}
-                      variant={selectedCategory === category ? "default" : "outline"}
-                      onClick={() => setSelectedCategory(category)}
+            {/* Category Filters */}
+            {categories.map((category) => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                onClick={() => setSelectedCategory(category)}
                 size="sm"
                 className={`capitalize ${
-                        selectedCategory === category 
+                  selectedCategory === category 
                     ? 'bg-blue-600 text-white' 
                     : 'text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {category}
-                    </Button>
-                  ))}
+                }`}
+              >
+                {category}
+              </Button>
+            ))}
 
             <div className="w-px h-6 bg-slate-300 self-center"></div>
 
-                {/* Level Filters */}
-                  {levels.map((level) => (
-                    <Button
-                      key={level}
-                      variant={selectedLevel === level ? "default" : "outline"}
-                      onClick={() => setSelectedLevel(level)}
+            {/* Level Filters */}
+            {levels.map((level) => (
+              <Button
+                key={level}
+                variant={selectedLevel === level ? "default" : "outline"}
+                onClick={() => setSelectedLevel(level)}
                 size="sm"
                 className={`capitalize ${
-                        selectedLevel === level 
+                  selectedLevel === level 
                     ? 'bg-emerald-600 text-white' 
                     : 'text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {level}
-                    </Button>
-                  ))}
+                }`}
+              >
+                {level}
+              </Button>
+            ))}
+
+            <div className="w-px h-6 bg-slate-300 self-center"></div>
+
+            {/* Competitive Exam Filter */}
+            <Button
+              variant={showCompetitiveOnly ? "default" : "outline"}
+              onClick={() => setShowCompetitiveOnly(!showCompetitiveOnly)}
+              size="sm"
+              className={`${
+                showCompetitiveOnly
+                  ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white' 
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Trophy className="h-3 w-3 mr-1" />
+              Competitive Exams
+            </Button>
+          </div>
+        </div>
+
+        {/* ExamGenius Section */}
+        {examGeniusCourses.length > 0 && (
+          <div className="mb-12">
+            {/* ExamGenius Header */}
+            <div className="mb-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center">
+                  <Trophy className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">
+                    ExamGenius Courses
+                  </h2>
+                  <p className="text-gray-600">Competitive exam-focused courses with AI-powered learning</p>
+                </div>
+                <div className="flex items-center gap-2 ml-auto">
+                  <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white">
+                    <Zap className="h-3 w-3 mr-1" />
+                    AI-Enhanced
+                  </Badge>
+                  <Badge className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+                    <Brain className="h-3 w-3 mr-1" />
+                    Exam-Focused
+                  </Badge>
                 </div>
               </div>
+              
+              {/* ExamGenius Info Banner */}
+              <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 text-orange-800">
+                  <Trophy className="h-5 w-5" />
+                  <div>
+                    <p className="text-sm font-medium">
+                      Specialized courses designed for competitive exams with speed-solving techniques, shortcuts, and exam strategies
+                    </p>
+                    <div className="flex items-center gap-4 mt-2 text-xs">
+                      <span className="flex items-center gap-1">
+                        <Target className="h-3 w-3" />
+                        Quiz per subsection
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Zap className="h-3 w-3" />
+                        Speed techniques
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Brain className="h-3 w-3" />
+                        Memory tricks
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ExamGenius Course Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {examGeniusCourses.map((course, index) => {
+                const courseData = getDefaultData(course)
+                const LevelIcon = getLevelIcon(course.level)
+                const instructorInfo = getInstructorInfo(course)
+                
+                return (
+                  <Card 
+                    key={`exam-genius-${course._id}-${uiUpdateTrigger}-${isEnrolled(course._id)}`} 
+                    className="group border-2 border-orange-200 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-gradient-to-br from-white via-orange-50/30 to-red-50/30 backdrop-blur-sm overflow-hidden transform hover:scale-[1.02]"
+                  >
+                    {/* ExamGenius Course Header with Special Gradient */}
+                    <div className="relative h-56 bg-gradient-to-br from-orange-500 via-red-600 to-pink-600 overflow-hidden">
+                      <div className="absolute inset-0 bg-black/20"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                      
+                      {/* Course Image */}
+                      <img 
+                        src={courseData.thumbnail} 
+                        alt={course.title}
+                        className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+                      />
+                      
+                      {/* ExamGenius Badge */}
+                      <div className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-red-600 text-white px-3 py-2 rounded-xl font-bold text-sm shadow-lg">
+                        <Trophy className="h-4 w-4 inline mr-1" />
+                        ExamGenius
+                      </div>
+                      
+                      {/* Instructor Info */}
+                      <div className="absolute top-4 right-4 flex items-center gap-2 p-3 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-white/30">
+                        <div className="relative">
+                          {instructorInfo.avatar ? (
+                            <img 
+                              src={instructorInfo.avatar} 
+                              alt={instructorInfo.name}
+                              className="w-8 h-8 rounded-full object-cover shadow-lg border-2 border-white/50"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white/50">
+                              <span className="text-white text-xs font-bold">
+                                {instructorInfo.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-600 font-medium">{instructorInfo.name}</p>
+                        </div>
+                      </div>
+
+                      {/* Course Info Overlay */}
+                      <div className="absolute bottom-4 left-4 right-4 text-white">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge className="bg-gradient-to-r from-orange-600 to-red-700 text-white border-none">
+                            <LevelIcon className="h-3 w-3 mr-1" />
+                            {course.level || 'Intermediate'}
+                          </Badge>
+                          <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                            {course.examType}
+                          </Badge>
+                          <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                            {course.modules?.length || 0} modules
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-xl font-bold text-slate-800 group-hover:text-orange-600 transition-colors duration-300 leading-tight line-clamp-2">
+                        {course.title}
+                      </CardTitle>
+                      <CardDescription className="text-slate-600 line-clamp-3 text-base leading-relaxed">
+                        {course.description || "Competitive exam focused course with speed-solving techniques"}
+                      </CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-6">
+                      {/* ExamGenius Specific Metrics */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center p-3 bg-orange-50 rounded-xl group-hover:bg-orange-100 transition-colors duration-300">
+                          <div className="flex items-center justify-center mb-2">
+                            <Target className="h-5 w-5 text-orange-500" />
+                          </div>
+                          <p className="text-xs text-orange-600 font-medium mb-1">Exam Type</p>
+                          <p className="text-sm font-bold text-slate-800">{course.examType || 'JEE'}</p>
+                        </div>
+                        <div className="text-center p-3 bg-red-50 rounded-xl group-hover:bg-red-100 transition-colors duration-300">
+                          <div className="flex items-center justify-center mb-2">
+                            <Brain className="h-5 w-5 text-red-500" />
+                          </div>
+                          <p className="text-xs text-red-600 font-medium mb-1">Subject</p>
+                          <p className="text-sm font-bold text-slate-800">{course.subject || 'Mathematics'}</p>
+                        </div>
+                        <div className="text-center p-3 bg-pink-50 rounded-xl group-hover:bg-pink-100 transition-colors duration-300">
+                          <div className="flex items-center justify-center mb-2">
+                            <Star className="h-5 w-5 text-pink-500 fill-current" />
+                          </div>
+                          <p className="text-xs text-pink-600 font-medium mb-1">Rating</p>
+                          <p className="text-sm font-bold text-slate-800">{course.rating || '4.8'}</p>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Badge className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 border-orange-200">
+                            <Trophy className="h-3 w-3 mr-1" />
+                            Competitive Exam Course
+                          </Badge>
+                          
+                          {isEnrolled(course._id) && (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Enrolled
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          {isEnrolled(course._id) ? (
+                            <>
+                              <Button 
+                                className="flex-1 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  console.log('📖 Opening enrolled ExamGenius course:', course.title)
+                                  const instructorInfo = getInstructorInfo(course)
+                                  setViewingExamGeniusCourse({
+                                    ...course, 
+                                    ...courseData,
+                                    instructorName: instructorInfo.name,
+                                    instructorAvatar: instructorInfo.avatar,
+                                    isEnrolled: true,
+                                    isExamGenius: true,
+                                    enrolledAt: enrollments[course._id]?.enrolledAt || new Date().toISOString()
+                                  })
+                                }}
+                              >
+                                <Play className="h-4 w-4 mr-2" />
+                                Continue Exam Prep
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                size="sm"
+                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleUnenrollment(course._id)
+                                }}
+                                disabled={isEnrollmentInProgress(course._id)}
+                              >
+                                {isEnrollmentInProgress(course._id) ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  'Unenroll'
+                                )}
+                              </Button>
+                            </>
+                          ) : (
+                            <Button 
+                              className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEnrollment(course._id)
+                              }}
+                              disabled={isEnrollmentInProgress(course._id)}
+                            >
+                              {isEnrollmentInProgress(course._id) ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Enrolling...
+                                </>
+                              ) : (
+                                <>
+                                  <Trophy className="h-4 w-4 mr-2" />
+                                  Start Exam Prep
+                                  <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* General Courses Section */}
+        {!showCompetitiveOnly && generalCourses.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">General Courses</h2>
+              <Badge variant="outline" className="text-slate-600">
+                {generalCourses.length} course{generalCourses.length !== 1 ? 's' : ''}
+              </Badge>
+            </div>
+          </div>
+        )}
 
         {/* Course Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -718,6 +1030,12 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                       <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
                         {course.modules?.length || 8} modules
                       </Badge>
+                      {course.isCompetitiveExam && (
+                        <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white border-none backdrop-blur-sm font-semibold">
+                          <Trophy className="h-3 w-3 mr-1" />
+                          Competitive Exam
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
@@ -767,10 +1085,18 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                   {/* Category and Action */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Badge className={getCategoryColor(course.category || "General")}>
-                        <BookOpen className="h-3 w-3 mr-1" />
-                        {course.category || "General"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getCategoryColor(course.category || "General")}>
+                          <BookOpen className="h-3 w-3 mr-1" />
+                          {course.category || "General"}
+                        </Badge>
+                        {course.isCompetitiveExam && (
+                          <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white border-none font-semibold">
+                            <Trophy className="h-3 w-3 mr-1" />
+                            Competitive Exam
+                          </Badge>
+                        )}
+                      </div>
                       
                       {/* Enrollment Status Badge */}
                       {isEnrolled(course._id) && (
@@ -913,6 +1239,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                   setSearchTerm("")
                   setSelectedCategory("all")
                   setSelectedLevel("all")
+                  setShowCompetitiveOnly(false)
                 }}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
               >

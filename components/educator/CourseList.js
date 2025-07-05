@@ -21,6 +21,7 @@ import {
   Globe,
   Lock,
   Archive,
+  Loader2,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
@@ -34,6 +35,11 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const { getAuthHeaders } = useAuth()
+
+  // Filter out ExamGenius courses from general course list
+  const filteredCourses = courses.filter(course => 
+    !course.isExamGenius && !course.isCompetitiveExam
+  )
 
   const handleStatusChange = async (courseId, newStatus) => {
     // Add confirmation for unpublishing
@@ -77,9 +83,9 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
 
   const handleDelete = async (courseId) => {
     // Enhanced confirmation dialog
-    const courseToDelete = courses.find(c => (c._id || c.id) === courseId)
+    const courseToDelete = filteredCourses.find(c => (c._id || c.id) === courseId)
     const isPublished = courseToDelete?.status === 'published'
-    const enrollmentCount = courseToDelete?.enrolledCount || 0
+    const enrollmentCount = courseToDelete?.enrollmentCount || 0
     
     let confirmMessage = "Are you sure you want to delete this course? This action cannot be undone."
     
@@ -167,7 +173,7 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
     return colors[category] || "from-gray-500 to-slate-600"
   }
 
-  if (courses.length === 0) {
+  if (filteredCourses.length === 0) {
     return (
       <div className="text-center py-20">
         <div className="relative">
@@ -180,6 +186,9 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
             <p className="text-slate-600 text-lg leading-relaxed">
               Start your teaching journey by creating your first course. Share your knowledge and inspire learners
               worldwide!
+            </p>
+            <p className="text-slate-500 text-sm mt-4">
+              Note: ExamGenius courses are shown in the ExamGenius section
             </p>
           </div>
         </div>
@@ -195,46 +204,44 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm">Total Courses</p>
-                <p className="text-2xl font-bold">{courses.length}</p>
+                <p className="text-blue-100 text-sm">General Courses</p>
+                <p className="text-2xl font-bold">{filteredCourses.length}</p>
               </div>
               <BookOpen className="h-8 w-8 text-blue-200" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-lg">
+        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100 text-sm">Published</p>
-                <p className="text-2xl font-bold">{courses.filter((c) => c.status === "published").length}</p>
+                <p className="text-2xl font-bold">{filteredCourses.filter(c => c.status === 'published').length}</p>
               </div>
-              <Globe className="h-8 w-8 text-green-200" />
+              <PlayCircle className="h-8 w-8 text-green-200" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-500 to-orange-600 text-white border-0 shadow-lg">
+        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-amber-100 text-sm">Drafts</p>
-                <p className="text-2xl font-bold">{courses.filter((c) => c.status === "draft").length}</p>
+                <p className="text-orange-100 text-sm">Drafts</p>
+                <p className="text-2xl font-bold">{filteredCourses.filter(c => c.status === 'draft').length}</p>
               </div>
-              <FileText className="h-8 w-8 text-amber-200" />
+              <FileText className="h-8 w-8 text-orange-200" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white border-0 shadow-lg">
+        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100 text-sm">Total Students</p>
-                <p className="text-2xl font-bold">
-                  {courses.reduce((acc, course) => acc + (course.enrolledCount || 0), 0)}
-                </p>
+                <p className="text-2xl font-bold">{filteredCourses.reduce((sum, c) => sum + (c.enrolledCount || 0), 0)}</p>
               </div>
               <Users className="h-8 w-8 text-purple-200" />
             </div>
@@ -244,9 +251,10 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
 
       {/* Courses Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {courses.map((course, index) => {
+        {filteredCourses.map((course, index) => {
           const statusConfig = getStatusConfig(course.status)
-          const isDeleting = deletingId === course._id || deletingId === course.id
+          const categoryGradient = getCategoryColor(course.category)
+          const isDeleting = deletingId === (course._id || course.id)
 
           return (
             <Card
@@ -274,7 +282,7 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
               {/* Content */}
               <div className="relative">
                 {/* Course Header with Gradient Background */}
-                <div className={`relative h-40 bg-gradient-to-br ${getCategoryColor(course.category)} overflow-hidden`}>
+                <div className={`relative h-40 bg-gradient-to-br ${categoryGradient} overflow-hidden`}>
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
                   <div className="absolute inset-0 bg-[url('/placeholder.svg?height=160&width=400')] bg-cover bg-center opacity-20"></div>
 
@@ -298,7 +306,11 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
                           className="h-8 w-8 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-0"
                           disabled={loading || isDeleting}
                         >
-                          <MoreHorizontal className="h-4 w-4" />
+                          {isDeleting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MoreHorizontal className="h-4 w-4" />
+                          )}
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
@@ -306,7 +318,7 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
                         className="w-48 shadow-xl border-white/20 bg-white/95 backdrop-blur-xl"
                       >
                         <DropdownMenuItem
-                          onClick={() => onEditCourse?.(course._id || course.id)}
+                          onClick={() => onEditCourse(course._id || course.id)}
                           className="text-blue-700 hover:bg-blue-50 cursor-pointer"
                         >
                           <Edit className="h-4 w-4 mr-2" />
@@ -316,41 +328,25 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
                           <Eye className="h-4 w-4 mr-2" />
                           Preview
                         </DropdownMenuItem>
-                        {course.status === "draft" ? (
-                          <DropdownMenuItem
-                            onClick={() => handleStatusChange(course._id || course.id, "published")}
-                            className="text-emerald-700 hover:bg-emerald-50 cursor-pointer"
-                            disabled={loading}
-                          >
-                            <Globe className="h-4 w-4 mr-2" />
-                            Publish Course
-                          </DropdownMenuItem>
-                        ) : course.status === "published" ? (
-                          <DropdownMenuItem
-                            onClick={() => handleStatusChange(course._id || course.id, "draft")}
-                            className="text-orange-700 hover:bg-orange-50 cursor-pointer"
-                            disabled={loading}
-                          >
-                            <Lock className="h-4 w-4 mr-2" />
-                            Unpublish
-                          </DropdownMenuItem>
-                        ) : null}
-                        {/* Show enrollment info for published courses */}
-                        {course.status === "published" && course.enrolledCount > 0 && (
-                          <DropdownMenuItem disabled className="text-slate-500 hover:bg-slate-50">
-                            <Users className="h-4 w-4 mr-2" />
-                            {course.enrolledCount} Student{course.enrolledCount > 1 ? 's' : ''} Enrolled
-                          </DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem className="text-purple-700 hover:bg-purple-50 cursor-pointer">
+                          <Users className="h-4 w-4 mr-2" />
+                          View Students
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleStatusChange(course._id || course.id, course.status === 'published' ? 'draft' : 'published')}
+                          className="text-orange-700 hover:bg-orange-50 cursor-pointer"
+                          disabled={loading}
+                        >
+                          {course.status === 'published' ? <Lock className="h-4 w-4 mr-2" /> : <Globe className="h-4 w-4 mr-2" />}
+                          {course.status === 'published' ? 'Unpublish' : 'Publish'}
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDelete(course._id || course.id)}
                           className="text-red-600 hover:bg-red-50 cursor-pointer"
                           disabled={loading || isDeleting}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          {course.status === "published" && course.enrolledCount > 0 
-                            ? "Delete (⚠️ Has Students)" 
-                            : "Delete Course"}
+                          Delete Course
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -451,7 +447,7 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
                   {/* Action Buttons */}
                   <div className="flex gap-2 pt-2">
                     <Button
-                      onClick={() => onEditCourse?.(course._id || course.id)}
+                      onClick={() => onEditCourse(course._id || course.id)}
                       className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 transition-all duration-300 hover:shadow-lg"
                       disabled={loading || isDeleting}
                     >

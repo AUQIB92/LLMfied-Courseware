@@ -32,13 +32,16 @@ import {
   FileText,
   ArrowRight,
   Trophy,
+  GraduationCap,
 } from "lucide-react"
 import CourseCreator from "./CourseCreator"
 import CourseList from "./CourseList"
 import CourseEditor from "./CourseEditor"
+import ExamContentEditor from "@/components/exam-genius/ExamContentEditor"
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm"
 import PreferencesSettings from "@/components/profile/PreferencesSettings"
 import NotificationsSettings from "@/components/profile/NotificationsSettings"
+import ExamGenius from "@/components/exam-genius/ExamGenius"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +55,7 @@ export default function EducatorDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [courses, setCourses] = useState([])
   const [editingCourseId, setEditingCourseId] = useState(null)
+  const [editingCourse, setEditingCourse] = useState(null)
   const [avatarKey, setAvatarKey] = useState(Date.now())
   const [stats, setStats] = useState({
     totalCourses: 0,
@@ -61,14 +65,23 @@ export default function EducatorDashboard() {
     recentEnrollments: 0,
     completionRate: 0,
     averageProgress: 0,
+    // Enhanced stats
+    revenue: 0,
+    activeLearners: 0,
+    retentionRate: 0,
+    monthlyGrowth: 0,
+    weeklyEnrollments: [],
+    topCourses: [],
+    engagementMetrics: {
+      averageSessionDuration: 0,
+      averageCoursesPerStudent: 0,
+      studentSatisfaction: 0,
+      certificatesIssued: 0
+    }
   })
 
   const { user, getAuthHeaders, logout, updateProfile, updateUser } = useAuth()
   const router = useRouter()
-
-
-
-
 
   const dataFetched = useRef(false)
 
@@ -128,8 +141,14 @@ export default function EducatorDashboard() {
       }
 
       const coursesArray = Array.isArray(data) ? data : []
-      console.log("Setting courses:", coursesArray.length, "courses")
-      setCourses(coursesArray)
+      console.log("Total courses fetched:", coursesArray.length)
+      
+      // Filter out ExamGenius courses from the general dashboard
+      const generalCourses = coursesArray.filter(course => !course.isExamGenius && !course.isCompetitiveExam)
+      console.log("General courses (excluding ExamGenius):", generalCourses.length)
+      console.log("ExamGenius courses filtered out:", coursesArray.length - generalCourses.length)
+      
+      setCourses(generalCourses)
     } catch (error) {
       console.error("Failed to fetch courses:", error)
       console.error("Error type:", error.constructor.name)
@@ -141,18 +160,48 @@ export default function EducatorDashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`/api/stats?type=educator`, {
+      console.log("📊 Fetching educator stats...")
+      console.log("🔑 Auth headers:", getAuthHeaders())
+      
+      const response = await fetch(`/api/stats?type=educator&excludeExamGenius=true`, {
         headers: getAuthHeaders(),
       })
 
+      console.log("📊 Stats response status:", response.status)
+      console.log("📊 Stats response ok:", response.ok)
+
       if (response.ok) {
         const data = await response.json()
+        console.log("✅ Enhanced stats received:", data)
         setStats(data)
       } else {
-        console.error("Failed to fetch stats:", await response.text())
+        const errorText = await response.text()
+        console.error("❌ Failed to fetch stats:", errorText)
+        console.error("❌ Response status:", response.status)
+        console.error("❌ Response statusText:", response.statusText)
+        
+        // Try to parse error details
+        try {
+          const errorData = JSON.parse(errorText)
+          console.error("❌ Error details:", errorData)
+          
+          // Show user-friendly error message
+          if (errorData.error) {
+            console.error("❌ API Error:", errorData.error)
+            if (errorData.details) {
+              console.error("❌ Error details:", errorData.details)
+            }
+          }
+        } catch (parseError) {
+          console.error("❌ Could not parse error response:", parseError)
+        }
       }
     } catch (error) {
-      console.error("Failed to fetch stats:", error)
+      console.error("💥 Network error fetching stats:", error)
+      console.error("💥 Error name:", error.name)
+      console.error("💥 Error message:", error.message)
+      console.error("💥 Error stack:", error.stack)
+      
       // Keep default stats if API fails
       setStats({
         totalCourses: 0,
@@ -162,17 +211,39 @@ export default function EducatorDashboard() {
         recentEnrollments: 0,
         completionRate: 0,
         averageProgress: 0,
+        revenue: 0,
+        activeLearners: 0,
+        retentionRate: 0,
+        monthlyGrowth: 0,
+        weeklyEnrollments: [],
+        topCourses: [],
+        engagementMetrics: {
+          averageSessionDuration: 0,
+          averageCoursesPerStudent: 0,
+          studentSatisfaction: 0,
+          certificatesIssued: 0
+        }
       })
     }
   }
 
-
-
-
-
   const handleEditCourse = (courseId) => {
+    // Find the course to determine which editor to use
+    const course = courses.find(c => c.id === courseId || c._id === courseId)
+    console.log("Editing course:", courseId, "Found course:", course)
+    console.log("Is competitive exam?", course?.isCompetitiveExam, "Is exam genius?", course?.isExamGenius)
+    
     setEditingCourseId(courseId)
-    setActiveTab("edit")
+    setEditingCourse(course)
+    
+    // Route to appropriate editor based on course type
+    if (course?.isCompetitiveExam || course?.isExamGenius) {
+      console.log("Routing to ExamContentEditor")
+      setActiveTab("edit-exam")
+    } else {
+      console.log("Routing to regular CourseEditor")
+      setActiveTab("edit")
+    }
   }
 
   const refreshData = async () => {
@@ -181,12 +252,14 @@ export default function EducatorDashboard() {
 
   const handleBackFromEditor = () => {
     setEditingCourseId(null)
+    setEditingCourse(null)
     setActiveTab("courses")
   }
 
   const handleCourseUpdated = () => {
     refreshData()
     setEditingCourseId(null)
+    setEditingCourse(null)
     setActiveTab("courses")
   }
 
@@ -211,252 +284,30 @@ export default function EducatorDashboard() {
     setActiveTab("notifications")
   }
 
-  // Beautiful Recent Courses Component
-  const BeautifulRecentCourses = () => {
-    const recentCourses = Array.isArray(courses) ? courses.slice(0, 6) : []
-
-    const getStatusColor = (status) => {
-      switch (status) {
-        case "published":
-          return "bg-gradient-to-r from-emerald-500 to-green-600 text-white"
-        case "draft":
-          return "bg-gradient-to-r from-amber-500 to-orange-600 text-white"
-        case "archived":
-          return "bg-gradient-to-r from-slate-500 to-gray-600 text-white"
-        default:
-          return "bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
-      }
-    }
-
-    const getStatusIcon = (status) => {
-      switch (status) {
-        case "published":
-          return <PlayCircle className="h-3 w-3" />
-        case "draft":
-          return <FileText className="h-3 w-3" />
-        case "archived":
-          return <Clock className="h-3 w-3" />
-        default:
-          return <BookOpen className="h-3 w-3" />
-      }
-    }
-
-    if (recentCourses.length === 0) {
-      return (
-        <div className="text-center py-16">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 to-purple-100/50 rounded-full blur-3xl"></div>
-            <div className="relative bg-gradient-to-br from-slate-100 to-blue-50 rounded-3xl p-12 border border-white/50 shadow-xl">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-2xl">
-                <BookOpen className="h-12 w-12 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-3">No courses yet</h3>
-              <p className="text-slate-600 mb-8 max-w-md mx-auto">
-                Start your teaching journey by creating your first course. Share your knowledge with the world!
-              </p>
-              <Button
-                onClick={() => setActiveTab("create")}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Create Your First Course
-              </Button>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-8">
-        {/* Header with View All Button */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
-            <div>
-              <h3 className="text-xl font-bold text-slate-800">Recent Courses</h3>
-              <p className="text-slate-600 text-sm">Your latest educational content</p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setActiveTab("courses")}
-            className="group hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200 hover:border-blue-300 transition-all duration-300"
-          >
-            View All Courses
-            <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-          </Button>
-        </div>
-
-        {/* Courses Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-          {recentCourses.map((course, index) => (
-            <Card
-              key={course._id || course.id || `course-${index}`}
-              className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] cursor-pointer"
-              style={{
-                animationDelay: `${index * 100}ms`,
-                animation: "fadeInUp 0.6s ease-out forwards",
-              }}
-            >
-              {/* Gradient Border Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute inset-[1px] bg-white rounded-xl"></div>
-
-              {/* Content */}
-              <div className="relative">
-                {/* Course Thumbnail/Header */}
-                <div className="relative h-32 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
-                  <div className="absolute inset-0 bg-[url('/placeholder.svg?height=128&width=400')] bg-cover bg-center opacity-20"></div>
-
-                  {/* Status Badge */}
-                  <div className="absolute top-4 left-4">
-                    <Badge className={`${getStatusColor(course.status)} px-3 py-1 text-xs font-semibold shadow-lg`}>
-                      <div className="flex items-center gap-1">
-                        {getStatusIcon(course.status)}
-                        {course.status?.charAt(0).toUpperCase() + course.status?.slice(1) || "Draft"}
-                      </div>
-                    </Badge>
-                  </div>
-
-                  {/* Course Actions */}
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-0"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={() => handleEditCourse(course.id)}>
-                          <Edit3 className="h-4 w-4 mr-2" />
-                          Edit Course
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Preview
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Users className="h-4 w-4 mr-2" />
-                          View Students
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  {/* Course Category/Level */}
-                  <div className="absolute bottom-4 left-4">
-                    <div className="flex items-center gap-2">
-                      <div className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded-lg text-white text-xs font-medium">
-                        {course.category || "General"}
-                      </div>
-                      <div className="flex items-center gap-1 text-white/80 text-xs">
-                        <Star className="h-3 w-3 fill-current" />
-                        {course.level || "Beginner"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Course Content */}
-                <CardContent className="p-6 space-y-4">
-                  {/* Title and Description */}
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-lg text-slate-800 line-clamp-2 group-hover:text-blue-600 transition-colors duration-300">
-                      {course.title || "Untitled Course"}
-                    </h4>
-                    <p className="text-slate-600 text-sm line-clamp-2 leading-relaxed">
-                      {course.description || "No description available for this course."}
-                    </p>
-                  </div>
-
-                  {/* Course Stats */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                    <div className="flex items-center gap-4 text-sm text-slate-500">
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span className="font-medium">{course.enrolledCount || 0}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <BookOpen className="h-4 w-4" />
-                        <span className="font-medium">{course.lessonsCount || 0} lessons</span>
-                      </div>
-                    </div>
-
-                    {/* Last Updated */}
-                    <div className="flex items-center gap-1 text-xs text-slate-400">
-                      <Calendar className="h-3 w-3" />
-                      <span>{course.updatedAt ? new Date(course.updatedAt).toLocaleDateString() : "Recently"}</span>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar (if applicable) */}
-                  {course.completionRate !== undefined && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">Completion Rate</span>
-                        <span className="font-semibold text-slate-800">{course.completionRate}%</span>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-1000 ease-out"
-                          style={{ width: `${course.completionRate}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Button */}
-                  <Button
-                    onClick={() => handleEditCourse(course._id || course.id)}
-                    className="w-full bg-gradient-to-r from-slate-100 to-blue-50 hover:from-blue-50 hover:to-purple-50 text-slate-700 hover:text-slate-800 border border-slate-200 hover:border-blue-300 transition-all duration-300 group-hover:shadow-md"
-                  >
-                    <Edit3 className="h-4 w-4 mr-2" />
-                    Edit Course
-                  </Button>
-                </CardContent>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-center pt-6 sm:pt-8 space-y-3 sm:space-y-0 sm:space-x-4">
-          <Button
-            onClick={() => setActiveTab("create")}
-            className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-          >
-            <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-            Create New Course
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setActiveTab("courses")}
-            className="w-full sm:w-auto hover:bg-gradient-to-r hover:from-slate-50 hover:to-blue-50 border-slate-200 hover:border-blue-300 px-6 py-3 rounded-xl transition-all duration-300"
-          >
-            <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-            Manage All Courses
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
         return (
-          <div className="space-y-12">
-            {/* Hero Stats Section */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 rounded-3xl blur-3xl"></div>
-              <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-                <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white shadow-2xl hover:shadow-blue-500/25 transition-all duration-500 hover:scale-105">
+          <div className="space-y-8">
+            {/* Welcome Section */}
+            <div className="text-center py-8">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-3xl blur-3xl"></div>
+                <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-4">
+                    Welcome back, {user?.name || "Educator"}!
+                  </h1>
+                  <p className="text-slate-600 text-lg max-w-2xl mx-auto">
+                    Your educational impact dashboard. Create, manage, and track both technical and competitive exam courses.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Primary Stats Section */}
+            <div className="mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 text-white shadow-2xl hover:shadow-blue-500/25 transition-all duration-500 hover:scale-105">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
                     <div>
@@ -521,6 +372,28 @@ export default function EducatorDashboard() {
                   </CardContent>
                   <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
                 </Card>
+
+                <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 text-white shadow-2xl hover:shadow-orange-500/25 transition-all duration-500 hover:scale-105">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
+                    <div>
+                      <CardTitle className="text-sm font-medium text-orange-100">Completion Rate</CardTitle>
+                      <div className="text-4xl font-bold mt-2 bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">
+                        {stats.completionRate}%
+                      </div>
+                    </div>
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-2xl group-hover:bg-white/30 transition-all duration-300">
+                      <Trophy className="h-6 w-6 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative">
+                    <p className="text-xs text-orange-100 flex items-center gap-1">
+                      <Target className="h-3 w-3" />
+                      Success rate
+                    </p>
+                  </CardContent>
+                  <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                </Card>
               </div>
             </div>
 
@@ -554,19 +427,6 @@ export default function EducatorDashboard() {
 
               <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Completion Rate</CardTitle>
-                  <Trophy className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">{stats.completionRate}%</div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Course completion
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-gray-600">Average Progress</CardTitle>
                   <Target className="h-4 w-4 text-blue-500" />
                 </CardHeader>
@@ -577,30 +437,162 @@ export default function EducatorDashboard() {
                   </p>
                 </CardContent>
               </Card>
+
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Revenue</CardTitle>
+                  <Sparkles className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">₹{stats.revenue || 0}</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Total earnings
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Active Learners</CardTitle>
+                  <Users className="h-4 w-4 text-indigo-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-indigo-600">{stats.activeLearners || 0}</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Last 7 days
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Retention Rate</CardTitle>
+                  <Target className="h-4 w-4 text-cyan-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-cyan-600">{stats.retentionRate || 0}%</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    50%+ completion
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Monthly Growth</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-emerald-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-emerald-600">{stats.monthlyGrowth || 0}%</div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    vs last month
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Beautiful Recent Courses Section */}
-            <Card className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/50"></div>
-              <CardHeader className="relative bg-gradient-to-r from-slate-50/80 to-blue-50/80 backdrop-blur-sm border-b border-white/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent flex items-center gap-2">
-                      <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
-                      Recent Courses
-                    </CardTitle>
-                    <CardDescription className="text-slate-600 mt-1">Your latest masterpieces</CardDescription>
+            {/* Enhanced Analytics Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Top Performing Courses */}
+              <Card className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-50/50 via-orange-50/30 to-red-50/50"></div>
+                <CardHeader className="relative bg-gradient-to-r from-yellow-50/80 to-orange-50/80 backdrop-blur-sm border-b border-white/20">
+                  <CardTitle className="text-2xl font-bold bg-gradient-to-r from-yellow-800 to-orange-600 bg-clip-text text-transparent flex items-center gap-2">
+                    <div className="w-2 h-8 bg-gradient-to-b from-yellow-500 to-orange-600 rounded-full"></div>
+                    Top Performing Courses
+                  </CardTitle>
+                  <CardDescription className="text-yellow-700 mt-1">Your most successful courses</CardDescription>
+                </CardHeader>
+                <CardContent className="relative p-6">
+                  {stats.topCourses && stats.topCourses.length > 0 ? (
+                    <div className="space-y-4">
+                      {stats.topCourses.map((course, index) => (
+                        <div key={course._id} className="flex items-center justify-between p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-yellow-200/50 hover:bg-white/80 transition-all duration-300">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-yellow-800 truncate max-w-48">{course.title}</h4>
+                              <p className="text-sm text-yellow-700">{course.enrollments} enrollments</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="text-center">
+                              <p className="font-semibold text-yellow-800">{course.completionRate}%</p>
+                              <p className="text-xs text-yellow-600">completion</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="font-semibold text-yellow-800">{course.averageRating}</p>
+                              <p className="text-xs text-yellow-600">rating</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Trophy className="h-12 w-12 text-yellow-300 mx-auto mb-4" />
+                      <p className="text-yellow-700">No performance data available yet</p>
+                      <p className="text-sm text-yellow-600">Create and publish courses to see analytics</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Engagement Metrics */}
+              <Card className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-rose-50/50"></div>
+                <CardHeader className="relative bg-gradient-to-r from-purple-50/80 to-pink-50/80 backdrop-blur-sm border-b border-white/20">
+                  <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-800 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
+                    <div className="w-2 h-8 bg-gradient-to-b from-purple-500 to-pink-600 rounded-full"></div>
+                    Engagement Metrics
+                  </CardTitle>
+                  <CardDescription className="text-purple-700 mt-1">Student engagement insights</CardDescription>
+                </CardHeader>
+                <CardContent className="relative p-6">
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Clock className="h-5 w-5 text-purple-500" />
+                          <h4 className="font-semibold text-purple-800">Avg Session</h4>
+                        </div>
+                        <p className="text-2xl font-bold text-purple-700">{stats.engagementMetrics?.averageSessionDuration || 0}m</p>
+                        <p className="text-xs text-purple-600">per session</p>
+                      </div>
+                      <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <BookOpen className="h-5 w-5 text-purple-500" />
+                          <h4 className="font-semibold text-purple-800">Courses/Student</h4>
+                        </div>
+                        <p className="text-2xl font-bold text-purple-700">{stats.engagementMetrics?.averageCoursesPerStudent || 0}</p>
+                        <p className="text-xs text-purple-600">average</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Star className="h-5 w-5 text-purple-500" />
+                          <h4 className="font-semibold text-purple-800">Satisfaction</h4>
+                        </div>
+                        <p className="text-2xl font-bold text-purple-700">{stats.engagementMetrics?.studentSatisfaction || 0}/5</p>
+                        <p className="text-xs text-purple-600">rating</p>
+                      </div>
+                      <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Award className="h-5 w-5 text-purple-500" />
+                          <h4 className="font-semibold text-purple-800">Certificates</h4>
+                        </div>
+                        <p className="text-2xl font-bold text-purple-700">{stats.engagementMetrics?.certificatesIssued || 0}</p>
+                        <p className="text-xs text-purple-600">issued</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    Live updates
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="relative p-8">
-                <BeautifulRecentCourses />
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )
 
@@ -609,9 +601,9 @@ export default function EducatorDashboard() {
           <div className="space-y-6">
             <div className="text-center py-8">
               <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
-                Your Course Library
+                Technical Courses
               </h2>
-              <p className="text-slate-600">Manage and organize all your educational content</p>
+              <p className="text-slate-600">Manage and organize all your technical educational content</p>
             </div>
             <CourseList
               courses={Array.isArray(courses) ? courses : []}
@@ -643,6 +635,15 @@ export default function EducatorDashboard() {
           />
         )
 
+      case "edit-exam":
+        return (
+          <ExamContentEditor
+            course={editingCourse}
+            onCourseUpdated={handleCourseUpdated}
+            onBack={handleBackFromEditor}
+          />
+        )
+
       case "profile":
         return (
           <ProfileSettingsForm 
@@ -667,6 +668,19 @@ export default function EducatorDashboard() {
             onBack={() => setActiveTab("overview")} 
             isEducator={true}
           />
+        )
+
+      case "examgenius":
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
+                Competitive Exam Courses
+              </h2>
+              <p className="text-slate-600">Create specialized courses for competitive exams like SSC, UPSC, CAT, Bank PO, and more</p>
+            </div>
+            <ExamGenius />
+          </div>
         )
 
       default:
@@ -711,6 +725,17 @@ export default function EducatorDashboard() {
                 <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 group-hover:rotate-90 transition-transform duration-300" />
                 <span className="hidden sm:inline">Create Course</span>
                 <span className="sm:hidden">Create</span>
+              </Button>
+
+              {/* ExamGenius Button */}
+              <Button
+                onClick={() => setActiveTab("examgenius")}
+                className="group relative bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-800 shadow-2xl hover:shadow-emerald-500/25 border-0 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-sm sm:text-base lg:text-lg font-semibold transition-all duration-300 hover:scale-105"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/10 to-teal-600/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 group-hover:rotate-12 transition-transform duration-300" />
+                <span className="hidden sm:inline">ExamGenius</span>
+                <span className="sm:hidden">Exam</span>
               </Button>
 
               {/* Profile Section */}
@@ -837,8 +862,9 @@ export default function EducatorDashboard() {
           <nav className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pb-4 sm:pb-6">
             {[
               { id: "overview", label: "Overview", icon: TrendingUp },
-              { id: "courses", label: "My Courses", icon: BookOpen },
+              { id: "courses", label: "Technical Courses", icon: BookOpen },
               { id: "create", label: "Create Course", icon: Plus },
+              { id: "examgenius", label: "Competitive Exam Courses", icon: GraduationCap },
             ].map((tab) => (
               <button
                 key={tab.id}

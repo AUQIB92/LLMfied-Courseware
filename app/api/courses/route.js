@@ -178,21 +178,46 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const { title, description, modules } = await request.json()
+    const requestBody = await request.json()
+    const { title, description, modules } = requestBody
     const client = await clientPromise
     const db = client.db("llmfied")  // Changed from "ai-tutor" to match your .env
 
-    const course = await db.collection("courses").insertOne({
+    // Create the course document preserving all fields from the request
+    const courseDocument = {
       title,
       description,
       educatorId: new ObjectId(user.userId),
       modules: modules || [],
-      status: "draft",
+      status: requestBody.status || "draft",
+      isPublished: requestBody.status === "published" || false,
       createdAt: new Date(),
       updatedAt: new Date(),
-    })
+      
+      // Preserve ExamGenius-specific fields
+      ...(requestBody.isExamGenius && { isExamGenius: requestBody.isExamGenius }),
+      ...(requestBody.isCompetitiveExam && { isCompetitiveExam: requestBody.isCompetitiveExam }),
+      ...(requestBody.examType && { examType: requestBody.examType }),
+      ...(requestBody.subject && { subject: requestBody.subject }),
+      ...(requestBody.learnerLevel && { learnerLevel: requestBody.learnerLevel }),
+      ...(requestBody.duration && { duration: requestBody.duration }),
+      ...(requestBody.difficultyLevel && { difficultyLevel: requestBody.difficultyLevel }),
+      
+      // Preserve any other fields from the request
+      ...Object.fromEntries(
+        Object.entries(requestBody).filter(([key]) => 
+          !['title', 'description', 'modules', 'educatorId', 'status', 'createdAt', 'updatedAt'].includes(key)
+        )
+      )
+    }
 
-    return NextResponse.json({ id: course.insertedId })
+    const course = await db.collection("courses").insertOne(courseDocument)
+
+    return NextResponse.json({ 
+      id: course.insertedId,
+      _id: course.insertedId.toString(),
+      ...courseDocument
+    })
   } catch (error) {
     return NextResponse.json({ error: "Failed to create course" }, { status: 500 })
   }
