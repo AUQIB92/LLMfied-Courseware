@@ -1085,6 +1085,47 @@
   }
 }
 
+/* Page Views Counter Animations */
+@keyframes counter-glow {
+  0% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(147, 51, 234, 0.5); }
+  100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+}
+
+@keyframes number-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.05); }
+}
+
+@keyframes particle-float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(120deg); }
+  66% { transform: translateY(-5px) rotate(240deg); }
+  100% { transform: translateY(0px) rotate(360deg); }
+}
+
+@keyframes stats-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.02); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-counter-glow {
+  animation: counter-glow 3s ease-in-out infinite;
+}
+
+.animate-number-bounce {
+  animation: number-bounce 2s ease-in-out infinite;
+}
+
+.animate-particle-float {
+  animation: particle-float 4s ease-in-out infinite;
+}
+
+.animate-stats-pulse {
+  animation: stats-pulse 3s ease-in-out infinite;
+}
+
 /* Custom Gradient Utilities */
 .bg-gradient-radial {
   background: radial-gradient(circle at center, var(--tw-gradient-stops));

@@ -73,6 +73,14 @@ export default function Home() {
   })
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
 
+  // Page Views State
+  const [pageViews, setPageViews] = useState({
+    totalViews: 0,
+    todayViews: 0,
+    recentViews: 0,
+    loading: true
+  })
+
   // Testimonials data
   const testimonials = [
     {
@@ -105,6 +113,38 @@ export default function Home() {
       setActiveTestimonial((prev) => (prev + 1) % testimonials.length)
     }, 5000)
     return () => clearInterval(interval)
+  }, [])
+
+  // Page Views Tracking
+  useEffect(() => {
+    const trackPageView = async () => {
+      try {
+        // Track page view
+        await fetch('/api/page-views', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        // Fetch page views statistics
+        const response = await fetch('/api/page-views')
+        if (response.ok) {
+          const data = await response.json()
+          setPageViews({
+            totalViews: data.totalViews,
+            todayViews: data.todayViews,
+            recentViews: data.recentViews,
+            loading: false
+          })
+        }
+      } catch (error) {
+        console.error('Error tracking page view:', error)
+        setPageViews(prev => ({ ...prev, loading: false }))
+      }
+    }
+
+    trackPageView()
   }, [])
 
   // Scroll handler for header visibility
@@ -479,7 +519,8 @@ export default function Home() {
                 </Badge>
               </div>
             </div>
-            
+
+                        
             {/* Main Headline */}
             <div className="mb-8 sm:mb-12 lg:mb-16">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-black text-slate-900 tracking-tight">
@@ -1963,6 +2004,107 @@ export default function Home() {
             </div>
           </div>
           
+          {/* Beautiful Page Views Counter in Footer */}
+          <div className="flex justify-center mb-8">
+            <div className="relative group">
+              {/* Glow Effects */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-50 transition-all duration-700"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 rounded-3xl blur-lg opacity-30 group-hover:opacity-60 transition-all duration-500"></div>
+              
+              {/* Main Counter Container */}
+              <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl p-4 sm:p-6 border border-white/60 shadow-xl group-hover:shadow-2xl transition-all duration-500 transform group-hover:scale-105">
+                {/* Background Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/40 via-purple-50/30 to-pink-50/40 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                
+                {/* Content */}
+                <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                  {/* Icon */}
+                  <div className="relative">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-md opacity-30 group-hover:opacity-60 transition-all duration-300"></div>
+                    <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-all duration-300 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                      <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-white relative z-10 group-hover:rotate-12 transition-transform duration-300" />
+                      
+                      {/* Floating particles */}
+                      <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full opacity-0 group-hover:opacity-100 animate-bounce transition-opacity duration-500"></div>
+                      <div className="absolute -bottom-0.5 -left-0.5 w-1.5 h-1.5 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-0 group-hover:opacity-80 animate-pulse transition-opacity duration-700"></div>
+                    </div>
+                  </div>
+                  
+                  {/* Stats */}
+                  <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-center sm:text-left">
+                    {/* Total Views */}
+                    <div className="relative">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs font-medium text-slate-600 uppercase tracking-wider">Total Views</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {pageViews.loading ? (
+                          <div className="w-14 h-6 bg-gradient-to-r from-slate-200 to-slate-300 rounded-lg animate-pulse"></div>
+                        ) : (
+                          <span className="text-xl sm:text-2xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                            {pageViews.totalViews.toLocaleString()}
+                          </span>
+                        )}
+                        <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Divider */}
+                    <div className="hidden sm:block w-px h-8 bg-gradient-to-b from-transparent via-slate-300 to-transparent"></div>
+                    
+                    {/* Today's Views */}
+                    <div className="relative">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="w-1.5 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs font-medium text-slate-600 uppercase tracking-wider">Today</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {pageViews.loading ? (
+                          <div className="w-10 h-5 bg-gradient-to-r from-slate-200 to-slate-300 rounded-lg animate-pulse"></div>
+                        ) : (
+                          <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                            {pageViews.todayViews.toLocaleString()}
+                          </span>
+                        )}
+                        <TrendingUp className="w-3 h-3 text-emerald-500" />
+                      </div>
+                    </div>
+                    
+                    {/* Divider */}
+                    <div className="hidden sm:block w-px h-8 bg-gradient-to-b from-transparent via-slate-300 to-transparent"></div>
+                    
+                    {/* Recent Views */}
+                    <div className="relative">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="w-1.5 h-1.5 bg-gradient-to-r from-orange-500 to-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs font-medium text-slate-600 uppercase tracking-wider">This Week</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {pageViews.loading ? (
+                          <div className="w-10 h-5 bg-gradient-to-r from-slate-200 to-slate-300 rounded-lg animate-pulse"></div>
+                        ) : (
+                          <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                            {pageViews.recentViews.toLocaleString()}
+                          </span>
+                        )}
+                        <Heart className="w-3 h-3 text-red-500 animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Subtle decorative elements */}
+                <div className="absolute top-3 right-3 w-8 h-8 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                <div className="absolute bottom-3 left-3 w-6 h-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                
+                {/* Shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 rounded-3xl"></div>
+              </div>
+            </div>
+          </div>
+
           {/* Enhanced Footer Bottom */}
           <div className="relative">
             <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl"></div>
