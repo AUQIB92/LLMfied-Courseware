@@ -11,6 +11,63 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle, XCircle, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
+// KaTeX renderer for mathematical content
+const KaTeXRenderer = ({ content, className }) => {
+  return (
+    <div className={className || "katex-content"} dangerouslySetInnerHTML={{ __html: content }} />
+  )
+}
+
+// Enhanced Rich text formatting helper with LaTeX support
+const formatRichText = (text) => {
+  if (!text || typeof text !== 'string') return ''
+  
+  // First, extract all LaTeX expressions to prevent them from being processed by other formatters
+  const mathExpressions = []
+  let processedText = text.replace(/\$\$(.*?)\$\$|\$(.*?)\$/g, (match, blockMath, inlineMath) => {
+    const id = `MATH_PLACEHOLDER_${mathExpressions.length}`
+    mathExpressions.push({
+      id,
+      type: blockMath ? 'block' : 'inline',
+      expression: blockMath || inlineMath
+    })
+    return id
+  })
+  
+  // Process the text with regular formatters
+  processedText = processedText
+    .split('\n\n')
+    .map(paragraph => {
+      let formatted = paragraph.trim()
+      
+      // Format bold text (**text** -> <strong>text</strong>)
+      formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+      
+      // Format code blocks (`code` -> styled code)
+      formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-gray-100 text-gray-800 px-2 py-1 rounded font-mono text-sm">$1</code>')
+      
+      // Format italic text (*text* -> <em>text</em>)
+      formatted = formatted.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>')
+      
+      return `<p class="mb-2 last:mb-0">${formatted}</p>`
+    })
+    .join('')
+  
+  // Replace math placeholders with KaTeX HTML
+  mathExpressions.forEach(({ id, type, expression }) => {
+    const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(escapedId, 'g')
+    
+    if (type === 'block') {
+      processedText = processedText.replace(regex, `<div class="katex-block my-2 text-center">\\[${expression}\\]</div>`)
+    } else {
+      processedText = processedText.replace(regex, `<span class="katex-inline">\\(${expression}\\)</span>`)
+    }
+  })
+  
+  return processedText
+}
+
 export default function QuizModal({ course, module, onClose, onComplete }) {
   const [quiz, setQuiz] = useState(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
@@ -168,15 +225,26 @@ export default function QuizModal({ course, module, onClose, onComplete }) {
                           <XCircle className="h-5 w-5 text-red-500 mt-0.5" />
                         )}
                         <div className="flex-1">
-                          <CardTitle className="text-base">{question.question}</CardTitle>
+                          <KaTeXRenderer 
+                            content={formatRichText(question.question)}
+                            className="text-base font-semibold mb-2"
+                          />
                           <div className="mt-2 space-y-1">
-                            <p className="text-sm text-gray-600">
-                              Your answer: {question.options[userAnswer] || "Not answered"}
-                            </p>
+                            <div className="text-sm text-gray-600">
+                              Your answer: 
+                              <KaTeXRenderer 
+                                content={formatRichText(question.options[userAnswer] || "Not answered")}
+                                className="inline ml-1"
+                              />
+                            </div>
                             {!isCorrect && (
-                              <p className="text-sm text-green-600">
-                                Correct answer: {question.options[question.correct]}
-                              </p>
+                              <div className="text-sm text-green-600">
+                                Correct answer: 
+                                <KaTeXRenderer 
+                                  content={formatRichText(question.options[question.correct])}
+                                  className="inline ml-1"
+                                />
+                              </div>
                             )}
                           </div>
                         </div>
@@ -184,7 +252,10 @@ export default function QuizModal({ course, module, onClose, onComplete }) {
                     </CardHeader>
                     {question.explanation && (
                       <CardContent className="pt-0">
-                        <p className="text-sm text-gray-700">{question.explanation}</p>
+                        <KaTeXRenderer 
+                          content={formatRichText(question.explanation)}
+                          className="text-sm text-gray-700"
+                        />
                       </CardContent>
                     )}
                   </Card>
@@ -222,7 +293,10 @@ export default function QuizModal({ course, module, onClose, onComplete }) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{currentQ.question}</CardTitle>
+              <KaTeXRenderer 
+                content={formatRichText(currentQ.question)}
+                className="text-lg font-semibold"
+              />
             </CardHeader>
             <CardContent>
               <RadioGroup
@@ -230,10 +304,13 @@ export default function QuizModal({ course, module, onClose, onComplete }) {
                 onValueChange={(value) => handleAnswerSelect(currentQuestion, Number.parseInt(value))}
               >
                 {currentQ.options.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <RadioGroupItem value={index.toString()} id={`option-${index}`} />
+                  <div key={index} className="flex items-start space-x-2">
+                    <RadioGroupItem value={index.toString()} id={`option-${index}`} className="mt-1" />
                     <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                      {option}
+                      <KaTeXRenderer 
+                        content={formatRichText(option)}
+                        className="text-sm"
+                      />
                     </Label>
                   </div>
                 ))}

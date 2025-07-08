@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
+import 'katex/dist/katex.min.css'
 import {
   ChevronLeft,
   ChevronRight,
@@ -91,6 +92,164 @@ const cardVariants = {
       ease: "easeInOut",
     },
   },
+}
+
+// KaTeX Renderer Component
+const KaTeXRenderer = ({ content, className }) => {
+  const [renderedContent, setRenderedContent] = useState('')
+  
+  useEffect(() => {
+    const renderMath = async () => {
+      if (!content) {
+        setRenderedContent('')
+        return
+      }
+      
+      try {
+        // Import KaTeX dynamically
+        const katex = (await import('katex')).default
+        
+        // Process the content to find and render LaTeX expressions
+        let processedContent = content
+        
+        // Handle block math ($$...$$)
+        processedContent = processedContent.replace(/\\\[(.*?)\\\]/g, (match, expression) => {
+          try {
+            const rendered = katex.renderToString(expression, {
+              displayMode: true,
+              throwOnError: false,
+              trust: true
+            })
+            return `<div class="katex-block my-4 text-center">${rendered}</div>`
+          } catch (error) {
+            console.warn('KaTeX block render error:', error)
+            return `<div class="katex-error my-4 p-2 bg-red-50 border border-red-200 rounded text-red-700">Error rendering: ${expression}</div>`
+          }
+        })
+        
+        // Handle inline math (\(...\))
+        processedContent = processedContent.replace(/\\\((.*?)\\\)/g, (match, expression) => {
+          try {
+            const rendered = katex.renderToString(expression, {
+              displayMode: false,
+              throwOnError: false,
+              trust: true
+            })
+            return `<span class="katex-inline">${rendered}</span>`
+          } catch (error) {
+            console.warn('KaTeX inline render error:', error)
+            return `<span class="katex-error text-red-600">[Error: ${expression}]</span>`
+          }
+        })
+        
+        setRenderedContent(processedContent)
+      } catch (error) {
+        console.error('Error loading KaTeX:', error)
+        setRenderedContent(content)
+      }
+    }
+    
+    renderMath()
+  }, [content])
+  
+  return (
+    <div 
+      className={className || "katex-content"} 
+      dangerouslySetInnerHTML={{ __html: renderedContent }} 
+    />
+  )
+}
+
+// Enhanced Rich text formatting helper with LaTeX support
+const formatRichText = (text) => {
+  if (!text || typeof text !== 'string') return ''
+  
+  // First, extract all LaTeX expressions to prevent them from being processed by other formatters
+  const mathExpressions = []
+  let processedText = text.replace(/\$\$(.*?)\$\$|\$(.*?)\$/g, (match, blockMath, inlineMath) => {
+    const id = `MATH_PLACEHOLDER_${mathExpressions.length}`
+    mathExpressions.push({
+      id,
+      type: blockMath ? 'block' : 'inline',
+      expression: blockMath || inlineMath
+    })
+    return id
+  })
+  
+  // Process the text with regular formatters
+  processedText = processedText
+    .split('\n\n')
+    .map(paragraph => {
+      let formatted = paragraph.trim()
+      
+      // Handle markdown headers (# ## ### #### ######)
+      if (formatted.match(/^#{1,6}\s/)) {
+        const headerLevel = formatted.match(/^(#{1,6})/)[1].length
+        const headerText = formatted.replace(/^#{1,6}\s/, '')
+        
+        const headerStyles = {
+          1: 'text-base font-bold text-gray-800 mb-2 mt-3 first:mt-0',  // Size 16 (text-base) bold
+          2: 'text-base font-bold text-gray-700 mb-2 mt-3 first:mt-0',
+          3: 'text-lg font-bold text-emerald-700 mb-3 mt-4 first:mt-0',
+          4: 'text-base font-bold text-emerald-600 mb-2 mt-3 first:mt-0',
+          5: 'text-sm font-bold text-gray-600 mb-2 mt-2 first:mt-0',
+          6: 'text-xs font-bold text-gray-500 mb-1 mt-2 first:mt-0'
+        }
+        
+        const headerClass = headerStyles[headerLevel] || headerStyles[3]
+        return `<h${Math.min(headerLevel, 6)} class="${headerClass}">${headerText}</h${Math.min(headerLevel, 6)}>`
+      }
+      
+      // Check if this is a section header (starts with ** and ends with **)
+      if (formatted.match(/^\*\*.*\*\*$/)) {
+        const headerText = formatted.replace(/\*\*/g, '')
+        return `<h4 class="text-xl font-bold text-emerald-700 mb-4 mt-6 first:mt-0 flex items-center gap-2">
+          <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+          ${headerText}
+        </h4>`
+      }
+      
+      // Format bold text (**text** -> <strong>text</strong>)
+      formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-emerald-800 bg-emerald-50 px-1 rounded">$1</strong>')
+      
+      // Format code blocks (`code` -> styled code)
+      formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-mono text-sm border border-emerald-200">$1</code>')
+      
+      // Format italic text (*text* -> <em>text</em>)
+      formatted = formatted.replace(/\*([^*]+)\*/g, '<em class="italic text-emerald-700 font-medium">$1</em>')
+      
+      // Format single-quoted text ('text' -> <em>text</em>)
+      formatted = formatted.replace(/'([^']+)'/g, '<em class="italic text-emerald-600">$1</em>')
+      
+      // Format numbered lists (1. item -> styled list)
+      if (formatted.match(/^\d+\.\s/)) {
+        formatted = formatted.replace(/^(\d+)\.\s(.*)/, '<div class="flex items-start gap-3 mb-3"><div class="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">$1</div><div>$2</div></div>')
+        return formatted
+      }
+      
+      // Format bullet points (- item or • item -> styled list)
+      if (formatted.match(/^[-•]\s/)) {
+        formatted = formatted.replace(/^[-•]\s(.*)/, '<div class="flex items-start gap-3 mb-3"><div class="w-2 h-2 bg-emerald-500 rounded-full shrink-0 mt-3"></div><div>$1</div></div>')
+        return formatted
+      }
+      
+      return `<p class="mb-4 last:mb-0 leading-relaxed">${formatted}</p>`
+    })
+    .join('')
+  
+  // Replace math placeholders with KaTeX HTML
+  mathExpressions.forEach(({ id, type, expression }) => {
+    const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(escapedId, 'g')
+    
+    if (type === 'block') {
+      processedText = processedText.replace(regex, `<div class="katex-block my-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 text-center overflow-x-auto">\\[${expression}\\]</div>`)
+    } else {
+      processedText = processedText.replace(regex, `<span class="katex-inline">\\(${expression}\\)</span>`)
+    }
+  })
+  
+  return processedText
 }
 
 export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
@@ -327,110 +486,6 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
     })
   }
 
-  // Enhanced Rich text formatting helper for beautiful text display (same as technical courses)
-  const formatRichText = (text) => {
-    if (!text || typeof text !== 'string') return ''
-    
-    return text
-      .split('\n\n')
-      .map(paragraph => {
-        let formatted = paragraph.trim()
-        
-        // Handle markdown headers (# ## ### #### ######)
-        if (formatted.match(/^#{1,6}\s/)) {
-          const headerLevel = formatted.match(/^(#{1,6})/)[1].length
-          const headerText = formatted.replace(/^#{1,6}\s/, '')
-          
-          const headerStyles = {
-            1: 'text-base font-bold text-gray-800 mb-2 mt-3 first:mt-0',  // Size 16 (text-base) bold
-            2: 'text-base font-bold text-gray-700 mb-2 mt-3 first:mt-0',
-            3: 'text-lg font-bold text-emerald-700 mb-3 mt-4 first:mt-0',
-            4: 'text-base font-bold text-emerald-600 mb-2 mt-3 first:mt-0',
-            5: 'text-sm font-bold text-gray-600 mb-2 mt-2 first:mt-0',
-            6: 'text-xs font-bold text-gray-500 mb-1 mt-2 first:mt-0'
-          }
-          
-          const headerClass = headerStyles[headerLevel] || headerStyles[3]
-          return `<h${Math.min(headerLevel, 6)} class="${headerClass}">${headerText}</h${Math.min(headerLevel, 6)}>`
-        }
-        
-        // Check if this is a section header (starts with ** and ends with **)
-        if (formatted.match(/^\*\*.*\*\*$/)) {
-          const headerText = formatted.replace(/\*\*/g, '')
-          return `<h4 class="text-xl font-bold text-emerald-700 mb-4 mt-6 first:mt-0 flex items-center gap-2">
-            <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-            ${headerText}
-          </h4>`
-        }
-        
-        // Format bold text (**text** -> <strong>text</strong>)
-        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-emerald-800 bg-emerald-50 px-1 rounded">$1</strong>')
-        
-        // Format inline math ($equation$ -> styled math)
-        formatted = formatted.replace(/\$([^$]+)\$/g, '<span class="inline-flex items-center bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 text-blue-900 px-4 py-2 rounded-xl font-mono text-sm border-2 border-blue-300 mx-1 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">✨ $1</span>')
-        
-        // Format block math ($$equation$$ -> styled block math)
-        formatted = formatted.replace(/\$\$([^$]+)\$\$/g, '<div class="my-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 text-center"><span class="font-mono text-lg text-blue-800">$1</span></div>')
-        
-        // Format code blocks (`code` -> styled code)
-        formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-mono text-sm border border-emerald-200">$1</code>')
-        
-        // Format italic text (*text* -> <em>text</em>)
-        formatted = formatted.replace(/\*([^*]+)\*/g, '<em class="italic text-emerald-700 font-medium">$1</em>')
-        
-        // Format single-quoted text ('text' -> <em>text</em>)
-        formatted = formatted.replace(/'([^']+)'/g, '<em class="italic text-emerald-600">$1</em>')
-        
-        // Format numbered lists (1. item -> styled list)
-        if (formatted.match(/^\d+\.\s/)) {
-          formatted = formatted.replace(/^(\d+)\.\s(.*)/, '<div class="flex items-start gap-3 mb-3"><div class="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">$1</div><div>$2</div></div>')
-          return formatted
-        }
-        
-        // Format bullet points (- item or • item -> styled list)
-        if (formatted.match(/^[-•]\s/)) {
-          formatted = formatted.replace(/^[-•]\s(.*)/, '<div class="flex items-start gap-3 mb-3"><div class="w-2 h-2 bg-emerald-500 rounded-full shrink-0 mt-3"></div><div>$1</div></div>')
-          return formatted
-        }
-        
-        return `<p class="mb-4 last:mb-0 leading-relaxed">${formatted}</p>`
-      })
-      .join('')
-  }
-
-  // Toggle sidebar visibility
-  const toggleSidebar = () => {
-    const newVisibility = !sidebarVisible
-    setSidebarVisible(newVisibility)
-    setSidebarManuallyToggled(true)
-    
-    // If user manually hides it, allow hover to work again after a delay
-    if (!newVisibility) {
-      setTimeout(() => setSidebarManuallyToggled(false), 2000)
-    }
-  }
-
-  // Handle mouse hover for sidebar
-  const handleMouseEnter = () => {
-    if (!sidebarManuallyToggled) {
-    setSidebarVisible(true)
-    }
-  }
-
-  const handleMouseLeave = () => {
-    if (!sidebarManuallyToggled) {
-    setSidebarVisible(false)
-    }
-  }
-
-  const handleModuleSelect = (moduleIndex) => {
-    setCurrentModule(moduleIndex)
-    setCurrentSubsection(0)
-    setCurrentPage(0)
-    setShowModuleList(false)
-    // Keep sidebar visible after module selection
-  }
-
   // Enhanced Resource Card Component (same as technical courses)
   const ResourceCard = ({ resource, type, isInstructorChoice = false, resourceIndex = 0 }) => {
     const getIcon = () => {
@@ -659,6 +714,41 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
       [key]: pageIndex
     }))
   }
+
+  // Toggle sidebar visibility
+  const toggleSidebar = () => {
+    const newVisibility = !sidebarVisible
+    setSidebarVisible(newVisibility)
+    setSidebarManuallyToggled(true)
+    
+    // If user manually hides it, allow hover to work again after a delay
+    if (!newVisibility) {
+      setTimeout(() => setSidebarManuallyToggled(false), 2000)
+    }
+  }
+
+  // Handle mouse hover for sidebar
+  const handleMouseEnter = () => {
+    if (!sidebarManuallyToggled) {
+      setSidebarVisible(true)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (!sidebarManuallyToggled) {
+      setSidebarVisible(false)
+    }
+  }
+
+  const handleModuleSelect = (moduleIndex) => {
+    setCurrentModule(moduleIndex)
+    setCurrentSubsection(0)
+    setCurrentPage(0)
+    setShowModuleList(false)
+    // Keep sidebar visible after module selection
+  }
+
+
 
   if (showQuiz && quizData) {
     return (
@@ -889,10 +979,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                         <h3 className="text-lg font-bold text-gray-800 mb-4">Module Overview</h3>
                         <div className="prose max-w-none">
                           {currentModuleData?.content ? (
-                            <div 
-                              className="whitespace-pre-wrap text-gray-700"
-                              dangerouslySetInnerHTML={{ __html: formatRichText(currentModuleData.content) }}
-                            />
+                            <KaTeXRenderer content={formatRichText(currentModuleData.content)} />
                           ) : (
                             <p className="text-gray-500 italic">No content available</p>
                           )}
@@ -912,9 +999,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                 <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-0.5">
                                   {index + 1}
                                 </div>
-                                <div 
+                                <KaTeXRenderer
+                                  content={formatRichText(objective)}
                                   className="text-gray-700 flex-1"
-                                  dangerouslySetInnerHTML={{ __html: formatRichText(objective) }}
                                 />
                               </li>
                             ))}
@@ -937,9 +1024,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                     Example {index + 1}
                                   </Badge>
                                   <div className="flex-1">
-                                    <div 
+                                    <KaTeXRenderer
+                                      content={formatRichText(example)}
                                       className="text-gray-700 whitespace-pre-wrap"
-                                      dangerouslySetInnerHTML={{ __html: formatRichText(example) }}
                                     />
                                   </div>
                                 </div>
@@ -1095,10 +1182,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
                                                     {/* Page Content - Mobile First */}
                                                     <div className="bg-gradient-to-br from-gray-50 to-white p-3 sm:p-4 lg:p-6 rounded-xl border-l-4 border-orange-500 shadow-sm">
-                                                      <div 
-                                                        className="text-gray-800 leading-relaxed prose prose-sm sm:prose lg:prose-lg max-w-none"
-                                                        dangerouslySetInnerHTML={{ __html: formatRichText(currentPage.content || '') }}
-                                                      />
+                                                      <KaTeXRenderer content={formatRichText(currentPage.content || '')} />
                                                     </div>
 
                                                     {/* Enhanced Sections Container - Mobile First Grid */}
@@ -1131,10 +1215,25 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                             <div key={mathIndex} className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-lg border border-blue-200">
                                                               <p className="font-bold text-blue-800 mb-2 text-sm">{math.title}</p>
                                                               <div className="bg-white p-2 sm:p-3 rounded border border-blue-100 mb-2 overflow-x-auto">
-                                                                <code className="text-blue-700 font-mono text-xs break-all">{math.content}</code>
+                                                                <KaTeXRenderer
+                                                                  content={formatRichText(math.content)}
+                                                                  className="text-blue-700 text-sm leading-relaxed"
+                                                                />
                                                               </div>
                                                       {math.explanation && (
-                                                                <p className="text-blue-600 text-sm leading-relaxed">{math.explanation}</p>
+                                                                <KaTeXRenderer
+                                                                  content={formatRichText(math.explanation)}
+                                                                  className="text-blue-600 text-sm leading-relaxed"
+                                                                />
+                                                      )}
+                                                      {math.example && (
+                                                                <div className="bg-blue-50 p-2 sm:p-3 rounded border border-blue-100 mt-2">
+                                                                  <p className="font-medium text-blue-800 mb-1 text-xs">Example:</p>
+                                                                  <KaTeXRenderer
+                                                                    content={formatRichText(math.example)}
+                                                                    className="text-blue-700 text-sm leading-relaxed"
+                                                                  />
+                                                                </div>
                                                       )}
                                                     </div>
                                                   ))}
@@ -1150,9 +1249,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                               <h6 className="font-bold text-green-800 mb-1 sm:mb-2 text-sm sm:text-base">Practical Example</h6>
-                                                              <div 
+                                                              <KaTeXRenderer
+                                                                content={formatRichText(detailedSubsectionContent.practicalExample)}
                                                                 className="text-green-700 text-sm leading-relaxed prose prose-sm max-w-none"
-                                                                dangerouslySetInnerHTML={{ __html: formatRichText(detailedSubsectionContent.practicalExample) }}
                                                               />
                                                             </div>
                                                           </div>
@@ -1168,9 +1267,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                               <h6 className="font-bold text-red-800 mb-1 sm:mb-2 text-sm sm:text-base">Common Pitfalls</h6>
-                                                              <div 
+                                                              <KaTeXRenderer
+                                                                content={formatRichText(detailedSubsectionContent.commonPitfalls)}
                                                                 className="text-red-700 text-sm leading-relaxed prose prose-sm max-w-none"
-                                                                dangerouslySetInnerHTML={{ __html: formatRichText(detailedSubsectionContent.commonPitfalls) }}
                                                               />
                                                             </div>
                                                           </div>
@@ -1226,11 +1325,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                             /* Fallback to other content fields - Mobile First */
                                             <div className="space-y-3 sm:space-y-4">
                                           {(subsection.content || subsection.explanation || subsection.summary) ? (
-                                            <div 
+                                            <KaTeXRenderer 
+                                                  content={formatRichText(subsection.content || subsection.explanation || subsection.summary)}
                                                   className="whitespace-pre-wrap text-gray-700 bg-gradient-to-br from-gray-50 to-white p-3 sm:p-4 lg:p-6 rounded-xl border-l-4 border-orange-500 shadow-sm"
-                                              dangerouslySetInnerHTML={{ 
-                                                __html: formatRichText(subsection.content || subsection.explanation || subsection.summary) 
-                                              }}
                                             />
                                           ) : (
                                                 <div className="text-center py-6 sm:py-8">
