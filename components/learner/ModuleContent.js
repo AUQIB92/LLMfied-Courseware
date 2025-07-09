@@ -65,6 +65,7 @@ import {
   X,
 } from "lucide-react"
 import QuizModal from "./QuizModal"
+import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
 
 // Animation variants
 const containerVariants = {
@@ -367,7 +368,7 @@ const ProgrammingChallengeCard = ({ challenge, isActive, onClick, challengeProgr
             )}
           </div>
           
-          <p className="text-sm text-gray-600 line-clamp-2 mb-3">{challenge.description}</p>
+          <MathMarkdownRenderer content={challenge.description} />
           
           {challenge.concepts && (
             <div className="flex flex-wrap gap-1">
@@ -441,56 +442,7 @@ export default function ModuleContent({ module, course, onProgressUpdate, module
   const [enrollmentVerified, setEnrollmentVerified] = useState(false)
   const [verifyingEnrollment, setVerifyingEnrollment] = useState(true)
 
-  // NEW: Enhanced Rich text formatting helper for beautiful text display
-  const formatRichText = (text) => {
-    if (!text) return ''
-    
-    return text
-      .split('\n\n')
-      .map(paragraph => {
-        // Check if this is a section header (starts with ** and ends with **)
-        if (paragraph.match(/^\*\*.*\*\*$/)) {
-          const headerText = paragraph.replace(/\*\*/g, '')
-          return `<h4 class="text-xl font-bold text-emerald-700 mb-4 mt-6 first:mt-0 flex items-center gap-2">
-            <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-            ${headerText}
-          </h4>`
-        }
-        
-        // Format bold text (**text** -> <strong>text</strong>)
-        let formatted = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-emerald-800 bg-emerald-50 px-1 rounded">$1</strong>')
-        
-        // Format inline math ($equation$ -> styled math)
-        formatted = formatted.replace(/\$([^$]+)\$/g, '<span class="inline-flex items-center bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 text-blue-900 px-4 py-2 rounded-xl font-mono text-sm border-2 border-blue-300 mx-1 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">✨ $1</span>')
-        
-        // Format block math ($$equation$$ -> styled block math)
-        formatted = formatted.replace(/\$\$([^$]+)\$\$/g, '<div class="my-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 text-center"><span class="font-mono text-lg text-blue-800">$1</span></div>')
-        
-        // Format code blocks (`code` -> styled code)
-        formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-mono text-sm border border-emerald-200">$1</code>')
-        
-        // Format italic text (*text* -> <em>text</em>)
-        formatted = formatted.replace(/\*([^*]+)\*/g, '<em class="italic text-emerald-700 font-medium">$1</em>')
-        
-        // Format single-quoted text ('text' -> <em>text</em>)
-        formatted = formatted.replace(/'([^']+)'/g, '<em class="italic text-emerald-600">$1</em>')
-        
-        // Format numbered lists (1. item -> styled list)
-        if (formatted.match(/^\d+\.\s/)) {
-          formatted = formatted.replace(/^(\d+)\.\s(.*)/, '<div class="flex items-start gap-3 mb-3"><div class="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">$1</div><div>$2</div></div>')
-          return formatted
-        }
-        
-        // Format bullet points (- item or • item -> styled list)
-        if (formatted.match(/^[-•]\s/)) {
-          formatted = formatted.replace(/^[-•]\s(.*)/, '<div class="flex items-start gap-3 mb-3"><div class="w-2 h-2 bg-emerald-500 rounded-full shrink-0 mt-3"></div><div>$1</div></div>')
-          return formatted
-        }
-        
-        return `<p class="mb-4 last:mb-0 leading-relaxed">${formatted}</p>`
-      })
-      .join('')
-  }
+  // Rich text formatting is now handled by MathMarkdownRenderer component
 
   // NEW: Helper functions for multi-page explanations
   const splitExplanationIntoPages = (explanation) => {
@@ -1371,7 +1323,7 @@ Return JSON format:
           <CardContent className="pt-0 space-y-4 relative z-10">
             {resource.description && (
               <div className="p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/40 group-hover:bg-white/80 transition-all duration-300">
-                <p className="text-slate-700 text-sm leading-relaxed line-clamp-3">{resource.description}</p>
+                <MathMarkdownRenderer content={resource.description} />
               </div>
             )}
 
@@ -1884,10 +1836,9 @@ Return JSON format:
                               >
                                 {index + 1}
                               </motion.div>
+                             
                               <div className="flex-1">
-                                <p className="text-slate-800 leading-relaxed group-hover:text-slate-900 transition-colors font-medium">
-                                  {objective}
-                                </p>
+                                <MathMarkdownRenderer content={objective} />
                                 <motion.div
                                   className="mt-4 h-2 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 rounded-full origin-left shadow-lg"
                                   initial={{ scaleX: 0 }}
@@ -1945,7 +1896,7 @@ Return JSON format:
                     transition={{ delay: 0.4 }}
                   >
                     <motion.div
-                      className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg shadow-lg"
+                      className="p-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg shadow-lg"
                       whileHover={{ scale: 1.1, rotate: 5 }}
                     >
                       <Layers className="h-5 w-5 text-white" />
@@ -2076,7 +2027,7 @@ Return JSON format:
 
                                         {/* Explanation */}
                                         <motion.div
-                                          className="p-6 bg-white/80 backdrop-blur-sm rounded-xl border border-cyan-100 shadow-sm"
+                                          className="p-6 bg-white/80 backdrop-blur-sm rounded-xl border border-cyan-100/50 shadow-sm"
                                           initial={{ opacity: 0, y: 10 }}
                                           animate={{ opacity: 1, y: 0 }}
                                           transition={{ delay: 0.2 }}
@@ -2111,10 +2062,9 @@ Return JSON format:
                                                           fontFamily: '"Inter", "system-ui", sans-serif',
                                                           letterSpacing: '0.01em'
                                                         }}
-                                                        dangerouslySetInnerHTML={{
-                                                          __html: formatRichText(subsection.explanation)
-                                                        }}
-                                                      />
+                                                      >
+                                                        <MathMarkdownRenderer content={subsection.explanation} />
+                                                      </div>
                                                     </div>
                                                   </motion.div>
                                                 ) : (
@@ -2151,21 +2101,7 @@ Return JSON format:
                                                       transition={{ duration: 0.5, delay: 0.1 }}
                                                     >
                                                       <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
-                                                        <div 
-                                                          className="text-slate-800 leading-relaxed text-xl font-medium tracking-wide selection:bg-blue-200 selection:text-blue-900 hover:text-slate-900 transition-all duration-500 cursor-default"
-                                                          style={{
-                                                            lineHeight: '2.0',
-                                                            fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
-                                                            letterSpacing: '0.025em',
-                                                            textRendering: 'optimizeLegibility',
-                                                            WebkitFontSmoothing: 'antialiased',
-                                                            MozOsxFontSmoothing: 'grayscale',
-                                                            wordSpacing: '0.1em'
-                                                          }}
-                                                          dangerouslySetInnerHTML={{
-                                                            __html: formatRichText(currentPageData.content)
-                                                          }}
-                                                        />
+                                                        <MathMarkdownRenderer content={currentPageData.content} />
                                                         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                                                         <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
                                                           <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
@@ -2298,21 +2234,7 @@ Return JSON format:
                                                     transition={{ duration: 0.5 }}
                                                   >
                                                     <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
-                                                      <div 
-                                                        className="text-slate-800 leading-relaxed text-xl font-medium tracking-wide selection:bg-blue-200 selection:text-blue-900 hover:text-slate-900 transition-all duration-500 cursor-default"
-                                                        style={{
-                                                          lineHeight: '2.0',
-                                                          fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
-                                                          letterSpacing: '0.025em',
-                                                          textRendering: 'optimizeLegibility',
-                                                          WebkitFontSmoothing: 'antialiased',
-                                                          MozOsxFontSmoothing: 'grayscale',
-                                                          wordSpacing: '0.1em'
-                                                        }}
-                                                        dangerouslySetInnerHTML={{
-                                                          __html: formatRichText(subsection.explanation)
-                                                        }}
-                                                      />
+                                                      <MathMarkdownRenderer content={subsection.explanation} />
                                                       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                                                       <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
                                                         <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
@@ -2336,21 +2258,7 @@ Return JSON format:
                                                     key={`page-${currentPage}`}
                                                   >
                                                     <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
-                                                      <div 
-                                                        className="text-slate-800 leading-relaxed text-xl font-medium tracking-wide selection:bg-blue-200 selection:text-blue-900 hover:text-slate-900 transition-all duration-500 cursor-default"
-                                                        style={{
-                                                          lineHeight: '2.0',
-                                                          fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
-                                                          letterSpacing: '0.025em',
-                                                          textRendering: 'optimizeLegibility',
-                                                          WebkitFontSmoothing: 'antialiased',
-                                                          MozOsxFontSmoothing: 'grayscale',
-                                                          wordSpacing: '0.1em'
-                                                        }}
-                                                        dangerouslySetInnerHTML={{
-                                                          __html: formatRichText(pages[currentPage])
-                                                        }}
-                                                      />
+                                                      <MathMarkdownRenderer content={pages[currentPage]} />
                                                       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                                                       <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
                                                         <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
@@ -2458,10 +2366,7 @@ Return JSON format:
                                               <TestTube className="h-4 w-4" />
                                               Practical Example
                                             </h5>
-                                            <div 
-                                              className="text-yellow-700 leading-relaxed"
-                                              dangerouslySetInnerHTML={{ __html: formatRichText(subsection.practicalExample) }}
-                                            />
+                                            <MathMarkdownRenderer content={subsection.practicalExample} />
                                           </motion.div>
                                         )}
 
@@ -2538,21 +2443,7 @@ Return JSON format:
                                               </h5>
                                               <div className="prose prose-lg max-w-none">
                                                 <div className="group/text relative bg-gradient-to-br from-white via-emerald-50/20 to-teal-50/30 rounded-2xl p-8 border border-emerald-200/30 shadow-lg backdrop-blur-sm hover:shadow-xl hover:bg-gradient-to-br hover:from-white hover:via-emerald-50/40 hover:to-teal-50/50 transition-all duration-700 hover:scale-[1.01] transform-gpu">
-                                                  <div 
-                                                    className="text-emerald-800 leading-relaxed text-lg font-medium tracking-wide selection:bg-emerald-200 selection:text-emerald-900 hover:text-emerald-900 transition-all duration-500 cursor-default"
-                                                    style={{
-                                                      lineHeight: '1.9',
-                                                      fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
-                                                      letterSpacing: '0.02em',
-                                                      textRendering: 'optimizeLegibility',
-                                                      WebkitFontSmoothing: 'antialiased',
-                                                      MozOsxFontSmoothing: 'grayscale',
-                                                      wordSpacing: '0.05em'
-                                                    }}
-                                                    dangerouslySetInnerHTML={{
-                                                      __html: formatRichText(simplifiedExplanations[subsection.id])
-                                                    }}
-                                                  />
+                                                  <MathMarkdownRenderer content={simplifiedExplanations[subsection.id]} />
                                                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-teal-500/5 to-green-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                                                   <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
                                                     <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-emerald-200 shadow-lg">

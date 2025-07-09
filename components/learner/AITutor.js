@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send, Bot, User, Lightbulb, HelpCircle, Brain, X } from "lucide-react"
+import MathMarkdownRenderer from "@/components/MathMarkdownRenderer"
 
 export default function AITutor({ course, module, onClose }) {
   const [messages, setMessages] = useState([])
@@ -143,7 +144,9 @@ export default function AITutor({ course, module, onClose }) {
                       message.role === "user" ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <div className="text-sm">
+                      <MathMarkdownRenderer content={message.content} />
+                    </div>
                     <p className="text-xs opacity-70 mt-1">{message.timestamp.toLocaleTimeString()}</p>
                   </div>
                 </div>

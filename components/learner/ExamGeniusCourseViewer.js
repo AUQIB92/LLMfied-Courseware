@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import 'katex/dist/katex.min.css'
+import MathMarkdownRenderer from "@/components/MathMarkdownRenderer"
 import {
   ChevronLeft,
   ChevronRight,
@@ -94,163 +94,27 @@ const cardVariants = {
   },
 }
 
-// KaTeX Renderer Component
-const KaTeXRenderer = ({ content, className }) => {
-  const [renderedContent, setRenderedContent] = useState('')
+// Math rendering is now handled by MathMarkdownRenderer component
+
+// Custom LaTeX formula renderer for specific cases
+const LatexFormula = ({ formula }) => {
+  // Replace common LaTeX issues specific to electrical engineering formulas
+  const fixedFormula = formula
+    .replace(/R_\{th\}/g, 'R_{th}')
+    .replace(/R_\{N\}/g, 'R_{N}')
+    .replace(/V_\{th\}/g, 'V_{th}')
+    .replace(/I_\{N\}/g, 'I_{N}')
+    .replace(/I_\{t\}/g, 'I_{t}')
+    .replace(/V_\{t\}/g, 'V_{t}')
+    .replace(/frac\{V_t\}\{I_t\}/g, '\\frac{V_t}{I_t}')
+    .replace(/frac\{V_t\}\{L_t\}/g, '\\frac{V_t}{L_t}')
+    .replace(/frac\{V_th\}\{I_t\}/g, '\\frac{V_{th}}{I_t}')
+    .replace(/frac\{V_th\}\{L_t\}/g, '\\frac{V_{th}}{L_t}');
   
-  useEffect(() => {
-    const renderMath = async () => {
-      if (!content) {
-        setRenderedContent('')
-        return
-      }
-      
-      try {
-        // Import KaTeX dynamically
-        const katex = (await import('katex')).default
-        
-        // Process the content to find and render LaTeX expressions
-        let processedContent = content
-        
-        // Handle block math ($$...$$)
-        processedContent = processedContent.replace(/\\\[(.*?)\\\]/g, (match, expression) => {
-          try {
-            const rendered = katex.renderToString(expression, {
-              displayMode: true,
-              throwOnError: false,
-              trust: true
-            })
-            return `<div class="katex-block my-4 text-center">${rendered}</div>`
-          } catch (error) {
-            console.warn('KaTeX block render error:', error)
-            return `<div class="katex-error my-4 p-2 bg-red-50 border border-red-200 rounded text-red-700">Error rendering: ${expression}</div>`
-          }
-        })
-        
-        // Handle inline math (\(...\))
-        processedContent = processedContent.replace(/\\\((.*?)\\\)/g, (match, expression) => {
-          try {
-            const rendered = katex.renderToString(expression, {
-              displayMode: false,
-              throwOnError: false,
-              trust: true
-            })
-            return `<span class="katex-inline">${rendered}</span>`
-          } catch (error) {
-            console.warn('KaTeX inline render error:', error)
-            return `<span class="katex-error text-red-600">[Error: ${expression}]</span>`
-          }
-        })
-        
-        setRenderedContent(processedContent)
-      } catch (error) {
-        console.error('Error loading KaTeX:', error)
-        setRenderedContent(content)
-      }
-    }
-    
-    renderMath()
-  }, [content])
-  
-  return (
-    <div 
-      className={className || "katex-content"} 
-      dangerouslySetInnerHTML={{ __html: renderedContent }} 
-    />
-  )
+  return <MathMarkdownRenderer content={`$${fixedFormula}$`} />;
 }
 
-// Enhanced Rich text formatting helper with LaTeX support
-const formatRichText = (text) => {
-  if (!text || typeof text !== 'string') return ''
-  
-  // First, extract all LaTeX expressions to prevent them from being processed by other formatters
-  const mathExpressions = []
-  let processedText = text.replace(/\$\$(.*?)\$\$|\$(.*?)\$/g, (match, blockMath, inlineMath) => {
-    const id = `MATH_PLACEHOLDER_${mathExpressions.length}`
-    mathExpressions.push({
-      id,
-      type: blockMath ? 'block' : 'inline',
-      expression: blockMath || inlineMath
-    })
-    return id
-  })
-  
-  // Process the text with regular formatters
-  processedText = processedText
-    .split('\n\n')
-    .map(paragraph => {
-      let formatted = paragraph.trim()
-      
-      // Handle markdown headers (# ## ### #### ######)
-      if (formatted.match(/^#{1,6}\s/)) {
-        const headerLevel = formatted.match(/^(#{1,6})/)[1].length
-        const headerText = formatted.replace(/^#{1,6}\s/, '')
-        
-        const headerStyles = {
-          1: 'text-base font-bold text-gray-800 mb-2 mt-3 first:mt-0',  // Size 16 (text-base) bold
-          2: 'text-base font-bold text-gray-700 mb-2 mt-3 first:mt-0',
-          3: 'text-lg font-bold text-emerald-700 mb-3 mt-4 first:mt-0',
-          4: 'text-base font-bold text-emerald-600 mb-2 mt-3 first:mt-0',
-          5: 'text-sm font-bold text-gray-600 mb-2 mt-2 first:mt-0',
-          6: 'text-xs font-bold text-gray-500 mb-1 mt-2 first:mt-0'
-        }
-        
-        const headerClass = headerStyles[headerLevel] || headerStyles[3]
-        return `<h${Math.min(headerLevel, 6)} class="${headerClass}">${headerText}</h${Math.min(headerLevel, 6)}>`
-      }
-      
-      // Check if this is a section header (starts with ** and ends with **)
-      if (formatted.match(/^\*\*.*\*\*$/)) {
-        const headerText = formatted.replace(/\*\*/g, '')
-        return `<h4 class="text-xl font-bold text-emerald-700 mb-4 mt-6 first:mt-0 flex items-center gap-2">
-          <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-          ${headerText}
-        </h4>`
-      }
-      
-      // Format bold text (**text** -> <strong>text</strong>)
-      formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-emerald-800 bg-emerald-50 px-1 rounded">$1</strong>')
-      
-      // Format code blocks (`code` -> styled code)
-      formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-mono text-sm border border-emerald-200">$1</code>')
-      
-      // Format italic text (*text* -> <em>text</em>)
-      formatted = formatted.replace(/\*([^*]+)\*/g, '<em class="italic text-emerald-700 font-medium">$1</em>')
-      
-      // Format single-quoted text ('text' -> <em>text</em>)
-      formatted = formatted.replace(/'([^']+)'/g, '<em class="italic text-emerald-600">$1</em>')
-      
-      // Format numbered lists (1. item -> styled list)
-      if (formatted.match(/^\d+\.\s/)) {
-        formatted = formatted.replace(/^(\d+)\.\s(.*)/, '<div class="flex items-start gap-3 mb-3"><div class="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">$1</div><div>$2</div></div>')
-        return formatted
-      }
-      
-      // Format bullet points (- item or • item -> styled list)
-      if (formatted.match(/^[-•]\s/)) {
-        formatted = formatted.replace(/^[-•]\s(.*)/, '<div class="flex items-start gap-3 mb-3"><div class="w-2 h-2 bg-emerald-500 rounded-full shrink-0 mt-3"></div><div>$1</div></div>')
-        return formatted
-      }
-      
-      return `<p class="mb-4 last:mb-0 leading-relaxed">${formatted}</p>`
-    })
-    .join('')
-  
-  // Replace math placeholders with KaTeX HTML
-  mathExpressions.forEach(({ id, type, expression }) => {
-    const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const regex = new RegExp(escapedId, 'g')
-    
-    if (type === 'block') {
-      processedText = processedText.replace(regex, `<div class="katex-block my-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 text-center overflow-x-auto">\\[${expression}\\]</div>`)
-    } else {
-      processedText = processedText.replace(regex, `<span class="katex-inline">\\(${expression}\\)</span>`)
-    }
-  })
-  
-  return processedText
-}
+// Rich text formatting is now handled by MathMarkdownRenderer component
 
 export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const { getAuthHeaders } = useAuth()
@@ -979,7 +843,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                         <h3 className="text-lg font-bold text-gray-800 mb-4">Module Overview</h3>
                         <div className="prose max-w-none">
                           {currentModuleData?.content ? (
-                            <KaTeXRenderer content={formatRichText(currentModuleData.content)} />
+                            <MathMarkdownRenderer content={currentModuleData.content} />
                           ) : (
                             <p className="text-gray-500 italic">No content available</p>
                           )}
@@ -999,10 +863,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                 <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-0.5">
                                   {index + 1}
                                 </div>
-                                <KaTeXRenderer
-                                  content={formatRichText(objective)}
-                                  className="text-gray-700 flex-1"
-                                />
+                                <div className="text-gray-700 flex-1">
+                                  <MathMarkdownRenderer content={objective} />
+                                </div>
                               </li>
                             ))}
                           </ul>
@@ -1024,10 +887,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                     Example {index + 1}
                                   </Badge>
                                   <div className="flex-1">
-                                    <KaTeXRenderer
-                                      content={formatRichText(example)}
-                                      className="text-gray-700 whitespace-pre-wrap"
-                                    />
+                                    <div className="text-gray-700 whitespace-pre-wrap">
+                                      <MathMarkdownRenderer content={example} />
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -1126,31 +988,19 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                           
                                           return pages.length > 0 ? (
                                             <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                                              {/* Page Tabs Navigation - Mobile First */}
-                                              <div className="border-b border-gray-200 bg-gradient-to-r from-orange-50 to-red-50 rounded-t-xl shadow-sm">
-                                                <div className="flex space-x-1 overflow-x-auto pb-3 px-3 sm:px-4 scrollbar-hide">
-                                                  {pages.map((page, pageIndex) => (
-                                                    <button
-                                                      key={pageIndex}
-                                                      onClick={() => setCurrentPageTab(currentModule, index, pageIndex)}
-                                                      className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-t-lg whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
-                                                        getCurrentPageTab(currentModule, index) === pageIndex
-                                                          ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-md'
-                                                          : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
-                                                      }`}
-                                                    >
-                                                      <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                                                        getCurrentPageTab(currentModule, index) === pageIndex
-                                                          ? 'bg-white/20 text-white'
-                                                          : 'bg-gray-200 text-gray-600'
-                                                      }`}>
-                                                        {page.pageNumber || pageIndex + 1}
-                                                      </div>
-                                                      <span className="hidden sm:block">
-                                                {page.pageTitle || `Page ${page.pageNumber || pageIndex + 1}`}
-                                                      </span>
-                                                    </button>
-                                                  ))}
+                                                                                            {/* Page Header with Current Page Title - No duplicate title */}
+                                              <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-t-xl border-b border-orange-200">
+                                                <div className="flex items-center justify-between">
+                                                  <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base shadow-lg shadow-orange-500/30">
+                                                      {pages[getCurrentPageTab(currentModule, index)]?.pageNumber || getCurrentPageTab(currentModule, index) + 1}
+                                                    </div>
+                                                    <div>
+                                                      <p className="text-xs sm:text-sm text-gray-600">
+                                                        Page {getCurrentPageTab(currentModule, index) + 1} of {pages.length}
+                                                      </p>
+                                                    </div>
+                                                  </div>
                                                 </div>
                                               </div>
 
@@ -1163,7 +1013,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
                                                 return (
                                                   <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                                                    {/* Page Header - Mobile Optimized */}
+                                                    {/* Page Header - Mobile Optimized - Fixed duplicate title */}
                                                     <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 sm:p-4 rounded-xl border border-orange-200">
                                                       <div className="flex items-center gap-2 sm:gap-3">
                                                         <div className="w-7 h-7 sm:w-9 sm:h-9 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
@@ -1172,17 +1022,14 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                         <div className="flex-1 min-w-0">
                                                           <h5 className="text-base sm:text-lg lg:text-xl font-bold text-gray-800 line-clamp-2">
                                                             {currentPage.pageTitle || `Page ${currentPage.pageNumber || currentPageIndex + 1}`}
-                                              </h5>
-                                                          <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
-                                                            Page {currentPageIndex + 1} of {pages.length}
-                                                          </p>
+                                                          </h5>
                                                         </div>
                                                       </div>
                                                     </div>
 
                                                     {/* Page Content - Mobile First */}
                                                     <div className="bg-gradient-to-br from-gray-50 to-white p-3 sm:p-4 lg:p-6 rounded-xl border-l-4 border-orange-500 shadow-sm">
-                                                      <KaTeXRenderer content={formatRichText(currentPage.content || '')} />
+                                                      <MathMarkdownRenderer content={currentPage.content || ''} />
                                                     </div>
 
                                                     {/* Enhanced Sections Container - Mobile First Grid */}
@@ -1215,24 +1062,21 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                             <div key={mathIndex} className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-lg border border-blue-200">
                                                               <p className="font-bold text-blue-800 mb-2 text-sm">{math.title}</p>
                                                               <div className="bg-white p-2 sm:p-3 rounded border border-blue-100 mb-2 overflow-x-auto">
-                                                                <KaTeXRenderer
-                                                                  content={formatRichText(math.content)}
-                                                                  className="text-blue-700 text-sm leading-relaxed"
-                                                                />
+                                                                <div className="text-blue-700 text-sm leading-relaxed">
+                                                                  <MathMarkdownRenderer content={math.content} />
+                                                                </div>
                                                               </div>
                                                       {math.explanation && (
-                                                                <KaTeXRenderer
-                                                                  content={formatRichText(math.explanation)}
-                                                                  className="text-blue-600 text-sm leading-relaxed"
-                                                                />
+                                                                <div className="text-blue-600 text-sm leading-relaxed">
+                                                                  <MathMarkdownRenderer content={math.explanation} />
+                                                                </div>
                                                       )}
                                                       {math.example && (
                                                                 <div className="bg-blue-50 p-2 sm:p-3 rounded border border-blue-100 mt-2">
                                                                   <p className="font-medium text-blue-800 mb-1 text-xs">Example:</p>
-                                                                  <KaTeXRenderer
-                                                                    content={formatRichText(math.example)}
-                                                                    className="text-blue-700 text-sm leading-relaxed"
-                                                                  />
+                                                                  <div className="text-blue-700 text-sm leading-relaxed">
+                                                                    <MathMarkdownRenderer content={math.example} />
+                                                                  </div>
                                                                 </div>
                                                       )}
                                                     </div>
@@ -1249,10 +1093,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                               <h6 className="font-bold text-green-800 mb-1 sm:mb-2 text-sm sm:text-base">Practical Example</h6>
-                                                              <KaTeXRenderer
-                                                                content={formatRichText(detailedSubsectionContent.practicalExample)}
-                                                                className="text-green-700 text-sm leading-relaxed prose prose-sm max-w-none"
-                                                              />
+                                                              <div className="text-green-700 text-sm leading-relaxed prose prose-sm max-w-none">
+                                                                <MathMarkdownRenderer content={detailedSubsectionContent.practicalExample} />
+                                                              </div>
                                                             </div>
                                                           </div>
                                                         </div>
@@ -1267,55 +1110,103 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                               <h6 className="font-bold text-red-800 mb-1 sm:mb-2 text-sm sm:text-base">Common Pitfalls</h6>
-                                                              <KaTeXRenderer
-                                                                content={formatRichText(detailedSubsectionContent.commonPitfalls)}
-                                                                className="text-red-700 text-sm leading-relaxed prose prose-sm max-w-none"
-                                                              />
+                                                              <div className="text-red-700 text-sm leading-relaxed prose prose-sm max-w-none">
+                                                                <MathMarkdownRenderer content={detailedSubsectionContent.commonPitfalls} />
+                                                              </div>
                                                             </div>
                                                           </div>
                                                         </div>
                                                       )}
                                                     </div>
 
-                                                    {/* Page Navigation - Mobile First */}
-                                                    <div className="flex flex-col sm:flex-row items-center justify-between pt-3 sm:pt-4 border-t border-gray-200 gap-3 sm:gap-0">
+                                                    {/* Enhanced Page Navigation with Beautiful Circular Numbered Pagination */}
+                                                    <div className="pt-6 sm:pt-8 pb-2 border-t border-gray-200">
+                                                      <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 sm:p-6 shadow-md border border-orange-100">
+                                                        {/* Pagination Heading */}
+                                                        <div className="text-center mb-4">
+                                                          <h4 className="text-gray-700 font-medium text-sm sm:text-base">Page Navigation</h4>
+                                                        </div>
+                                                        
+                                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+                                                          {/* Previous Button */}
                                                       <Button
                                                         variant="outline"
-                                                        size="sm"
+                                                            size="default"
                                                         onClick={() => setCurrentPageTab(currentModule, index, Math.max(0, currentPageIndex - 1))}
                                                         disabled={currentPageIndex === 0}
-                                                        className="flex items-center gap-2 w-full sm:w-auto text-sm"
+                                                            className={`flex items-center gap-2 w-full sm:w-auto text-sm border-2 ${
+                                                              currentPageIndex === 0 ? 'opacity-50' : 'border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+                                                            }`}
                                                       >
-                                                        <ChevronLeft className="h-4 w-4" />
-                                                        <span className="hidden sm:inline">Previous</span>
-                                                        <span className="sm:hidden">Prev</span>
+                                                            <ChevronLeft className="h-5 w-5" />
+                                                            <span>Previous Page</span>
                                                       </Button>
                                                       
-                                                      <div className="flex items-center gap-2 order-first sm:order-none">
+                                                          {/* Beautiful Circular Numbered Pagination */}
+                                                          <div className="flex items-center gap-1 sm:gap-3 order-first sm:order-none overflow-x-auto py-2 px-1 max-w-full scrollbar-hide">
                                                         {pages.map((_, pageIdx) => (
-                                                          <button
+                                                              <motion.button
                                                             key={pageIdx}
                                                             onClick={() => setCurrentPageTab(currentModule, index, pageIdx)}
-                                                            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-200 ${
+                                                                whileHover={{ scale: 1.1 }}
+                                                                whileTap={{ scale: 0.95 }}
+                                                                className={`relative flex items-center justify-center ${
                                                               pageIdx === currentPageIndex
-                                                                ? 'bg-orange-500 w-3 sm:w-4'
-                                                                : 'bg-gray-300 hover:bg-orange-300'
-                                                            }`}
-                                                          />
+                                                                    ? 'z-10'
+                                                                    : 'z-0'
+                                                                }`}
+                                                              >
+                                                                {/* Outer circle with gradient background */}
+                                                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                                                                  pageIdx === currentPageIndex
+                                                                    ? 'bg-gradient-to-r from-orange-500 to-red-600 shadow-lg shadow-orange-500/30 ring-4 ring-orange-200'
+                                                                    : pageIdx < currentPageIndex
+                                                                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 opacity-80'
+                                                                      : 'bg-gradient-to-r from-gray-200 to-gray-300'
+                                                                }`}>
+                                                                  {/* Inner circle with number */}
+                                                                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-sm sm:text-base font-bold ${
+                                                                    pageIdx === currentPageIndex
+                                                                      ? 'bg-white text-orange-600'
+                                                                      : pageIdx < currentPageIndex
+                                                                        ? 'bg-white/90 text-green-600'
+                                                                        : 'bg-white text-gray-600'
+                                                                  }`}>
+                                                                    {pageIdx + 1}
+                                                                  </div>
+                                                                </div>
+                                                                
+                                                                {/* Connecting line between circles */}
+                                                                {pageIdx < pages.length - 1 && (
+                                                                  <div className={`absolute left-full w-2 sm:w-4 h-1 ${
+                                                                    pageIdx < currentPageIndex
+                                                                      ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                                                                      : pageIdx === currentPageIndex
+                                                                        ? 'bg-gradient-to-r from-orange-500 to-red-600'
+                                                                        : 'bg-gray-300'
+                                                                  }`}></div>
+                                                                )}
+                                                              </motion.button>
                                                         ))}
                                                       </div>
                                                       
+                                                          {/* Next Button */}
                                                       <Button
-                                                        variant="outline"
-                                                        size="sm"
+                                                            variant={currentPageIndex === pages.length - 1 ? "outline" : "default"}
+                                                            size="default"
                                                         onClick={() => setCurrentPageTab(currentModule, index, Math.min(pages.length - 1, currentPageIndex + 1))}
                                                         disabled={currentPageIndex === pages.length - 1}
-                                                        className="flex items-center gap-2 w-full sm:w-auto text-sm"
-                                                      >
-                                                        <span className="hidden sm:inline">Next</span>
-                                                        <span className="sm:hidden">Next</span>
-                                                        <ChevronRight className="h-4 w-4" />
+                                                            className={`flex items-center gap-2 w-full sm:w-auto text-sm ${
+                                                              currentPageIndex === pages.length - 1 
+                                                                ? 'opacity-50' 
+                                                                : 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700'
+                                                            }`}
+                                                          >
+                                                            <span>Next Page</span>
+                                                            <ChevronRight className="h-5 w-5" />
                                                       </Button>
+                                                        </div>
+                                                      </div>
                                                     </div>
                                                   </div>
                                                 )
@@ -1325,10 +1216,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                             /* Fallback to other content fields - Mobile First */
                                             <div className="space-y-3 sm:space-y-4">
                                           {(subsection.content || subsection.explanation || subsection.summary) ? (
-                                            <KaTeXRenderer 
-                                                  content={formatRichText(subsection.content || subsection.explanation || subsection.summary)}
-                                                  className="whitespace-pre-wrap text-gray-700 bg-gradient-to-br from-gray-50 to-white p-3 sm:p-4 lg:p-6 rounded-xl border-l-4 border-orange-500 shadow-sm"
-                                            />
+                                            <div className="whitespace-pre-wrap text-gray-700 bg-gradient-to-br from-gray-50 to-white p-3 sm:p-4 lg:p-6 rounded-xl border-l-4 border-orange-500 shadow-sm">
+                                              <MathMarkdownRenderer content={subsection.content || subsection.explanation || subsection.summary} />
+                                            </div>
                                           ) : (
                                                 <div className="text-center py-6 sm:py-8">
                                                   <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 mx-auto mb-3" />
