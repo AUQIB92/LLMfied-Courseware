@@ -1252,8 +1252,22 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                     }
                     if (subsection.pages && Array.isArray(subsection.pages)) {
                       subsection.pages.forEach((page, index) => {
-                        if (page.content) contentParts.push(`Page ${index + 1}:\n${page.content}`)
-                      })
+                        contentParts.push(`Page ${index + 1}: ${page.pageTitle || ''}`);
+                        if (page.content) contentParts.push(page.content);
+                        if (page.keyTakeaway) contentParts.push(`Key Takeaway: ${page.keyTakeaway}`);
+                        if (page.speedSolvingTechniques) contentParts.push(`Speed Solving Techniques: ${page.speedSolvingTechniques}`);
+                        if (page.commonTraps) contentParts.push(`Common Traps: ${page.commonTraps}`);
+                        if (page.timeManagementTips) contentParts.push(`Time Management Tips: ${page.timeManagementTips}`);
+                        if (page.examSpecificStrategies) contentParts.push(`Exam Specific Strategies: ${page.examSpecificStrategies}`);
+                        if (page.practiceQuestions && Array.isArray(page.practiceQuestions)) {
+                          contentParts.push('Practice Questions:');
+                          page.practiceQuestions.forEach((q, qIndex) => {
+                            contentParts.push(`Question ${qIndex + 1}: ${q.question}`);
+                            if (q.options) contentParts.push(`Options: ${q.options.join(', ')}`);
+                            if (q.answer) contentParts.push(`Answer: ${q.answer}`);
+                          });
+                        }
+                      });
                     }
                     if (subsection.practicalExample) contentParts.push(`Practical Example:\n${subsection.practicalExample}`)
                     if (subsection.commonPitfalls) contentParts.push(`Common Pitfalls:\n${subsection.commonPitfalls}`)

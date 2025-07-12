@@ -51,6 +51,8 @@ import {
   X,
   Eye
 } from "lucide-react"
+import { parseCurriculumOutline } from "@/lib/curriculumParser"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function ExamGenius() {
   const { user, getAuthHeaders } = useAuth()
@@ -72,6 +74,8 @@ export default function ExamGenius() {
   const [moduleTopics, setModuleTopics] = useState("")
   const [teachingNotes, setTeachingNotes] = useState("")
   const [numberOfModules, setNumberOfModules] = useState(8)
+  const [finalizedCurriculum, setFinalizedCurriculum] = useState(null)
+  const [showFinalizeStep, setShowFinalizeStep] = useState(false)
   
   const [newCourseData, setNewCourseData] = useState({
     title: "",
@@ -395,7 +399,9 @@ export default function ExamGenius() {
 
   // Process generated curriculum
   const handleProcessCurriculum = async () => {
-    if (!generatedCurriculum) return
+    // Use finalizedCurriculum if available, else fallback to generatedCurriculum
+    const curriculumToProcess = finalizedCurriculum || parseCurriculumOutline(generatedCurriculum)
+    if (!curriculumToProcess || !curriculumToProcess.modules || curriculumToProcess.modules.length === 0) return
 
     setLoading(true)
     setProcessingStep("🚀 Processing curriculum into detailed competitive exam modules...")
@@ -427,7 +433,7 @@ export default function ExamGenius() {
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          curriculum: generatedCurriculum,
+          curriculum: curriculumToProcess, // Now sending structured curriculum
           courseData: {
             ...newCourseData,
             isCompetitiveExam: true,
@@ -447,7 +453,6 @@ export default function ExamGenius() {
           ...prev,
           modules: data.modules
         }))
-        
         setTimeout(() => {
           setCreationStep(3)
           setShowCurriculumPreview(false)
@@ -559,6 +564,23 @@ export default function ExamGenius() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  // After curriculum is generated, parse and show finalize step
+  useEffect(() => {
+    if (generatedCurriculum && !finalizedCurriculum) {
+      const parsed = parseCurriculumOutline(generatedCurriculum)
+      setFinalizedCurriculum(parsed)
+      setShowFinalizeStep(true)
+    }
+  }, [generatedCurriculum])
+
+  // Handler for user confirming curriculum finalization
+  const handleFinalizeCurriculum = () => {
+    setShowFinalizeStep(false)
+    // Optionally, you could allow editing finalizedCurriculum here
+    // For now, just proceed to processing
+    handleProcessCurriculum()
   }
 
   const handleEditCourse = (course) => {
@@ -690,6 +712,102 @@ export default function ExamGenius() {
             </Button>
           </div>
           <ExamGeniusCourseCreator onCourseCreated={handleCourseCreated} />
+        </div>
+      </div>
+    )
+  }
+
+  // Show curriculum finalization step if needed
+  if (showFinalizeStep && finalizedCurriculum) {
+    const handleModuleChange = (idx, field, value) => {
+      const updated = [...finalizedCurriculum.modules]
+      updated[idx][field] = value
+      setFinalizedCurriculum({ ...finalizedCurriculum, modules: updated })
+    }
+    const handleKeyConceptChange = (modIdx, kcIdx, value) => {
+      const updated = [...finalizedCurriculum.modules]
+      updated[modIdx].keyConcepts[kcIdx] = value
+      setFinalizedCurriculum({ ...finalizedCurriculum, modules: updated })
+    }
+    const handleAddKeyConcept = (modIdx) => {
+      const updated = [...finalizedCurriculum.modules]
+      updated[modIdx].keyConcepts.push("")
+      setFinalizedCurriculum({ ...finalizedCurriculum, modules: updated })
+    }
+    const handleRemoveKeyConcept = (modIdx, kcIdx) => {
+      const updated = [...finalizedCurriculum.modules]
+      updated[modIdx].keyConcepts.splice(kcIdx, 1)
+      setFinalizedCurriculum({ ...finalizedCurriculum, modules: updated })
+    }
+    const handleAddModule = () => {
+      const updated = [...finalizedCurriculum.modules]
+      updated.push({
+        number: updated.length + 1,
+        title: "New Module",
+        objective: "",
+        keyConcepts: [""]
+      })
+      setFinalizedCurriculum({ ...finalizedCurriculum, modules: updated })
+    }
+    const handleRemoveModule = (modIdx) => {
+      const updated = [...finalizedCurriculum.modules]
+      updated.splice(modIdx, 1)
+      // Re-number modules
+      updated.forEach((m, i) => { m.number = i + 1 })
+      setFinalizedCurriculum({ ...finalizedCurriculum, modules: updated })
+    }
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="p-6 max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold mb-4">Finalize Curriculum Structure</h2>
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-2">Course Overview</h3>
+            <p className="mb-2"><b>Description:</b> {finalizedCurriculum.overview.description}</p>
+            <p className="mb-2"><b>Objectives:</b> {finalizedCurriculum.overview.objectives?.join(", ")}</p>
+            <p className="mb-2"><b>Prerequisites:</b> {finalizedCurriculum.overview.prerequisites?.join(", ")}</p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg mb-2">Modules</h3>
+            <ol className="list-decimal ml-6">
+              {finalizedCurriculum.modules.map((mod, idx) => (
+                <li key={mod.number} className="mb-6 border-b pb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Input
+                      value={mod.title}
+                      onChange={e => handleModuleChange(idx, "title", e.target.value)}
+                      className="font-bold flex-1"
+                    />
+                    <Button size="sm" variant="destructive" onClick={() => handleRemoveModule(idx)}>Remove Module</Button>
+                  </div>
+                  <Textarea
+                    value={mod.objective}
+                    onChange={e => handleModuleChange(idx, "objective", e.target.value)}
+                    className="mb-2"
+                    placeholder="Module objective"
+                  />
+                  <div>
+                    <b>Key Concepts:</b>
+                    {mod.keyConcepts.map((kc, kidx) => (
+                      <div key={kidx} className="flex items-center gap-2 mb-1">
+                        <Input
+                          value={kc}
+                          onChange={e => handleKeyConceptChange(idx, kidx, e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button size="sm" variant="destructive" onClick={() => handleRemoveKeyConcept(idx, kidx)}>Remove</Button>
+                      </div>
+                    ))}
+                    <Button size="sm" variant="outline" onClick={() => handleAddKeyConcept(idx)}>Add Key Concept</Button>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <Button className="mt-4" onClick={handleAddModule}>Add Module</Button>
+          </div>
+          <div className="mt-8 flex gap-4">
+            <Button onClick={() => setShowFinalizeStep(false)} variant="outline">Back</Button>
+            <Button onClick={handleFinalizeCurriculum} className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">Finalize & Process Curriculum</Button>
+          </div>
         </div>
       </div>
     )
