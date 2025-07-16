@@ -3,7 +3,6 @@ import clientPromise from "@/lib/mongodb"
 import { processMarkdown } from "@/lib/fileProcessor"
 import { generateCompetitiveExamModuleSummary } from "@/lib/gemini"
 import jwt from "jsonwebtoken"
-import { parseCurriculumOutline } from "@/lib/curriculumParser"
 
 async function verifyToken(request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "")
@@ -30,16 +29,6 @@ export async function POST(request) {
       return NextResponse.json({ error: "Curriculum content is required" }, { status: 400 })
     }
 
-    // Accept both structured curriculum and markdown string
-    let structuredCurriculum = curriculum
-    if (typeof curriculum === "string") {
-      structuredCurriculum = parseCurriculumOutline(curriculum)
-    }
-
-    if (!structuredCurriculum || !Array.isArray(structuredCurriculum.modules) || structuredCurriculum.modules.length === 0) {
-      return NextResponse.json({ error: "Invalid curriculum structure" }, { status: 400 })
-    }
-
     if (!courseData.title?.trim()) {
       return NextResponse.json({ error: "Course title is required" }, { status: 400 })
     }
@@ -63,13 +52,8 @@ export async function POST(request) {
       isExamGenius: true
     }
 
-    // Use modules directly from structuredCurriculum
-    const rawModules = structuredCurriculum.modules.map((mod, idx) => ({
-      id: mod.number || idx + 1,
-      title: mod.title,
-      content: mod.keyConcepts?.join("\n") || "",
-      order: idx + 1
-    }))
+    // Process the curriculum markdown using the original method
+    const rawModules = await processMarkdown(curriculum, context)
 
     if (!rawModules || rawModules.length === 0) {
       return NextResponse.json({ error: "Failed to extract modules from curriculum" }, { status: 400 })

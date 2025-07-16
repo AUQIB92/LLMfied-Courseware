@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GraduationCap, Mail, Lock, User, UserCheck, ArrowRight } from "lucide-react"
 import OTPVerification from "./OTPVerification"
+import Link from "next/link"
 
 export default function AuthForm({ initialMode = "login", onClose, onShowWaitingList }) {
   const [isLogin, setIsLogin] = useState(initialMode === "login")
@@ -208,6 +209,16 @@ export default function AuthForm({ initialMode = "login", onClose, onShowWaiting
                 className="border-slate-200 focus:border-emerald-400 focus:ring-emerald-400/20 bg-white/80 backdrop-blur-sm rounded-xl h-12 transition-all duration-300 hover:bg-white/90"
                 placeholder="Enter your password"
               />
+              {isLogin && (
+                <div className="flex justify-end">
+                  <Link 
+                    href="/forgot-password"
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-all duration-300 hover:underline decoration-blue-300 hover:decoration-blue-500"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
+              )}
             </div>
 
             {!isLogin && (
