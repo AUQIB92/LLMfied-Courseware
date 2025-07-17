@@ -131,6 +131,25 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
       modules: course.modules?.length || 0
     })
     
+    // Debug: Log the actual subsections data
+    if (course.modules && course.modules.length > 0) {
+      console.log("🔍 DEBUG: First module detailed subsections:", {
+        moduleTitle: course.modules[0]?.title,
+        hasDetailedSubsections: !!course.modules[0]?.detailedSubsections,
+        subsectionsCount: course.modules[0]?.detailedSubsections?.length || 0,
+        firstSubsection: course.modules[0]?.detailedSubsections?.[0]
+      })
+      
+      // Log pages for first subsection
+      if (course.modules[0]?.detailedSubsections?.[0]?.pages) {
+        console.log("🔍 DEBUG: First subsection pages:", {
+          pagesCount: course.modules[0].detailedSubsections[0].pages.length,
+          firstPageTitle: course.modules[0].detailedSubsections[0].pages[0]?.pageTitle,
+          firstPageContent: course.modules[0].detailedSubsections[0].pages[0]?.content?.substring(0, 100) + "..."
+        })
+      }
+    }
+    
     // Initialize progress tracking
     const savedProgress = localStorage.getItem(`exam-progress-${course._id}`)
     if (savedProgress) {
@@ -151,11 +170,30 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const fetchDetailedContent = async () => {
     try {
       setLoadingDetailedContent(true)
-      console.log("🔍 DEBUG: Fetching detailed content for course:", course._id, course.title)
-      console.log("🔍 DEBUG: Course is ExamGenius:", course.isExamGenius)
-      console.log("🔍 DEBUG: Auth headers:", getAuthHeaders())
+      console.log("🔍 DEBUG: Course already has detailed subsections:", {
+        courseId: course._id,
+        isExamGenius: course.isExamGenius,
+        modulesCount: course.modules?.length || 0,
+        hasDetailedSubsections: course.modules?.some(m => m.detailedSubsections?.length > 0)
+      })
       
-      const response = await fetch(`/api/courses/${course._id}/detailed-content`, {
+      // Check if course already has detailed subsections in the modules
+      const hasDetailedSubsections = course.modules?.some(module => 
+        module.detailedSubsections && module.detailedSubsections.length > 0
+      )
+      
+      if (hasDetailedSubsections) {
+        console.log("📚 DEBUG: Using existing detailed subsections from course data")
+        // The detailed content is already in the course.modules[].detailedSubsections
+        // No need to fetch separately
+        setDetailedContent("already-loaded")
+        return
+      }
+
+      // If no detailed subsections exist, try to fetch from API
+      console.log("🔍 DEBUG: Fetching detailed content from API for course:", course._id)
+      
+      const response = await fetch(`/api/courses/${course._id}`, {
         headers: getAuthHeaders(),
       })
 
@@ -163,28 +201,20 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
       if (response.ok) {
         const data = await response.json()
-        console.log("📚 DEBUG: Detailed content API response:", data)
-        console.log("📚 DEBUG: Detailed content structure:", Object.keys(data.detailedContent || {}))
+        console.log("📚 DEBUG: Updated course data:", {
+          modulesCount: data.course?.modules?.length || 0,
+          hasDetailedSubsections: data.course?.modules?.some(m => m.detailedSubsections?.length > 0)
+        })
         
-        // Log each module's content
-        if (data.detailedContent) {
-          Object.keys(data.detailedContent).forEach(moduleIndex => {
-            console.log(`📚 DEBUG: Module ${moduleIndex} subsections:`, Object.keys(data.detailedContent[moduleIndex]))
-            Object.keys(data.detailedContent[moduleIndex]).forEach(subsectionIndex => {
-              const subsectionContent = data.detailedContent[moduleIndex][subsectionIndex]
-              console.log(`📚 DEBUG: Module ${moduleIndex}, Subsection ${subsectionIndex}:`, {
-                pages: subsectionContent.pages?.length || 0,
-                hasContent: !!subsectionContent.pages,
-                subsectionTitle: subsectionContent.subsectionTitle
-              })
-            })
-          })
+        // Update the course data if it has new detailed subsections
+        if (data.course?.modules?.some(m => m.detailedSubsections?.length > 0)) {
+          // Update the course object with new data
+          Object.assign(course, data.course)
+          setDetailedContent("refreshed")
         }
-        
-        setDetailedContent(data.detailedContent)
       } else {
         const errorText = await response.text()
-        console.error("🔍 DEBUG: Failed to fetch detailed content:", response.status, response.statusText, errorText)
+        console.error("🔍 DEBUG: Failed to fetch course data:", response.status, response.statusText, errorText)
       }
     } catch (error) {
       console.error("🔍 DEBUG: Error fetching detailed content:", error)
@@ -944,7 +974,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                               
                               {isExpanded && (
                                 <CardContent className="p-3 sm:p-4 lg:p-6">
-                                  {/* Subsection Content Container - Remove nested background and simplify */}
+                                  {/* Subsection Content Container */}
                                   <div className="space-y-4 sm:space-y-6">
                                     {loadingDetailedContent ? (
                                       <div className="flex items-center justify-center py-8 sm:py-12">
@@ -953,49 +983,194 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                       </div>
                                     ) : (
                                       <div className="w-full">
-                                        {subsections.map((subsection, index) => {
-                                          // Find the matching detailed content for this subsection
-                                          const detailedData = currentModuleData.detailedSubsections?.find(
-                                            (d) => d.title === subsection.title
-                                          );
-                                          const pages = detailedData?.pages || [];
-                                          const currentPageIndex = getCurrentPageTab(currentModule, index);
-                                          const currentPage = pages[currentPageIndex];
+                                        {/* Display the current subsection content */}
+                                        <div className="space-y-6">
+                                          {/* Subsection Summary */}
+                                          {subsection.summary && (
+                                            <div className="bg-blue-50 p-4 rounded-lg">
+                                              <h4 className="font-semibold text-blue-900 mb-2">Overview</h4>
+                                              <div className="text-blue-800">
+                                                <MathMarkdownRenderer content={subsection.summary} />
+                                              </div>
+                                            </div>
+                                          )}
 
-                                          return (
-                                            <Card key={index} className="mb-8">
-                                              <CardHeader>
-                                                <CardTitle className="text-xl font-bold text-blue-900">{subsection.title}</CardTitle>
-                                              </CardHeader>
-                                              <CardContent>
-                                                {/* First, render the intro content from the parsed subsection */}
-                                                <div className="prose max-w-none mb-6">
-                                                  <MathMarkdownRenderer content={subsection.content} />
+                                          {/* Key Points */}
+                                          {subsection.keyPoints && subsection.keyPoints.length > 0 && (
+                                            <div className="bg-green-50 p-4 rounded-lg">
+                                              <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                                                <Target className="h-4 w-4" />
+                                                Key Learning Points
+                                              </h4>
+                                              <ul className="space-y-2">
+                                                {subsection.keyPoints.map((point, pointIndex) => (
+                                                  <li key={pointIndex} className="flex items-start gap-2">
+                                                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5 flex-shrink-0">
+                                                      {pointIndex + 1}
+                                                    </div>
+                                                    <div className="text-green-800 flex-1">
+                                                      <MathMarkdownRenderer content={point} />
+                                                    </div>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+
+                                          {/* Detailed Pages */}
+                                          {subsection.pages && subsection.pages.length > 0 && (
+                                            <div className="bg-white border border-gray-200 rounded-lg">
+                                              <div className="border-b border-gray-200 p-4">
+                                                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                                                  <BookOpen className="h-4 w-4" />
+                                                  Detailed Study Material
+                                                </h4>
+                                              </div>
+                                              
+                                              {/* Page Navigation Tabs */}
+                                              <div className="border-b border-gray-200">
+                                                <div className="flex overflow-x-auto">
+                                                  {subsection.pages.map((page, pageIndex) => (
+                                                    <button
+                                                      key={pageIndex}
+                                                      onClick={() => setCurrentPageTab(currentModule, index, pageIndex)}
+                                                      className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                                                        getCurrentPageTab(currentModule, index) === pageIndex
+                                                          ? 'border-orange-500 text-orange-600 bg-orange-50'
+                                                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                                      }`}
+                                                    >
+                                                      {page.pageTitle}
+                                                    </button>
+                                                  ))}
                                                 </div>
-                                                
-                                                {/* Then, render the pages and detailed content */}
-                                                {pages.length > 0 && currentPage ? (
-                                                  <div className="space-y-4">
-                                                    {/* Render current page content */}
-                                                    <div className="p-4 bg-gray-50 rounded-lg">
-                                                      <h4 className="font-bold text-lg mb-2">{currentPage.pageTitle}</h4>
-                                                      <MathMarkdownRenderer content={currentPage.content} />
+                                              </div>
+                                              
+                                              {/* Current Page Content */}
+                                              <div className="p-6">
+                                                {(() => {
+                                                  const currentPageIndex = getCurrentPageTab(currentModule, index);
+                                                  const currentPage = subsection.pages[currentPageIndex];
+                                                  
+                                                  if (!currentPage) {
+                                                    return <p className="text-gray-500 italic">No content available for this page.</p>;
+                                                  }
+                                                  
+                                                  return (
+                                                    <div className="space-y-6">
+                                                      {/* Page Content */}
+                                                      <div className="prose max-w-none">
+                                                        <MathMarkdownRenderer content={currentPage.content} />
+                                                      </div>
+                                                      
+                                                      {/* Mathematical Content */}
+                                                      {currentPage.mathematicalContent && currentPage.mathematicalContent.length > 0 && (
+                                                        <div className="bg-purple-50 p-4 rounded-lg">
+                                                          <h5 className="font-semibold text-purple-900 mb-3">Mathematical Concepts</h5>
+                                                          <div className="space-y-4">
+                                                            {currentPage.mathematicalContent.map((mathItem, mathIndex) => (
+                                                              <div key={mathIndex} className="bg-white p-4 rounded border">
+                                                                <h6 className="font-medium text-purple-800 mb-2">{mathItem.title}</h6>
+                                                                <div className="text-purple-700 mb-2">
+                                                                  <MathMarkdownRenderer content={mathItem.content} />
+                                                                </div>
+                                                                {mathItem.explanation && (
+                                                                  <div className="text-sm text-purple-600">
+                                                                    <MathMarkdownRenderer content={mathItem.explanation} />
+                                                                  </div>
+                                                                )}
+                                                                {mathItem.example && (
+                                                                  <div className="mt-2 p-2 bg-purple-100 rounded text-sm">
+                                                                    <strong>Example:</strong> <MathMarkdownRenderer content={mathItem.example} />
+                                                                  </div>
+                                                                )}
+                                                              </div>
+                                                            ))}
+                                                          </div>
+                                                        </div>
+                                                      )}
+                                                      
+                                                      {/* Key Takeaway */}
+                                                      {currentPage.keyTakeaway && (
+                                                        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                                                          <div className="flex items-start gap-2">
+                                                            <Lightbulb className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                                                            <div>
+                                                              <h5 className="font-semibold text-yellow-900 mb-1">Key Takeaway</h5>
+                                                              <div className="text-yellow-800">
+                                                                <MathMarkdownRenderer content={currentPage.keyTakeaway} />
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      )}
+                                                      
+                                                      {/* Page Navigation */}
+                                                      <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                                                        <Button
+                                                          variant="outline"
+                                                          size="sm"
+                                                          onClick={() => setCurrentPageTab(currentModule, index, Math.max(0, currentPageIndex - 1))}
+                                                          disabled={currentPageIndex === 0}
+                                                        >
+                                                          <ChevronLeft className="h-4 w-4 mr-1" />
+                                                          Previous
+                                                        </Button>
+                                                        
+                                                        <span className="text-sm text-gray-600">
+                                                          Page {currentPageIndex + 1} of {subsection.pages.length}
+                                                        </span>
+                                                        
+                                                        <Button
+                                                          variant="outline"
+                                                          size="sm"
+                                                          onClick={() => setCurrentPageTab(currentModule, index, Math.min(subsection.pages.length - 1, currentPageIndex + 1))}
+                                                          disabled={currentPageIndex === subsection.pages.length - 1}
+                                                        >
+                                                          Next
+                                                          <ChevronRight className="h-4 w-4 ml-1" />
+                                                        </Button>
+                                                      </div>
                                                     </div>
-                                                    
-                                                    {/* Pagination for pages */}
-                                                    <div className="flex justify-between items-center">
-                                                      <Button onClick={() => setCurrentPageTab(currentModule, index, Math.max(0, currentPageIndex - 1))} disabled={currentPageIndex === 0}>Prev</Button>
-                                                      <span>Page {currentPageIndex + 1} of {pages.length}</span>
-                                                      <Button onClick={() => setCurrentPageTab(currentModule, index, Math.min(pages.length - 1, currentPageIndex + 1))} disabled={currentPageIndex === pages.length - 1}>Next</Button>
+                                                  );
+                                                })()}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* Practical Example */}
+                                          {subsection.practicalExample && (
+                                            <div className="bg-indigo-50 p-4 rounded-lg">
+                                              <h4 className="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                                                <Lightbulb className="h-4 w-4" />
+                                                Practical Example
+                                              </h4>
+                                              <div className="text-indigo-800">
+                                                <MathMarkdownRenderer content={subsection.practicalExample} />
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* Common Pitfalls */}
+                                          {subsection.commonPitfalls && subsection.commonPitfalls.length > 0 && (
+                                            <div className="bg-red-50 p-4 rounded-lg">
+                                              <h4 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
+                                                <AlertTriangle className="h-4 w-4" />
+                                                Common Pitfalls to Avoid
+                                              </h4>
+                                              <ul className="space-y-2">
+                                                {subsection.commonPitfalls.map((pitfall, pitfallIndex) => (
+                                                  <li key={pitfallIndex} className="flex items-start gap-2">
+                                                    <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                                    <div className="text-red-800">
+                                                      <MathMarkdownRenderer content={pitfall} />
                                                     </div>
-                                                  </div>
-                                                ) : (
-                                                  <p className="text-gray-500 italic">No detailed pages for this subsection.</p>
-                                                )}
-                                              </CardContent>
-                                            </Card>
-                                          );
-                                        })}
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     )}
                                   </div>
