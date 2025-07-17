@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
 import { processMarkdown } from "@/lib/fileProcessor"
-import { generateCompetitiveExamModuleSummary } from "@/lib/gemini"
+import { generateOrProcessCurriculum, generateCompetitiveExamModuleSummary } from "@/lib/gemini"
 import jwt from "jsonwebtoken"
 
 async function verifyToken(request) {
@@ -25,7 +25,21 @@ export async function POST(request) {
 
     const { curriculum, courseData } = await request.json()
 
-    if (!curriculum) {
+    let processedCurriculum = curriculum;
+
+    // If no curriculum is provided, generate it from the course title
+    if (!processedCurriculum?.trim() && courseData.title?.trim()) {
+      console.log(`🚀 No curriculum found. Generating from title: "${courseData.title}"`);
+      processedCurriculum = await generateOrProcessCurriculum("GENERATE", courseData.title);
+    } else if (processedCurriculum) {
+      // If curriculum is provided, process it
+      console.log(`🔄 Processing provided curriculum text...`);
+      processedCurriculum = await generateOrProcessCurriculum("PROCESS", processedCurriculum);
+    } else {
+      return NextResponse.json({ error: "Curriculum content or course title is required" }, { status: 400 });
+    }
+
+    if (!processedCurriculum) {
       return NextResponse.json({ error: "Curriculum content is required" }, { status: 400 })
     }
 
@@ -53,7 +67,7 @@ export async function POST(request) {
     }
 
     // Process the curriculum markdown using the original method
-    const rawModules = await processMarkdown(curriculum, context)
+    const rawModules = await processMarkdown(processedCurriculum, context)
 
     if (!rawModules || rawModules.length === 0) {
       return NextResponse.json({ error: "Failed to extract modules from curriculum" }, { status: 400 })

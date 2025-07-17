@@ -55,6 +55,38 @@ import {
   Loader2
 } from "lucide-react"
 
+function parseMarkdownToSubsections(markdownContent) {
+  if (!markdownContent) {
+    return [];
+  }
+
+  const subsections = [];
+  const lines = markdownContent.split('\n');
+  let currentSubsection = null;
+
+  lines.forEach(line => {
+    // Match ###, ####, etc. but NOT ##
+    const match = line.match(/^(###+)\s+(.*)/); 
+    if (match) {
+      if (currentSubsection) {
+        subsections.push(currentSubsection);
+      }
+      currentSubsection = {
+        title: match[2].trim(),
+        content: ''
+      };
+    } else if (currentSubsection && !line.match(/^##\s+.*/)) { // Ignore module titles
+      currentSubsection.content += line + '\n';
+    }
+  });
+
+  if (currentSubsection) {
+    subsections.push(currentSubsection);
+  }
+
+  return subsections.map(sub => ({ ...sub, content: sub.content.trim() }));
+}
+
 export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, subject, learnerLevel, course, courseId, onSaveSuccess }) {
   const { getAuthHeaders } = useAuth()
   
@@ -96,7 +128,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
   const [newObjective, setNewObjective] = useState("")
   const [newExample, setNewExample] = useState("")
   
-  const detailedSubsections = module.detailedSubsections || []
+  const detailedSubsections = useMemo(() => parseMarkdownToSubsections(module.content), [module.content]);
   const totalExplanationPages = Math.ceil(detailedSubsections.length / explanationsPerPage)
   const startExplanationIndex = currentExplanationPage * explanationsPerPage
   const endExplanationIndex = startExplanationIndex + explanationsPerPage
@@ -1233,10 +1265,13 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {currentPageExplanations.length === 0 ? (
+              {detailedSubsections.length === 0 ? (
                 <div className="text-center py-8">
                   <Layers className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No subsections available yet.</p>
+                  <p className="text-gray-500">No subsections found in module content.</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Add `##` or `###` headings to your module content to create subsections.
+                  </p>
                 </div>
               ) : (
                 currentPageExplanations.map((subsection, pageIndex) => {

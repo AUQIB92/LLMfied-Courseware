@@ -88,3 +88,21 @@ NEXTAUTH_URL=http://localhost:3000
 4. **Sanitization improvements**: Better handling of malformed JSON responses from Gemini
 
 This should resolve the "Failed to fetch" error you were experiencing when uploading files for course creation. 
+
+# Environment Variable Setup
+
+To run this project, you need to create a `.env.local` file in the root directory and add the following environment variables:
+
+## AI Provider (Required)
+You can choose between "gemini" (default) or "deepseek" as your LLM provider.
+
+`LLM_PROVIDER="gemini"`
+
+### Gemini API Key (Required if LLM_PROVIDER is "gemini")
+`GEMINI_API_KEY="YOUR_GEMINI_API_KEY"`
+
+### DeepSeek API Key (Required if LLM_PROVIDER is "deepseek")
+`DEEPSEEK_API_KEY="YOUR_DEEPSEEK_API_KEY"`
+
+## Other Required Variables
+``` 
