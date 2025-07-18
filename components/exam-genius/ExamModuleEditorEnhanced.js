@@ -54,6 +54,7 @@ import {
   ExternalLink,
   Loader2
 } from "lucide-react"
+import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
 
 function parseMarkdownToSubsections(markdownContent) {
   if (!markdownContent) {
@@ -128,7 +129,59 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
   const [newObjective, setNewObjective] = useState("")
   const [newExample, setNewExample] = useState("")
   
-  const detailedSubsections = useMemo(() => parseMarkdownToSubsections(module.content), [module.content]);
+  const detailedSubsections = useMemo(() => {
+    const content = module.content || '';
+    const lines = content.split('\n');
+    const sections = {}; // "1.1" -> "Basic concepts"
+    
+    // First pass: find all section headers (###)
+    lines.forEach(line => {
+      const sectionMatch = line.match(/^###\s+([\d.]+)\s+(.*)/);
+      if (sectionMatch) {
+        sections[sectionMatch[1]] = sectionMatch[2].trim();
+      }
+    });
+
+    const subsectionsFromMarkdown = [];
+    // Second pass: find all subsection headers (####)
+    lines.forEach(line => {
+      const subsectionMatch = line.match(/^####\s+([\d.]+)\s+(.*)/);
+      if (subsectionMatch) {
+        const number = subsectionMatch[1]; // "1.1.1"
+        const name = subsectionMatch[2].trim(); // "Resistance"
+        
+        subsectionsFromMarkdown.push({
+          title: `${number} ${name}`,
+          number: number,
+          name: name
+        });
+      }
+    });
+
+    const aiSubsections = module.detailedSubsections || [];
+
+    // Now, map over the markdown subsections, and enrich with AI data.
+    return subsectionsFromMarkdown.map(mdSub => {
+      // Find the corresponding AI subsection. Match by number.
+      const aiSub = aiSubsections.find(ai => {
+        if (!ai.title) return false;
+        const aiMatch = ai.title.match(/^([\d.]+)/);
+        return aiMatch && aiMatch[1] === mdSub.number;
+      }) || {};
+
+      const parentNumber = mdSub.number.split('.').slice(0, 2).join('.');
+      const parentName = sections[parentNumber] || '';
+      
+      const formattedTitle = parentName ? `${parentName}:${mdSub.name}` : mdSub.name;
+
+      return {
+        ...aiSub, // a lot of rich content
+        title: mdSub.title, // overwrite with the one from markdown for consistency
+        formattedTitle: formattedTitle
+      };
+    });
+  }, [module.content, module.detailedSubsections]);
+  
   const totalExplanationPages = Math.ceil(detailedSubsections.length / explanationsPerPage)
   const startExplanationIndex = currentExplanationPage * explanationsPerPage
   const endExplanationIndex = startExplanationIndex + explanationsPerPage
@@ -269,6 +322,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
             ...data.quiz,
             difficulty: difficulty,
             subsectionTitle: subsection.title,
+            formattedSubsectionTitle: subsection.formattedTitle,
             createdAt: new Date().toISOString()
           }
         }
@@ -1210,12 +1264,8 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                     <>
                       <div><strong>First subsection keys:</strong> {Object.keys(detailedSubsections[0]).join(', ')}</div>
                       <div><strong>First subsection title:</strong> {detailedSubsections[0].title || 'No title'}</div>
-                      <div><strong>First subsection has explanation:</strong> {!!detailedSubsections[0].explanation}</div>
-                      <div><strong>First subsection has content:</strong> {!!detailedSubsections[0].content}</div>
-                      <div><strong>First subsection has details:</strong> {!!detailedSubsections[0].details}</div>
-                      <div><strong>First subsection explanation length:</strong> {(detailedSubsections[0].explanation || '').length}</div>
-                      <div><strong>First subsection content length:</strong> {(detailedSubsections[0].content || '').length}</div>
-                      <div><strong>First subsection details length:</strong> {(detailedSubsections[0].details || '').length}</div>
+                      <div><strong>First subsection has pages:</strong> {!!(detailedSubsections[0].pages && detailedSubsections[0].pages.length > 0)}</div>
+                      <div><strong>First subsection page count:</strong> {(detailedSubsections[0].pages || []).length}</div>
                       <div><strong>First subsection raw data:</strong> {JSON.stringify(detailedSubsections[0], null, 2).slice(0, 200)}...</div>
                     </>
                   )}
@@ -1270,7 +1320,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                   <Layers className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">No subsections found in module content.</p>
                   <p className="text-sm text-gray-400 mt-2">
-                    Add `##` or `###` headings to your module content to create subsections.
+                    AI is generating content, or you can add `##` or `###` headings to your module content to create subsections.
                   </p>
                 </div>
               ) : (
@@ -1279,44 +1329,15 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                   
                   // Build comprehensive content from all available fields for display
                   const buildDisplayContent = (subsection) => {
-                    const contentParts = []
-                    
-                    if (subsection.summary) contentParts.push(subsection.summary)
-                    if (subsection.keyPoints && Array.isArray(subsection.keyPoints)) {
-                      contentParts.push(`Key Points:\n• ${subsection.keyPoints.join('\n• ')}`)
-                    }
                     if (subsection.pages && Array.isArray(subsection.pages)) {
-                      subsection.pages.forEach((page, index) => {
-                        contentParts.push(`Page ${index + 1}: ${page.pageTitle || ''}`);
-                        if (page.content) contentParts.push(page.content);
-                        if (page.keyTakeaway) contentParts.push(`Key Takeaway: ${page.keyTakeaway}`);
-                        if (page.speedSolvingTechniques) contentParts.push(`Speed Solving Techniques: ${page.speedSolvingTechniques}`);
-                        if (page.commonTraps) contentParts.push(`Common Traps: ${page.commonTraps}`);
-                        if (page.timeManagementTips) contentParts.push(`Time Management Tips: ${page.timeManagementTips}`);
-                        if (page.examSpecificStrategies) contentParts.push(`Exam Specific Strategies: ${page.examSpecificStrategies}`);
-                        if (page.practiceQuestions && Array.isArray(page.practiceQuestions)) {
-                          contentParts.push('Practice Questions:');
-                          page.practiceQuestions.forEach((q, qIndex) => {
-                            contentParts.push(`Question ${qIndex + 1}: ${q.question}`);
-                            if (q.options) contentParts.push(`Options: ${q.options.join(', ')}`);
-                            if (q.answer) contentParts.push(`Answer: ${q.answer}`);
-                          });
-                        }
-                      });
+                      return subsection.pages.map(p => p.content || '').join('\n\n')
                     }
-                    if (subsection.practicalExample) contentParts.push(`Practical Example:\n${subsection.practicalExample}`)
-                    if (subsection.commonPitfalls) contentParts.push(`Common Pitfalls:\n${subsection.commonPitfalls}`)
-                    if (subsection.explanation) contentParts.push(subsection.explanation)
-                    if (subsection.content) contentParts.push(subsection.content)
-                    if (subsection.details) contentParts.push(subsection.details)
-                    
-                    return contentParts.join('\n\n')
+                    return subsection.content || subsection.explanation || subsection.details || ''
                   }
                   
-                  const subsectionContent = buildDisplayContent(subsection)
-                  const explanationPages = splitExplanationIntoPages(subsectionContent)
+                  const explanationPages = subsection.pages || []
                   const currentSubsectionPage = getCurrentExplanationPage(globalIndex)
-                  const currentExplanationContent = explanationPages[currentSubsectionPage] || subsectionContent
+                  const currentExplanationContent = explanationPages[currentSubsectionPage]?.content || "No content for this page."
                   
                   return (
                     <Card key={globalIndex} className="border-2 hover:border-blue-300 transition-colors">
@@ -1327,7 +1348,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                               {globalIndex + 1}
                             </div>
                             <div>
-                              <h3 className="font-semibold text-lg">{subsection.title}</h3>
+                              <h3 className="font-semibold text-lg">{subsection.formattedTitle}</h3>
                               <div className="flex items-center gap-4 mt-1">
                                 <Badge variant="outline" className="text-xs">
                                   {subsection.estimatedTime || "15-20 mins"}
@@ -1393,35 +1414,42 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                           
                           {editingSubsection === globalIndex ? (
                             <Textarea
-                              value={subsectionContent}
-                              onChange={(e) => updateSubsection(globalIndex, { 
-                                explanation: e.target.value,
-                                content: e.target.value,
-                                details: e.target.value // Update all three fields for compatibility
-                              })}
+                              value={explanationPages[currentSubsectionPage]?.content || ''}
+                              onChange={(e) => {
+                                const newPages = [...explanationPages]
+                                newPages[currentSubsectionPage] = {
+                                  ...newPages[currentSubsectionPage],
+                                  content: e.target.value
+                                }
+                                updateSubsection(globalIndex, { pages: newPages })
+                              }}
                               rows={8}
                               className="border-2 border-blue-300 focus:border-blue-500"
                               placeholder="Enter detailed subsection content..."
                             />
                           ) : (
                             <div 
-                              className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                              className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 min-h-[100px]"
                               onClick={() => setEditingSubsection(globalIndex)}
                             >
+                              <h4 className="font-semibold text-md mb-2">{explanationPages[currentSubsectionPage]?.pageTitle}</h4>
                               {currentExplanationContent && currentExplanationContent.trim() ? (
-                                <p className="text-sm whitespace-pre-wrap">{currentExplanationContent}</p>
+                                <div className="prose prose-sm max-w-none">
+                                  <MathMarkdownRenderer content={currentExplanationContent} />
+                                </div>
                               ) : (
                                 <div className="space-y-2">
                                   <p className="text-sm text-gray-500 italic">Click to add content...</p>
                                   {process.env.NODE_ENV === 'development' && (
                                     <div className="text-xs text-gray-400 border-t pt-2">
-                                      <strong>Debug:</strong> explanation={!!subsection.explanation} ({(subsection.explanation || '').length} chars), 
-                                      content={!!subsection.content} ({(subsection.content || '').length} chars), 
-                                      details={!!subsection.details} ({(subsection.details || '').length} chars)
+                                      <strong>Debug:</strong> page content is empty.
                                     </div>
                                   )}
                                 </div>
                               )}
+                              <p className="text-xs text-gray-500 mt-4 italic">
+                                <MathMarkdownRenderer content={explanationPages[currentSubsectionPage]?.keyTakeaway || ''} />
+                              </p>
                             </div>
                           )}
                         </div>
@@ -1554,7 +1582,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h4 className="font-semibold">{quiz.subsectionTitle}</h4>
+                              <h4 className="font-semibold">{quiz.formattedSubsectionTitle || quiz.subsectionTitle}</h4>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge className={difficultyColors[difficulty]}>
                                   {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}

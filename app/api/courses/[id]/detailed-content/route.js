@@ -1,125 +1,76 @@
-import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
-import { ObjectId } from "mongodb"
-import jwt from "jsonwebtoken"
-
-async function verifyToken(request) {
-  try {
-    const token = request.headers.get("authorization")?.replace("Bearer ", "")
-    if (!token) throw new Error("No token provided")
-    return jwt.verify(token, process.env.JWT_SECRET)
-  } catch (error) {
-    throw new Error("Invalid token")
-  }
-}
+import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+import { ObjectId } from 'mongodb';
+import { getDb } from '@/lib/mongodb';
+import { generateCompetitiveExamModuleSummary } from '@/lib/gemini';
 
 export async function GET(request, { params }) {
+  const token = await getToken({ req: request });
+  if (!token) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const moduleIndex = parseInt(searchParams.get('moduleIndex'), 10);
+
+  if (isNaN(moduleIndex)) {
+    return NextResponse.json({ error: 'Missing or invalid moduleIndex' }, { status: 400 });
+  }
+
   try {
-    // Get user session
-    const user = await verifyToken(request)
-    
-    // Connect to MongoDB
-    const client = await clientPromise
-    const db = client.db("llmfied")
-    const detailedContentCollection = db.collection("course_detailed_content")
-    const coursesCollection = db.collection("courses")
-    
-    // Fix: Await params before accessing its properties (Next.js 15 requirement)
-    const { id: courseId } = await params
-    
-    console.log("🔍 DEBUG API: Fetching detailed content for courseId:", courseId)
-    
-    // First, check if user has access to this course
-    const course = await coursesCollection.findOne({ _id: new ObjectId(courseId) })
+    const db = await getDb();
+    const course = await db.collection('courses').findOne({ _id: new ObjectId(params.id) });
+
     if (!course) {
-      console.log("🔍 DEBUG API: Course not found")
-      return NextResponse.json({ error: "Course not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
-    
-    console.log("🔍 DEBUG API: Course found:", { title: course.title, status: course.status, isExamGenius: course.isExamGenius })
-    
-    // For now, allow access to published courses or if user is the educator
-    // In a real app, you'd check enrollment status
-    const hasAccess = course.status === "published" || course.educatorId?.toString() === user.userId
-    
-    if (!hasAccess) {
-      console.log("🔍 DEBUG API: Access denied")
-      return NextResponse.json({ error: "Access denied" }, { status: 403 })
+
+    if (moduleIndex < 0 || moduleIndex >= course.modules.length) {
+      return NextResponse.json({ error: 'Module index out of bounds' }, { status: 400 });
     }
-    
-    // Try both string and ObjectId formats for courseId
-    const detailedContentQuery = { 
-      $or: [
-        { courseId: courseId },
-        { courseId: new ObjectId(courseId) }
-      ]
-    }
-    
-    console.log("🔍 DEBUG API: Searching for detailed content with query:", detailedContentQuery)
-    
-    // Fetch all detailed content for this course
-    const detailedContent = await detailedContentCollection
-      .find(detailedContentQuery)
-      .sort({ moduleIndex: 1, subsectionIndex: 1 })
-      .toArray()
+
+    const module = course.modules[moduleIndex];
+    let detailedSubsections = module.detailedSubsections;
+
+    console.log(`[Module ${moduleIndex}] Initial detailedSubsections from DB:`, JSON.stringify(detailedSubsections, null, 2));
+
+    const needsRegeneration = 
+      !Array.isArray(detailedSubsections) || 
+      detailedSubsections.length === 0 || 
+      detailedSubsections.some(sub => !sub || !Array.isArray(sub.pages) || sub.pages.length === 0);
+
+    console.log(`[Module ${moduleIndex}] Needs regeneration: ${needsRegeneration}`);
+
+    if (needsRegeneration) {
+      console.log(`Regenerating content for module ${moduleIndex}: ${module.title}`);
       
-    console.log("🔍 DEBUG API: Found detailed content documents:", detailedContent.length)
-    
-    if (detailedContent.length > 0) {
-      console.log("🔍 DEBUG API: Sample detailed content:", {
-        firstDoc: {
-          courseId: detailedContent[0].courseId,
-          moduleIndex: detailedContent[0].moduleIndex,
-          subsectionIndex: detailedContent[0].subsectionIndex,
-          pagesCount: detailedContent[0].pages?.length || 0
-        }
-      })
-    }
-    
-    // Group content by module and subsection
-    const contentByModule = {}
-    
-    detailedContent.forEach(content => {
-      if (!contentByModule[content.moduleIndex]) {
-        contentByModule[content.moduleIndex] = {}
+      const context = {
+        learnerLevel: course.level || 'Intermediate',
+        subject: course.subject,
+        examType: course.examType,
+        moduleIndex: moduleIndex + 1,
+        totalModules: course.modules.length,
+      };
+      
+      const generatedContent = await generateCompetitiveExamModuleSummary(module.content, context);
+      
+      if (generatedContent && Array.isArray(generatedContent.detailedSubsections) && generatedContent.detailedSubsections.length > 0) {
+        detailedSubsections = generatedContent.detailedSubsections;
+        const updatePath = `modules.${moduleIndex}.detailedSubsections`;
+        await db.collection('courses').updateOne(
+          { _id: new ObjectId(params.id) },
+          { $set: { [updatePath]: detailedSubsections } }
+        );
+        console.log(`Course module ${moduleIndex} updated with regenerated content.`);
+      } else {
+        console.log(`[Module ${moduleIndex}] AI generation failed to return valid detailedSubsections.`);
+        detailedSubsections = []; 
       }
-      contentByModule[content.moduleIndex][content.subsectionIndex] = {
-        pages: content.pages || [],
-        practicalExample: content.practicalExample,
-        commonPitfalls: content.commonPitfalls,
-        subsectionTitle: content.subsectionTitle
-      }
-    })
-    
-    console.log("🔍 DEBUG API: Grouped content by module:", {
-      totalModules: Object.keys(contentByModule).length,
-      moduleStructure: Object.keys(contentByModule).map(moduleIndex => ({
-        moduleIndex,
-        subsections: Object.keys(contentByModule[moduleIndex]).length
-      }))
-    })
-    
-    const response = {
-      success: true,
-      courseId: courseId,
-      detailedContent: contentByModule,
-      totalDocuments: detailedContent.length
     }
-    
-    console.log("🔍 DEBUG API: Returning response:", response)
-    
-    return NextResponse.json(response)
-    
+
+    return NextResponse.json({ detailedSubsections: detailedSubsections || [] });
   } catch (error) {
-    console.error("Fetch detailed content error:", error)
-    
-    if (error.message === "Invalid token") {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to fetch detailed content" },
-      { status: 500 }
-    )
+    console.error(`Error fetching detailed content for module ${moduleIndex}:`, error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 } 
