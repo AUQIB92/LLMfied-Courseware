@@ -63,7 +63,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   useEffect(() => {
     fetchCourses()
     initializeEnrollments()
-  }, [])
+  }, [showCompetitiveOnly])
 
   // Fetch instructor details when courses change
   useEffect(() => {
@@ -195,7 +195,12 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
       setError(null) // Clear previous errors
       console.log('Fetching courses from API...')
       
-      const response = await fetch('/api/courses?status=published', {
+      // Add isExamGenius parameter to include ExamGenius courses
+      const url = showCompetitiveOnly 
+        ? '/api/courses?status=published&isExamGenius=true'
+        : '/api/courses?status=published'
+        
+      const response = await fetch(url, {
         headers: getAuthHeaders(),
       })
       
@@ -534,15 +539,6 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   }
 
   // Enhanced filtering - separate ExamGenius courses from general courses
-  const examGeniusCourses = courses.filter((course) => {
-    const matchesSearch =
-      course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    // Only show ExamGenius courses
-    return (course.isExamGenius || course.isCompetitiveExam) && matchesSearch
-  })
-
   const generalCourses = courses.filter((course) => {
     const matchesSearch =
       course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -550,19 +546,22 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
     
     const matchesCategory = selectedCategory === "all" || course.category === selectedCategory
     const matchesLevel = selectedLevel === "all" || course.level === selectedLevel
-    const matchesCompetitive = !showCompetitiveOnly || course.isCompetitiveExam
     
-    // Exclude ExamGenius courses from general section
-    return matchesSearch && matchesCategory && matchesLevel && matchesCompetitive && 
+    // When not in competitive mode, show only regular courses
+    return matchesSearch && matchesCategory && matchesLevel && 
            !course.isExamGenius && !course.isCompetitiveExam
   })
 
-  const filteredCourses = showCompetitiveOnly ? courses.filter((course) => {
+  const examGeniusCourses = courses.filter((course) => {
     const matchesSearch =
       course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesSearch && course.isCompetitiveExam
-  }) : generalCourses
+    
+    // When in competitive mode, show only ExamGenius/competitive courses
+    return matchesSearch && (course.isExamGenius || course.isCompetitiveExam)
+  })
+
+  const filteredCourses = showCompetitiveOnly ? examGeniusCourses : generalCourses
 
   // Get unique categories and levels for filters
   const categories = ["all", ...new Set(courses.map(course => course.category).filter(Boolean))]
@@ -1219,40 +1218,40 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
         )}
 
         {/* Beautiful Empty State */}
-        {coursesArray.length === 0 && !loading && !error && (
-          <div className="text-center py-20 animate-fade-in-up stagger-5">
-            <div className="relative mb-8">
-              <div className="w-32 h-32 bg-gradient-to-br from-blue-100 via-purple-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                <BookOpen className="h-16 w-16 text-slate-400" />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-emerald-400/20 blur-3xl"></div>
+        {coursesArray.length === 0 && !loading && (
+          <div className="bg-white rounded-xl shadow-md p-8 text-center">
+            <div className="mx-auto w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+              {showCompetitiveOnly ? (
+                <Trophy className="h-10 w-10 text-amber-500" />
+              ) : (
+                <BookOpen className="h-10 w-10 text-amber-500" />
+              )}
             </div>
-            
-            <h3 className="text-3xl font-bold text-slate-800 mb-4">No courses found</h3>
-            <p className="text-xl text-slate-600 mb-8 max-w-md mx-auto">
-              We couldn't find any courses matching your criteria. Try adjusting your search or filters.
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+              {showCompetitiveOnly 
+                ? "No Exam Genius courses found" 
+                : "No courses found"}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {showCompetitiveOnly
+                ? "We couldn't find any Exam Genius courses matching your criteria. Try adjusting your search or check back later for new courses."
+                : "We couldn't find any courses matching your criteria. Try adjusting your search or filters."}
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                onClick={() => {
-                  setSearchTerm("")
-                  setSelectedCategory("all")
-                  setSelectedLevel("all")
-                  setShowCompetitiveOnly(false)
-                }}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Clear All Filters
-              </Button>
-              <Button 
-                variant="outline"
-                className="border-2 border-slate-200 hover:bg-slate-50 px-8 py-3 rounded-2xl font-semibold"
-              >
-                Browse All Courses
-              </Button>
-            </div>
+            <Button 
+              onClick={() => {
+                setSearchTerm("")
+                setSelectedCategory("all")
+                setSelectedLevel("all")
+                if (showCompetitiveOnly) {
+                  // Force refresh ExamGenius courses
+                  fetchCourses()
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset Filters
+            </Button>
           </div>
         )}
 

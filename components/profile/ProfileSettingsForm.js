@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -30,7 +30,6 @@ import {
 
 export default function ProfileSettingsForm({ onBack, isEducator = false, avatarKey, setAvatarKey }) {
   const { user, getAuthHeaders, updateUser } = useAuth()
-  const { toast } = useToast()
   
   // Initialize form state only once with current user data
   const [profileData, setProfileData] = useState(() => ({
@@ -139,27 +138,15 @@ export default function ProfileSettingsForm({ onBack, isEducator = false, avatar
         if (setAvatarKey) setAvatarKey(Date.now())
         
         // Show success notification
-        toast({
-          title: "Success!",
-          description: "Profile updated successfully!",
-          variant: "default",
-        })
+        toast.success("Profile updated successfully!")
       } else {
         const errorData = await response.json()
         console.error('Profile update failed:', errorData)
-        toast({
-          title: "Error",
-          description: `Failed to update profile: ${errorData.error || 'Unknown error'}`,
-          variant: "destructive",
-        })
+        toast.error(`Failed to update profile: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error updating profile:', error)
-      toast({
-        title: "Error",
-        description: `Error updating profile: ${error.message}`,
-        variant: "destructive",
-      })
+      toast.error(`Error updating profile: ${error.message}`)
     } finally {
       setSaveLoading(false)
     }
@@ -187,25 +174,13 @@ export default function ProfileSettingsForm({ onBack, isEducator = false, avatar
         handleFieldChange('avatar', newAvatarUrl)
         updateUser({ ...user, avatar: newAvatarUrl })
         if (setAvatarKey) setAvatarKey(Date.now())
-        toast({
-          title: "Success!",
-          description: "Avatar uploaded successfully!",
-          variant: "default",
-        })
+        toast.success("Avatar uploaded successfully!")
       } else {
-        toast({
-          title: "Error",
-          description: "Failed to upload avatar",
-          variant: "destructive",
-        })
+        toast.error("Failed to upload avatar")
       }
     } catch (error) {
       console.error('Error uploading avatar:', error)
-      toast({
-        title: "Error",
-        description: "Error uploading avatar",
-        variant: "destructive",
-      })
+      toast.error("Error uploading avatar")
     } finally {
       setIsUploading(false)
     }

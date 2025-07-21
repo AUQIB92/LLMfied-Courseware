@@ -176,14 +176,14 @@ export default function QuizModal({ course, module, onClose, onComplete }) {
                             <div className="text-sm text-gray-600">
                               Your answer: 
                               <div className="inline ml-1">
-                                <MathMarkdownRenderer content={question.options[userAnswer] || "Not answered"} />
+                                <MathMarkdownRenderer content={question.options[userAnswer] || "Not answered"} inline={true} />
                               </div>
                             </div>
                             {!isCorrect && (
                               <div className="text-sm text-green-600">
                                 Correct answer: 
                                 <div className="inline ml-1">
-                                  <MathMarkdownRenderer content={question.options[question.correct]} />
+                                  <MathMarkdownRenderer content={question.options[question.correct]} inline={true} />
                                 </div>
                               </div>
                             )}
@@ -249,7 +249,7 @@ export default function QuizModal({ course, module, onClose, onComplete }) {
                   <div key={index} className="flex items-center space-x-2">
                     <RadioGroupItem value={String(index)} id={`q${currentQuestion}-o${index}`} />
                     <Label htmlFor={`q${currentQuestion}-o${index}`} className="flex-1">
-                      <MathMarkdownRenderer content={option} />
+                      <MathMarkdownRenderer content={option} inline={true} />
                     </Label>
                   </div>
                 ))}

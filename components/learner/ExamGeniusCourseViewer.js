@@ -849,7 +849,7 @@ function QuizInterface({ quizData, onComplete, difficulty }) {
         </div>
         </div>
           <div>
-            <p className="font-medium text-lg mb-4"><MathMarkdownRenderer content={currentQ?.question} /></p>
+            <p className="font-medium text-lg mb-4"><MathMarkdownRenderer content={currentQ?.question} inline={true} /></p>
             <div className="space-y-2">
               {currentQ?.options.map((option, index) => (
                 <Button key={index} variant={selectedAnswers[currentQuestion] === index ? "default" : "outline"} className="w-full justify-start text-left h-auto py-3" onClick={() => handleAnswerSelect(currentQuestion, index)}>

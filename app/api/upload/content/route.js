@@ -1,71 +1,91 @@
-import { NextResponse } from 'next/server'
-import { connectToDatabase } from '@/lib/mongodb'
-import { ObjectId } from 'mongodb'
-import { processEducationalContent } from '@/lib/gemini'
+import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { generateOrProcessCurriculum } from '@/lib/gemini';
+import { parseStructuredMarkdown } from '@/lib/fileProcessor';
 
 export async function POST(request) {
   try {
-    const formData = await request.formData()
-    const file = formData.get('file')
-    const courseId = formData.get('courseId')
-    const moduleId = formData.get('moduleId')
+    const formData = await request.formData();
+    const file = formData.get('file');
+    const courseId = formData.get('courseId');
+    const moduleId = formData.get('moduleId');
     
     if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
-
-    // Get file content based on type
-    let content = ''
-    const fileName = file.name
-    const fileType = fileName.split('.').pop().toLowerCase()
-
-    if (fileType === 'md' || fileType === 'txt') {
-      content = await file.text()
-    } else if (fileType === 'pdf') {
-      // For PDF processing, you would typically use a library like pdf-parse
-      // For now, we'll return an error asking for MD/TXT files
-      return NextResponse.json({ 
-        error: 'PDF processing not implemented yet. Please upload MD or TXT files.' 
-      }, { status: 400 })
+    
+    // Get file details
+    const fileName = file.name;
+    const fileType = file.type;
+    const fileSize = file.size;
+    
+    console.log(`📄 Processing file: ${fileName} (${fileType}, ${fileSize} bytes)`);
+    
+    // Create a temporary file to process
+    const tempDir = os.tmpdir();
+    const tempFilePath = path.join(tempDir, fileName);
+    
+    // Write the file to the temporary location
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    fs.writeFileSync(tempFilePath, fileBuffer);
+    
+    // Read the file content based on file type
+    let content = '';
+    
+    if (fileType === 'application/pdf') {
+      // For PDF files, we would need a PDF parsing library
+      return NextResponse.json({ error: 'PDF parsing not implemented yet. Please upload a markdown (.md) file.' }, { status: 501 });
     } else {
-      return NextResponse.json({ 
-        error: 'Unsupported file type. Please upload MD, TXT, or PDF files.' 
-      }, { status: 400 })
+      // For text files (markdown, txt, etc.)
+      content = fs.readFileSync(tempFilePath, 'utf8');
     }
-
-    // Process the content with the centralized LLM function
-    const processedContent = await processEducationalContent(content, fileName)
-
-    // Save to database if courseId and moduleId are provided
-    if (courseId && moduleId) {
-      const { db } = await connectToDatabase()
+    
+    // Process the content with Gemini's AI to clean up and standardize the markdown
+    const processedContent = await generateOrProcessCurriculum('PROCESS', content);
+    
+    // Parse the structured markdown to extract modules, sections, and subsections
+    const structuredData = parseStructuredMarkdown(processedContent);
+    
+    // Save to database if courseId is provided
+    if (courseId) {
+      const { db } = await connectToDatabase();
       
       await db.collection('courses').updateOne(
+        { _id: new ObjectId(courseId) },
         { 
-          _id: new ObjectId(courseId),
-          'modules._id': new ObjectId(moduleId)
-        },
-        {
-          $set: {
-            'modules.$.enhancedContent': processedContent,
-            'modules.$.lastProcessed': new Date()
-          }
+          $set: { 
+            'structuredContent': structuredData,
+            'rawContent': content,
+            'processedContent': processedContent,
+            'lastUpdated': new Date()
+          } 
         }
-      )
+      );
     }
-
-    return NextResponse.json({
-      success: true,
+    
+    // Clean up the temporary file
+    try {
+      fs.unlinkSync(tempFilePath);
+    } catch (err) {
+      console.error('Error deleting temporary file:', err);
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      content: content,
+      processedContent: processedContent,
+      structure: structuredData,
       fileName,
       fileType,
-      processedContent
-    })
-
+      fileSize
+    });
+    
   } catch (error) {
-    console.error('Content upload error:', error)
-    return NextResponse.json(
-      { error: 'Failed to process content' },
-      { status: 500 }
-    )
+    console.error('Content upload error:', error);
+    return NextResponse.json({ error: error.message || 'Failed to process file' }, { status: 500 });
   }
 }

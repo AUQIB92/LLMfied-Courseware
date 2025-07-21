@@ -45,8 +45,9 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
     const educatorId = searchParams.get("educatorId")
+    const isExamGenius = searchParams.get("isExamGenius") === "true"
 
-    console.log("Query params:", { status, educatorId })
+    console.log("Query params:", { status, educatorId, isExamGenius })
 
     const filter = {}
     
@@ -81,6 +82,26 @@ export async function GET(request) {
         }, { status: 400 })
       }
     }
+    
+    // Handle ExamGenius filtering
+    if (isExamGenius) {
+      filter.$or = [
+        { isExamGenius: true },
+        { isCompetitiveExam: true }
+      ]
+      console.log("Added ExamGenius filter")
+    }
+
+    // If status is "published" or not specified for learners, ensure we check both status and isPublished fields
+    // This ensures backward compatibility with courses that might have isPublished=true but status not set
+    if (status === "published") {
+      filter.$or = [
+        { status: "published" },
+        { isPublished: true }
+      ];
+      delete filter.status; // Remove the direct status filter since we're using $or
+      console.log("Modified filter to check both status and isPublished fields");
+    }
 
     console.log("Final filter object:", filter)
 
@@ -99,7 +120,7 @@ export async function GET(request) {
     const courses = await collection.find(filter).sort({ createdAt: -1 }).toArray()
     console.log("Query executed successfully, found", courses.length, "courses")
     
-    // Add enrollment counts to courses
+    // Add enrollment counts to courses and ensure isPublished is set
     if (courses.length > 0) {
       const enrollmentCollection = db.collection("enrollments")
       const courseIds = courses.map(course => course._id)
@@ -116,9 +137,19 @@ export async function GET(request) {
         enrollmentMap[item._id.toString()] = item.count
       })
       
-      // Add enrollment counts to courses
+      // Add enrollment counts to courses and ensure isPublished is set
       courses.forEach(course => {
         course.enrollmentCount = enrollmentMap[course._id.toString()] || 0
+        
+        // Ensure isPublished is set based on status for backward compatibility
+        if (course.status === "published" && course.isPublished !== true) {
+          course.isPublished = true;
+        }
+        
+        // Also ensure status is set based on isPublished
+        if (course.isPublished === true && course.status !== "published") {
+          course.status = "published";
+        }
       })
     }
     
@@ -129,6 +160,7 @@ export async function GET(request) {
         title: courses[0].title,
         educatorId: courses[0].educatorId,
         status: courses[0].status,
+        isPublished: courses[0].isPublished,
         hasModules: !!courses[0].modules,
         moduleCount: courses[0].modules?.length || 0
       })
@@ -145,6 +177,7 @@ export async function GET(request) {
           id: sampleCourse._id,
           title: sampleCourse.title,
           status: sampleCourse.status,
+          isPublished: sampleCourse.isPublished,
           educatorId: sampleCourse.educatorId,
           educatorIdType: typeof sampleCourse.educatorId
         })

@@ -7,12 +7,23 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Comprehensive LaTeX sanitizer that fixes common formatting issues
- * Enhanced for ExamGenius content with better pattern matching
+ * Enhanced for ExamGenius content with better pattern matching and duplication prevention
  * @param text - The text containing LaTeX to sanitize
  * @returns Sanitized text with properly formatted LaTeX
  */
 export function sanitizeLaTeX(text: string): string {
   if (!text || typeof text !== "string") return "";
+
+  // First, detect and fix duplicate LaTeX expressions
+  // This pattern looks for repeated math expressions that are identical
+  text = text.replace(/(\$\$.+?\$\$)\s*\1/g, "$1");
+  text = text.replace(/(\$.+?\$)\s*\1/g, "$1");
+  
+  // Remove duplicate inline math that might be nested
+  text = text.replace(/\$(.+?)\$\s*\$\1\$/g, "$$$1$$");
+  
+  // Remove duplicate block math that might be nested
+  text = text.replace(/\$\$(.+?)\$\$\s*\$\$\1\$\$/g, "$$$$1$$$$");
 
   return (
     text
@@ -149,6 +160,11 @@ export function sanitizeLaTeX(text: string): string {
 
       // 🔧 Remove all invisible Unicode/control characters
       .replace(/[\u0000-\u001F\u007F-\u009F\u200B\u200C\u200D\uFEFF]/g, "")
+      
+      // 🔧 Fix duplicate dollar signs that might cause rendering issues
+      .replace(/\$\$/g, "$")
+      .replace(/\$\$/g, "$")
+      .replace(/\$\s*\$/g, "$")
       
       // 🔧 Final cleanup - remove any remaining malformed patterns
       .replace(/\\(?!frac|sqrt|sum|int|lim|log|exp|sin|cos|tan|text|oint|vec|overrightarrow|prod|partial|nabla|infty|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|lambda|mu|pi|sigma|tau|phi|psi|omega|rho|Omega|div|times|pm|mp|approx|equiv|neq|leq|geq|to|rightarrow|leftarrow|Leftrightarrow|det|tr)([a-zA-Z]+)/g, "\\$1")

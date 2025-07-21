@@ -1,329 +1,96 @@
-import { NextResponse } from "next/server"
-import { generateCompetitiveExamModuleSummary } from "@/lib/gemini"
-import { processMarkdown } from "@/lib/fileProcessor"
-import clientPromise from "@/lib/mongodb"
-import jwt from "jsonwebtoken"
-
-async function verifyToken(request) {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "")
-  if (!token) throw new Error("No token provided")
-
-  return jwt.verify(token, process.env.JWT_SECRET)
-}
+import { NextResponse } from "next/server";
+import { processMarkdown } from "@/lib/fileProcessor";
+import { connectToDatabase } from "@/lib/mongodb";
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request) {
   try {
-    // Get user session
-    const user = await verifyToken(request)
-    if (user.role !== "educator") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
+        const body = await request.json();
+        const { markdownContent, courseData } = body;
 
-    // Connect to MongoDB
-    const client = await clientPromise
-    const db = client.db("llmfied")
-
-    const { curriculum, courseData } = await request.json()
-
-    if (!curriculum) {
-      return NextResponse.json({ error: "Curriculum content is required" }, { status: 400 })
-    }
-
-    console.log(`📚 Processing competitive exam curriculum for: ${courseData.examType} - ${courseData.subject}`)
-
-    // Enhanced context for competitive exams
-    const context = {
-      learnerLevel: courseData.learnerLevel || 'intermediate',
-      subject: courseData.subject || 'Quantitative Aptitude',
-      examType: courseData.examType || 'SSC',
-      title: courseData.title,
-      description: courseData.description,
-      isCompetitiveExam: true
-    }
-
-    // Process the curriculum markdown using the original method
-    const rawModules = await processMarkdown(curriculum, context)
-
-    if (!rawModules || rawModules.length === 0) {
-      return NextResponse.json({ error: "Failed to extract modules from curriculum" }, { status: 400 })
-    }
-
-    console.log(`✅ Extracted ${rawModules.length} modules from competitive exam curriculum`)
-
-    // Enhanced competitive exam module processing
-    const processedModules = []
-    let processed = 0
-
-    for (const module of rawModules) {
-      try {
-        console.log(`🔄 Processing competitive exam module ${processed + 1}/${rawModules.length}: ${module.title}`)
-
-        // Use the enhanced competitive exam module summary function
-        const enhancedModule = await generateCompetitiveExamModuleSummary(module.content, {
-          learnerLevel: context.learnerLevel,
-          subject: context.subject,
-          examType: context.examType,
-          moduleIndex: processed + 1,
-          totalModules: rawModules.length,
-          courseTitle: courseData.title,
-          moduleTitle: module.title
-        })
-
-        // Create enhanced competitive exam module structure
-        const finalModule = {
-          id: module.id,
-          title: module.title,
-          content: module.content,
-          order: module.order,
-          
-          // Enhanced content using competitive exam method
-          summary: enhancedModule.summary,
-          objectives: enhancedModule.objectives,
-          examples: enhancedModule.examples,
-          resources: enhancedModule.resources,
-          visualizationSuggestions: enhancedModule.visualizationSuggestions,
-          beautifulSummaryElements: enhancedModule.beautifulSummaryElements,
-          detailedSubsections: enhancedModule.detailedSubsections,
-          
-          // Competitive exam specific metadata
-          examType: context.examType,
-          subject: context.subject,
-          estimatedTime: enhancedModule.beautifulSummaryElements?.estimatedStudyTime || "3-4 hours",
-          difficulty: enhancedModule.beautifulSummaryElements?.difficultyLevel || context.learnerLevel,
-          learnerLevel: context.learnerLevel,
-          isCompetitiveExam: true,
-          
-          // Add competitive exam specific features
-          speedSolvingTechniques: enhancedModule.speedSolvingTechniques || [],
-          commonTraps: enhancedModule.commonTraps || [],
-          memoryTricks: enhancedModule.memoryTricks || [],
-          examPatterns: enhancedModule.examPatterns || [],
-          timeAllocation: enhancedModule.timeAllocation || "45-60 minutes"
+        if (!markdownContent || !courseData) {
+            return NextResponse.json({ error: 'Missing markdownContent or courseData' }, { status: 400 });
         }
 
-        processedModules.push(finalModule)
-        processed++
+        console.log("🚀 Initializing background job for detailed subsection content generation...");
 
-        console.log(`✅ Competitive exam module ${processed}/${rawModules.length} processed successfully`)
+        const { db } = await connectToDatabase();
+        const jobId = uuidv4();
+        let totalJobs = 0;
+        const generationJobs = [];
 
-      } catch (moduleError) {
-        console.error(`❌ Error processing competitive exam module ${module.title}:`, moduleError)
-        
-        // Create a fallback module structure for competitive exams
-        const fallbackModule = {
-          id: module.id,
-          title: module.title,
-          content: module.content,
-          order: module.order,
-          summary: `Learn ${module.title} for ${context.examType} ${context.subject} exam`,
-          objectives: [
-            `Master ${module.title} concepts for ${context.examType} exam`,
-            "Apply speed-solving techniques",
-            "Identify common question patterns",
-            "Practice with exam-level problems"
-          ],
-          examples: [
-            `${context.examType} exam style questions`,
-            "Time-saving calculation methods",
-            "Previous year question patterns"
-          ],
-          resources: { 
-            books: [], 
-            courses: [], 
-            articles: [], 
-            videos: [], 
-            tools: [], 
-            websites: [], 
-            exercises: [] 
-          },
-          visualizationSuggestions: {
-            hasFlowcharts: true,
-            hasComparisons: true,
-            hasTimelines: false,
-            hasFormulas: true,
-            hasProcessSteps: true,
-            hasCyclicalProcesses: false,
-            hasHierarchies: false,
-            hasRelationships: true,
-            codeSimulationTopics: [],
-            interactiveElements: ["Formula calculators", "Speed calculation tools"]
-          },
-          beautifulSummaryElements: {
-            keyInsights: [`Essential ${module.title} concepts for ${context.examType}`],
-            practicalApplications: [`${context.examType} exam preparation`],
-            whyItMatters: `Critical for ${context.examType} exam success`,
-            careerRelevance: "Opens competitive career opportunities",
-            difficultyLevel: context.learnerLevel,
-            prerequisites: ["Basic mathematical concepts"],
-            estimatedStudyTime: "3-4 hours"
-          },
-          detailedSubsections: [
-            {
-              title: `${module.title} Fundamentals`,
-              summary: "Core concepts and basic understanding",
-              keyPoints: ["Fundamental concepts", "Basic formulas", "Simple applications"],
-              pages: [
-                {
-                  pageNumber: 1,
-                  pageTitle: "Introduction & Foundation",
-                  content: `Introduction to ${module.title} for ${context.examType} exam. This section covers fundamental concepts and provides necessary background knowledge.`,
-                  codeExamples: [],
-                  mathematicalContent: [
-                    {
-                      type: "formula",
-                      title: "Basic Formula",
-                      content: "Mathematical expression will be provided",
-                      explanation: "Step-by-step explanation for exam context",
-                      example: "Numerical example with solution"
+        // Process each module to extract subsections
+        for (const module of courseData.modules) {
+            console.log(`Processing module: "${module.title}"`);
+            
+            // Extract subsection titles using regex (#### headings)
+            const subsectionTitles = (module.content.match(/####(.*?)\n/g) || [])
+                .map(t => t.replace(/####\s*/, "").trim())
+                .filter(title => title); // Filter out empty titles
+            
+            console.log(`Found ${subsectionTitles.length} subsections in module "${module.title}"`);
+            
+            if (subsectionTitles.length > 0) {
+                totalJobs += subsectionTitles.length;
+                
+                for (const subsectionTitle of subsectionTitles) {
+                    // Extract the specific content for this subsection with more context
+                    const subsectionRegex = new RegExp(
+                        `####\\s*${subsectionTitle.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}[\\s\\S]*?(?=####|###|##|#|$)`
+                    );
+                    const subsectionContentMatch = module.content.match(subsectionRegex);
+                    
+                    // If we don't have specific content for this subsection, create a more descriptive prompt
+                    let focusedContent;
+                    if (subsectionContentMatch && subsectionContentMatch[0]) {
+                        focusedContent = subsectionContentMatch[0];
+                        console.log(`✅ Extracted content for subsection "${subsectionTitle}" (${focusedContent.length} chars)`);
+                    } else {
+                        // Create a more informative prompt with module context
+                        focusedContent = `#### ${subsectionTitle}\n\nThis is a subsection of the module "${module.title}" for ${courseData.examType} exam preparation in ${courseData.subject}.\n\nPlease generate comprehensive content for this subsection based on the title and context.`;
+                        console.log(`⚠️ No specific content found for subsection "${subsectionTitle}", using generated prompt`);
                     }
-                  ],
-                  keyTakeaway: `Understanding ${module.title} basics`
-                },
-                {
-                  pageNumber: 2,
-                  pageTitle: "Exam Strategies & Shortcuts",
-                  content: `Speed-solving techniques for ${module.title} in ${context.examType} exam. Time-saving methods and mental calculation techniques.`,
-                  codeExamples: [],
-                  mathematicalContent: [
-                    {
-                      type: "calculation",
-                      title: "Quick Method",
-                      content: "Fast calculation technique",
-                      explanation: "How to solve quickly in exam",
-                      example: "Practice problem with timing"
-                    }
-                  ],
-                  keyTakeaway: "Mastering speed and accuracy"
-                },
-                {
-                  pageNumber: 3,
-                  pageTitle: "Practice & Application",
-                  content: `Practice problems and exam applications for ${module.title}. Real ${context.examType} exam scenarios and solution strategies.`,
-                  codeExamples: [],
-                  mathematicalContent: [
-                    {
-                      type: "example",
-                      title: "Exam Problem",
-                      content: "Typical exam question",
-                      explanation: "Solution approach",
-                      example: "Step-by-step solution"
-                    }
-                  ],
-                  keyTakeaway: "Applying concepts in exam conditions"
+                    
+                    // Add module context to help the AI understand the broader topic
+                    const moduleContext = `Module: ${module.title}\nSubject: ${courseData.subject}\nExam: ${courseData.examType}\n\n${focusedContent}`;
+
+                    generationJobs.push({
+                        jobId,
+                        courseId: courseData._id, // Will be null for new courses
+                        moduleTitle: module.title,
+                        moduleIndex: courseData.modules.indexOf(module),
+                        subsectionTitle,
+                        focusedContent: moduleContext,
+                        context: {
+                            subject: courseData.subject,
+                            examType: courseData.examType,
+                            moduleTitle: module.title,
+                            subsectionTitle: subsectionTitle
+                        },
+                        status: 'pending',
+                        retries: 0,
+                        createdAt: new Date(),
+                    });
                 }
-              ],
-              practicalExample: `Practical ${module.title} example for ${context.examType}`,
-              commonPitfalls: [`Common ${module.title} mistakes`, "Time management issues"],
-              difficulty: context.learnerLevel,
-              estimatedTime: "45-60 minutes"
             }
-          ],
-          
-          // Competitive exam specific fields
-          examType: context.examType,
-          subject: context.subject,
-          learnerLevel: context.learnerLevel,
-          isCompetitiveExam: true,
-          speedSolvingTechniques: [],
-          commonTraps: [],
-          memoryTricks: [],
-          examPatterns: [],
-          timeAllocation: "45-60 minutes"
         }
         
-        processedModules.push(fallbackModule)
-        processed++
-      }
-    }
-
-    // Calculate additional competitive exam metrics
-    const totalSubsections = processedModules.reduce((sum, module) => 
-      sum + (module.detailedSubsections?.length || 0), 0
-    )
-
-    const totalPages = processedModules.reduce((sum, module) => 
-      sum + (module.detailedSubsections?.reduce((pageSum, subsection) => 
-        pageSum + (subsection.pages?.length || 0), 0) || 0), 0
-    )
-
-    console.log(`✅ Successfully processed ${processedModules.length} competitive exam modules with enhanced content`)
-
-    // Create the final course structure
-    const finalCourse = {
-      title: courseData.title,
-      description: courseData.description || `Comprehensive ${context.examType} ${context.subject} preparation course`,
-      examType: context.examType,
-      subject: context.subject,
-      learnerLevel: context.learnerLevel,
-      modules: processedModules,
-      isCompetitiveExam: true,
-      
-      // Enhanced metadata for competitive exams
-      totalModules: processedModules.length,
-      totalSubsections: totalSubsections,
-      totalPages: totalPages,
-      estimatedStudyTime: courseData.estimatedTime || "40-50 hours",
-      
-      // Competitive exam specific metadata
-      examFocus: {
-        speedSolving: true,
-        formulaMastery: true,
-        timeManagement: true,
-        accuracyImprovement: true,
-        examPatterns: true
-      },
-      
-      metadata: {
-        createdAt: new Date().toISOString(),
-        processingMethod: "competitive_exam_enhanced",
-        learnerLevel: context.learnerLevel,
-        subject: context.subject,
-        examType: context.examType,
-        enhancementsApplied: true,
-        isCompetitiveExam: true
-      }
+        if (generationJobs.length > 0) {
+            await db.collection('generation_jobs').insertMany(generationJobs);
+            console.log(`✅ Queued ${generationJobs.length} subsection content generation jobs with Job ID: ${jobId}`);
+        } else {
+            console.log("⚠️ No subsections found to generate. Completing job immediately.");
     }
 
     return NextResponse.json({
-      success: true,
-      course: finalCourse,
-      metadata: {
-        totalModules: processedModules.length,
-        totalSubsections: totalSubsections,
-        totalPages: totalPages,
-        processedAt: new Date().toISOString(),
-        processingMethod: "competitive_exam_enhanced",
-        examType: context.examType,
-        subject: context.subject,
-        learnerLevel: context.learnerLevel,
-        isCompetitiveExam: true
-      }
-    })
+            message: "Content generation jobs queued successfully.",
+            jobId: jobId,
+            totalJobs: totalJobs,
+            initialModules: courseData.modules // Send back the basic structure
+        });
 
   } catch (error) {
-    console.error("Competitive exam content generation error:", error)
-    
-    // Provide more specific error messages
-    if (error.message?.includes('extract modules')) {
-      return NextResponse.json(
-        { error: "Could not extract modules from curriculum. Please ensure the curriculum has clear module structure." },
-        { status: 400 }
-      )
-    }
-    
-    if (error.message?.includes('API key')) {
-      return NextResponse.json(
-        { error: "AI service configuration error. Please contact support." },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      { 
-        error: "Failed to generate detailed competitive exam content. Please try again.",
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      },
-      { status: 500 }
-    )
+        console.error("Error queuing content generation jobs:", error);
+        return NextResponse.json({ error: "Failed to queue content generation jobs." }, { status: 500 });
   }
 } 

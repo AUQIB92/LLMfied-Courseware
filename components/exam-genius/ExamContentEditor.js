@@ -114,11 +114,11 @@ export default function ExamContentEditor({ course, onBack, onSave }) {
     }
   }
 
-  const handleSave = async () => {
+  const handleSave = async (status) => {
     setSaving(true)
     try {
-      await onSave(editedCourse)
-      toast.success("Competitive exam course saved successfully!")
+      await onSave(editedCourse, status)
+      toast.success(`Competitive exam course ${status === 'draft' ? 'saved as draft' : 'published'} successfully!`)
     } catch (error) {
       console.error("Error saving course:", error)
       toast.error("Failed to save course. Please try again.")
@@ -278,9 +278,10 @@ export default function ExamContentEditor({ course, onBack, onSave }) {
             Competitive Exam
           </Badge>
           <Button
-            onClick={handleSave}
+            onClick={() => handleSave("draft")}
             disabled={saving}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+            variant="outline"
+            className="border-blue-300 text-blue-700 hover:bg-blue-50"
           >
             {saving ? (
               <>
@@ -290,7 +291,24 @@ export default function ExamContentEditor({ course, onBack, onSave }) {
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Save Course
+                Save Draft
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={() => handleSave("published")}
+            disabled={saving}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Publishing...
+              </>
+            ) : (
+              <>
+                <Trophy className="h-4 w-4 mr-2" />
+                Publish Course
               </>
             )}
           </Button>

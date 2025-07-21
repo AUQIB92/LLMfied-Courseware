@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -27,7 +27,6 @@ import {
 
 export default function PreferencesSettings({ onBack, isEducator = false }) {
   const { getAuthHeaders } = useAuth()
-  const { toast } = useToast()
   
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -117,11 +116,7 @@ export default function PreferencesSettings({ onBack, isEducator = false }) {
         const result = await response.json()
         console.log("Success result:", result)
         setHasUnsavedChanges(false)
-        toast({
-          title: "Success!",
-          description: "Preferences updated successfully!",
-          variant: "default",
-        })
+        toast.success("Preferences updated successfully!")
       } else {
         let errorData
         try {
@@ -142,11 +137,7 @@ export default function PreferencesSettings({ onBack, isEducator = false }) {
           errorMessage += '\n\nTroubleshooting:\n• Check if the server is running\n• Verify database connection\n• Check browser console for details'
         }
         
-        toast({
-          title: "Error",
-          description: `Failed to update preferences: ${errorMessage}`,
-          variant: "destructive",
-        })
+        toast.error(`Failed to update preferences: ${errorMessage}`)
       }
     } catch (error) {
       console.error("Error updating preferences:", error)
@@ -161,11 +152,7 @@ export default function PreferencesSettings({ onBack, isEducator = false }) {
         errorMessage = 'Network error - please check your connection and ensure the server is running'
       }
       
-      toast({
-        title: "Error",
-        description: `Error updating preferences: ${errorMessage}`,
-        variant: "destructive",
-      })
+      toast.error(`Error updating preferences: ${errorMessage}`)
     } finally {
       setSaveLoading(false)
     }

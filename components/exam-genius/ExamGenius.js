@@ -111,8 +111,13 @@ export default function ExamGenius() {
   })
 
   // Separate published and draft courses
-  const publishedCourses = examCourses.filter(course => course.isPublished)
-  const draftCourses = examCourses.filter(course => !course.isPublished)
+  const publishedCourses = examCourses.filter(course => 
+    course.status === "published" || course.isPublished === true
+  )
+  
+  const draftCourses = examCourses.filter(course => 
+    course.status !== "published" && course.isPublished !== true
+  )
 
   const examTypes = [
     { id: "jee", name: "JEE Main/Advanced", icon: "🔬", color: "blue" },
@@ -142,6 +147,18 @@ export default function ExamGenius() {
       setLoading(true)
       console.log("🔍 ExamGenius: Fetching courses for user:", user.id)
       
+      // First try the debug endpoint to see what's in the database
+      console.log("🔬 Checking database directly for ExamGenius courses...");
+      const debugResponse = await fetch(`/api/debug-exam-courses?userId=${user.id}`, {
+        headers: getAuthHeaders(),
+      });
+      
+      if (debugResponse.ok) {
+        const debugData = await debugResponse.json();
+        console.log(`🔬 Debug found ${debugData.count} ExamGenius courses in database:`, debugData);
+      }
+      
+      // Now fetch courses through the regular API with explicit ExamGenius filter
       const response = await fetch(`/api/courses?educatorId=${user.id}&isExamGenius=true`, {
         headers: getAuthHeaders(),
       })
@@ -151,34 +168,64 @@ export default function ExamGenius() {
         console.log("📊 ExamGenius: Raw courses data:", data)
         console.log("📊 ExamGenius: Total courses received:", data.length)
         
-        // Additional client-side filtering to ensure only ExamGenius courses are shown
-        const examGeniusCourses = Array.isArray(data) 
-          ? data.filter(course => {
-              const isExamGenius = course.isExamGenius === true
-              const isCompetitiveExam = course.isCompetitiveExam === true
-              const hasModules = course.modules && Array.isArray(course.modules)
-              const moduleCount = hasModules ? course.modules.length : 0
-              
-              console.log(`📝 Course: ${course.title}`, {
-                isExamGenius,
-                isCompetitiveExam,
-                hasModules,
-                moduleCount,
-                examType: course.examType,
-                subject: course.subject,
-                id: course._id || course.id
-              })
-              
-              return isExamGenius || isCompetitiveExam
-            })
-          : []
-          
-        console.log("✅ ExamGenius: Filtered courses:", examGeniusCourses.length)
-        examGeniusCourses.forEach(course => {
-          console.log(`📋 ExamGenius Course: ${course.title} - Modules: ${course.modules?.length || 0}`)
+        if (!Array.isArray(data)) {
+          console.error("❌ ExamGenius: Invalid courses data format, expected array but got:", typeof data)
+          setExamCourses([])
+          return
+        }
+        
+        // Log all courses for debugging
+        data.forEach((course, index) => {
+          console.log(`Course ${index + 1}: ${course.title || 'Untitled'}`, {
+            id: course._id,
+            status: course.status,
+            isPublished: course.isPublished,
+            isExamGenius: course.isExamGenius,
+            isCompetitiveExam: course.isCompetitiveExam,
+            moduleCount: course.modules?.length || 0
+          })
         })
         
-        setExamCourses(examGeniusCourses)
+        // Make sure all courses have proper status and isPublished fields
+        const normalizedCourses = data.map(course => {
+          // Ensure status field is set
+          if (!course.status && course.isPublished) {
+            course.status = "published";
+          } else if (!course.status) {
+            course.status = "draft";
+          }
+          
+          // Ensure isPublished field is set
+          if (course.status === "published" && !course.isPublished) {
+            course.isPublished = true;
+          }
+          
+          return course;
+        });
+        
+        // Set all courses to state
+        setExamCourses(normalizedCourses)
+        
+        // Count published and draft courses
+        const published = normalizedCourses.filter(course => 
+          course.status === "published" || course.isPublished === true
+        )
+        
+        const drafts = normalizedCourses.filter(course => 
+          course.status !== "published" && course.isPublished !== true
+        )
+        
+        console.log(`📊 ExamGenius courses breakdown: ${published.length} published, ${drafts.length} drafts`)
+        
+        // Log published courses for debugging
+        published.forEach(course => {
+          console.log(`📢 Published course: ${course.title}`, {
+            id: course._id,
+            status: course.status,
+            isPublished: course.isPublished,
+            moduleCount: course.modules?.length || 0
+          })
+        })
       } else {
         console.error("❌ ExamGenius: Failed to fetch exam courses", response.status)
         setExamCourses([])
@@ -602,14 +649,30 @@ export default function ExamGenius() {
     toast.success("🎉 Course created successfully! You can now edit and manage your modules.")
   }
 
-  const handleCourseSaved = async (updatedCourse) => {
+  const handleCourseSaved = async (updatedCourse, status = "draft") => {
     try {
       console.log("🔄 Saving ExamGenius course:", {
         courseId: updatedCourse.id || updatedCourse._id,
         title: updatedCourse.title,
         examType: updatedCourse.examType,
-        moduleCount: updatedCourse.modules?.length || 0
+        moduleCount: updatedCourse.modules?.length || 0,
+        requestedStatus: status,
+        currentStatus: updatedCourse.status
       })
+
+      // Determine the correct status - use the passed status parameter if available
+      let courseStatus = status || "draft"; // Default to draft
+      
+      // If the course has an explicit status and no status parameter was provided, use the course status
+      if (!status && updatedCourse.status) {
+        courseStatus = updatedCourse.status;
+      } 
+      // Otherwise check if it's marked as published
+      else if (!status && updatedCourse.isPublished) {
+        courseStatus = "published";
+      }
+      
+      console.log(`📝 Setting course status to: ${courseStatus}`);
 
       // Use the ExamGenius save-course endpoint for updating courses
       const response = await fetch("/api/exam-genius/save-course", {
@@ -624,8 +687,8 @@ export default function ExamGenius() {
             _id: updatedCourse.id || updatedCourse._id,
             isExamGenius: true,
             isCompetitiveExam: true,
-            // Preserve the existing status or set to draft
-            status: updatedCourse.status || updatedCourse.isPublished ? "published" : "draft"
+            status: courseStatus,
+            isPublished: courseStatus === "published"
           }
         }),
       })
@@ -639,8 +702,19 @@ export default function ExamGenius() {
       if (response.ok) {
         const data = await response.json()
         console.log("✅ Course saved successfully:", data)
-        toast.success("🎉 Course saved successfully!")
-        fetchExamCourses()
+        
+        // Use the returned course data from the API
+        if (data.course) {
+          // Immediately refresh the course list to show the updated course
+          await fetchExamCourses()
+          
+          toast.success(`🎉 Course ${status === 'published' ? 'published' : 'saved'} successfully!`)
+        } else {
+          console.warn("⚠️ No course data returned from API")
+          toast.success("🎉 Course saved successfully!")
+          // Still refresh courses even if we don't have course data
+          await fetchExamCourses()
+        }
       } else {
         const errorText = await response.text()
         console.error("❌ Save failed:", response.status, response.statusText, errorText)
@@ -663,6 +737,56 @@ export default function ExamGenius() {
 
   const getExamTypeConfig = (examType) => {
     return examTypes.find(type => type.id === examType) || examTypes[examTypes.length - 1]
+  }
+  
+  // Function to directly publish a draft course
+  const handlePublishDraftCourse = async (course) => {
+    try {
+      const courseId = course._id || course.id;
+      
+      if (!courseId) {
+        toast.error("Course ID is missing. Cannot publish.");
+        return;
+      }
+      
+      console.log(`🚀 Publishing draft course: ${course.title} (${courseId})`);
+      
+      // Use the debug-publish endpoint to directly publish the course in the database
+      const response = await fetch("/api/debug-publish", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({ courseId })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ Course published successfully:", data);
+        
+        // Refresh the courses list
+        await fetchExamCourses();
+        
+        toast.success(`🎉 Course "${course.title}" published successfully!`);
+      } else {
+        const errorText = await response.text();
+        console.error("❌ Publish failed:", response.status, response.statusText, errorText);
+        
+        let errorMessage = "Failed to publish course";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      console.error("💥 Error publishing course:", error);
+      toast.error(`Failed to publish course: ${error.message}`);
+    }
   }
 
   if (activeView === "editor" && editingCourse) {
@@ -1151,14 +1275,24 @@ export default function ExamGenius() {
                             <span className="font-medium">{course.modules?.length || 0}</span>
                           </div>
                           
-                          <div className="pt-2">
+                          <div className="pt-2 flex gap-2">
                             <Button
                               onClick={() => handleEditCourse(course)}
-                              className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white"
+                              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                             >
                               <Edit3 className="h-4 w-4 mr-2" />
-                              Continue Editing
+                              Edit
                             </Button>
+                            
+                            {!course.isPublished && (
+                              <Button
+                                onClick={() => handlePublishDraftCourse(course)}
+                                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                              >
+                                <Trophy className="h-4 w-4 mr-2" />
+                                Publish
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>

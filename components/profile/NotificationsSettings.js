@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,7 +26,6 @@ import {
 
 export default function NotificationsSettings({ onBack, isEducator = false }) {
   const { getAuthHeaders } = useAuth()
-  const { toast } = useToast()
   
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(false)
@@ -66,19 +65,11 @@ export default function NotificationsSettings({ onBack, isEducator = false }) {
             notif.id === id || notif._id?.toString() === id ? { ...notif, read: true } : notif
           )
         )
-        toast({
-          title: "Success!",
-          description: "Notification marked as read",
-          variant: "default",
-        })
+        toast.success("Notification marked as read")
       }
     } catch (error) {
       console.error("Failed to mark notification as read:", error)
-      toast({
-        title: "Error",
-        description: "Failed to mark notification as read",
-        variant: "destructive",
-      })
+      toast.error("Failed to mark notification as read")
     }
   }
 
@@ -92,19 +83,11 @@ export default function NotificationsSettings({ onBack, isEducator = false }) {
         setNotifications(prev => 
           prev.map(notif => ({ ...notif, read: true }))
         )
-        toast({
-          title: "Success!",
-          description: "All notifications marked as read",
-          variant: "default",
-        })
+        toast.success("All notifications marked as read")
       }
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error)
-      toast({
-        title: "Error",
-        description: "Failed to mark all notifications as read",
-        variant: "destructive",
-      })
+      toast.error("Failed to mark all notifications as read")
     }
   }
 
@@ -116,19 +99,11 @@ export default function NotificationsSettings({ onBack, isEducator = false }) {
       })
       if (response.ok) {
         setNotifications(prev => prev.filter(notif => notif.id !== id && notif._id?.toString() !== id))
-        toast({
-          title: "Success!",
-          description: "Notification deleted",
-          variant: "default",
-        })
+        toast.success("Notification deleted")
       }
     } catch (error) {
       console.error("Failed to delete notification:", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete notification",
-        variant: "destructive",
-      })
+      toast.error("Failed to delete notification")
     }
   }
 

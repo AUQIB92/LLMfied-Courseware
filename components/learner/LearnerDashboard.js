@@ -59,6 +59,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { toast } from "sonner"
 
 export default function LearnerDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -83,7 +84,6 @@ export default function LearnerDashboard() {
   })
   const { user, getAuthHeaders, logout, updateUser } = useAuth()
   const router = useRouter()
-  const { toast } = useToast()
 
   useEffect(() => {
     fetchEnrolledCourses()

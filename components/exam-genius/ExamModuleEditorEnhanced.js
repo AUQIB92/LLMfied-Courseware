@@ -602,6 +602,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
         course: {
           ...course,
           status: "published",
+          isPublished: true,
           isExamGenius: true,
           isCompetitiveExam: true,
           modules: course.modules
@@ -618,7 +619,12 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
         moduleCount: course.modules?.length,
         title: course.title,
         hasAuth: !!getAuthHeaders()?.authorization,
-        payload: publishPayload
+        payload: {
+          ...publishPayload.course,
+          _id: publishPayload.course._id,
+          status: publishPayload.course.status,
+          isPublished: publishPayload.course.isPublished
+        }
       })
 
       const response = await fetch("/api/exam-genius/save-course", {
@@ -656,7 +662,15 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
           duration: 8000,
         })
         
-        if (onSaveSuccess) onSaveSuccess(data.course, "published")
+        // Make sure we pass the updated course with the published status
+        const publishedCourse = {
+          ...data.course,
+          _id: courseId || data.courseId,
+          status: "published",
+          isPublished: true
+        }
+        
+        if (onSaveSuccess) onSaveSuccess(publishedCourse, "published")
       } else {
         const errorText = await response.text()
         console.error("❌ Publish failed:", {
@@ -753,6 +767,233 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
     })
     setShowManualResourceForm(false)
   }
+
+  // Add this function to generate content for a specific subsection
+  const generateSubsectionContent = async (subsection, subsectionIndex) => {
+    try {
+      // Show loading state
+      setEditingSubsection(subsectionIndex);
+      const updatedSubsection = { ...subsection, isGenerating: true };
+      updateSubsection(subsectionIndex, updatedSubsection);
+      
+      console.log(`Generating content for subsection: ${subsection.title}`);
+      
+      // Prepare the context for the API
+      const context = {
+        subject: subject || "General",
+        examType: examType || "General",
+        moduleTitle: module.title,
+        subsectionTitle: subsection.title
+      };
+      
+      // Extract content for this subsection from the module content
+      const subsectionRegex = new RegExp(
+        `####\\s*${subsection.title.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}[\\s\\S]*?(?=####|###|##|#|$)`
+      );
+      const subsectionContentMatch = module.content.match(subsectionRegex);
+      const focusedContent = subsectionContentMatch ? 
+        subsectionContentMatch[0] : 
+        `#### ${subsection.title}\n\nThis is a subsection of the module "${module.title}" for ${examType} exam preparation in ${subject}.`;
+      
+      // Add module context to help the AI
+      const moduleContext = `Module: ${module.title}\nSubject: ${subject}\nExam: ${examType}\n\n${focusedContent}`;
+      
+      // Call the API to generate content
+      const response = await fetch('/api/exam-genius/generate-subsection-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: moduleContext,
+          context: context
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate content");
+      }
+      
+      const data = await response.json();
+      
+      // Update the subsection with the generated content
+      updateSubsection(subsectionIndex, {
+        ...data.content,
+        isGenerating: false
+      });
+      
+      console.log(`Content generated successfully for subsection: ${subsection.title}`);
+    } catch (error) {
+      console.error(`Error generating content for subsection: ${subsection.title}`, error);
+      // Reset the generating state
+      updateSubsection(subsectionIndex, { isGenerating: false });
+      // Show error toast
+      toast.error(error.message || "Failed to generate content. Please try again.");
+    }
+  };
+
+  // Add this function after generateSubsectionContent
+  const generateResources = async () => {
+    try {
+      setIsGeneratingResources(true);
+      
+      // Get module content
+      const moduleContent = module.content || '';
+      const subsectionsContent = module.subsections?.map(s => s.explanation || '').join('\n\n') || '';
+      const fullContent = `${moduleContent}\n\n${subsectionsContent}`;
+      
+      const response = await fetch('/api/exam-genius/generate-resources', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          moduleTitle: module.title,
+          moduleContent: fullContent,
+          examType,
+          subject,
+          learnerLevel
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate resources');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.resources) {
+        // Update module with new resources
+        const updatedModule = { ...module };
+        
+        // Map the API response to our resource structure
+        if (data.resources.videos && data.resources.videos.length > 0) {
+          updatedModule.resources = updatedModule.resources || {};
+          updatedModule.resources.videos = [
+            ...(updatedModule.resources.videos || []),
+            ...data.resources.videos.map(video => ({
+              title: video.title,
+              url: video.url,
+              description: video.description,
+              creator: video.author || video.creator,
+              isAIGenerated: true
+            }))
+          ];
+        }
+        
+        if (data.resources.articles && data.resources.articles.length > 0) {
+          updatedModule.resources = updatedModule.resources || {};
+          updatedModule.resources.articles = [
+            ...(updatedModule.resources.articles || []),
+            ...data.resources.articles.map(article => ({
+              title: article.title,
+              url: article.url,
+              description: article.description,
+              author: article.author || article.creator,
+              isAIGenerated: true
+            }))
+          ];
+        }
+        
+        if (data.resources.books && data.resources.books.length > 0) {
+          updatedModule.resources = updatedModule.resources || {};
+          updatedModule.resources.books = [
+            ...(updatedModule.resources.books || []),
+            ...data.resources.books.map(book => ({
+              title: book.title,
+              url: book.url,
+              description: book.description,
+              author: book.author || book.creator,
+              isAIGenerated: true
+            }))
+          ];
+        }
+        
+        if (data.resources.courses && data.resources.courses.length > 0) {
+          updatedModule.resources = updatedModule.resources || {};
+          updatedModule.resources.courses = [
+            ...(updatedModule.resources.courses || []),
+            ...data.resources.courses.map(course => ({
+              title: course.title,
+              url: course.url,
+              description: course.description,
+              platform: course.platform || course.author || course.creator,
+              isAIGenerated: true
+            }))
+          ];
+        }
+        
+        if (data.resources.tools && data.resources.tools.length > 0) {
+          updatedModule.resources = updatedModule.resources || {};
+          updatedModule.resources.tools = [
+            ...(updatedModule.resources.tools || []),
+            ...data.resources.tools.map(tool => ({
+              title: tool.title,
+              url: tool.url,
+              description: tool.description,
+              creator: tool.creator || tool.author,
+              isAIGenerated: true
+            }))
+          ];
+        }
+        
+        if (data.resources.websites && data.resources.websites.length > 0) {
+          updatedModule.resources = updatedModule.resources || {};
+          updatedModule.resources.websites = [
+            ...(updatedModule.resources.websites || []),
+            ...data.resources.websites.map(website => ({
+              title: website.title,
+              url: website.url,
+              description: website.description,
+              creator: website.creator || website.author,
+              isAIGenerated: true
+            }))
+          ];
+        }
+        
+        if (data.resources.githubRepos && data.resources.githubRepos.length > 0) {
+          updatedModule.resources = updatedModule.resources || {};
+          updatedModule.resources.websites = [
+            ...(updatedModule.resources.websites || []),
+            ...data.resources.githubRepos.map(repo => ({
+              title: repo.title,
+              url: repo.url,
+              description: repo.description,
+              creator: repo.creator || repo.author,
+              isAIGenerated: true,
+              isGithub: true
+            }))
+          ];
+        }
+        
+        if (data.resources.exercises && data.resources.exercises.length > 0) {
+          updatedModule.resources = updatedModule.resources || {};
+          updatedModule.resources.exercises = [
+            ...(updatedModule.resources.exercises || []),
+            ...data.resources.exercises.map(exercise => ({
+              title: exercise.title,
+              url: exercise.url,
+              description: exercise.description,
+              creator: exercise.creator || exercise.author,
+              isAIGenerated: true
+            }))
+          ];
+        }
+        
+        // Update the module
+        onUpdate(updatedModule);
+        
+        toast.success("Learning resources have been added to your module.");
+      }
+    } catch (error) {
+      console.error("Error generating resources:", error);
+      toast.error("Failed to generate resources. Please try again.");
+    } finally {
+      setIsGeneratingResources(false);
+    }
+  };
 
   // ResourceSection component
   const ResourceSection = ({ title, icon: Icon, resources, type, isInstructorContent = false }) => {
@@ -886,6 +1127,8 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
       </Card>
     )
   }
+
+  const [isGeneratingResources, setIsGeneratingResources] = useState(false);
 
       return (
     <div className="space-y-6">
@@ -1438,8 +1681,29 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                                   <MathMarkdownRenderer content={currentExplanationContent} />
                                 </div>
                               ) : (
-                                <div className="space-y-2">
-                                  <p className="text-sm text-gray-500 italic">Click to add content...</p>
+                                <div className="space-y-4">
+                                  <p className="text-sm text-gray-500 italic">No content available for this subsection.</p>
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      generateSubsectionContent(subsection, globalIndex);
+                                    }}
+                                    disabled={subsection.isGenerating}
+                                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                                  >
+                                    {subsection.isGenerating ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Generating Content...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Sparkles className="h-4 w-4 mr-2" />
+                                        Generate Content with AI
+                                      </>
+                                    )}
+                                  </Button>
                                   {process.env.NODE_ENV === 'development' && (
                                     <div className="text-xs text-gray-400 border-t pt-2">
                                       <strong>Debug:</strong> page content is empty.
@@ -1448,7 +1712,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                                 </div>
                               )}
                               <p className="text-xs text-gray-500 mt-4 italic">
-                                <MathMarkdownRenderer content={explanationPages[currentSubsectionPage]?.keyTakeaway || ''} />
+                                <MathMarkdownRenderer content={explanationPages[currentSubsectionPage]?.keyTakeaway || ''} inline={true} />
                               </p>
                             </div>
                           )}
@@ -1540,6 +1804,36 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                             })}
                           </div>
                         </div>
+
+                        {/* Generate Content Button */}
+                        <div className="border-t pt-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Generate Content
+                            </Label>
+                            <Badge variant="outline" className="text-xs">
+                              AI-Powered
+                            </Badge>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => generateSubsectionContent(subsection, globalIndex)}
+                            disabled={subsection.isGenerating}
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                          >
+                            {subsection.isGenerating ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Generating Content...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Generate Content with AI
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   )
@@ -1563,9 +1857,9 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                 <div className="text-center py-8">
                   <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">No quizzes generated yet.</p>
-                  <p className="text-sm text-gray-400 mt-2">
+                  <div className="text-sm text-gray-400 mt-2">
                     Go to the Subsections tab to create quizzes for each section.
-                  </p>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1639,7 +1933,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                       <CardContent className="text-center py-8">
                         <Icon className={`h-12 w-12 text-gray-300 mx-auto mb-4`} />
                         <h3 className="text-lg font-medium text-gray-500 mb-2">No {label} Added Yet</h3>
-                        <p className="text-gray-400 mb-4">Add your first {label.toLowerCase()} resource</p>
+                        <div className="text-gray-400 mb-4">Add your first {label.toLowerCase()} resource</div>
                         <Button
                           onClick={() => {
                             setNewResource(prev => ({ ...prev, type: category.slice(0, -1) }))
@@ -1661,18 +1955,37 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
             {/* Add Resource Button */}
             <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
               <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <h3 className="text-lg font-semibold text-green-800 mb-2">Add New Resource</h3>
-                    <p className="text-green-600">Enhance your module with additional learning resources</p>
+                    <div className="text-green-600">Enhance your module with additional learning resources</div>
                   </div>
-                  <Button
-                    onClick={() => setShowManualResourceForm(true)}
-                    className="bg-green-500 hover:bg-green-600 text-white"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Resource
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Button
+                      onClick={generateResources}
+                      disabled={isGeneratingResources}
+                      className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto"
+                    >
+                      {isGeneratingResources ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Generate Best Resources
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => setShowManualResourceForm(true)}
+                      className="bg-green-500 hover:bg-green-600 text-white w-full sm:w-auto"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Manually
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

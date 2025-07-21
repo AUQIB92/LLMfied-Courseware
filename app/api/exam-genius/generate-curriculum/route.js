@@ -27,7 +27,6 @@ export async function POST(request) {
       title, 
       examType, 
       subject, 
-      learnerLevel, 
       numberOfModules, 
       moduleTopics, 
       teachingNotes, 
@@ -39,25 +38,22 @@ export async function POST(request) {
       title,
       examType,
       subject,
-      learnerLevel,
       numberOfModules,
       allFields: Object.keys(requestBody)
     })
 
-    if (!title || !examType || !subject || !learnerLevel) {
+    if (!title || !examType || !subject) {
       console.error("❌ Missing required fields:", {
         title: !!title,
         examType: !!examType,
         subject: !!subject,
-        learnerLevel: !!learnerLevel
       })
       return NextResponse.json({ 
-        error: "Title, exam type, subject, and learner level are required",
+        error: "Title, exam type, and subject, are required",
         missing: {
           title: !title,
           examType: !examType,
           subject: !subject,
-          learnerLevel: !learnerLevel
         }
       }, { status: 400 })
     }
@@ -71,10 +67,9 @@ Create a comprehensive, exam-focused curriculum for competitive exam preparation
 EXAM DETAILS:
 - Exam Type: ${examType}
 - Subject: ${subject}
-- Target Level: ${learnerLevel}
 - Course Title: ${title}
 - Number of Modules: ${numberOfModules || 8}
-- Estimated Study Time: ${estimatedTime || "40-50 hours"}
+- Estimated StudyTime: ${estimatedTime || "40-50 hours"}
 
 SPECIFIC REQUIREMENTS FOR ${examType} ${subject}:
 
@@ -132,7 +127,7 @@ CURRICULUM STRUCTURE REQUIREMENTS:
    - Module number and exam-focused title
    - Module objective (1-2 sentences focused on exam success)
    - 5-8 key concepts/topics with exam relevance
-   - Expected time allocation for ${learnerLevel} level
+   - Expected time allocation
    - Difficulty progression (Basic → Intermediate → Advanced → Exam Level)
 
 3. **Competitive Exam Focus**
@@ -151,7 +146,7 @@ CURRICULUM STRUCTURE REQUIREMENTS:
 IMPORTANT GUIDELINES:
 - Ensure content is specifically tailored for ${examType} examination patterns
 - Include exam-specific strategies and approaches
-- Focus on speed-solving techniques appropriate for ${learnerLevel} level
+- Focus on speed-solving techniques
 - Maintain logical progression from fundamentals to advanced concepts
 - Include regular practice and assessment points
 
@@ -161,7 +156,7 @@ Please return the output in a markdown code block with JSON format.
 Use this structure:
 \`\`\`json
 {
-  "complete": "# ${title}\\n\\n## Course Overview\\n[Exam-focused description and objectives]\\n\\n## Module 1: [Title]\\n**Objective:** [Exam-focused objective]\\n**Key Concepts:**\\n- Concept 1 (with exam relevance)\\n- Concept 2 (with time-saving techniques)\\n- Concept 3 (with common question patterns)\\n\\n**Difficulty Progression:** Basic → Advanced → Exam Level\\n**Time Allocation:** X hours for ${learnerLevel} level\\n\\n## Module 2: [Title]\\n... and so on"
+  "complete": "# ${title}\\n\\n## Course Overview\\n[Exam-focused description and objectives]\\n\\n## Module 1: [Title]\\n**Objective:** [Exam-focused objective]\\n**Key Concepts:**\\n- Concept 1 (with exam relevance)\\n- Concept 2 (with time-saving techniques)\\n- Concept 3 (with common question patterns)\\n\\n**Difficulty Progression:** Basic → Advanced → Exam Level\\n**Time Allocation:** X hours\\n\\n## Module 2: [Title]\\n... and so on"
 }
 \`\`\`
 
@@ -233,7 +228,6 @@ IMPORTANT OUTPUT FORMAT:
       metadata: {
         examType: examType,
         subject: subject,
-        learnerLevel: learnerLevel,
         title: title,
         generatedAt: new Date().toISOString(),
         estimatedModules: moduleCount,

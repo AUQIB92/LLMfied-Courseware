@@ -44,10 +44,15 @@ export async function GET(request) {
       
       // Get course details for enrolled courses
       const courseIds = enrollments.map(e => e.courseId)
+      
+      // Use $or to check both status and isPublished fields for backward compatibility
       const courses = await db.collection("courses")
         .find({ 
           _id: { $in: courseIds },
-          status: "published" 
+          $or: [
+            { status: "published" },
+            { isPublished: true }
+          ]
         })
         .toArray()
       
@@ -89,10 +94,13 @@ export async function POST(request) {
     const client = await clientPromise
     const db = client.db("llmfied")
     
-    // Check if course exists and is published
+    // Check if course exists and is published (check both status and isPublished fields)
     const course = await db.collection("courses").findOne({
       _id: new ObjectId(courseId),
-      status: "published"
+      $or: [
+        { status: "published" },
+        { isPublished: true }
+      ]
     })
     
     if (!course) {

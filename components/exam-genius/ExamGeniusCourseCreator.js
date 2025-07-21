@@ -46,6 +46,8 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
   const [moduleTopics, setModuleTopics] = useState("")
   const [teachingNotes, setTeachingNotes] = useState("")
   const [selectedModule, setSelectedModule] = useState(null)
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [totalJobs, setTotalJobs] = useState(0);
   const { getAuthHeaders } = useAuth()
 
   const examTypes = [
@@ -66,90 +68,117 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
   const handleFileSelection = (e) => {
     const selectedFile = e.target.files[0]
-    if (!selectedFile) return
-
-    const fileName = selectedFile.name.toLowerCase()
-    const validExtensions = ['.pdf', '.md', '.txt', '.markdown']
-    const isValidFile = validExtensions.some(ext => fileName.endsWith(ext))
-    
-    if (!isValidFile) {
-      toast.error("❌ Invalid file type! Please select PDF, Markdown, or Text files only.")
-      e.target.value = ''
-      return
-    }
-
-    const maxSize = 25 * 1024 * 1024
-    if (selectedFile.size > maxSize) {
-      toast.error("❌ File too large! Maximum size is 25MB.")
-      e.target.value = ''
-      return
-    }
-
+    if (selectedFile) {
     setFile(selectedFile)
     toast.success(`✅ File selected: ${selectedFile.name}`)
+    }
   }
 
-  const processUploadedFile = async () => {
-    if (!file || !courseData.title || !courseData.examType || !courseData.subject) {
-      toast.error("❌ Please fill all required fields and select a file.")
+  const handleProcessFile = async () => {
+    if (!file) {
+      toast.error("Please select a file first")
       return
     }
 
     setLoading(true)
-    setProcessingProgress(0)
-    setProcessingStep("🚀 Processing competitive exam content...")
+    setProcessingStep("📄 Processing uploaded content...")
+    setProcessingProgress(10)
 
     try {
-      const progressStages = [
-        { step: "📖 Analyzing content...", progress: 20 },
-        { step: "🎯 Extracting key concepts...", progress: 40 },
-        { step: "⚡ Creating speed-solving modules...", progress: 60 },
-        { step: "🏆 Adding competitive strategies...", progress: 80 },
-        { step: "🧠 Finalizing content...", progress: 95 }
-      ]
+      // Step 1: Upload the file and get its structured content
+      const formData = new FormData()
+      formData.append("file", file)
+      
+      setProcessingStep("📖 Reading file content...")
+      setProcessingProgress(30)
 
-      let currentStage = 0
-      const progressInterval = setInterval(() => {
-        if (currentStage < progressStages.length) {
-          setProcessingStep(progressStages[currentStage].step)
-          setProcessingProgress(progressStages[currentStage].progress)
-          currentStage++
-        }
-      }, 2000)
-
-      const response = await fetch("/api/exam-genius/process-curriculum", {
+      // First API call to get the structured content from the file
+      const fileResponse = await fetch("/api/upload/content", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({
-          curriculum: await file.text(),
-          courseData: courseData
-        }),
+        headers: getAuthHeaders(),
+        body: formData,
       })
 
-      clearInterval(progressInterval)
-      setProcessingProgress(100)
-
-      if (response.ok) {
-        const data = await response.json()
-        setCourseData(prev => ({ ...prev, modules: data.modules }))
-        setStep(3)
-        toast.success(`🎉 Successfully processed ${data.modules.length} modules!`)
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to process content")
+      if (!fileResponse.ok) {
+        const error = await fileResponse.json()
+        throw new Error(error.error || "Failed to upload file")
       }
+
+      const fileData = await fileResponse.json()
+      
+      if (!fileData.structure || !fileData.structure.modules) {
+        throw new Error("Failed to extract structure from file")
+      }
+      
+      setProcessingStep("🧠 Extracted course structure...")
+      setProcessingProgress(60)
+      
+      // Step 2: Convert the structured data into our course format
+      const structuredModules = fileData.structure.modules.map(module => {
+        // Create a flattened content string for the module that includes all section and subsection titles
+        // This will be used for AI processing later
+        let moduleContent = `## ${module.title}\n\n`;
+        
+        module.sections.forEach(section => {
+          moduleContent += `### ${section.title}\n\n`;
+          
+          section.subsections.forEach(subsection => {
+            moduleContent += `#### ${subsection.title}\n\n`;
+          });
+        });
+        
+        return {
+          title: module.title,
+          content: moduleContent,
+          id: `module-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          examType: courseData.examType,
+          subject: courseData.subject,
+          learnerLevel: courseData.learnerLevel,
+          isExamGenius: true,
+          isCompetitiveExam: true
+        };
+      });
+      
+      // Update course data with the structured modules
+      const updatedCourseData = {
+        ...courseData,
+        modules: structuredModules,
+        isExamGenius: true,
+        isCompetitiveExam: true
+      };
+      
+      setCourseData(updatedCourseData);
+      
+      setProcessingStep("🔄 Saving course template...")
+      setProcessingProgress(90)
+      
+      // Save the course as a draft without generating detailed content
+      await handleSaveDraft(updatedCourseData, true)
+      
+      // Final step: Complete and move to next step
+      setProcessingStep("✅ Course template created successfully!")
+      setProcessingProgress(100)
+      
+      setCourseData(updatedCourseData)
+      
+      setTimeout(() => {
+        setStep(3)
+        toast.success(`🎉 Course Structure Imported Successfully!\n\n✨ Created ${updatedCourseData.modules.length} modules with structured content\n\n🏆 Your course template is ready for review and content generation!`)
+      }, 1000)
     } catch (error) {
       console.error("Processing error:", error)
-      toast.error(`❌ Processing failed: ${error.message}`)
+      toast.error(`Failed to process content: ${error.message}`)
+      setProcessingStep("❌ Processing failed")
     } finally {
+      setTimeout(() => {
       setLoading(false)
       setProcessingStep("")
       setProcessingProgress(0)
+      }, 2000)
     }
   }
+
+  
 
   const handleGenerateCurriculum = async () => {
     if (!curriculumTopic.trim()) {
@@ -202,6 +231,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
           setCourseData(prev => ({ ...prev, modules: processData.modules }))
           setStep(3)
           toast.success("Curriculum generated and processed successfully!")
+
+          // Automatically save as draft after generating and processing
+          await handleSaveDraft({ ...courseData, modules: processData.modules }, true);
+
         }
       } else {
         const error = await response.json()
@@ -272,41 +305,32 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
     }
   }
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraft = async (currentCourseData = courseData, isAutoSave = false) => {
     try {
-      setLoading(true)
+      if (!isAutoSave) setLoading(true);
       
-      // Test toast to verify it's working
-      toast.info("🔍 Starting save draft process...")
+      toast.info(isAutoSave ? "🔄 Automatically saving draft..." : "🔍 Saving draft...");
       
-      // Validate required fields
-      if (!courseData.title || !courseData.examType || !courseData.subject) {
+      if (!currentCourseData.title || !currentCourseData.examType || !currentCourseData.subject) {
         toast.error("❌ Please fill in all required fields (Title, Exam Type, Subject)")
         return
       }
 
-      if (!courseData.modules || courseData.modules.length === 0) {
+      if (!currentCourseData.modules || currentCourseData.modules.length === 0) {
         toast.error("❌ Course must have at least one module before saving")
         return
       }
 
-      console.log("🔍 DEBUG: Saving draft course data:", {
-        title: courseData.title,
-        examType: courseData.examType,
-        subject: courseData.subject,
-        modules: courseData.modules.length,
-        hasAuth: !!getAuthHeaders()?.authorization
-      })
-      
-      console.log("🔍 DEBUG: Auth headers:", getAuthHeaders())
-      console.log("🔍 DEBUG: Course payload:", {
-        course: { 
-          ...courseData, 
+      const payload = {
+        ...currentCourseData, 
           status: "draft",
           isExamGenius: true,
           isCompetitiveExam: true
+      };
+
+      if (currentCourseId) {
+        payload._id = currentCourseId;
         }
-      })
       
       const response = await fetch("/api/exam-genius/save-course", {
         method: "POST",
@@ -314,80 +338,59 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({
-          course: { 
-            ...courseData, 
-            status: "draft",
-            isExamGenius: true,
-            isCompetitiveExam: true
-          }
-        }),
+        body: JSON.stringify({ course: payload }),
       })
-
-      console.log("🔍 DEBUG: Save draft response:", response.status, response.statusText)
-      console.log("🔍 DEBUG: Response headers:", Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const data = await response.json()
-        console.log("🔍 DEBUG: Draft saved successfully:", data)
-        setCurrentCourseId(data.course._id)
+        const savedCourseId = data.courseId || (data.result && data.result.upsertedId) || currentCourseId;
         
-        // Create detailed success message
-        const moduleCount = courseData.modules?.length || 0
-        const subsectionCount = courseData.modules?.reduce((total, module) => 
-          total + (module.detailedSubsections?.length || 0), 0) || 0
+        if (savedCourseId) {
+          setCurrentCourseId(savedCourseId);
+          // Update the main course data with the ID
+          setCourseData(prev => ({ ...prev, _id: savedCourseId }));
+        }
+
+        if (isAutoSave) {
+          toast.success("✅ Draft auto-saved successfully!");
+      } else {
+          toast.success(`📝 Draft Saved Successfully!`);
+        }
+        return { success: true, courseId: savedCourseId };
         
-        toast.success(`📝 Draft Saved Successfully! 🎯 "${courseData.title}" • 📚 ${courseData.examType} • 📖 ${courseData.subject} • 📋 ${moduleCount} modules${subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ''} • ✨ Ready for editing or publishing!`, {
-          duration: 6000,
-        })
       } else {
         const errorText = await response.text()
-        console.error("🔍 DEBUG: Save draft failed:", response.status, response.statusText, errorText)
-        
         let errorMessage = "Failed to save draft"
         try {
           const errorData = JSON.parse(errorText)
           errorMessage = errorData.error || errorMessage
-          
-          // Specific error handling
-          if (response.status === 403) {
-            errorMessage = "❌ You need educator permissions to save courses. Please contact support."
-          } else if (response.status === 400) {
-            errorMessage = `❌ ${errorData.error || "Invalid course data. Please check all required fields."}`
-          } else if (response.status === 401) {
-            errorMessage = "❌ Authentication failed. Please log in again."
-          }
-          
-          if (errorData.details) {
-            console.error("Error details:", errorData.details)
-          }
         } catch (e) {
-          if (response.status === 403) {
-            errorMessage = "❌ You need educator permissions to save courses."
-          } else {
             errorMessage = `Server error: ${response.status} ${response.statusText}`
           }
-        }
-        
         throw new Error(errorMessage)
       }
     } catch (error) {
-      console.error("🔍 DEBUG: Save error:", error)
-      console.error("🔍 DEBUG: Error name:", error.name)
-      console.error("🔍 DEBUG: Error message:", error.message)
-      console.error("🔍 DEBUG: Error stack:", error.stack)
       toast.error(`❌ Save Draft Failed: ${error.message}`)
+      return { success: false };
     } finally {
-      setLoading(false)
+      if (!isAutoSave) setLoading(false);
     }
   }
 
   const handlePublishCourse = async () => {
     try {
-      setLoading(true)
-      
-      // Test toast to verify it's working
-      toast.info("🔍 Starting publish process...")
+      // First, ensure the latest changes are saved.
+      const saveResult = await handleSaveDraft();
+      if (!saveResult.success) {
+          toast.error("Could not save draft before publishing. Please try again.");
+          return;
+      }
+      const finalCourseId = saveResult.courseId;
+
+      if (!finalCourseId) {
+          toast.error("Could not get a course ID. Please save a draft first.");
+          return;
+      }
       
       // Validate required fields
       if (!courseData.title || !courseData.examType || !courseData.subject) {
@@ -415,7 +418,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         examType: courseData.examType,
         subject: courseData.subject,
         modules: courseData.modules.length,
-        currentCourseId: currentCourseId,
+        currentCourseId: finalCourseId,
         hasAuth: !!getAuthHeaders()?.authorization
       })
       
@@ -423,14 +426,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
       
       const coursePayload = {
         ...courseData, 
+        _id: finalCourseId,
         status: "published",
         isExamGenius: true,
         isCompetitiveExam: true
-      }
-
-      // If we have a currentCourseId, include it for update
-      if (currentCourseId) {
-        coursePayload._id = currentCourseId
       }
       
       const response = await fetch("/api/exam-genius/save-course", {
@@ -764,7 +763,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                   {file && (
                     <div className="flex justify-center">
                       <Button
-                        onClick={processUploadedFile}
+                        onClick={handleProcessFile}
                         disabled={loading}
                         className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700"
                       >

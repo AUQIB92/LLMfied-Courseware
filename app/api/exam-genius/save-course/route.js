@@ -1,76 +1,121 @@
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
-import { getDb } from '@/lib/mongodb';
-import { generateCompetitiveExamModuleSummary } from '@/lib/gemini';
+import { connectToDatabase } from '@/lib/mongodb';
+
+const getUserIdFromToken = (request) => {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.substring(7);
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded.userId;
+  } catch (error) {
+    console.error("Failed to verify token:", error);
+    return null;
+  }
+};
 
 export async function POST(request) {
-  const token = await getToken({ req: request });
-  if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    const courseData = await request.json();
-    const db = await getDb();
-
-    // Ensure detailedSubsections and their pages are populated before saving
-    for (let i = 0; i < courseData.modules.length; i++) {
-      const module = courseData.modules[i];
-      
-      const needsRegeneration = 
-        !module.detailedSubsections || 
-        !Array.isArray(module.detailedSubsections) ||
-        module.detailedSubsections.length === 0 || 
-        module.detailedSubsections.some(sub => !sub || !Array.isArray(sub.pages) || sub.pages.length === 0);
-
-      if (needsRegeneration) {
-        console.log(`[Save Course] Regenerating content for module ${i} before saving: ${module.title}`);
-        
-        const context = {
-          learnerLevel: courseData.level || 'Intermediate',
-          subject: courseData.subject,
-          examType: courseData.examType,
-          moduleIndex: i + 1,
-          totalModules: courseData.modules.length,
-        };
-        
-        const generatedContent = await generateCompetitiveExamModuleSummary(module.content, context);
-        
-        if (generatedContent && generatedContent.detailedSubsections && generatedContent.detailedSubsections.length > 0) {
-          // Preserve user-editable fields while updating AI-generated content
-          courseData.modules[i] = {
-            ...module,
-            ...generatedContent,
-          };
-          console.log(`[Save Course] Module ${i} content was regenerated.`);
-        } else {
-          console.log(`[Save Course] AI generation failed for module ${i}. Saving as is.`);
-        }
-      }
+    const userId = getUserIdFromToken(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log("📝 Processing course save request for user:", userId);
+    const { course: courseData } = await request.json();
+    const { db } = await connectToDatabase();
+
+    // Ensure status and isPublished are consistent
+    if (courseData.status === "published" && !courseData.isPublished) {
+      courseData.isPublished = true;
+      console.log("🔄 Setting isPublished=true to match status=published");
+    } else if (courseData.isPublished && courseData.status !== "published") {
+      courseData.status = "published";
+      console.log("🔄 Setting status=published to match isPublished=true");
+    }
+
+    console.log("📊 Course data:", {
+      title: courseData.title,
+      status: courseData.status,
+      isPublished: courseData.isPublished,
+      hasId: !!courseData._id,
+      moduleCount: courseData.modules?.length || 0,
+      isExamGenius: courseData.isExamGenius,
+      isCompetitiveExam: courseData.isCompetitiveExam
+    });
 
     let result;
+    let savedCourse;
+    
     if (courseData._id) {
       // Update existing course
-      const id = courseData._id;
-      delete courseData._id;
-      result = await db.collection('courses').updateOne(
-        { _id: new ObjectId(id) },
-        { $set: courseData }
+      const courseId = courseData._id;
+      delete courseData._id; // Remove _id from the update data
+      
+      // Make sure educatorId is an ObjectId
+      if (courseData.educatorId && typeof courseData.educatorId === 'string') {
+        courseData.educatorId = new ObjectId(courseData.educatorId);
+      }
+      
+      // Add updatedAt timestamp
+      courseData.updatedAt = new Date();
+      
+      console.log(`🔄 Updating existing course: ${courseId}`, {
+        status: courseData.status,
+        isPublished: courseData.isPublished
+      });
+      
+      // Update the course
+      result = await db.collection('courses').findOneAndUpdate(
+        { _id: new ObjectId(courseId) },
+        { $set: courseData },
+        { returnDocument: 'after' } // Return the updated document
       );
-      result.courseId = id;
+      
+      savedCourse = result;
+      console.log(`✅ Course updated successfully: ${courseId}`, {
+        status: savedCourse.status,
+        isPublished: savedCourse.isPublished
+      });
     } else {
       // Insert new course
-      courseData.educatorId = token.sub;
+      // Make sure educatorId is an ObjectId
+      courseData.educatorId = new ObjectId(userId);
       courseData.createdAt = new Date();
+      courseData.updatedAt = new Date();
+      
+      console.log("🆕 Creating new course", {
+        status: courseData.status,
+        isPublished: courseData.isPublished
+      });
+      
+      // Insert the course
       const insertResult = await db.collection('courses').insertOne(courseData);
-      result = { ...insertResult, courseId: insertResult.insertedId };
+      
+      // Fetch the complete inserted document
+      savedCourse = await db.collection('courses').findOne({ _id: insertResult.insertedId });
+      
+      console.log(`✅ New course created with ID: ${insertResult.insertedId}`, {
+        status: savedCourse.status,
+        isPublished: savedCourse.isPublished
+      });
     }
 
-    return NextResponse.json({ success: true, ...result });
+    // Return the complete course data
+    return NextResponse.json({ 
+      success: true, 
+      course: savedCourse,
+      courseId: savedCourse._id
+    });
   } catch (error) {
-    console.error('Error in /api/exam-genius/save-course:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('💥 Error in /api/exam-genius/save-course:', error);
+    return NextResponse.json({ 
+      error: 'Failed to save course', 
+      details: error.message 
+    }, { status: 500 });
   }
 } 
