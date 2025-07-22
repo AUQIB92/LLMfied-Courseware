@@ -1,24 +1,30 @@
-﻿"use client"
+﻿"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
-import { Button } from "@/components/ui/button"
-import enrollmentCache from "@/lib/enrollmentCache"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { 
-  BookOpen, 
-  Clock, 
-  Trophy, 
-  TrendingUp, 
-  LogOut, 
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import enrollmentCache from "@/lib/enrollmentCache";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import {
+  BookOpen,
+  Clock,
+  Trophy,
+  TrendingUp,
+  LogOut,
   User,
   Settings,
   Bell,
@@ -43,252 +49,299 @@ import {
   Save,
   Shield,
   GraduationCap,
-  Bookmark
-} from "lucide-react"
-import CourseLibrary from "./CourseLibrary"
-import CourseViewer from "./CourseViewer"
-import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer"
-import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm"
-import PreferencesSettings from "@/components/profile/PreferencesSettings"
-import NotificationsSettings from "@/components/profile/NotificationsSettings"
+  Bookmark,
+} from "lucide-react";
+import CourseLibrary from "./CourseLibrary";
+import CourseViewer from "./CourseViewer";
+import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer";
+import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
+import PreferencesSettings from "@/components/profile/PreferencesSettings";
+import NotificationsSettings from "@/components/profile/NotificationsSettings";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { toast } from "sonner"
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 export default function LearnerDashboard() {
-  const [activeTab, setActiveTab] = useState("overview")
-  const [selectedCourse, setSelectedCourse] = useState(null)
-  const [enrolledCourses, setEnrolledCourses] = useState([])
-  const [enrollmentDataLoaded, setEnrollmentDataLoaded] = useState(false) // Track if enrollment data is loaded
-  const [showProfileSettings, setShowProfileSettings] = useState(false)
-  const [showPreferences, setShowPreferences] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [avatarKey, setAvatarKey] = useState(Date.now())
-  const [hideHeader, setHideHeader] = useState(false) // For hiding header when viewing modules
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true) // For scroll-based header visibility (auto-hide on scroll down)
-  const [lastScrollY, setLastScrollY] = useState(0) // Track scroll position for header visibility
-  const [enrollmentUpdated, setEnrollmentUpdated] = useState(0) // Counter to trigger enrollment refresh
+  const [activeTab, setActiveTab] = useState("overview");
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [enrollmentDataLoaded, setEnrollmentDataLoaded] = useState(false); // Track if enrollment data is loaded
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [avatarKey, setAvatarKey] = useState(Date.now());
+  const [hideHeader, setHideHeader] = useState(false); // For hiding header when viewing modules
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true); // For scroll-based header visibility (auto-hide on scroll down)
+  const [lastScrollY, setLastScrollY] = useState(0); // Track scroll position for header visibility
+  const [enrollmentUpdated, setEnrollmentUpdated] = useState(0); // Counter to trigger enrollment refresh
   const [stats, setStats] = useState({
     coursesEnrolled: 0,
     coursesCompleted: 0,
     totalTimeSpent: 0,
     averageScore: 0,
     streak: 7,
-    certificates: 3
-  })
-  const { user, getAuthHeaders, logout, updateUser } = useAuth()
-  const router = useRouter()
+    certificates: 3,
+  });
+  const {
+    user,
+    getAuthHeaders,
+    getAuthHeadersValidated,
+    apiCall,
+    logout,
+    updateUser,
+  } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    fetchEnrolledCourses()
-    fetchStats()
-  }, [])
+    fetchEnrolledCourses();
+    fetchStats();
+  }, []);
 
   // Enhanced useEffect to instantly update enrolled courses when enrollment changes
   useEffect(() => {
     if (enrollmentUpdated > 0) {
-      fetchEnrolledCourses()
+      fetchEnrolledCourses();
     }
-  }, [enrollmentUpdated])
+  }, [enrollmentUpdated]);
 
   // Listen for enrollment events across the app
   useEffect(() => {
     const handleEnrollmentEvent = (event) => {
-      console.log('Enrollment event detected:', event.detail)
-      setEnrollmentUpdated(prev => prev + 1)
-    }
+      console.log("Enrollment event detected:", event.detail);
+      setEnrollmentUpdated((prev) => prev + 1);
+    };
 
     const handleUserUpdate = (event) => {
-      console.log('User update event detected:', event.detail)
+      console.log("User update event detected:", event.detail);
       // Update avatar key to force re-render of avatar components
-      setAvatarKey(Date.now())
-    }
+      setAvatarKey(Date.now());
+    };
 
     // Listen for custom enrollment events
-    window.addEventListener('courseEnrolled', handleEnrollmentEvent)
-    window.addEventListener('courseUnenrolled', handleEnrollmentEvent)
+    window.addEventListener("courseEnrolled", handleEnrollmentEvent);
+    window.addEventListener("courseUnenrolled", handleEnrollmentEvent);
     // Listen for user update events
-    window.addEventListener('userUpdated', handleUserUpdate)
+    window.addEventListener("userUpdated", handleUserUpdate);
 
     return () => {
-      window.removeEventListener('courseEnrolled', handleEnrollmentEvent)
-      window.removeEventListener('courseUnenrolled', handleEnrollmentEvent)
-      window.removeEventListener('userUpdated', handleUserUpdate)
-    }
-  }, [])
+      window.removeEventListener("courseEnrolled", handleEnrollmentEvent);
+      window.removeEventListener("courseUnenrolled", handleEnrollmentEvent);
+      window.removeEventListener("userUpdated", handleUserUpdate);
+    };
+  }, []);
 
   // Subscribe to enrollment cache updates
   useEffect(() => {
     const unsubscribe = enrollmentCache.subscribe((event, data) => {
-      console.log(`📡 LearnerDashboard received enrollment event:`, event, data)
-      
-      switch (event) {
-        case 'enrollment_updated':
-          // Refresh enrolled courses when enrollment changes
-          fetchEnrolledCourses()
-          break
-        case 'enrollments_synced':
-          // Refresh when bulk sync completes
-          fetchEnrolledCourses()
-          break
-      }
-    })
+      console.log(
+        `📡 LearnerDashboard received enrollment event:`,
+        event,
+        data
+      );
 
-    return unsubscribe
-  }, [])
+      switch (event) {
+        case "enrollment_updated":
+          // Refresh enrolled courses when enrollment changes
+          fetchEnrolledCourses();
+          break;
+        case "enrollments_synced":
+          // Refresh when bulk sync completes
+          fetchEnrolledCourses();
+          break;
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   // Scroll event listener for header visibility
   useEffect(() => {
     // Don't add scroll listener if header is already hidden due to module view
-    if (hideHeader) return
-    
-    let ticking = false
-    
+    if (hideHeader) return;
+
+    let ticking = false;
+
     const handleScroll = () => {
       if (!ticking) {
         requestAnimationFrame(() => {
-          const currentScrollY = window.scrollY
-          
+          const currentScrollY = window.scrollY;
+
           // Show header when at the top of the page
           if (currentScrollY < 10) {
-            setIsHeaderVisible(true)
-          } 
+            setIsHeaderVisible(true);
+          }
           // Hide header when scrolling down past threshold, show when scrolling up
           else if (currentScrollY > lastScrollY && currentScrollY > 120) {
-            setIsHeaderVisible(false)
-          } else if (currentScrollY < lastScrollY - 5) { // Small threshold to prevent jitter
-            setIsHeaderVisible(true)
+            setIsHeaderVisible(false);
+          } else if (currentScrollY < lastScrollY - 5) {
+            // Small threshold to prevent jitter
+            setIsHeaderVisible(true);
           }
-          
-          setLastScrollY(currentScrollY)
-          ticking = false
-        })
-        ticking = true
+
+          setLastScrollY(currentScrollY);
+          ticking = false;
+        });
+        ticking = true;
       }
-    }
+    };
 
     // Add scroll event listener with throttling
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     // Cleanup
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [lastScrollY, hideHeader])
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY, hideHeader]);
 
   const fetchEnrolledCourses = async () => {
     try {
-      console.log("🚀 Fetching enrolled courses using API...")
-      setEnrollmentDataLoaded(false) // Mark as loading
-      
-      // Fetch enrolled courses directly from API
-      const response = await fetch('/api/enrollment', {
-        headers: getAuthHeaders(),
-      })
-      
+      console.log("🚀 Fetching enrolled courses using API...");
+      setEnrollmentDataLoaded(false); // Mark as loading
+
+      // Fetch enrolled courses directly from API using enhanced authentication
+      const response = await apiCall("/api/enrollment", {
+        method: "GET",
+      });
+
       if (response.ok) {
-        const data = await response.json()
-        console.log("📡 API Response:", data)
-        
+        const data = await response.json();
+        console.log("📡 API Response:", data);
+
         // Handle different response formats
-        let coursesArray = []
-        
+        let coursesArray = [];
+
         if (data && Array.isArray(data.courses)) {
           // API returns courses directly
-          coursesArray = data.courses || []
+          coursesArray = data.courses || [];
         } else if (data && Array.isArray(data.enrollments)) {
           // API returns enrollments, need to fetch course details
-          const courseIds = data.enrollments.map(e => e.courseId).filter(Boolean)
-          
+          const courseIds = data.enrollments
+            .map((e) => e.courseId)
+            .filter(Boolean);
+
           if (courseIds.length > 0) {
             // Fetch course details for each enrolled course
             const coursePromises = courseIds.map(async (courseId) => {
               try {
-                const courseResponse = await fetch(`/api/courses/${courseId}`, {
-                  headers: getAuthHeaders(),
-                })
+                const courseResponse = await apiCall(
+                  `/api/courses/${courseId}`,
+                  {
+                    method: "GET",
+                  }
+                );
                 if (courseResponse.ok) {
-                  const courseData = await courseResponse.json()
+                  const courseData = await courseResponse.json();
                   // Find corresponding enrollment data
-                  const enrollment = data.enrollments.find(e => e.courseId === courseId)
+                  const enrollment = data.enrollments.find(
+                    (e) => e.courseId === courseId
+                  );
                   return {
                     ...courseData,
-                    enrolledAt: enrollment?.enrolledAt || new Date().toISOString(),
+                    enrolledAt:
+                      enrollment?.enrolledAt || new Date().toISOString(),
                     progress: enrollment?.progress || 0,
-                    isEnrolled: true // Explicitly mark as enrolled
-                  }
+                    isEnrolled: true, // Explicitly mark as enrolled
+                  };
                 }
-                return null
+                return null;
               } catch (error) {
-                console.error(`Failed to fetch course ${courseId}:`, error)
-                return null
+                console.error(`Failed to fetch course ${courseId}:`, error);
+                return null;
               }
-            })
-            
-            const courseResults = await Promise.all(coursePromises)
-            coursesArray = courseResults.filter(Boolean) // Remove null results
+            });
+
+            const courseResults = await Promise.all(coursePromises);
+            coursesArray = courseResults.filter(Boolean); // Remove null results
           }
         }
-        
+
         // Ensure all courses in enrolled list are marked as enrolled
-        coursesArray = coursesArray.map(course => ({
+        coursesArray = coursesArray.map((course) => ({
           ...course,
           isEnrolled: true,
-          enrollmentVerified: true // Add verification flag
-        }))
-        
-        console.log("✅ Setting enrolled courses:", coursesArray?.length || 0, "courses")
-        setEnrolledCourses(coursesArray || [])
-        
+          enrollmentVerified: true, // Add verification flag
+        }));
+
+        console.log(
+          "✅ Setting enrolled courses:",
+          coursesArray?.length || 0,
+          "courses"
+        );
+        setEnrolledCourses(coursesArray || []);
+
         // Update stats based on enrolled courses
-        setStats(prev => ({
+        setStats((prev) => ({
           ...prev,
           coursesEnrolled: coursesArray?.length || 0,
-          coursesCompleted: coursesArray?.filter(c => c.completionRate === 100).length || 0
-        }))
-        
+          coursesCompleted:
+            coursesArray?.filter((c) => c.completionRate === 100).length || 0,
+        }));
       } else {
-        console.error("Failed to fetch enrollments:", await response.text())
-        setEnrolledCourses([])
+        const errorText = await response.text();
+        console.error("Failed to fetch enrollments:", errorText);
+        setEnrolledCourses([]);
       }
-      
     } catch (error) {
-      console.error("Failed to fetch enrolled courses:", error)
-      setEnrolledCourses([])
+      console.error("Failed to fetch enrolled courses:", error);
+
+      // Check if it's a session expiration error
+      if (
+        error.message.includes("expired") ||
+        error.message.includes("Session")
+      ) {
+        console.log("Session expired - user will be redirected to login");
+        return;
+      }
+
+      setEnrolledCourses([]);
     } finally {
       // Always mark as loaded, even if there are no courses
-      setEnrollmentDataLoaded(true)
-      console.log("📊 Enrollment data loading completed")
+      setEnrollmentDataLoaded(true);
+      console.log("📊 Enrollment data loading completed");
     }
-  }
+  };
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/stats?type=learner", {
-        headers: getAuthHeaders(),
-      })
+      // Use the enhanced API call wrapper with automatic token handling
+      const response = await apiCall("/api/stats?type=learner", {
+        method: "GET",
+      });
 
       if (response.ok) {
-        const data = await response.json()
-        setStats(data)
+        const data = await response.json();
+        setStats(data);
       } else {
-        console.error("Failed to fetch stats:", await response.text())
+        const errorText = await response.text();
+        console.error("Failed to fetch stats:", errorText);
         // Fallback to default stats if API fails
-    setStats({
+        setStats({
           coursesEnrolled: 0,
           coursesCompleted: 0,
           totalTimeSpent: 0,
           averageScore: 0,
           streak: 0,
-          certificates: 0
-        })
+          certificates: 0,
+        });
       }
     } catch (error) {
-      console.error("Failed to fetch stats:", error)
+      console.error("Failed to fetch stats:", error);
+
+      // Check if it's a session expiration error
+      if (
+        error.message.includes("expired") ||
+        error.message.includes("Session")
+      ) {
+        // The apiCall wrapper already handles this, so just log it
+        console.log("Session expired - user will be redirected to login");
+        return;
+      }
+
       // Fallback to default stats if API fails
       setStats({
         coursesEnrolled: 0,
@@ -296,106 +349,117 @@ export default function LearnerDashboard() {
         totalTimeSpent: 0,
         averageScore: 0,
         streak: 0,
-        certificates: 0
-      })
+        certificates: 0,
+      });
     }
-  }
+  };
 
   const handleLogout = () => {
-    logout()
-    router.push("/")
-  }
+    logout();
+    router.push("/");
+  };
 
   const navigateToProfile = () => {
-    setShowProfileSettings(true)
-    setShowPreferences(false)
-    setShowNotifications(false)
-    setActiveTab("profile")
-  }
+    setShowProfileSettings(true);
+    setShowPreferences(false);
+    setShowNotifications(false);
+    setActiveTab("profile");
+  };
 
   const navigateToPreferences = () => {
-    setShowPreferences(true)
-    setShowProfileSettings(false)
-    setShowNotifications(false)
-    setActiveTab("preferences")
-  }
+    setShowPreferences(true);
+    setShowProfileSettings(false);
+    setShowNotifications(false);
+    setActiveTab("preferences");
+  };
 
   const navigateToNotifications = () => {
-    setShowNotifications(true)
-    setShowProfileSettings(false)
-    setShowPreferences(false)
-    setActiveTab("notifications")
-  }
+    setShowNotifications(true);
+    setShowProfileSettings(false);
+    setShowPreferences(false);
+    setActiveTab("notifications");
+  };
 
   const handleEnrollmentChange = async (courseId, isEnrolled) => {
-    console.log('🔄 Enrollment change detected:', { courseId, isEnrolled })
-    
+    console.log("🔄 Enrollment change detected:", { courseId, isEnrolled });
+
     if (isEnrolled) {
       // Add the course to enrolled courses immediately
       try {
         const courseResponse = await fetch(`/api/courses/${courseId}`, {
           headers: getAuthHeaders(),
-        })
-        
+        });
+
         if (courseResponse.ok) {
-          const courseData = await courseResponse.json()
-          
+          const courseData = await courseResponse.json();
+
           // Add to enrolled courses immediately with full verification flags
-          setEnrolledCourses(prev => {
-            const prevCourses = Array.isArray(prev) ? prev : []
+          setEnrolledCourses((prev) => {
+            const prevCourses = Array.isArray(prev) ? prev : [];
             // Check if already enrolled to avoid duplicates
-            const isAlreadyEnrolled = prevCourses.some(course => course._id === courseId)
+            const isAlreadyEnrolled = prevCourses.some(
+              (course) => course._id === courseId
+            );
             if (!isAlreadyEnrolled) {
               const newCourse = {
                 ...courseData,
                 enrolledAt: new Date().toISOString(),
                 isEnrolled: true,
                 enrollmentVerified: true,
-                progress: 0
-              }
-              console.log('✅ Adding newly enrolled course to list:', newCourse.title)
-              return [...prevCourses, newCourse]
+                progress: 0,
+              };
+              console.log(
+                "✅ Adding newly enrolled course to list:",
+                newCourse.title
+              );
+              return [...prevCourses, newCourse];
             }
-            console.log('⚠️ Course already in enrolled list:', courseData.title)
-            return prevCourses
-          })
-          
+            console.log(
+              "⚠️ Course already in enrolled list:",
+              courseData.title
+            );
+            return prevCourses;
+          });
+
           // Update stats immediately
-          setStats(prev => ({
+          setStats((prev) => ({
             ...prev,
-            coursesEnrolled: prev.coursesEnrolled + 1
-          }))
-          
-          console.log('✅ Successfully updated enrolled courses and stats')
+            coursesEnrolled: prev.coursesEnrolled + 1,
+          }));
+
+          console.log("✅ Successfully updated enrolled courses and stats");
         }
       } catch (error) {
-        console.error('❌ Error getting course data for immediate update:', error)
+        console.error(
+          "❌ Error getting course data for immediate update:",
+          error
+        );
       }
-      
+
       // Trigger enrollment update counter for additional refresh
-      setEnrollmentUpdated(prev => prev + 1)
-      
+      setEnrollmentUpdated((prev) => prev + 1);
     } else {
       // Handle unenrollment - immediate access revocation
-      console.log('🗑️ Removing course from enrolled list:', courseId)
-      setEnrolledCourses(prev => {
-        const prevCourses = Array.isArray(prev) ? prev : []
-        return prevCourses.filter(course => course._id !== courseId)
-      })
-      setStats(prev => ({
+      console.log("🗑️ Removing course from enrolled list:", courseId);
+      setEnrolledCourses((prev) => {
+        const prevCourses = Array.isArray(prev) ? prev : [];
+        return prevCourses.filter((course) => course._id !== courseId);
+      });
+      setStats((prev) => ({
         ...prev,
-        coursesEnrolled: Math.max(0, prev.coursesEnrolled - 1)
-      }))
-      
+        coursesEnrolled: Math.max(0, prev.coursesEnrolled - 1),
+      }));
+
       // If user is currently viewing the unenrolled course, kick them out
       if (selectedCourse && selectedCourse._id === courseId) {
-        console.log('🚪 Kicking user out of unenrolled course')
-        setSelectedCourse(null)
-        setActiveTab('overview')
-        
+        console.log("🚪 Kicking user out of unenrolled course");
+        setSelectedCourse(null);
+        setActiveTab("overview");
+
         // Show immediate access revocation warning
-        const warningNotification = document.createElement('div')
-        warningNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        const warningNotification = document.createElement("div");
+        warningNotification.className =
+          "fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
         warningNotification.innerHTML = `
           <div class="flex items-center gap-3">
             <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -405,91 +469,103 @@ export default function LearnerDashboard() {
             </div>
             <span class="font-semibold">Access revoked - You have been unenrolled from this course</span>
           </div>
-        `
-        document.body.appendChild(warningNotification)
-        
+        `;
+        document.body.appendChild(warningNotification);
+
         setTimeout(() => {
-          warningNotification.style.transform = 'translateX(0)'
-        }, 100)
-        
+          warningNotification.style.transform = "translateX(0)";
+        }, 100);
+
         setTimeout(() => {
-          warningNotification.style.transform = 'translateX(100%)'
+          warningNotification.style.transform = "translateX(100%)";
           setTimeout(() => {
             if (document.body.contains(warningNotification)) {
-              document.body.removeChild(warningNotification)
+              document.body.removeChild(warningNotification);
             }
-          }, 500)
-        }, 5000)
+          }, 500);
+        }, 5000);
       }
-      
+
       // Trigger enrollment update
-      setEnrollmentUpdated(prev => prev + 1)
+      setEnrollmentUpdated((prev) => prev + 1);
     }
-  }
+  };
 
   const renderContent = () => {
     if (selectedCourse) {
       // Enhanced enrollment check with multiple verification layers
-      const isEnrolledInList = Array.isArray(enrolledCourses) && enrolledCourses.some(enrolledCourse => 
-        enrolledCourse._id === selectedCourse._id || enrolledCourse.id === selectedCourse.id
-      )
-      
+      const isEnrolledInList =
+        Array.isArray(enrolledCourses) &&
+        enrolledCourses.some(
+          (enrolledCourse) =>
+            enrolledCourse._id === selectedCourse._id ||
+            enrolledCourse.id === selectedCourse.id
+        );
+
       // Check if the course was passed with explicit enrollment verification
-      const hasEnrollmentVerification = selectedCourse.enrollmentVerified === true || selectedCourse.accessGranted === true
-      
+      const hasEnrollmentVerification =
+        selectedCourse.enrollmentVerified === true ||
+        selectedCourse.accessGranted === true;
+
       // Check if the course was passed with immediate enrollment status
-      const hasImmediateEnrollment = selectedCourse.isEnrolled === true
-      
+      const hasImmediateEnrollment = selectedCourse.isEnrolled === true;
+
       // Final enrollment status - enrolled if ANY of the checks pass
-      const finalEnrollmentStatus = isEnrolledInList || hasEnrollmentVerification || hasImmediateEnrollment
-      
-      console.log('🔍 Course selection debug:', {
+      const finalEnrollmentStatus =
+        isEnrolledInList || hasEnrollmentVerification || hasImmediateEnrollment;
+
+      console.log("🔍 Course selection debug:", {
         courseId: selectedCourse._id,
         courseTitle: selectedCourse.title,
         isEnrolledInList,
         hasEnrollmentVerification,
         hasImmediateEnrollment,
         finalEnrollmentStatus,
-        enrolledCoursesCount: Array.isArray(enrolledCourses) ? enrolledCourses.length : 0,
+        enrolledCoursesCount: Array.isArray(enrolledCourses)
+          ? enrolledCourses.length
+          : 0,
         enrollmentDataLoaded,
         courseFlags: {
           isEnrolled: selectedCourse.isEnrolled,
           enrollmentVerified: selectedCourse.enrollmentVerified,
-          accessGranted: selectedCourse.accessGranted
-        }
-      })
-      
+          accessGranted: selectedCourse.accessGranted,
+        },
+      });
+
       // Check if this is an ExamGenius/Competitive Exam course
-      const isExamGeniusCourse = selectedCourse.isExamGenius || selectedCourse.examType || selectedCourse.subject
-      
+      const isExamGeniusCourse =
+        selectedCourse.isExamGenius ||
+        selectedCourse.examType ||
+        selectedCourse.subject;
+
       return isExamGeniusCourse ? (
-        <ExamGeniusCourseViewer 
-          course={selectedCourse} 
+        <ExamGeniusCourseViewer
+          course={selectedCourse}
           onBack={() => {
-            setSelectedCourse(null)
-            setHideHeader(false)
-            setIsHeaderVisible(true) // Reset scroll-based header visibility
-            setLastScrollY(0) // Reset scroll position tracking
+            setSelectedCourse(null);
+            setHideHeader(false);
+            setIsHeaderVisible(true); // Reset scroll-based header visibility
+            setLastScrollY(0); // Reset scroll position tracking
           }}
           onProgress={(progress) => {
             // Handle progress updates for exam courses
-            console.log('Exam course progress:', progress)
+            console.log("Exam course progress:", progress);
           }}
         />
       ) : (
-        <CourseViewer 
-          course={selectedCourse} 
+        <CourseViewer
+          course={selectedCourse}
           isEnrolled={finalEnrollmentStatus}
           onBack={() => {
-            setSelectedCourse(null)
-            setHideHeader(false)
-            setIsHeaderVisible(true) // Reset scroll-based header visibility
-            setLastScrollY(0) // Reset scroll position tracking
+            setSelectedCourse(null);
+            setHideHeader(false);
+            setIsHeaderVisible(true); // Reset scroll-based header visibility
+            setLastScrollY(0); // Reset scroll position tracking
           }}
           onModuleView={(isViewingModule) => setHideHeader(isViewingModule)}
           onEnrollmentChange={handleEnrollmentChange}
         />
-      )
+      );
     }
 
     switch (activeTab) {
@@ -501,26 +577,34 @@ export default function LearnerDashboard() {
               <div className="absolute inset-0 bg-black/20"></div>
               <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-white/10 rounded-full blur-3xl -translate-y-32 sm:-translate-y-48 translate-x-32 sm:translate-x-48"></div>
               <div className="absolute bottom-0 left-0 w-48 sm:w-64 h-48 sm:h-64 bg-white/10 rounded-full blur-3xl translate-y-24 sm:translate-y-32 -translate-x-24 sm:-translate-x-32"></div>
-              
+
               <div className="relative z-10">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                   <div className="p-2 sm:p-3 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-sm">
                     <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl sm:text-3xl font-bold leading-tight">Welcome back, {user?.name}!</h2>
-                    <p className="text-white/80 text-sm sm:text-lg mt-1">Ready to continue your learning journey?</p>
+                    <h2 className="text-xl sm:text-3xl font-bold leading-tight">
+                      Welcome back, {user?.name}!
+                    </h2>
+                    <p className="text-white/80 text-sm sm:text-lg mt-1">
+                      Ready to continue your learning journey?
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 mt-4 sm:mt-6">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-white/90 font-medium text-sm sm:text-base">{stats.streak} day streak</span>
+                    <span className="text-white/90 font-medium text-sm sm:text-base">
+                      {stats.streak} day streak
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300" />
-                    <span className="text-white/90 font-medium text-sm sm:text-base">{stats.certificates} certificates earned</span>
+                    <span className="text-white/90 font-medium text-sm sm:text-base">
+                      {stats.certificates} certificates earned
+                    </span>
                   </div>
                 </div>
               </div>
@@ -531,13 +615,18 @@ export default function LearnerDashboard() {
               <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-indigo-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 touch-manipulation">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 relative z-10 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Courses<br className="sm:hidden" /> Enrolled</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">
+                    Courses
+                    <br className="sm:hidden" /> Enrolled
+                  </CardTitle>
                   <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg sm:rounded-xl group-hover:bg-blue-500/20 transition-colors duration-300">
                     <BookOpen className="h-3 w-3 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10 pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{stats.coursesEnrolled}</div>
+                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">
+                    {stats.coursesEnrolled}
+                  </div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
                     <span className="hidden sm:inline">+2 this month</span>
@@ -549,17 +638,35 @@ export default function LearnerDashboard() {
               <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-emerald-50 to-green-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 touch-manipulation">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 relative z-10 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Completed</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">
+                    Completed
+                  </CardTitle>
                   <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg sm:rounded-xl group-hover:bg-emerald-500/20 transition-colors duration-300">
                     <Trophy className="h-3 w-3 sm:h-5 sm:w-5 text-emerald-600" />
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10 pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{stats.coursesCompleted}</div>
+                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">
+                    {stats.coursesCompleted}
+                  </div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" />
-                    <span className="hidden sm:inline">{Math.round((stats.coursesCompleted / Math.max(stats.coursesEnrolled, 1)) * 100)}% completion rate</span>
-                    <span className="sm:hidden">{Math.round((stats.coursesCompleted / Math.max(stats.coursesEnrolled, 1)) * 100)}%</span>
+                    <span className="hidden sm:inline">
+                      {Math.round(
+                        (stats.coursesCompleted /
+                          Math.max(stats.coursesEnrolled, 1)) *
+                          100
+                      )}
+                      % completion rate
+                    </span>
+                    <span className="sm:hidden">
+                      {Math.round(
+                        (stats.coursesCompleted /
+                          Math.max(stats.coursesEnrolled, 1)) *
+                          100
+                      )}
+                      %
+                    </span>
                   </p>
                 </CardContent>
               </Card>
@@ -567,17 +674,26 @@ export default function LearnerDashboard() {
               <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-amber-50 to-orange-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 touch-manipulation">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 relative z-10 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Time<br className="sm:hidden" /> Spent</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">
+                    Time
+                    <br className="sm:hidden" /> Spent
+                  </CardTitle>
                   <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded-lg sm:rounded-xl group-hover:bg-amber-500/20 transition-colors duration-300">
                     <Clock className="h-3 w-3 sm:h-5 sm:w-5 text-amber-600" />
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10 pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{Math.floor(stats.totalTimeSpent / 60)}h</div>
+                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">
+                    {Math.floor(stats.totalTimeSpent / 60)}h
+                  </div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <Zap className="h-3 w-3" />
-                    <span className="hidden sm:inline">{stats.totalTimeSpent % 60}m this week</span>
-                    <span className="sm:hidden">{stats.totalTimeSpent % 60}m week</span>
+                    <span className="hidden sm:inline">
+                      {stats.totalTimeSpent % 60}m this week
+                    </span>
+                    <span className="sm:hidden">
+                      {stats.totalTimeSpent % 60}m week
+                    </span>
                   </p>
                 </CardContent>
               </Card>
@@ -585,16 +701,23 @@ export default function LearnerDashboard() {
               <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-pink-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 touch-manipulation">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/30 rounded-full blur-2xl -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 relative z-10 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Average<br className="sm:hidden" /> Score</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">
+                    Average
+                    <br className="sm:hidden" /> Score
+                  </CardTitle>
                   <div className="p-1.5 sm:p-2 bg-purple-500/10 rounded-lg sm:rounded-xl group-hover:bg-purple-500/20 transition-colors duration-300">
                     <Star className="h-3 w-3 sm:h-5 sm:w-5 text-purple-600" />
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10 pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">{stats.averageScore}%</div>
+                  <div className="text-xl sm:text-3xl font-bold text-slate-800 mb-1">
+                    {stats.averageScore}%
+                  </div>
                   <p className="text-xs text-slate-600 flex items-center gap-1">
                     <Award className="h-3 w-3" />
-                    <span className="hidden sm:inline">Excellent performance</span>
+                    <span className="hidden sm:inline">
+                      Excellent performance
+                    </span>
                     <span className="sm:hidden">Excellent</span>
                   </p>
                 </CardContent>
@@ -613,14 +736,16 @@ export default function LearnerDashboard() {
                       My Enrolled Courses
                     </CardTitle>
                     <CardDescription className="text-slate-600 mt-2 text-sm sm:text-base">
-                      {Array.isArray(enrolledCourses) && enrolledCourses.length > 0 
-                        ? `You're enrolled in ${enrolledCourses.length} course${enrolledCourses.length > 1 ? 's' : ''} - continue your learning journey`
-                        : "Start your learning journey by exploring our course library"
-                      }
+                      {Array.isArray(enrolledCourses) &&
+                      enrolledCourses.length > 0
+                        ? `You're enrolled in ${enrolledCourses.length} course${
+                            enrolledCourses.length > 1 ? "s" : ""
+                          } - continue your learning journey`
+                        : "Start your learning journey by exploring our course library"}
                     </CardDescription>
                   </div>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="hover:bg-blue-50 border-blue-200 w-full sm:w-auto touch-manipulation min-h-[44px]"
                     onClick={() => setActiveTab("library")}
                   >
@@ -635,7 +760,10 @@ export default function LearnerDashboard() {
                     // Loading state for enrolled courses
                     <div className="space-y-4">
                       {[1, 2, 3].map((index) => (
-                        <div key={index} className="animate-pulse p-6 border border-slate-200 rounded-2xl bg-gradient-to-r from-white to-slate-50/50">
+                        <div
+                          key={index}
+                          className="animate-pulse p-6 border border-slate-200 rounded-2xl bg-gradient-to-r from-white to-slate-50/50"
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4 flex-1">
                               <div className="p-3 bg-slate-200 rounded-2xl">
@@ -652,15 +780,22 @@ export default function LearnerDashboard() {
                         </div>
                       ))}
                     </div>
-                  ) : Array.isArray(enrolledCourses) && enrolledCourses.length > 0 ? (
+                  ) : Array.isArray(enrolledCourses) &&
+                    enrolledCourses.length > 0 ? (
                     (() => {
                       // Categorize courses
-                      const technicalCourses = enrolledCourses.filter(course => 
-                        !course.isExamGenius && !course.examType && !course.subject
-                      )
-                      const competitiveExamCourses = enrolledCourses.filter(course => 
-                        course.isExamGenius || course.examType || course.subject
-                      )
+                      const technicalCourses = enrolledCourses.filter(
+                        (course) =>
+                          !course.isExamGenius &&
+                          !course.examType &&
+                          !course.subject
+                      );
+                      const competitiveExamCourses = enrolledCourses.filter(
+                        (course) =>
+                          course.isExamGenius ||
+                          course.examType ||
+                          course.subject
+                      );
 
                       return (
                         <div className="space-y-8">
@@ -671,87 +806,109 @@ export default function LearnerDashboard() {
                                 <div className="p-2 bg-blue-500/10 rounded-xl">
                                   <GraduationCap className="h-5 w-5 text-blue-600" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-800">Technical Courses</h3>
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                  {technicalCourses.length} course{technicalCourses.length > 1 ? 's' : ''}
+                                <h3 className="text-lg font-bold text-slate-800">
+                                  Technical Courses
+                                </h3>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-50 text-blue-700 border-blue-200"
+                                >
+                                  {technicalCourses.length} course
+                                  {technicalCourses.length > 1 ? "s" : ""}
                                 </Badge>
                               </div>
                               <div className="space-y-4">
                                 {technicalCourses.map((course, index) => {
-                    const progress = Math.random() * 100
-                    const timeLeft = Math.floor(Math.random() * 120) + 30
-                    
-                    return (
-                      <div key={course._id} className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-blue-300 bg-gradient-to-r from-white to-slate-50/50 touch-manipulation">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between relative z-10 gap-4">
-                          <div className="flex-1 space-y-3 sm:space-y-4 w-full">
-                            <div className="flex items-start gap-3 sm:gap-4">
-                              <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl shadow-lg shrink-0">
-                                <BookMarked className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-base sm:text-lg text-slate-800 group-hover:text-blue-600 transition-colors duration-300 line-clamp-2">
-                                  {course.title}
-                                </h4>
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
-                                  <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
-                                    <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
-                                    {course.modules?.length || 0} modules
-                                  </span>
-                                  <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
-                                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                                    ~{timeLeft} min left
-                                  </span>
-                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs self-start">
-                                    {Math.floor(progress)}% complete
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-600 font-medium">Progress</span>
-                                <span className="text-slate-800 font-semibold">{Math.floor(progress)}%</span>
-                              </div>
-                              <Progress 
-                                value={progress} 
-                                className="h-3 bg-slate-100"
-                              />
-                            </div>
-                          </div>
-                          
-                          <Button 
-                            onClick={() => {
-                                            console.log("🎯 Continue Learning clicked for technical course:", course.title)
-                              setSelectedCourse({
-                                ...course,
-                                isEnrolled: true,
-                                enrollmentVerified: true,
+                                  const progress = Math.random() * 100;
+                                  const timeLeft =
+                                    Math.floor(Math.random() * 120) + 30;
+
+                                  return (
+                                    <div
+                                      key={course._id}
+                                      className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-blue-300 bg-gradient-to-r from-white to-slate-50/50 touch-manipulation"
+                                    >
+                                      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between relative z-10 gap-4">
+                                        <div className="flex-1 space-y-3 sm:space-y-4 w-full">
+                                          <div className="flex items-start gap-3 sm:gap-4">
+                                            <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl shadow-lg shrink-0">
+                                              <BookMarked className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <h4 className="font-bold text-base sm:text-lg text-slate-800 group-hover:text-blue-600 transition-colors duration-300 line-clamp-2">
+                                                {course.title}
+                                              </h4>
+                                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+                                                <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                  <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                  {course.modules?.length || 0}{" "}
+                                                  modules
+                                                </span>
+                                                <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                  <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                  ~{timeLeft} min left
+                                                </span>
+                                                <Badge
+                                                  variant="outline"
+                                                  className="bg-green-50 text-green-700 border-green-200 text-xs self-start"
+                                                >
+                                                  {Math.floor(progress)}%
+                                                  complete
+                                                </Badge>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <div className="space-y-2">
+                                            <div className="flex items-center justify-between text-sm">
+                                              <span className="text-slate-600 font-medium">
+                                                Progress
+                                              </span>
+                                              <span className="text-slate-800 font-semibold">
+                                                {Math.floor(progress)}%
+                                              </span>
+                                            </div>
+                                            <Progress
+                                              value={progress}
+                                              className="h-3 bg-slate-100"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <Button
+                                          onClick={() => {
+                                            console.log(
+                                              "🎯 Continue Learning clicked for technical course:",
+                                              course.title
+                                            );
+                                            setSelectedCourse({
+                                              ...course,
+                                              isEnrolled: true,
+                                              enrollmentVerified: true,
                                               accessGranted: true,
-                                              fromContinueLearning: true
-                              })
-                            }}
-                            disabled={!enrollmentDataLoaded}
-                            className="ml-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                          >
-                            {!enrollmentDataLoaded ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                                Loading...
-                              </>
-                            ) : (
-                              <>
-                                Continue
-                                <Play className="h-4 w-4 ml-2" />
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    )
+                                              fromContinueLearning: true,
+                                            });
+                                          }}
+                                          disabled={!enrollmentDataLoaded}
+                                          className="ml-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                        >
+                                          {!enrollmentDataLoaded ? (
+                                            <>
+                                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                              Loading...
+                                            </>
+                                          ) : (
+                                            <>
+                                              Continue
+                                              <Play className="h-4 w-4 ml-2" />
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  );
                                 })}
                               </div>
                             </div>
@@ -764,20 +921,30 @@ export default function LearnerDashboard() {
                                 <div className="p-2 bg-orange-500/10 rounded-xl">
                                   <Trophy className="h-5 w-5 text-orange-600" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-800">Competitive Exams</h3>
-                                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                                  {competitiveExamCourses.length} course{competitiveExamCourses.length > 1 ? 's' : ''}
+                                <h3 className="text-lg font-bold text-slate-800">
+                                  Competitive Exams
+                                </h3>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-orange-50 text-orange-700 border-orange-200"
+                                >
+                                  {competitiveExamCourses.length} course
+                                  {competitiveExamCourses.length > 1 ? "s" : ""}
                                 </Badge>
                               </div>
                               <div className="space-y-4">
                                 {competitiveExamCourses.map((course, index) => {
-                                  const progress = Math.random() * 100
-                                  const timeLeft = Math.floor(Math.random() * 120) + 30
-                                  
+                                  const progress = Math.random() * 100;
+                                  const timeLeft =
+                                    Math.floor(Math.random() * 120) + 30;
+
                                   return (
-                                    <div key={course._id} className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-orange-300 bg-gradient-to-r from-orange-50/50 to-red-50/50 touch-manipulation">
+                                    <div
+                                      key={course._id}
+                                      className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-orange-300 bg-gradient-to-r from-orange-50/50 to-red-50/50 touch-manipulation"
+                                    >
                                       <div className="absolute top-0 right-0 w-32 h-32 bg-orange-100/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                      
+
                                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between relative z-10 gap-4">
                                         <div className="flex-1 space-y-3 sm:space-y-4 w-full">
                                           <div className="flex items-start gap-3 sm:gap-4">
@@ -805,35 +972,46 @@ export default function LearnerDashboard() {
                                                   <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                                                   ~{timeLeft} min left
                                                 </span>
-                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs self-start">
-                                                  {Math.floor(progress)}% complete
+                                                <Badge
+                                                  variant="outline"
+                                                  className="bg-green-50 text-green-700 border-green-200 text-xs self-start"
+                                                >
+                                                  {Math.floor(progress)}%
+                                                  complete
                                                 </Badge>
                                               </div>
                                             </div>
                                           </div>
-                                          
+
                                           <div className="space-y-2">
                                             <div className="flex items-center justify-between text-sm">
-                                              <span className="text-slate-600 font-medium">Progress</span>
-                                              <span className="text-slate-800 font-semibold">{Math.floor(progress)}%</span>
+                                              <span className="text-slate-600 font-medium">
+                                                Progress
+                                              </span>
+                                              <span className="text-slate-800 font-semibold">
+                                                {Math.floor(progress)}%
+                                              </span>
                                             </div>
-                                            <Progress 
-                                              value={progress} 
+                                            <Progress
+                                              value={progress}
                                               className="h-3 bg-slate-100"
                                             />
                                           </div>
                                         </div>
-                                        
-                                        <Button 
+
+                                        <Button
                                           onClick={() => {
-                                            console.log("🎯 Continue Learning clicked for competitive exam course:", course.title)
+                                            console.log(
+                                              "🎯 Continue Learning clicked for competitive exam course:",
+                                              course.title
+                                            );
                                             setSelectedCourse({
                                               ...course,
                                               isEnrolled: true,
                                               enrollmentVerified: true,
                                               accessGranted: true,
-                                              fromContinueLearning: true
-                                            })
+                                              fromContinueLearning: true,
+                                            });
                                           }}
                                           disabled={!enrollmentDataLoaded}
                                           className="ml-6 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
@@ -852,31 +1030,37 @@ export default function LearnerDashboard() {
                                         </Button>
                                       </div>
                                     </div>
-                                  )
+                                  );
                                 })}
                               </div>
                             </div>
                           )}
 
                           {/* If no courses in either category */}
-                          {technicalCourses.length === 0 && competitiveExamCourses.length === 0 && (
-                            <div className="text-center py-12">
-                              <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <BookOpen className="h-12 w-12 text-blue-500" />
+                          {technicalCourses.length === 0 &&
+                            competitiveExamCourses.length === 0 && (
+                              <div className="text-center py-12">
+                                <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                  <BookOpen className="h-12 w-12 text-blue-500" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                                  No courses yet
+                                </h3>
+                                <p className="text-slate-600 mb-6">
+                                  Start your learning journey by exploring our
+                                  course library
+                                </p>
+                                <Button
+                                  onClick={() => setActiveTab("library")}
+                                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl"
+                                >
+                                  Browse Courses
+                                  <ArrowRight className="h-4 w-4 ml-2" />
+                                </Button>
                               </div>
-                              <h3 className="text-xl font-semibold text-slate-800 mb-2">No courses yet</h3>
-                              <p className="text-slate-600 mb-6">Start your learning journey by exploring our course library</p>
-                              <Button 
-                                onClick={() => setActiveTab("library")}
-                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl"
-                              >
-                                Browse Courses
-                                <ArrowRight className="h-4 w-4 ml-2" />
-                              </Button>
-                            </div>
-                          )}
+                            )}
                         </div>
-                      )
+                      );
                     })()
                   ) : (
                     // Empty state when no enrolled courses and data is loaded
@@ -884,9 +1068,14 @@ export default function LearnerDashboard() {
                       <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <BookOpen className="h-12 w-12 text-blue-500" />
                       </div>
-                      <h3 className="text-xl font-semibold text-slate-800 mb-2">No courses yet</h3>
-                      <p className="text-slate-600 mb-6">Start your learning journey by exploring our course library</p>
-                      <Button 
+                      <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                        No courses yet
+                      </h3>
+                      <p className="text-slate-600 mb-6">
+                        Start your learning journey by exploring our course
+                        library
+                      </p>
+                      <Button
                         onClick={() => setActiveTab("library")}
                         className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl"
                       >
@@ -906,8 +1095,12 @@ export default function LearnerDashboard() {
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                     <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1 sm:mb-2">Study Schedule</h3>
-                  <p className="text-slate-600 text-xs sm:text-sm">Plan your learning sessions</p>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1 sm:mb-2">
+                    Study Schedule
+                  </h3>
+                  <p className="text-slate-600 text-xs sm:text-sm">
+                    Plan your learning sessions
+                  </p>
                 </CardContent>
               </Card>
 
@@ -916,8 +1109,12 @@ export default function LearnerDashboard() {
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                     <Target className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1 sm:mb-2">Learning Goals</h3>
-                  <p className="text-slate-600 text-xs sm:text-sm">Set and track your objectives</p>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1 sm:mb-2">
+                    Learning Goals
+                  </h3>
+                  <p className="text-slate-600 text-xs sm:text-sm">
+                    Set and track your objectives
+                  </p>
                 </CardContent>
               </Card>
 
@@ -926,54 +1123,58 @@ export default function LearnerDashboard() {
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                     <Award className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1 sm:mb-2">Achievements</h3>
-                  <p className="text-slate-600 text-xs sm:text-sm">View your badges and certificates</p>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1 sm:mb-2">
+                    Achievements
+                  </h3>
+                  <p className="text-slate-600 text-xs sm:text-sm">
+                    View your badges and certificates
+                  </p>
                 </CardContent>
               </Card>
             </div>
           </div>
-        )
+        );
 
       case "library":
         return (
-          <CourseLibrary 
+          <CourseLibrary
             onCourseSelect={(course) => {
-              console.log("🎯 Course selected from library:", course.title)
-              setSelectedCourse(course)
-              setHideHeader(true)
-            }} 
+              console.log("🎯 Course selected from library:", course.title);
+              setSelectedCourse(course);
+              setHideHeader(true);
+            }}
             enrolledCourses={enrolledCourses}
             enrollmentDataLoaded={enrollmentDataLoaded}
             onEnrollmentChange={handleEnrollmentChange}
           />
-        )
+        );
       case "profile":
         return (
-          <ProfileSettingsForm 
-            onBack={() => setActiveTab("overview")} 
+          <ProfileSettingsForm
+            onBack={() => setActiveTab("overview")}
             isEducator={false}
             avatarKey={avatarKey}
             setAvatarKey={setAvatarKey}
           />
-        )
+        );
       case "preferences":
         return (
-          <PreferencesSettings 
-            onBack={() => setActiveTab("overview")} 
+          <PreferencesSettings
+            onBack={() => setActiveTab("overview")}
             isEducator={false}
           />
-        )
+        );
       case "notifications":
         return (
-          <NotificationsSettings 
-            onBack={() => setActiveTab("overview")} 
+          <NotificationsSettings
+            onBack={() => setActiveTab("overview")}
             isEducator={false}
           />
-        )
+        );
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   const renderTabNavigation = () => (
     <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40">
@@ -986,9 +1187,9 @@ export default function LearnerDashboard() {
               { id: "library", label: "Library", icon: BookMarked },
               { id: "profile", label: "Profile", icon: User },
               { id: "preferences", label: "Settings", icon: Settings },
-              { id: "notifications", label: "Updates", icon: Bell }
+              { id: "notifications", label: "Updates", icon: Bell },
             ].map((tab) => {
-              const IconComponent = tab.icon
+              const IconComponent = tab.icon;
               return (
                 <Button
                   key={tab.id}
@@ -1001,219 +1202,230 @@ export default function LearnerDashboard() {
                   }`}
                 >
                   <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="hidden sm:inline lg:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                  <span className="hidden sm:inline lg:inline">
+                    {tab.label}
+                  </span>
+                  <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
                 </Button>
-              )
+              );
             })}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 
   // Enhanced Profile Components - Completely reimplemented
   const ProfileSettings = () => {
     // Initialize state only once with current user data
     const [profileForm, setProfileForm] = useState(() => ({
-      name: user?.name || '',
-      email: user?.email || '',
-      bio: user?.bio || '',
-      avatar: user?.avatar || '',
-      phone: user?.phone || '',
-      location: user?.location || '',
-      website: user?.website || '',
-      learningGoals: user?.learningGoals || '',
-      interests: user?.interests || []
-    }))
-    
-    const [isUploading, setIsUploading] = useState(false)
-    const [formErrors, setFormErrors] = useState({})
-    const [saveLoading, setSaveLoading] = useState(false)
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+      name: user?.name || "",
+      email: user?.email || "",
+      bio: user?.bio || "",
+      avatar: user?.avatar || "",
+      phone: user?.phone || "",
+      location: user?.location || "",
+      website: user?.website || "",
+      learningGoals: user?.learningGoals || "",
+      interests: user?.interests || [],
+    }));
+
+    const [isUploading, setIsUploading] = useState(false);
+    const [formErrors, setFormErrors] = useState({});
+    const [saveLoading, setSaveLoading] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     // Only update form if user data changes significantly (not on every render)
-    const userDataRef = useRef()
-    const profileInitialized = useRef(false)
-    
+    const userDataRef = useRef();
+    const profileInitialized = useRef(false);
+
     useEffect(() => {
       // Only initialize once when user data is first available
       if (user && !profileInitialized.current && !hasUnsavedChanges) {
-        profileInitialized.current = true
-          setProfileForm({
-            name: user?.name || '',
-            email: user?.email || '',
-            bio: user?.bio || '',
-            avatar: user?.avatar || '',
-            phone: user?.phone || '',
-            location: user?.location || '',
-            website: user?.website || '',
-            learningGoals: user?.learningGoals || '',
-            interests: user?.interests || []
-          })
-        }
-    }, [user?._id, hasUnsavedChanges])
-    
+        profileInitialized.current = true;
+        setProfileForm({
+          name: user?.name || "",
+          email: user?.email || "",
+          bio: user?.bio || "",
+          avatar: user?.avatar || "",
+          phone: user?.phone || "",
+          location: user?.location || "",
+          website: user?.website || "",
+          learningGoals: user?.learningGoals || "",
+          interests: user?.interests || [],
+        });
+      }
+    }, [user?._id, hasUnsavedChanges]);
+
     // Reset profileInitialized when user changes (login/logout)
     useEffect(() => {
       if (!user) {
-        profileInitialized.current = false
+        profileInitialized.current = false;
       }
-    }, [user])
+    }, [user]);
 
     const validateForm = () => {
-      const errors = {}
+      const errors = {};
       if (!profileForm.name?.trim()) {
-        errors.name = 'Name is required'
+        errors.name = "Name is required";
       }
       if (!profileForm.email?.trim()) {
-        errors.email = 'Email is required'
+        errors.email = "Email is required";
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileForm.email)) {
-        errors.email = 'Please enter a valid email address'
+        errors.email = "Please enter a valid email address";
       }
-      if (profileForm.website && !/^https?:\/\/.+\..+/.test(profileForm.website)) {
-        errors.website = 'Please enter a valid website URL (include http:// or https://)'
+      if (
+        profileForm.website &&
+        !/^https?:\/\/.+\..+/.test(profileForm.website)
+      ) {
+        errors.website =
+          "Please enter a valid website URL (include http:// or https://)";
       }
-      setFormErrors(errors)
-      return Object.keys(errors).length === 0
-    }
+      setFormErrors(errors);
+      return Object.keys(errors).length === 0;
+    };
 
     const handleFieldChange = (fieldName, value) => {
-      setProfileForm(prev => ({
+      setProfileForm((prev) => ({
         ...prev,
-        [fieldName]: value
-      }))
-      setHasUnsavedChanges(true)
-      
+        [fieldName]: value,
+      }));
+      setHasUnsavedChanges(true);
+
       // Clear specific field error when user starts typing
       if (formErrors[fieldName]) {
-        setFormErrors(prev => ({
+        setFormErrors((prev) => ({
           ...prev,
-          [fieldName]: undefined
-        }))
+          [fieldName]: undefined,
+        }));
       }
-    }
+    };
 
     const handleFormSubmit = async (e) => {
-      e.preventDefault()
-      
+      e.preventDefault();
+
       if (!validateForm()) {
-        return
+        return;
       }
 
-      setSaveLoading(true)
+      setSaveLoading(true);
       try {
-        const response = await fetch('/api/profile', {
-          method: 'PUT',
+        const response = await fetch("/api/profile", {
+          method: "PUT",
           headers: {
             ...getAuthHeaders(),
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(profileForm),
-        })
+        });
 
         if (response.ok) {
-          const result = await response.json()
-          updateUser(result.user)
-          setHasUnsavedChanges(false)
-          setAvatarKey(Date.now())
-          
+          const result = await response.json();
+          updateUser(result.user);
+          setHasUnsavedChanges(false);
+          setAvatarKey(Date.now());
+
           // Show success notification
           toast({
             title: "Success!",
             description: "Profile updated successfully!",
             variant: "default",
-          })
+          });
         } else {
-          const errorData = await response.json()
-          console.error('Profile update failed:', errorData)
+          const errorData = await response.json();
+          console.error("Profile update failed:", errorData);
           toast({
             title: "Error",
-            description: `Failed to update profile: ${errorData.error || 'Unknown error'}`,
+            description: `Failed to update profile: ${
+              errorData.error || "Unknown error"
+            }`,
             variant: "destructive",
-          })
+          });
         }
       } catch (error) {
-        console.error('Error updating profile:', error)
+        console.error("Error updating profile:", error);
         toast({
           title: "Error",
           description: `Error updating profile: ${error.message}`,
           variant: "destructive",
-        })
+        });
       } finally {
-        setSaveLoading(false)
+        setSaveLoading(false);
       }
-    }
+    };
 
-    const showNotification = (message, type = 'info') => {
-      const notification = document.createElement('div')
+    const showNotification = (message, type = "info") => {
+      const notification = document.createElement("div");
       notification.className = `fixed top-8 right-8 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500 ${
-        type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 
-        type === 'error' ? 'bg-gradient-to-r from-red-500 to-pink-600' : 
-        'bg-gradient-to-r from-blue-500 to-purple-600'
-      }`
-      
+        type === "success"
+          ? "bg-gradient-to-r from-emerald-500 to-green-600"
+          : type === "error"
+          ? "bg-gradient-to-r from-red-500 to-pink-600"
+          : "bg-gradient-to-r from-blue-500 to-purple-600"
+      }`;
+
       notification.innerHTML = `
         <div class="flex items-center gap-3">
           <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-            ${type === 'success' ? 
-              '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>' : 
-              '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>'
+            ${
+              type === "success"
+                ? '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>'
+                : '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>'
             }
           </div>
           <span class="font-semibold">${message}</span>
         </div>
-      `
-      
-      document.body.appendChild(notification)
-      
+      `;
+
+      document.body.appendChild(notification);
+
       setTimeout(() => {
-        notification.style.transform = 'translateX(0)'
-      }, 100)
-      
+        notification.style.transform = "translateX(0)";
+      }, 100);
+
       setTimeout(() => {
-        notification.style.transform = 'translateX(100%)'
+        notification.style.transform = "translateX(100%)";
         setTimeout(() => {
           if (document.body.contains(notification)) {
-            document.body.removeChild(notification)
+            document.body.removeChild(notification);
           }
-        }, 500)
-      }, 3000)
-    }
+        }, 500);
+      }, 3000);
+    };
 
     const handleAvatarUpload = async (e) => {
-      const file = e.target.files?.[0]
-      if (!file) return
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-      setIsUploading(true)
-      const formData = new FormData()
-      formData.append('avatar', file)
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("avatar", file);
 
       try {
-        const response = await fetch('/api/upload/avatar', {
-          method: 'POST',
+        const response = await fetch("/api/upload/avatar", {
+          method: "POST",
           headers: getAuthHeaders(),
           body: formData,
-        })
+        });
 
         if (response.ok) {
-          const data = await response.json()
-          const newAvatarUrl = data.avatarUrl
-          
-          handleFieldChange('avatar', newAvatarUrl)
-          updateUser({ ...user, avatar: newAvatarUrl })
-          setAvatarKey(Date.now())
-          showNotification('Avatar uploaded successfully!', 'success')
+          const data = await response.json();
+          const newAvatarUrl = data.avatarUrl;
+
+          handleFieldChange("avatar", newAvatarUrl);
+          updateUser({ ...user, avatar: newAvatarUrl });
+          setAvatarKey(Date.now());
+          showNotification("Avatar uploaded successfully!", "success");
         } else {
-          showNotification('Failed to upload avatar', 'error')
+          showNotification("Failed to upload avatar", "error");
         }
       } catch (error) {
-        console.error('Error uploading avatar:', error)
-        showNotification('Error uploading avatar', 'error')
+        console.error("Error uploading avatar:", error);
+        showNotification("Error uploading avatar", "error");
       } finally {
-        setIsUploading(false)
+        setIsUploading(false);
       }
-    }
+    };
 
     return (
       <div className="space-y-8">
@@ -1230,7 +1442,9 @@ export default function LearnerDashboard() {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Profile Settings
             </h2>
-            <p className="text-slate-600 text-lg mt-2">Manage your learning profile and personal information</p>
+            <p className="text-slate-600 text-lg mt-2">
+              Manage your learning profile and personal information
+            </p>
           </div>
         </div>
 
@@ -1253,37 +1467,47 @@ export default function LearnerDashboard() {
                 <div className="relative group shrink-0">
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500 scale-125"></div>
                   <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/20 to-pink-400/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-700 scale-110 animate-pulse"></div>
-                  
+
                   <div className="relative">
-                    <Avatar key={`profile-${avatarKey}`} className="h-28 w-28 sm:h-32 sm:w-32 lg:h-40 lg:w-40 ring-4 ring-blue-200 group-hover:ring-blue-300 group-hover:ring-8 transition-all duration-500 shadow-2xl">
-                      <AvatarImage src={profileForm.avatar || "/placeholder.svg"} alt={profileForm.name} />
+                    <Avatar
+                      key={`profile-${avatarKey}`}
+                      className="h-28 w-28 sm:h-32 sm:w-32 lg:h-40 lg:w-40 ring-4 ring-blue-200 group-hover:ring-blue-300 group-hover:ring-8 transition-all duration-500 shadow-2xl"
+                    >
+                      <AvatarImage
+                        src={profileForm.avatar || "/placeholder.svg"}
+                        alt={profileForm.name}
+                      />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 text-white text-3xl sm:text-4xl lg:text-5xl font-bold">
                         {profileForm.name?.charAt(0)?.toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    
+
                     {isUploading && (
                       <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center backdrop-blur-sm">
                         <div className="text-center text-white">
                           <div className="animate-spin rounded-full h-10 w-10 border-3 border-white border-t-transparent mx-auto mb-2"></div>
-                          <div className="text-sm font-medium">Uploading...</div>
+                          <div className="text-sm font-medium">
+                            Uploading...
+                          </div>
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-full transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                       <div className="text-white text-center">
                         <Upload className="h-8 w-8 mx-auto mb-2" />
-                        <div className="text-sm font-semibold">Change Photo</div>
+                        <div className="text-sm font-semibold">
+                          Change Photo
+                        </div>
                       </div>
                     </div>
-                    
+
                     <div className="absolute -bottom-2 -right-2 p-3 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full shadow-xl group-hover:scale-110 transition-transform duration-300 border-4 border-white">
                       <Shield className="h-5 w-5 text-white" />
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex-1 space-y-6">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-2xl blur-xl"></div>
@@ -1293,16 +1517,21 @@ export default function LearnerDashboard() {
                           <Camera className="h-6 w-6 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-2xl font-bold text-slate-800">Profile Picture</h3>
-                          <p className="text-slate-600">Express your learning journey visually</p>
+                          <h3 className="text-2xl font-bold text-slate-800">
+                            Profile Picture
+                          </h3>
+                          <p className="text-slate-600">
+                            Express your learning journey visually
+                          </p>
                         </div>
                       </div>
-                      
+
                       <p className="text-slate-600 mb-6 leading-relaxed">
-                        Upload a clear, friendly photo that represents you as a learner. 
-                        This helps create connections with educators and fellow students in the community.
+                        Upload a clear, friendly photo that represents you as a
+                        learner. This helps create connections with educators
+                        and fellow students in the community.
                       </p>
-                      
+
                       <label className="block">
                         <Button
                           type="button"
@@ -1325,11 +1554,11 @@ export default function LearnerDashboard() {
                             )}
                           </span>
                         </Button>
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          onChange={handleAvatarUpload} 
-                          className="hidden" 
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
                         />
                       </label>
                     </div>
@@ -1346,10 +1575,13 @@ export default function LearnerDashboard() {
                       <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
                       Basic Information
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                       <div className="space-y-3">
-                        <Label htmlFor="name" className="text-slate-700 font-semibold flex items-center gap-2 text-sm sm:text-base">
+                        <Label
+                          htmlFor="name"
+                          className="text-slate-700 font-semibold flex items-center gap-2 text-sm sm:text-base"
+                        >
                           <div className="p-1 bg-blue-100 rounded-lg">
                             <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                           </div>
@@ -1358,9 +1590,13 @@ export default function LearnerDashboard() {
                         <Input
                           id="name"
                           value={profileForm.name}
-                          onChange={(e) => handleFieldChange('name', e.target.value)}
+                          onChange={(e) =>
+                            handleFieldChange("name", e.target.value)
+                          }
                           className={`h-12 sm:h-14 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 text-sm sm:text-base ${
-                            formErrors.name ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
+                            formErrors.name
+                              ? "border-red-300 focus:border-red-500 bg-red-50/50"
+                              : "border-slate-200 focus:border-blue-500 hover:border-slate-300"
                           }`}
                           placeholder="Enter your full name"
                         />
@@ -1371,9 +1607,12 @@ export default function LearnerDashboard() {
                           </p>
                         )}
                       </div>
-                      
+
                       <div className="space-y-3">
-                        <Label htmlFor="email" className="text-slate-700 font-semibold flex items-center gap-2">
+                        <Label
+                          htmlFor="email"
+                          className="text-slate-700 font-semibold flex items-center gap-2"
+                        >
                           <div className="p-1 bg-purple-100 rounded-lg">
                             <Mail className="h-4 w-4 text-purple-600" />
                           </div>
@@ -1383,9 +1622,13 @@ export default function LearnerDashboard() {
                           id="email"
                           type="email"
                           value={profileForm.email}
-                          onChange={(e) => handleFieldChange('email', e.target.value)}
+                          onChange={(e) =>
+                            handleFieldChange("email", e.target.value)
+                          }
                           className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                            formErrors.email ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-purple-500 hover:border-slate-300'
+                            formErrors.email
+                              ? "border-red-300 focus:border-red-500 bg-red-50/50"
+                              : "border-slate-200 focus:border-purple-500 hover:border-slate-300"
                           }`}
                           placeholder="Enter your email address"
                         />
@@ -1408,10 +1651,13 @@ export default function LearnerDashboard() {
                       <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-green-600 rounded-full"></div>
                       Contact Information
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-3">
-                        <Label htmlFor="phone" className="text-slate-700 font-semibold flex items-center gap-2">
+                        <Label
+                          htmlFor="phone"
+                          className="text-slate-700 font-semibold flex items-center gap-2"
+                        >
                           <div className="p-1 bg-emerald-100 rounded-lg">
                             <Phone className="h-4 w-4 text-emerald-600" />
                           </div>
@@ -1421,14 +1667,19 @@ export default function LearnerDashboard() {
                           id="phone"
                           type="tel"
                           value={profileForm.phone}
-                          onChange={(e) => handleFieldChange('phone', e.target.value)}
+                          onChange={(e) =>
+                            handleFieldChange("phone", e.target.value)
+                          }
                           placeholder="+1 (555) 123-4567"
                           className="h-14 rounded-2xl border-2 border-slate-200 focus:border-emerald-500 hover:border-slate-300 transition-all duration-300"
                         />
                       </div>
-                      
+
                       <div className="space-y-3">
-                        <Label htmlFor="location" className="text-slate-700 font-semibold flex items-center gap-2">
+                        <Label
+                          htmlFor="location"
+                          className="text-slate-700 font-semibold flex items-center gap-2"
+                        >
                           <div className="p-1 bg-green-100 rounded-lg">
                             <MapPin className="h-4 w-4 text-green-600" />
                           </div>
@@ -1437,7 +1688,9 @@ export default function LearnerDashboard() {
                         <Input
                           id="location"
                           value={profileForm.location}
-                          onChange={(e) => handleFieldChange('location', e.target.value)}
+                          onChange={(e) =>
+                            handleFieldChange("location", e.target.value)
+                          }
                           placeholder="e.g., New York, USA"
                           className="h-14 rounded-2xl border-2 border-slate-200 focus:border-green-500 hover:border-slate-300 transition-all duration-300"
                         />
@@ -1445,7 +1698,10 @@ export default function LearnerDashboard() {
                     </div>
 
                     <div className="mt-8 space-y-3">
-                      <Label htmlFor="website" className="text-slate-700 font-semibold flex items-center gap-2">
+                      <Label
+                        htmlFor="website"
+                        className="text-slate-700 font-semibold flex items-center gap-2"
+                      >
                         <div className="p-1 bg-teal-100 rounded-lg">
                           <Globe className="h-4 w-4 text-teal-600" />
                         </div>
@@ -1455,10 +1711,14 @@ export default function LearnerDashboard() {
                         id="website"
                         type="url"
                         value={profileForm.website}
-                        onChange={(e) => handleFieldChange('website', e.target.value)}
+                        onChange={(e) =>
+                          handleFieldChange("website", e.target.value)
+                        }
                         placeholder="https://yourwebsite.com"
                         className={`h-14 rounded-2xl border-2 transition-all duration-300 ${
-                          formErrors.website ? 'border-red-300 focus:border-red-500 bg-red-50/50' : 'border-slate-200 focus:border-teal-500 hover:border-slate-300'
+                          formErrors.website
+                            ? "border-red-300 focus:border-red-500 bg-red-50/50"
+                            : "border-slate-200 focus:border-teal-500 hover:border-slate-300"
                         }`}
                       />
                       {formErrors.website && (
@@ -1479,10 +1739,13 @@ export default function LearnerDashboard() {
                       <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-blue-600 rounded-full"></div>
                       Learning Profile
                     </h4>
-                    
+
                     <div className="space-y-6">
                       <div className="space-y-3">
-                        <Label htmlFor="bio" className="text-slate-700 font-semibold flex items-center gap-2">
+                        <Label
+                          htmlFor="bio"
+                          className="text-slate-700 font-semibold flex items-center gap-2"
+                        >
                           <div className="p-1 bg-indigo-100 rounded-lg">
                             <BookOpen className="h-4 w-4 text-indigo-600" />
                           </div>
@@ -1491,7 +1754,9 @@ export default function LearnerDashboard() {
                         <Textarea
                           id="bio"
                           value={profileForm.bio}
-                          onChange={(e) => handleFieldChange('bio', e.target.value)}
+                          onChange={(e) =>
+                            handleFieldChange("bio", e.target.value)
+                          }
                           placeholder="Tell us about your background, interests, and learning style..."
                           rows={4}
                           className="rounded-2xl border-2 border-slate-200 focus:border-indigo-500 hover:border-slate-300 transition-all duration-300 resize-none"
@@ -1499,7 +1764,10 @@ export default function LearnerDashboard() {
                       </div>
 
                       <div className="space-y-3">
-                        <Label htmlFor="learningGoals" className="text-slate-700 font-semibold flex items-center gap-2">
+                        <Label
+                          htmlFor="learningGoals"
+                          className="text-slate-700 font-semibold flex items-center gap-2"
+                        >
                           <div className="p-1 bg-blue-100 rounded-lg">
                             <Target className="h-4 w-4 text-blue-600" />
                           </div>
@@ -1508,7 +1776,9 @@ export default function LearnerDashboard() {
                         <Textarea
                           id="learningGoals"
                           value={profileForm.learningGoals}
-                          onChange={(e) => handleFieldChange('learningGoals', e.target.value)}
+                          onChange={(e) =>
+                            handleFieldChange("learningGoals", e.target.value)
+                          }
                           placeholder="What are your learning objectives? What skills do you want to develop?"
                           rows={3}
                           className="rounded-2xl border-2 border-slate-200 focus:border-blue-500 hover:border-slate-300 transition-all duration-300 resize-none"
@@ -1536,7 +1806,7 @@ export default function LearnerDashboard() {
                   className="group relative bg-gradient-to-r from-blue-500 via-purple-600 to-indigo-600 hover:from-blue-600 hover:via-purple-700 hover:to-indigo-700 text-white px-12 py-4 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  
+
                   <div className="relative flex items-center gap-3">
                     {saveLoading ? (
                       <>
@@ -1556,62 +1826,63 @@ export default function LearnerDashboard() {
           </CardContent>
         </Card>
       </div>
-    )
-  }
+    );
+  };
 
   const Preferences = () => {
     const [preferences, setPreferences] = useState({
       emailNotifications: true,
       pushNotifications: false,
       darkMode: false,
-      language: 'en',
+      language: "en",
       studyReminders: true,
       weeklyGoal: 5,
-      preferredStudyTime: 'morning'
-    })
-    const [loading, setLoading] = useState(true)
-    const [saveLoading, setSaveLoading] = useState(false)
+      preferredStudyTime: "morning",
+    });
+    const [loading, setLoading] = useState(true);
+    const [saveLoading, setSaveLoading] = useState(false);
 
     useEffect(() => {
-      fetchPreferences()
-    }, [])
+      fetchPreferences();
+    }, []);
 
     const fetchPreferences = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        const response = await fetch('/api/preferences', {
+        const response = await fetch("/api/preferences", {
           headers: getAuthHeaders(),
-        })
+        });
 
         if (response.ok) {
-          const data = await response.json()
-          setPreferences(prev => ({ ...prev, ...data }))
+          const data = await response.json();
+          setPreferences((prev) => ({ ...prev, ...data }));
         } else {
-          console.error('Failed to fetch preferences')
+          console.error("Failed to fetch preferences");
         }
       } catch (error) {
-        console.error('Error fetching preferences:', error)
+        console.error("Error fetching preferences:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
     const handlePreferenceUpdate = async () => {
-      setSaveLoading(true)
+      setSaveLoading(true);
       try {
-        const response = await fetch('/api/preferences', {
-          method: 'PUT',
+        const response = await fetch("/api/preferences", {
+          method: "PUT",
           headers: {
             ...getAuthHeaders(),
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(preferences),
-        })
+        });
 
         if (response.ok) {
           // Show beautiful success notification
-          const successNotification = document.createElement('div')
-          successNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+          const successNotification = document.createElement("div");
+          successNotification.className =
+            "fixed top-8 right-8 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
           successNotification.innerHTML = `
             <div class="flex items-center gap-3">
               <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -1621,28 +1892,35 @@ export default function LearnerDashboard() {
               </div>
               <span class="font-semibold">Preferences updated successfully!</span>
             </div>
-          `
-          document.body.appendChild(successNotification)
-          
+          `;
+          document.body.appendChild(successNotification);
+
           setTimeout(() => {
-            successNotification.style.transform = 'translateX(0)'
-          }, 100)
-          
+            successNotification.style.transform = "translateX(0)";
+          }, 100);
+
           setTimeout(() => {
-            successNotification.style.transform = 'translateX(100%)'
-            setTimeout(() => document.body.removeChild(successNotification), 500)
-          }, 3000)
+            successNotification.style.transform = "translateX(100%)";
+            setTimeout(
+              () => document.body.removeChild(successNotification),
+              500
+            );
+          }, 3000);
         } else {
-          const errorData = await response.json()
-          alert(`Failed to update preferences: ${errorData.message || 'Unknown error'}`)
+          const errorData = await response.json();
+          alert(
+            `Failed to update preferences: ${
+              errorData.message || "Unknown error"
+            }`
+          );
         }
       } catch (error) {
-        console.error('Error updating preferences:', error)
-        alert(`Error updating preferences: ${error.message}`)
+        console.error("Error updating preferences:", error);
+        alert(`Error updating preferences: ${error.message}`);
       } finally {
-        setSaveLoading(false)
+        setSaveLoading(false);
       }
-    }
+    };
 
     return (
       <div className="space-y-8">
@@ -1659,7 +1937,9 @@ export default function LearnerDashboard() {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               Learning Preferences
             </h2>
-            <p className="text-slate-600 text-lg mt-2">Customize your learning experience to match your style</p>
+            <p className="text-slate-600 text-lg mt-2">
+              Customize your learning experience to match your style
+            </p>
           </div>
         </div>
 
@@ -1679,41 +1959,62 @@ export default function LearnerDashboard() {
             <CardContent className="p-8 space-y-8">
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl">
                 <div>
-                  <p className="font-semibold text-slate-800">Email Notifications</p>
-                  <p className="text-sm text-slate-600 mt-1">Course updates and progress reports</p>
+                  <p className="font-semibold text-slate-800">
+                    Email Notifications
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Course updates and progress reports
+                  </p>
                 </div>
                 <Switch
                   checked={preferences.emailNotifications}
-                  onCheckedChange={(checked) => 
-                    setPreferences(prev => ({ ...prev, emailNotifications: checked }))
+                  onCheckedChange={(checked) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      emailNotifications: checked,
+                    }))
                   }
                   className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-500 data-[state=checked]:to-purple-600"
                 />
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl">
                 <div>
-                  <p className="font-semibold text-slate-800">Push Notifications</p>
-                  <p className="text-sm text-slate-600 mt-1">Real-time browser notifications</p>
+                  <p className="font-semibold text-slate-800">
+                    Push Notifications
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Real-time browser notifications
+                  </p>
                 </div>
                 <Switch
                   checked={preferences.pushNotifications}
-                  onCheckedChange={(checked) => 
-                    setPreferences(prev => ({ ...prev, pushNotifications: checked }))
+                  onCheckedChange={(checked) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      pushNotifications: checked,
+                    }))
                   }
                   className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-emerald-500 data-[state=checked]:to-green-600"
                 />
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl">
                 <div>
-                  <p className="font-semibold text-slate-800">Study Reminders</p>
-                  <p className="text-sm text-slate-600 mt-1">Daily learning session reminders</p>
+                  <p className="font-semibold text-slate-800">
+                    Study Reminders
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Daily learning session reminders
+                  </p>
                 </div>
                 <Switch
                   checked={preferences.studyReminders}
-                  onCheckedChange={(checked) => 
-                    setPreferences(prev => ({ ...prev, studyReminders: checked }))
+                  onCheckedChange={(checked) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      studyReminders: checked,
+                    }))
                   }
                   className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-600"
                 />
@@ -1735,25 +2036,41 @@ export default function LearnerDashboard() {
             </CardHeader>
             <CardContent className="p-8 space-y-8">
               <div className="space-y-4">
-                <Label className="text-slate-700 font-semibold">Weekly Learning Goal</Label>
+                <Label className="text-slate-700 font-semibold">
+                  Weekly Learning Goal
+                </Label>
                 <div className="flex items-center gap-4">
                   <input
                     type="range"
                     min="1"
                     max="20"
                     value={preferences.weeklyGoal}
-                    onChange={(e) => setPreferences(prev => ({ ...prev, weeklyGoal: parseInt(e.target.value) }))}
+                    onChange={(e) =>
+                      setPreferences((prev) => ({
+                        ...prev,
+                        weeklyGoal: parseInt(e.target.value),
+                      }))
+                    }
                     className="flex-1 h-3 bg-gradient-to-r from-indigo-200 to-blue-200 rounded-lg appearance-none cursor-pointer"
                   />
-                  <span className="text-2xl font-bold text-slate-800 min-w-[3rem]">{preferences.weeklyGoal}h</span>
+                  <span className="text-2xl font-bold text-slate-800 min-w-[3rem]">
+                    {preferences.weeklyGoal}h
+                  </span>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
-                <Label className="text-slate-700 font-semibold">Preferred Study Time</Label>
+                <Label className="text-slate-700 font-semibold">
+                  Preferred Study Time
+                </Label>
                 <select
                   value={preferences.preferredStudyTime}
-                  onChange={(e) => setPreferences(prev => ({ ...prev, preferredStudyTime: e.target.value }))}
+                  onChange={(e) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      preferredStudyTime: e.target.value,
+                    }))
+                  }
                   className="w-full h-14 px-4 border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-blue-500 transition-colors duration-300 bg-white"
                 >
                   <option value="morning">Morning (6AM - 12PM)</option>
@@ -1762,12 +2079,17 @@ export default function LearnerDashboard() {
                   <option value="night">Night (12AM - 6AM)</option>
                 </select>
               </div>
-              
+
               <div className="space-y-4">
                 <Label className="text-slate-700 font-semibold">Language</Label>
                 <select
                   value={preferences.language}
-                  onChange={(e) => setPreferences(prev => ({ ...prev, language: e.target.value }))}
+                  onChange={(e) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      language: e.target.value,
+                    }))
+                  }
                   className="w-full h-14 px-4 border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-blue-500 transition-colors duration-300 bg-white"
                 >
                   <option value="en">🇺🇸 English</option>
@@ -1790,7 +2112,7 @@ export default function LearnerDashboard() {
           >
             {/* Button background effects */}
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            
+
             <div className="relative flex items-center gap-3">
               {saveLoading ? (
                 <>
@@ -1807,131 +2129,132 @@ export default function LearnerDashboard() {
           </Button>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   const Notifications = () => {
-    const [notifications, setNotifications] = useState([])
-    const [loading, setLoading] = useState(true)
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-      fetchNotifications()
-    }, [])
+      fetchNotifications();
+    }, []);
 
     const fetchNotifications = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        const response = await fetch('/api/notifications', {
+        const response = await fetch("/api/notifications", {
           headers: getAuthHeaders(),
-        })
+        });
 
         if (response.ok) {
-          const data = await response.json()
-          setNotifications(Array.isArray(data) ? data : [])
+          const data = await response.json();
+          setNotifications(Array.isArray(data) ? data : []);
         } else {
-          console.error('Failed to fetch notifications')
+          console.error("Failed to fetch notifications");
           // Set default notifications
           setNotifications([
             {
               id: 1,
-              type: 'course',
-              title: 'Welcome to your learning journey!',
-              message: 'Start exploring our course library to begin learning.',
-              time: '1 hour ago',
+              type: "course",
+              title: "Welcome to your learning journey!",
+              message: "Start exploring our course library to begin learning.",
+              time: "1 hour ago",
               read: false,
               icon: BookOpen,
-              color: 'blue'
+              color: "blue",
             },
             {
               id: 2,
-              type: 'achievement',
-              title: 'First course enrolled!',
-              message: 'You successfully enrolled in your first course.',
-              time: '2 days ago',
+              type: "achievement",
+              title: "First course enrolled!",
+              message: "You successfully enrolled in your first course.",
+              time: "2 days ago",
               read: true,
               icon: Trophy,
-              color: 'yellow'
+              color: "yellow",
             },
             {
               id: 3,
-              type: 'reminder',
-              title: 'Daily study reminder',
-              message: 'Keep up your learning streak! Study for 30 minutes today.',
-              time: '3 days ago',
+              type: "reminder",
+              title: "Daily study reminder",
+              message:
+                "Keep up your learning streak! Study for 30 minutes today.",
+              time: "3 days ago",
               read: false,
               icon: Clock,
-              color: 'green'
-            }
-          ])
+              color: "green",
+            },
+          ]);
         }
       } catch (error) {
-        console.error('Error fetching notifications:', error)
+        console.error("Error fetching notifications:", error);
         // Set default notifications on error
         setNotifications([
           {
             id: 1,
-            type: 'welcome',
-            title: 'Welcome to LLMfied!',
-            message: 'Your personalized learning platform is ready.',
-            time: 'Just now',
+            type: "welcome",
+            title: "Welcome to LLMfied!",
+            message: "Your personalized learning platform is ready.",
+            time: "Just now",
             read: false,
             icon: Sparkles,
-            color: 'purple'
-          }
-        ])
+            color: "purple",
+          },
+        ]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
     const markAsRead = async (id) => {
       try {
-        const response = await fetch('/api/notifications', {
-          method: 'PUT',
+        const response = await fetch("/api/notifications", {
+          method: "PUT",
           headers: {
             ...getAuthHeaders(),
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            action: 'markAsRead',
-            notificationId: id
+            action: "markAsRead",
+            notificationId: id,
           }),
-        })
+        });
 
         if (response.ok) {
-          setNotifications(prev => 
-            prev.map(notif => 
+          setNotifications((prev) =>
+            prev.map((notif) =>
               notif.id === id ? { ...notif, read: true } : notif
             )
-          )
+          );
         }
       } catch (error) {
-        console.error('Error marking notification as read:', error)
+        console.error("Error marking notification as read:", error);
       }
-    }
+    };
 
     const markAllAsRead = async () => {
       try {
-        const response = await fetch('/api/notifications', {
-          method: 'PUT',
+        const response = await fetch("/api/notifications", {
+          method: "PUT",
           headers: {
             ...getAuthHeaders(),
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            action: 'markAllAsRead'
+            action: "markAllAsRead",
           }),
-        })
+        });
 
         if (response.ok) {
-          setNotifications(prev => 
-            prev.map(notif => ({ ...notif, read: true }))
-          )
+          setNotifications((prev) =>
+            prev.map((notif) => ({ ...notif, read: true }))
+          );
         }
       } catch (error) {
-        console.error('Error marking all notifications as read:', error)
+        console.error("Error marking all notifications as read:", error);
       }
-    }
+    };
 
     return (
       <div className="space-y-8">
@@ -1948,7 +2271,9 @@ export default function LearnerDashboard() {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
               Notifications
             </h2>
-            <p className="text-slate-600 text-lg mt-2">Stay updated with your learning progress and achievements</p>
+            <p className="text-slate-600 text-lg mt-2">
+              Stay updated with your learning progress and achievements
+            </p>
           </div>
           <Button
             onClick={markAllAsRead}
@@ -1975,33 +2300,42 @@ export default function LearnerDashboard() {
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100">
               {notifications.map((notification) => {
-                const IconComponent = notification.icon
+                const IconComponent = notification.icon;
                 return (
                   <div
                     key={notification.id}
                     className={`group p-8 hover:bg-gradient-to-r ${
-                      !notification.read ? 'border-l-4 border-l-blue-500' : ''
+                      !notification.read ? "border-l-4 border-l-blue-500" : ""
                     }`}
                   >
                     <div className="flex items-start gap-6">
-                      <div className={`p-4 rounded-2xl ${
-                        notification.color === 'blue' ? 'bg-blue-500' :
-                        notification.color === 'yellow' ? 'bg-yellow-500' :
-                        notification.color === 'green' ? 'bg-green-500' :
-                        'bg-purple-500'
-                      } shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <div
+                        className={`p-4 rounded-2xl ${
+                          notification.color === "blue"
+                            ? "bg-blue-500"
+                            : notification.color === "yellow"
+                            ? "bg-yellow-500"
+                            : notification.color === "green"
+                            ? "bg-green-500"
+                            : "bg-purple-500"
+                        } shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                      >
                         <IconComponent className="h-6 w-6 text-white" />
                       </div>
-                      
+
                       <div className="flex-1 space-y-2">
                         <div className="flex items-start justify-between">
                           <div>
                             <h4 className="font-bold text-lg text-slate-900 group-hover:text-slate-800 transition-colors duration-300">
                               {notification.title}
                             </h4>
-                            <p className="text-slate-700 mt-2 leading-relaxed">{notification.message}</p>
+                            <p className="text-slate-700 mt-2 leading-relaxed">
+                              {notification.message}
+                            </p>
                             <div className="flex items-center gap-3 mt-4">
-                              <p className="text-sm text-slate-500 font-medium">{notification.time}</p>
+                              <p className="text-sm text-slate-500 font-medium">
+                                {notification.time}
+                              </p>
                               {!notification.read && (
                                 <Badge className="bg-blue-100 text-blue-700 border-blue-200">
                                   New
@@ -2023,22 +2357,28 @@ export default function LearnerDashboard() {
                       </div>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </CardContent>
         </Card>
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50">
       {/* Enhanced Header - Hide when viewing modules or scrolling */}
       {!hideHeader && (
-        <div className={`bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-50 transition-all duration-300 ease-in-out ${
-          isHeaderVisible ? 'translate-y-0 shadow-xl' : '-translate-y-full shadow-lg'
-        } ${lastScrollY > 10 ? 'shadow-2xl border-slate-300/50' : 'shadow-xl'}`}>
+        <div
+          className={`bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-50 transition-all duration-300 ease-in-out ${
+            isHeaderVisible
+              ? "translate-y-0 shadow-xl"
+              : "-translate-y-full shadow-lg"
+          } ${
+            lastScrollY > 10 ? "shadow-2xl border-slate-300/50" : "shadow-xl"
+          }`}
+        >
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 space-y-3 sm:space-y-0">
               <div className="flex-1 min-w-0">
@@ -2048,160 +2388,215 @@ export default function LearnerDashboard() {
                 <div className="text-slate-600 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-2">
                   <div className="flex items-center gap-2">
                     <div className="w-2 sm:w-3 h-2 sm:h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg"></div>
-                    <span className="text-sm sm:text-base lg:text-lg">Welcome back, <span className="font-semibold text-slate-800">{user?.name}</span></span>
+                    <span className="text-sm sm:text-base lg:text-lg">
+                      Welcome back,{" "}
+                      <span className="font-semibold text-slate-800">
+                        {user?.name}
+                      </span>
+                    </span>
                   </div>
                   <Badge className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border-blue-200 self-start sm:self-auto text-xs sm:text-sm">
                     {stats.streak} day streak 🔥
                   </Badge>
                 </div>
               </div>
-            
-            {/* Enhanced User Profile Menu */}
-            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="group relative h-12 sm:h-14 lg:h-16 px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-slate-50 to-blue-50 hover:from-slate-100 hover:to-blue-100 border-2 border-slate-200 hover:border-blue-300 transition-all duration-300 hover:scale-105 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl"
+
+              {/* Enhanced User Profile Menu */}
+              <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="group relative h-12 sm:h-14 lg:h-16 px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-slate-50 to-blue-50 hover:from-slate-100 hover:to-blue-100 border-2 border-slate-200 hover:border-blue-300 transition-all duration-300 hover:scale-105 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl"
+                    >
+                      <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+                        <div className="relative">
+                          <Avatar
+                            key={`header-${avatarKey}`}
+                            className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 ring-2 sm:ring-4 ring-slate-200 group-hover:ring-blue-300 transition-all duration-300 shadow-lg"
+                          >
+                            <AvatarImage
+                              src={user?.avatar || "/placeholder.svg"}
+                              alt={user?.name}
+                            />
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-sm sm:text-base lg:text-lg">
+                              {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-green-400 to-emerald-500 border-2 sm:border-3 border-white rounded-full shadow-lg"></div>
+                        </div>
+                        <div className="hidden sm:block text-left">
+                          <p className="text-slate-800 font-bold text-sm lg:text-base leading-none truncate max-w-32 lg:max-w-none">
+                            {user?.name || "Learner"}
+                          </p>
+                          <p className="text-slate-600 text-xs lg:text-sm mt-1 font-medium truncate max-w-32 lg:max-w-none">
+                            {user?.email || "learner@example.com"}
+                          </p>
+                        </div>
+                        <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 group-hover:text-slate-800 transition-all duration-300 group-data-[state=open]:rotate-180" />
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-72 sm:w-80 bg-white/95 backdrop-blur-xl border-2 border-slate-200 shadow-2xl rounded-2xl sm:rounded-3xl p-2 sm:p-3"
                   >
-                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-                      <div className="relative">
-                        <Avatar key={`header-${avatarKey}`} className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 ring-2 sm:ring-4 ring-slate-200 group-hover:ring-blue-300 transition-all duration-300 shadow-lg">
-                          <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-sm sm:text-base lg:text-lg">
+                    {/* Enhanced Profile Header */}
+                    <div className="px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-xl sm:rounded-2xl mb-2 sm:mb-3">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <Avatar
+                          key={`dropdown-${avatarKey}`}
+                          className="h-12 w-12 sm:h-16 sm:w-16 ring-2 sm:ring-4 ring-blue-200 shadow-lg"
+                        >
+                          <AvatarImage
+                            src={user?.avatar || "/placeholder.svg"}
+                            alt={user?.name}
+                          />
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-lg sm:text-xl">
                             {user?.name?.charAt(0)?.toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-green-400 to-emerald-500 border-2 sm:border-3 border-white rounded-full shadow-lg"></div>
-                      </div>
-                      <div className="hidden sm:block text-left">
-                        <p className="text-slate-800 font-bold text-sm lg:text-base leading-none truncate max-w-32 lg:max-w-none">{user?.name || "Learner"}</p>
-                        <p className="text-slate-600 text-xs lg:text-sm mt-1 font-medium truncate max-w-32 lg:max-w-none">{user?.email || "learner@example.com"}</p>
-                      </div>
-                      <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 group-hover:text-slate-800 transition-all duration-300 group-data-[state=open]:rotate-180" />
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent
-                  align="end"
-                  className="w-72 sm:w-80 bg-white/95 backdrop-blur-xl border-2 border-slate-200 shadow-2xl rounded-2xl sm:rounded-3xl p-2 sm:p-3"
-                >
-                  {/* Enhanced Profile Header */}
-                  <div className="px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-xl sm:rounded-2xl mb-2 sm:mb-3">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <Avatar key={`dropdown-${avatarKey}`} className="h-12 w-12 sm:h-16 sm:w-16 ring-2 sm:ring-4 ring-blue-200 shadow-lg">
-                        <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-lg sm:text-xl">
-                          {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-900 truncate text-base sm:text-lg">{user?.name || "Learner Name"}</p>
-                        <p className="text-xs sm:text-sm text-slate-600 truncate font-medium">{user?.email || "learner@example.com"}</p>
-                        <div className="flex items-center gap-2 mt-1 sm:mt-2">
-                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <span className="text-xs text-green-600 font-semibold">Online</span>
-                          <Badge className="ml-1 sm:ml-2 bg-blue-100 text-blue-700 text-xs">
-                            Level {Math.floor(stats.averageScore / 20)}
-                          </Badge>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-900 truncate text-base sm:text-lg">
+                            {user?.name || "Learner Name"}
+                          </p>
+                          <p className="text-xs sm:text-sm text-slate-600 truncate font-medium">
+                            {user?.email || "learner@example.com"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-xs text-green-600 font-semibold">
+                              Online
+                            </span>
+                            <Badge className="ml-1 sm:ml-2 bg-blue-100 text-blue-700 text-xs">
+                              Level {Math.floor(stats.averageScore / 20)}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <DropdownMenuSeparator className="bg-slate-200" />
+                    <DropdownMenuSeparator className="bg-slate-200" />
 
-                  {/* Enhanced Menu Items */}
-                  <DropdownMenuItem 
-                    onClick={navigateToProfile}
-                    className="group flex items-center gap-4 px-6 py-4 rounded-2xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 group-hover:from-blue-200 group-hover:to-blue-300 rounded-xl transition-all duration-300 group-hover:scale-110">
-                      <User className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-900 text-base">Profile Settings</p>
-                      <p className="text-sm text-slate-500">Manage your account details</p>
-                    </div>
-                  </DropdownMenuItem>
+                    {/* Enhanced Menu Items */}
+                    <DropdownMenuItem
+                      onClick={navigateToProfile}
+                      className="group flex items-center gap-4 px-6 py-4 rounded-2xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
+                    >
+                      <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 group-hover:from-blue-200 group-hover:to-blue-300 rounded-xl transition-all duration-300 group-hover:scale-110">
+                        <User className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900 text-base">
+                          Profile Settings
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Manage your account details
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuItem 
-                    onClick={navigateToPreferences}
-                    className="group flex items-center gap-4 px-6 py-4 rounded-2xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="p-3 bg-gradient-to-br from-purple-100 to-purple-200 group-hover:from-purple-200 group-hover:to-purple-300 rounded-xl transition-all duration-300 group-hover:scale-110">
-                      <Settings className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-900 text-base">Learning Preferences</p>
-                      <p className="text-sm text-slate-500">Customize your experience</p>
-                    </div>
-                  </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={navigateToPreferences}
+                      className="group flex items-center gap-4 px-6 py-4 rounded-2xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300 cursor-pointer"
+                    >
+                      <div className="p-3 bg-gradient-to-br from-purple-100 to-purple-200 group-hover:from-purple-200 group-hover:to-purple-300 rounded-xl transition-all duration-300 group-hover:scale-110">
+                        <Settings className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900 text-base">
+                          Learning Preferences
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Customize your experience
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuItem 
-                    onClick={navigateToNotifications}
-                    className="group flex items-center gap-4 px-6 py-4 rounded-2xl hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="p-3 bg-gradient-to-br from-amber-100 to-amber-200 group-hover:from-amber-200 group-hover:to-amber-300 rounded-xl transition-all duration-300 group-hover:scale-110">
-                      <Bell className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-900 text-base">Notifications</p>
-                      <p className="text-sm text-slate-500">View updates and alerts</p>
-                    </div>
-                    <div className="w-3 h-3 bg-gradient-to-r from-red-400 to-pink-500 rounded-full animate-pulse shadow-lg"></div>
-                  </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={navigateToNotifications}
+                      className="group flex items-center gap-4 px-6 py-4 rounded-2xl hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 transition-all duration-300 cursor-pointer"
+                    >
+                      <div className="p-3 bg-gradient-to-br from-amber-100 to-amber-200 group-hover:from-amber-200 group-hover:to-amber-300 rounded-xl transition-all duration-300 group-hover:scale-110">
+                        <Bell className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-slate-900 text-base">
+                          Notifications
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          View updates and alerts
+                        </p>
+                      </div>
+                      <div className="w-3 h-3 bg-gradient-to-r from-red-400 to-pink-500 rounded-full animate-pulse shadow-lg"></div>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuSeparator className="bg-slate-200 my-3" />
+                    <DropdownMenuSeparator className="bg-slate-200 my-3" />
 
-                  {/* Enhanced Logout Button */}
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="group flex items-center gap-4 px-6 py-4 rounded-2xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="p-3 bg-gradient-to-br from-red-100 to-red-200 group-hover:from-red-200 group-hover:to-red-300 rounded-xl transition-all duration-300 group-hover:scale-110">
-                      <LogOut className="h-5 w-5 text-red-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-900 text-base">Sign Out</p>
-                      <p className="text-sm text-slate-500">Logout from your account</p>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {/* Enhanced Logout Button */}
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="group flex items-center gap-4 px-6 py-4 rounded-2xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-300 cursor-pointer"
+                    >
+                      <div className="p-3 bg-gradient-to-br from-red-100 to-red-200 group-hover:from-red-200 group-hover:to-red-300 rounded-xl transition-all duration-300 group-hover:scale-110">
+                        <LogOut className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900 text-base">
+                          Sign Out
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Logout from your account
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
-          </div>
 
-          {/* Enhanced Navigation */}
-          <nav className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pb-4 sm:pb-6">
-            {[
-              { id: "overview", label: "Dashboard", icon: TrendingUp, gradient: "from-blue-500 to-indigo-600" },
-              { id: "library", label: "Course Library", icon: BookOpen, gradient: "from-emerald-500 to-green-600" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id)
-                  setIsHeaderVisible(true) // Show header when switching tabs
-                  setLastScrollY(0) // Reset scroll tracking
-                }}
-                className={`group flex items-center justify-center sm:justify-start gap-2 sm:gap-3 py-3 sm:py-4 px-4 sm:px-6 lg:px-8 font-semibold text-sm transition-all duration-300 rounded-xl sm:rounded-2xl touch-manipulation ${
-                  activeTab === tab.id
-                    ? `bg-gradient-to-r ${tab.gradient} text-white shadow-xl scale-105`
-                    : "text-slate-600 hover:text-slate-800 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 hover:scale-105"
-                }`}
-              >
-                <tab.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="text-xs sm:text-sm font-medium">{tab.label}</span>
-                {activeTab === tab.id && (
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full animate-pulse"></div>
-                )}
-              </button>
-            ))}
-          </nav>
+            {/* Enhanced Navigation */}
+            <nav className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pb-4 sm:pb-6">
+              {[
+                {
+                  id: "overview",
+                  label: "Dashboard",
+                  icon: TrendingUp,
+                  gradient: "from-blue-500 to-indigo-600",
+                },
+                {
+                  id: "library",
+                  label: "Course Library",
+                  icon: BookOpen,
+                  gradient: "from-emerald-500 to-green-600",
+                },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setIsHeaderVisible(true); // Show header when switching tabs
+                    setLastScrollY(0); // Reset scroll tracking
+                  }}
+                  className={`group flex items-center justify-center sm:justify-start gap-2 sm:gap-3 py-3 sm:py-4 px-4 sm:px-6 lg:px-8 font-semibold text-sm transition-all duration-300 rounded-xl sm:rounded-2xl touch-manipulation ${
+                    activeTab === tab.id
+                      ? `bg-gradient-to-r ${tab.gradient} text-white shadow-xl scale-105`
+                      : "text-slate-600 hover:text-slate-800 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 hover:scale-105"
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-xs sm:text-sm font-medium">
+                    {tab.label}
+                  </span>
+                  {activeTab === tab.id && (
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full animate-pulse"></div>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
         </div>
-      </div>
       )}
 
       {/* Enhanced Content Area */}
@@ -2211,5 +2606,5 @@ export default function LearnerDashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
