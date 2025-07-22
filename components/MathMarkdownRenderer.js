@@ -45,9 +45,35 @@ export default function MathMarkdownRenderer({
     output: 'html',               // Output format
     throwOnError: false,          // Continue rendering even if there are errors
     errorColor: '#cc0000',        // Red color for errors
+    fleqn: false,                 // Don't force left-aligned equations
+    displayMode: false,           // Auto-detect display vs inline mode
     macros: {                     // Common macros for convenience
       "\\f": "\\frac{#1}{#2}",    // \f{a}{b} -> \frac{a}{b}
+      "\\ds": "\\displaystyle",   // \ds -> \displaystyle
+      "\\ts": "\\textstyle",      // \ts -> \textstyle
+      "\\ss": "\\scriptstyle",    // \ss -> \scriptstyle
+      "\\sss": "\\scriptscriptstyle", // \sss -> \scriptscriptstyle
+      // Common physics and engineering macros
+      "\\ohm": "\\Omega",         // \ohm -> \Omega
+      "\\degree": "^\\circ",      // \degree -> °
+      "\\celsius": "^\\circ\\text{C}", // \celsius -> °C
+      "\\fahrenheit": "^\\circ\\text{F}", // \fahrenheit -> °F
+      "\\kelvin": "\\text{K}",    // \kelvin -> K
+      // Common mathematical constants
+      "\\E": "\\mathrm{e}",       // Euler's number
+      "\\I": "\\mathrm{i}",       // Imaginary unit
+      "\\Real": "\\mathbb{R}",    // Real numbers
+      "\\Complex": "\\mathbb{C}", // Complex numbers
+      "\\Natural": "\\mathbb{N}",  // Natural numbers
+      "\\Integer": "\\mathbb{Z}",  // Integers
+      "\\Rational": "\\mathbb{Q}", // Rational numbers
     },
+    trust: (context) => {
+      // Allow certain HTML tags for better formatting
+      return ['\\htmlClass', '\\htmlId', '\\htmlStyle', '\\htmlData'].includes(context.command);
+    },
+    maxSize: 25,                  // Maximum font size
+    maxExpand: 1000,              // Maximum macro expansions
     ...options
   };
 
@@ -88,15 +114,15 @@ export default function MathMarkdownRenderer({
         if (className === 'katex-error') {
           return (
             <span 
-              className="text-red-500 bg-red-50 px-1 rounded" 
-              title="LaTeX rendering error"
+              className="text-red-500 bg-red-50 px-1 rounded border border-red-200" 
+              title={`LaTeX rendering error: ${children}`}
               {...props}
             >
-              {children}
+              [Math Error: {children}]
             </span>
           );
         }
-        return <span {...props}>{children}</span>;
+        return <span className={className} {...props}>{children}</span>;
       },
       
       // Convert block quotes to inline
@@ -163,18 +189,32 @@ export default function MathMarkdownRenderer({
     li: (props) => <li className="mb-1" {...props} />,
     
     // Handle math errors gracefully
-    span: ({ className, ...props }) => {
+    span: ({ className, children, ...props }) => {
       if (className === 'katex-error') {
         return (
           <span 
-            className="text-red-500 bg-red-50 px-1 rounded" 
-            title="LaTeX rendering error"
+            className="text-red-500 bg-red-50 px-2 py-1 rounded border border-red-200 inline-block" 
+            title={`LaTeX rendering error: ${children}`}
             {...props}
-          />
+          >
+            [Math Error: {children}]
+          </span>
         );
       }
-      return <span {...props} />;
-    }
+      return <span className={className} {...props}>{children}</span>;
+    },
+
+    // Enhanced math display handling
+    div: ({ className, children, ...props }) => {
+      if (className && className.includes('katex-display')) {
+        return (
+          <div className={`${className} my-4 text-center overflow-x-auto`} {...props}>
+            {children}
+          </div>
+        );
+      }
+      return <div className={className} {...props}>{children}</div>;
+    },
   };
 
   return (

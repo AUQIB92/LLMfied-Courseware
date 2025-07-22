@@ -34,25 +34,8 @@ export async function POST(request) {
                 totalJobs += subsectionTitles.length;
                 
                 for (const subsectionTitle of subsectionTitles) {
-                    // Extract the specific content for this subsection with more context
-                    const subsectionRegex = new RegExp(
-                        `####\\s*${subsectionTitle.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}[\\s\\S]*?(?=####|###|##|#|$)`
-                    );
-                    const subsectionContentMatch = module.content.match(subsectionRegex);
-                    
-                    // If we don't have specific content for this subsection, create a more descriptive prompt
-                    let focusedContent;
-                    if (subsectionContentMatch && subsectionContentMatch[0]) {
-                        focusedContent = subsectionContentMatch[0];
-                        console.log(`✅ Extracted content for subsection "${subsectionTitle}" (${focusedContent.length} chars)`);
-                    } else {
-                        // Create a more informative prompt with module context
-                        focusedContent = `#### ${subsectionTitle}\n\nThis is a subsection of the module "${module.title}" for ${courseData.examType} exam preparation in ${courseData.subject}.\n\nPlease generate comprehensive content for this subsection based on the title and context.`;
-                        console.log(`⚠️ No specific content found for subsection "${subsectionTitle}", using generated prompt`);
-                    }
-                    
-                    // Add module context to help the AI understand the broader topic
-                    const moduleContext = `Module: ${module.title}\nSubject: ${courseData.subject}\nExam: ${courseData.examType}\n\n${focusedContent}`;
+                    // We no longer extract content here. We just set up the job.
+                    const moduleContext = `Module: ${module.title}\nSubject: ${courseData.subject}\nExam: ${courseData.examType}`;
 
                     generationJobs.push({
                         jobId,
@@ -60,7 +43,7 @@ export async function POST(request) {
                         moduleTitle: module.title,
                         moduleIndex: courseData.modules.indexOf(module),
                         subsectionTitle,
-                        focusedContent: moduleContext,
+                        focusedContent: `Placeholder content for: ${subsectionTitle}`, // Simplified
                         context: {
                             subject: courseData.subject,
                             examType: courseData.examType,

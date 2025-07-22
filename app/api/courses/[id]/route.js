@@ -26,6 +26,19 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 })
     }
 
+    // If the course has modules, fetch quizzes for each module
+    if (course.modules && course.modules.length > 0) {
+      const moduleIds = course.modules.map(m => new ObjectId(m._id));
+      const quizzes = await db.collection("quizzes").find({
+        moduleId: { $in: moduleIds }
+      }).toArray();
+
+      // Attach quizzes to their respective modules
+      course.modules.forEach(module => {
+        module.quizzes = quizzes.filter(q => q.moduleId.toString() === module._id.toString());
+      });
+    }
+
     // Check if user is authenticated
     try {
       const user = await verifyToken(request)

@@ -19,19 +19,18 @@ export async function POST(request) {
             console.log(`🧠 Calling Gemini API for subsection "${context.subsectionTitle}"...`);
             const startTime = Date.now();
             
-            const subsectionContent = await generateCompetitiveExamSubsectionDetails(
+            const subsectionMarkdown = await generateCompetitiveExamSubsectionDetails(
                 content,
                 context
             );
             
             const endTime = Date.now();
             console.log(`✅ Gemini API call completed in ${(endTime - startTime) / 1000} seconds`);
-            console.log(`Response structure: ${JSON.stringify(Object.keys(subsectionContent))}`);
-            console.log(`Response has pages: ${subsectionContent.pages ? subsectionContent.pages.length : 0} pages`);
+            console.log(`Generated markdown length: ${subsectionMarkdown.length} characters`);
 
             return NextResponse.json({ 
                 success: true, 
-                content: subsectionContent
+                content: subsectionMarkdown 
             });
         } catch (error) {
             console.error(`Error generating content for subsection "${context.subsectionTitle}":`, error);

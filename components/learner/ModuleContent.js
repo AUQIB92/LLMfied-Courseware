@@ -67,6 +67,40 @@ import {
 import QuizModal from "./QuizModal"
 import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
 
+// Helper function to parse markdown into pages
+function parseMarkdownToPages(markdown) {
+  if (!markdown || typeof markdown !== "string") {
+    return []
+  }
+
+  // Split by #### headers
+  const sections = markdown.split(/\n####\s+/)
+  const pages = []
+
+  // Handle content before first #### header
+  const introContent = sections.shift()?.trim()
+  if (introContent) {
+    pages.push({ title: "Introduction", content: introContent })
+  }
+
+  // Process each section
+  sections.forEach(section => {
+    const lines = section.split("\n")
+    const title = lines.shift()?.trim() || "Untitled Section"
+    const content = lines.join("\n").trim()
+    if (title && content) {
+      pages.push({ title, content })
+    }
+  })
+
+  // If no sections found but there's content, return as single page
+  if (pages.length === 0 && introContent) {
+    return [{ title: "Content", content: introContent }]
+  }
+
+  return pages
+}
+
 // Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -388,59 +422,55 @@ const ProgrammingChallengeCard = ({ challenge, isActive, onClick, challengeProgr
   )
 }
 
-export default function ModuleContent({ module, course, onProgressUpdate, moduleProgress }) {
-  const [startTime, setStartTime] = useState(Date.now())
+export default function ModuleContent({ module, course, onProgress, onToggleBookmark }) {
+  const { user } = useAuth()
+  
+  // State management
+  const [moduleProgress, setModuleProgress] = useState({
+    completed: false,
+    timeSpent: 0,
+    notesCount: 0,
+    bookmarked: false
+  })
+  
+  // Content pagination state
+  const [currentPage, setCurrentPage] = useState(0)
+  
+  // Parse module content into pages
+  const contentPages = useMemo(() => {
+    return parseMarkdownToPages(module.content || "")
+  }, [module.content])
+  
+  // Current page data
+  const currentPageData = contentPages.length > 0 && currentPage < contentPages.length 
+    ? contentPages[currentPage] 
+    : null
+
+  // Keyboard navigation for pagination
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (contentPages.length <= 1) return
+      
+      if (e.key === 'ArrowLeft' && currentPage > 0) {
+        setCurrentPage(prev => prev - 1)
+      } else if (e.key === 'ArrowRight' && currentPage < contentPages.length - 1) {
+        setCurrentPage(prev => prev + 1)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [currentPage, contentPages.length])
+
+  // Notes and interaction state
+  const [notes, setNotes] = useState("")
+  const [showNotes, setShowNotes] = useState(false)
   const [showQuiz, setShowQuiz] = useState(false)
-  const [simplifiedExplanations, setSimplifiedExplanations] = useState({})
-  const [loadingExplanation, setLoadingExplanation] = useState({})
-  const [activeVisualizer, setActiveVisualizer] = useState(null)
-  const [visualizerData, setVisualizerData] = useState({})
-  const [contentSubsections, setContentSubsections] = useState([])
-  const [loadingSubsections, setLoadingSubsections] = useState(false)
-  const [codeSimulators, setCodeSimulators] = useState({})
-  const [loadingSimulator, setLoadingSimulator] = useState({})
-  const [activeSimulator, setActiveSimulator] = useState(null)
-  const [expandedSubsections, setExpandedSubsections] = useState({})
-  const [readingProgress, setReadingProgress] = useState(0)
-  const [isBookmarked, setIsBookmarked] = useState(false)
-  
-  // Programming Practice Section State
-  const [programmingChallenges, setProgrammingChallenges] = useState([])
-  const [activeProgrammingChallenge, setActiveProgrammingChallenge] = useState(null)
-  const [userCode, setUserCode] = useState("")
-  const [codeOutput, setCodeOutput] = useState("")
-  const [isRunningCode, setIsRunningCode] = useState(false)
-  const [codeErrors, setCodeErrors] = useState("")
-  const [testResults, setTestResults] = useState([])
-  const [challengeScore, setChallengeScore] = useState(0)
-  const [loadingChallenges, setLoadingChallenges] = useState(false)
-  const [programmingLanguage, setProgrammingLanguage] = useState("javascript")
-  const [savedCodes, setSavedCodes] = useState({})
-  const [showHints, setShowHints] = useState(false)
-  const [challengeProgress, setChallengeProgress] = useState({})
-  const [showSolution, setShowSolution] = useState({})
-  
-  // IDE Features
-  const [codeTheme, setCodeTheme] = useState("dark")
-  const [fontSize, setFontSize] = useState(14)
-  const [autoComplete, setAutoComplete] = useState(true)
-  const [livePreview, setLivePreview] = useState(false)
-  
-  // NEW: Multi-page detailed explanations state
-  const [explanationPages, setExplanationPages] = useState({}) // Track current page for each subsection
-  const [wordsPerExplanationPage] = useState(200) // Words per page for individual explanations
-  
-  // NEW: State for editing AI resources
-  const [editingResource, setEditingResource] = useState(null)
-  const [editedResourceData, setEditedResourceData] = useState({})
-  const [isUpdatingResource, setIsUpdatingResource] = useState(false)
-  const [localAiResources, setLocalAiResources] = useState(null) // Local copy for editing
-  
-  const { getAuthHeaders, user } = useAuth()
-  const codeEditorRef = useRef(null)
-  const [loading, setLoading] = useState(false)
-  const [enrollmentVerified, setEnrollmentVerified] = useState(false)
-  const [verifyingEnrollment, setVerifyingEnrollment] = useState(true)
+  const [selectedQuiz, setSelectedQuiz] = useState(null)
+  const [expandedObjective, setExpandedObjective] = useState(null)
+  const [expandedExample, setExpandedExample] = useState(null)
+  const [expandedChallenge, setExpandedChallenge] = useState(null)
+  const [viewMode, setViewMode] = useState('content')
 
   // Rich text formatting is now handled by MathMarkdownRenderer component
 
@@ -1884,11 +1914,93 @@ Return JSON format:
                   </EnhancedBadge>
                 </motion.h3>
 
-                {/* Main Content Display - Syllabus content removed */}
-                {/* Original syllabus/PDF content display removed as requested */}
+                {contentPages.length > 1 && currentPageData ? (
+                  <div className="space-y-6">
+                    {/* Progress indicator */}
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600">
+                          Reading Progress
+                        </span>
+                        <span className="text-sm font-medium text-blue-600">
+                          {Math.round(((currentPage + 1) / contentPages.length) * 100)}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={((currentPage + 1) / contentPages.length) * 100} 
+                        className="h-2"
+                      />
+                    </div>
+
+                    <motion.div
+                      key={currentPage}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <h4 className="font-bold text-3xl text-gray-800">{currentPageData.title}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          Section {currentPage + 1}
+                        </Badge>
+                      </div>
+                      <div className="prose prose-lg max-w-none">
+                        <MathMarkdownRenderer content={currentPageData.content} />
+                      </div>
+                    </motion.div>
+
+                    <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                      <Button
+                        onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                        disabled={currentPage === 0}
+                        variant="outline"
+                        className="flex items-center gap-2 hover:scale-105 transition-transform"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          {contentPages.map((page, index) => (
+                            <motion.button
+                              key={index}
+                              onClick={() => setCurrentPage(index)}
+                              className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                                index === currentPage 
+                                  ? 'bg-blue-600 scale-125' 
+                                  : 'bg-gray-300 hover:bg-gray-400'
+                              }`}
+                              whileHover={{ scale: 1.2 }}
+                              whileTap={{ scale: 0.9 }}
+                              title={page.title}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                          {currentPage + 1} of {contentPages.length}
+                        </span>
+                      </div>
+                      
+                      <Button
+                        onClick={() => setCurrentPage(p => Math.min(contentPages.length - 1, p + 1))}
+                        disabled={currentPage === contentPages.length - 1}
+                        className="flex items-center gap-2 hover:scale-105 transition-transform"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="prose prose-lg max-w-none">
+                    <MathMarkdownRenderer content={module.content} />
+                  </div>
+                )}
 
                 {/* Detailed Explanations & Simulators Section */}
-                <div className="border-t border-gray-200 pt-8">
+                <div className="border-t border-gray-200 pt-8 mt-8">
                   <motion.h4
                     className="font-bold text-xl mb-6 flex items-center gap-3 text-cyan-800"
                     initial={{ opacity: 0, x: -20 }}

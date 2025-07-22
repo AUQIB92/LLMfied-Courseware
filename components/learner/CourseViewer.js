@@ -43,6 +43,7 @@ import {
 } from "lucide-react"
 import ModuleContent from "./ModuleContent"
 import AITutor from "./AITutor"
+import QuizModal from './QuizModal'; // Import the QuizModal component
 import enrollmentCache from "@/lib/enrollmentCache"
 
 export default function CourseViewer({ course, onBack, onModuleView, isEnrolled: initialEnrollmentStatus, onEnrollmentChange }) {
@@ -56,6 +57,9 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [enrollmentLoading, setEnrollmentLoading] = useState(false)
   const [checkingEnrollment, setCheckingEnrollment] = useState(true)
+  const [activeContentTab, setActiveContentTab] = useState('content');
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const { getAuthHeaders, user } = useAuth()
 
   // Initialize enrollment status - respect explicit prop first, then use cache
@@ -852,6 +856,16 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
           </div>
         </div>
       </div>
+
+      <QuizModal 
+        quiz={selectedQuiz}
+        open={isQuizModalOpen}
+        onOpenChange={setIsQuizModalOpen}
+        onQuizComplete={(score) => {
+          console.log(`Quiz completed with score: ${score}`);
+          // Here you can add logic to save the score
+        }}
+      />
     </div>
   )
 }

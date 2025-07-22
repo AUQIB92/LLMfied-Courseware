@@ -34,6 +34,9 @@ import {
   Brain,
   Timer,
 } from "lucide-react"
+import ModuleContent from './ModuleContent';
+import AITutor from './AITutor';
+import QuizModal from './QuizModal'; // Import the QuizModal component
 
 // Animation variants
 const containerVariants = {
@@ -84,6 +87,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const [loadingDetailedContent, setLoadingDetailedContent] = useState(false)
   const [currentPageTabs, setCurrentPageTabs] = useState({})
   const [selectedResourceCategory, setSelectedResourceCategory] = useState("articles"); // Default to articles
+  const [activeContentTab, setActiveContentTab] = useState('content');
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
 
   const resourceCategories = {
     books: { icon: BookOpen, label: "Books" },
@@ -769,6 +775,15 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           </div>
         </div>
       </div>
+      <QuizModal
+        quiz={selectedQuiz}
+        open={isQuizModalOpen}
+        onOpenChange={setIsQuizModalOpen}
+        onQuizComplete={(score) => {
+          console.log(`Quiz completed with score: ${score}`);
+          // Handle quiz completion for Exam Genius courses
+        }}
+      />
     </div>
   )
 }

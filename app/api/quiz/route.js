@@ -1,68 +1,66 @@
-import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
-import { ObjectId } from "mongodb"
-import { generateQuiz } from "@/lib/gemini"
-import jwt from "jsonwebtoken"
+import { NextResponse } from "next/server";
+import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
+import jwt from "jsonwebtoken";
 
 async function verifyToken(request) {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "")
-  if (!token) throw new Error("No token provided")
+  const token = request.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) throw new Error("No token provided");
 
-  return jwt.verify(token, process.env.JWT_SECRET)
+  return jwt.verify(token, process.env.JWT_SECRET);
 }
 
 export async function POST(request) {
   try {
-    const user = await verifyToken(request)
-    const { courseId, moduleId, difficulty = "medium" } = await request.json()
-
-    const client = await clientPromise
-    const db = client.db("llmfied")
-
-    // Check if course exists
-    const course = await db.collection("courses").findOne({
-      _id: new ObjectId(courseId),
-    })
-
-    if (!course) {
-      return NextResponse.json({ error: "Course not found" }, { status: 404 })
+    const user = await verifyToken(request);
+    if (user.role !== 'learner') {
+      return NextResponse.json({ error: "Only learners can submit quizzes" }, { status: 403 });
     }
 
-    // Check enrollment status for learners
-    if (user.role === "learner") {
-      const enrollment = await db.collection("enrollments").findOne({
+    const { quizId, courseId, answers } = await request.json();
+
+    if (!quizId || !courseId || !answers) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const client = await clientPromise;
+    const db = client.db("llmfied");
+
+    const quiz = await db.collection("quizzes").findOne({ _id: new ObjectId(quizId) });
+
+    if (!quiz) {
+      return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
+    }
+
+    let correctAnswers = 0;
+    quiz.questions.forEach((question, index) => {
+      if (answers[index] === question.correct) {
+        correctAnswers++;
+      }
+    });
+
+    const score = (correctAnswers / quiz.questions.length) * 100;
+
+    await db.collection("enrollments").updateOne(
+      { 
         learnerId: new ObjectId(user.userId),
         courseId: new ObjectId(courseId)
-      })
-      
-      if (!enrollment) {
-        return NextResponse.json({ 
-          error: "Access denied: You must be enrolled in this course to access quizzes" 
-        }, { status: 403 })
+      },
+      { 
+        $push: { 
+          quizAttempts: { 
+            quizId: new ObjectId(quizId), 
+            score, 
+            answeredAt: new Date() 
       }
-    } else if (user.role === "educator") {
-      // Educators can only access quizzes for their own courses
-      if (course.educatorId.toString() !== user.userId.toString()) {
-        return NextResponse.json({ 
-          error: "Access denied: You can only access quizzes for your own courses" 
-        }, { status: 403 })
+        },
+        $set: { updatedAt: new Date() }
       }
-    } else {
-      return NextResponse.json({ 
-        error: "Access denied: Invalid user role" 
-      }, { status: 403 })
-    }
+    );
 
-    const module = course.modules.find((m) => m.id === moduleId)
-    if (!module) {
-      return NextResponse.json({ error: "Module not found" }, { status: 404 })
-    }
-
-    const quiz = await generateQuiz(module.content, difficulty)
-
-    return NextResponse.json(quiz)
+    return NextResponse.json({ success: true, score });
   } catch (error) {
-    console.error("Quiz generation error:", error)
-    return NextResponse.json({ error: "Failed to generate quiz" }, { status: 500 })
+    console.error("Error in POST /api/quiz:", error);
+    return NextResponse.json({ error: "Failed to submit quiz" }, { status: 500 });
   }
 }

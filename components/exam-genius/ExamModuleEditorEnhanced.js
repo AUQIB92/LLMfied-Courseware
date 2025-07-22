@@ -56,6 +56,41 @@ import {
 } from "lucide-react"
 import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
 
+function parseMarkdownToPages(markdown) {
+  if (!markdown || typeof markdown !== "string") {
+    return []
+  }
+
+  // Split by newline followed by "####" and any whitespace
+  const sections = markdown.split(/\\n####\\s+/)
+  const pages = []
+
+  // The first element of split() is the content before the first delimiter
+  const introContent = sections.shift()?.trim()
+
+  // If there's content before the first "####", add it as an "Introduction" page
+  if (introContent) {
+    pages.push({ title: "Introduction", content: introContent })
+  }
+
+  sections.forEach(section => {
+    const lines = section.split("\\n")
+    const title = lines.shift()?.trim() || "Untitled Section"
+    const content = lines.join("\\n").trim()
+    if (title && content) {
+      pages.push({ title, content })
+    }
+  })
+
+  // If, after all that, we have no pages but there was intro content,
+  // it means there were no "####" delimiters. Treat the whole thing as one page.
+  if (pages.length === 0 && introContent) {
+    return [{ title: "Content", content: introContent }]
+  }
+
+  return pages
+}
+
 function parseMarkdownToSubsections(markdownContent) {
   if (!markdownContent) {
     return [];
@@ -177,7 +212,9 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
       return {
         ...aiSub, // a lot of rich content
         title: mdSub.title, // overwrite with the one from markdown for consistency
-        formattedTitle: formattedTitle
+        formattedTitle: formattedTitle,
+        // Pre-parse the pages here, outside the render loop
+        subsectionPages: parseMarkdownToPages(aiSub.generatedMarkdown)
       };
     });
   }, [module.content, module.detailedSubsections]);
@@ -186,20 +223,6 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
   const startExplanationIndex = currentExplanationPage * explanationsPerPage
   const endExplanationIndex = startExplanationIndex + explanationsPerPage
   const currentPageExplanations = detailedSubsections.slice(startExplanationIndex, endExplanationIndex)
-
-  // Helper function to split explanation into pages
-  const splitExplanationIntoPages = (explanation) => {
-    if (!explanation || explanation.length === 0) return []
-    const words = explanation.split(' ')
-    const pages = []
-    
-    for (let i = 0; i < words.length; i += wordsPerExplanationPage) {
-      const pageWords = words.slice(i, i + wordsPerExplanationPage)
-      pages.push(pageWords.join(' '))
-    }
-    
-    return pages.length > 0 ? pages : [explanation]
-  }
 
   // Get current page for a specific explanation
   const getCurrentExplanationPage = (subsectionIndex) => {
@@ -222,6 +245,9 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
     if (subsection.summary) contentParts.push(`Summary: ${subsection.summary}`)
     if (subsection.keyPoints && Array.isArray(subsection.keyPoints)) {
       contentParts.push(`Key Points: ${subsection.keyPoints.join(', ')}`)
+    }
+    if (subsection.generatedMarkdown) {
+      contentParts.push(subsection.generatedMarkdown);
     }
     if (subsection.pages && Array.isArray(subsection.pages)) {
       subsection.pages.forEach((page, index) => {
@@ -522,7 +548,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
         const subsectionCount = course.modules?.reduce((total, module) => 
           total + (module.detailedSubsections?.length || 0), 0) || 0
         
-        toast.success(`📝 Draft Saved Successfully! 🎯 "${course.title}" • 📚 ${course.examType} • 📖 ${course.subject} • 📋 ${moduleCount} modules${subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ''} • ✨ Continue editing or publish when ready!`, {
+        toast.success(`📝 Draft Saved Successfully! 🎯 "${course.title}" • 📚 ${course.examType} • �� ${course.subject} • 📋 ${moduleCount} modules${subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ''} • ✨ Continue editing or publish when ready!`, {
           duration: 6000,
         })
         
@@ -803,6 +829,7 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders()
         },
         body: JSON.stringify({
           content: moduleContext,
@@ -819,17 +846,19 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
       
       // Update the subsection with the generated content
       updateSubsection(subsectionIndex, {
-        ...data.content,
+        generatedMarkdown: data.content,
         isGenerating: false
       });
       
-      console.log(`Content generated successfully for subsection: ${subsection.title}`);
+      toast.success(`Content generated successfully for subsection: ${subsection.title}`);
     } catch (error) {
       console.error(`Error generating content for subsection: ${subsection.title}`, error);
       // Reset the generating state
       updateSubsection(subsectionIndex, { isGenerating: false });
       // Show error toast
       toast.error(error.message || "Failed to generate content. Please try again.");
+    } finally {
+      setEditingSubsection(null);
     }
   };
 
@@ -1570,17 +1599,10 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                 currentPageExplanations.map((subsection, pageIndex) => {
                   const globalIndex = startExplanationIndex + pageIndex
                   
-                  // Build comprehensive content from all available fields for display
-                  const buildDisplayContent = (subsection) => {
-                    if (subsection.pages && Array.isArray(subsection.pages)) {
-                      return subsection.pages.map(p => p.content || '').join('\n\n')
-                    }
-                    return subsection.content || subsection.explanation || subsection.details || ''
-                  }
-                  
-                  const explanationPages = subsection.pages || []
+                  // Pages are now pre-parsed in the detailedSubsections memo
+                  const subsectionPages = subsection.subsectionPages || []
                   const currentSubsectionPage = getCurrentExplanationPage(globalIndex)
-                  const currentExplanationContent = explanationPages[currentSubsectionPage]?.content || "No content for this page."
+                  const currentPageData = subsectionPages[currentSubsectionPage]
                   
                   return (
                     <Card key={globalIndex} className="border-2 hover:border-blue-300 transition-colors">
@@ -1620,53 +1642,14 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                       </CardHeader>
                       
                       <CardContent className="space-y-4">
-                        {/* Content Display with Pagination */}
+                        {/* Content Display */}
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between">
                             <Label className="text-sm font-medium text-gray-700">Content</Label>
-                            {explanationPages.length > 1 && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">
-                                  Page {currentSubsectionPage + 1} of {explanationPages.length}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setCurrentExplanationPageForSubsection(
-                                    globalIndex, 
-                                    Math.max(0, currentSubsectionPage - 1)
-                                  )}
-                                  disabled={currentSubsectionPage === 0}
-                                >
-                                  <ChevronLeft className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setCurrentExplanationPageForSubsection(
-                                    globalIndex, 
-                                    Math.min(explanationPages.length - 1, currentSubsectionPage + 1)
-                                  )}
-                                  disabled={currentSubsectionPage === explanationPages.length - 1}
-                                >
-                                  <ChevronRight className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          
                           {editingSubsection === globalIndex ? (
                             <Textarea
-                              value={explanationPages[currentSubsectionPage]?.content || ''}
-                              onChange={(e) => {
-                                const newPages = [...explanationPages]
-                                newPages[currentSubsectionPage] = {
-                                  ...newPages[currentSubsectionPage],
-                                  content: e.target.value
-                                }
-                                updateSubsection(globalIndex, { pages: newPages })
-                              }}
-                              rows={8}
+                              value={subsection.generatedMarkdown || ''}
+                              onChange={(e) => updateSubsection(globalIndex, { generatedMarkdown: e.target.value })}
+                              rows={15}
                               className="border-2 border-blue-300 focus:border-blue-500"
                               placeholder="Enter detailed subsection content..."
                             />
@@ -1675,14 +1658,58 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                               className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 min-h-[100px]"
                               onClick={() => setEditingSubsection(globalIndex)}
                             >
-                              <h4 className="font-semibold text-md mb-2">{explanationPages[currentSubsectionPage]?.pageTitle}</h4>
-                              {currentExplanationContent && currentExplanationContent.trim() ? (
-                                <div className="prose prose-sm max-w-none">
-                                  <MathMarkdownRenderer content={currentExplanationContent} />
-                                </div>
+                              {subsection.generatedMarkdown ? (
+                                <>
+                                  {currentPageData ? (
+                                    <div className="prose prose-sm max-w-none">
+                                      <h4 className="font-semibold text-md mb-2">{currentPageData.title}</h4>
+                                      <MathMarkdownRenderer content={currentPageData.content} />
+                                    </div>
+                                  ) : (
+                                    <div className="prose prose-sm max-w-none">
+                                      {/* Fallback for when parsing fails or for single-page content */}
+                                      <MathMarkdownRenderer content={subsection.generatedMarkdown} />
+                                    </div>
+                                  )}
+                                  {subsectionPages.length > 1 && (
+                                    <div className="flex items-center justify-end gap-2 mt-4">
+                                <span className="text-xs text-gray-500">
+                                        Page {currentSubsectionPage + 1} of {subsectionPages.length}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                        onClick={e => {
+                                          e.stopPropagation()
+                                          setCurrentExplanationPageForSubsection(
+                                    globalIndex, 
+                                    Math.max(0, currentSubsectionPage - 1)
+                                          )
+                                        }}
+                                  disabled={currentSubsectionPage === 0}
+                                >
+                                  <ChevronLeft className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                        onClick={e => {
+                                          e.stopPropagation()
+                                          setCurrentExplanationPageForSubsection(
+                                    globalIndex, 
+                                            Math.min(subsectionPages.length - 1, currentSubsectionPage + 1)
+                                          )
+                                        }}
+                                        disabled={currentSubsectionPage >= subsectionPages.length - 1}
+                                >
+                                  <ChevronRight className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                                </>
                               ) : (
-                                <div className="space-y-4">
-                                  <p className="text-sm text-gray-500 italic">No content available for this subsection.</p>
+                                <div className="space-y-4 text-center py-4">
+                                  <p className="text-sm text-gray-500 italic">This subsection has no detailed content yet.</p>
                                   <Button
                                     size="sm"
                                     onClick={(e) => {
@@ -1690,30 +1717,22 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                                       generateSubsectionContent(subsection, globalIndex);
                                     }}
                                     disabled={subsection.isGenerating}
-                                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                                   >
                                     {subsection.isGenerating ? (
                                       <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Generating Content...
+                                        Generating...
                                       </>
                                     ) : (
                                       <>
                                         <Sparkles className="h-4 w-4 mr-2" />
-                                        Generate Content with AI
+                                        Generate with AI
                                       </>
                                     )}
                                   </Button>
-                                  {process.env.NODE_ENV === 'development' && (
-                                    <div className="text-xs text-gray-400 border-t pt-2">
-                                      <strong>Debug:</strong> page content is empty.
                                     </div>
                                   )}
-                                </div>
-                              )}
-                              <p className="text-xs text-gray-500 mt-4 italic">
-                                <MathMarkdownRenderer content={explanationPages[currentSubsectionPage]?.keyTakeaway || ''} inline={true} />
-                              </p>
                             </div>
                           )}
                         </div>
@@ -1803,36 +1822,6 @@ export default function ExamModuleEditorEnhanced({ module, onUpdate, examType, s
                               )
                             })}
                           </div>
-                        </div>
-
-                        {/* Generate Content Button */}
-                        <div className="border-t pt-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Generate Content
-                            </Label>
-                            <Badge variant="outline" className="text-xs">
-                              AI-Powered
-                            </Badge>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => generateSubsectionContent(subsection, globalIndex)}
-                            disabled={subsection.isGenerating}
-                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-                          >
-                            {subsection.isGenerating ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Generating Content...
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="h-4 w-4 mr-2" />
-                                Generate Content with AI
-                              </>
-                            )}
-                          </Button>
                         </div>
                       </CardContent>
                     </Card>
