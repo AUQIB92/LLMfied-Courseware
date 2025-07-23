@@ -14,10 +14,83 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Upload, Loader2, Plus, Trash2, Sparkles, BookOpen, Brain, Download, 
   FileText, Zap, Trophy, Target, Timer, Award, CheckCircle, AlertCircle, 
-  ArrowRight, ArrowLeft, Edit 
+  ArrowRight, ArrowLeft, Edit, AlertTriangle, Info 
 } from "lucide-react"
 import { toast } from "sonner"
 import ExamModuleEditorEnhanced from "./ExamModuleEditorEnhanced"
+import { useContentValidation, useContentProcessor } from "@/lib/contentDisplayHooks"
+import ContentDisplay from "@/components/ContentDisplay"
+
+// Course Field Validator Component for ExamGenius
+function ExamCourseFieldValidator({ field, value, onChange, placeholder, className, rows, multiline = false }) {
+  const { isValid, errors, warnings, isValidating } = useContentValidation(value)
+  const { processedContent, processed, hasErrors, hasMath } = useContentProcessor(value)
+  
+  const Component = multiline ? Textarea : Input
+  
+  const getValidationColor = () => {
+    if (!value) return "border-gray-200"
+    if (errors.length > 0) return "border-red-500"
+    if (isValid) return "border-green-500"
+    return "border-yellow-500"
+  }
+
+  const getValidationIcon = () => {
+    if (!value) return null
+    if (errors.length > 0) return <AlertTriangle className="h-4 w-4 text-red-500" />
+    if (isValid) return <CheckCircle className="h-4 w-4 text-green-500" />
+    return <Info className="h-4 w-4 text-yellow-500" />
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <Component
+          id={field}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${className} ${getValidationColor()} transition-colors duration-200`}
+          rows={rows}
+        />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          {getValidationIcon()}
+        </div>
+      </div>
+      
+      {/* Validation Messages */}
+      {value && (
+        <div className="space-y-1">
+          {errors.length > 0 && (
+            <Alert className="py-2">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                {errors.join(", ")}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {warnings.length > 0 && (
+            <Alert className="py-2 border-yellow-200 bg-yellow-50">
+              <Info className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-sm text-yellow-700">
+                {warnings.join(", ")}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {isValid && processed && (
+            <div className="text-xs text-green-600 flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Content validated • Ready for competitive exam format
+              {hasMath && " • LaTeX equations detected"}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function ExamGeniusCourseCreator({ onCourseCreated }) {
   const [step, setStep] = useState(1)
@@ -607,10 +680,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
             <CardContent className="space-y-6 p-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Course Title *</Label>
-                <Input
-                  id="title"
+                <ExamCourseFieldValidator
+                  field="title"
                   value={courseData.title}
-                  onChange={(e) => setCourseData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(value) => setCourseData(prev => ({ ...prev, title: value }))}
                   placeholder="e.g., Complete JEE Mathematics Preparation"
                   className="border-2 border-gray-200 focus:border-blue-500"
                 />
@@ -618,10 +691,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
+                <ExamCourseFieldValidator
+                  field="description"
                   value={courseData.description}
-                  onChange={(e) => setCourseData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(value) => setCourseData(prev => ({ ...prev, description: value }))}
                   placeholder="Describe your competitive exam course and what students will achieve..."
                   rows={4}
                   className="border-2 border-gray-200 focus:border-blue-500"
@@ -683,10 +756,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
                 <div className="space-y-2">
                   <Label htmlFor="duration">Duration</Label>
-                  <Input
-                    id="duration"
+                  <ExamCourseFieldValidator
+                    field="duration"
                     value={courseData.duration}
-                    onChange={(e) => setCourseData(prev => ({ ...prev, duration: e.target.value }))}
+                    onChange={(value) => setCourseData(prev => ({ ...prev, duration: value }))}
                     placeholder="e.g., 3 months, 6 weeks"
                     className="border-2 border-gray-200 focus:border-blue-500"
                   />
@@ -788,10 +861,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="curriculum-topic">Curriculum Topic *</Label>
-                    <Input
-                      id="curriculum-topic"
+                    <ExamCourseFieldValidator
+                      field="curriculum-topic"
                       value={curriculumTopic}
-                      onChange={(e) => setCurriculumTopic(e.target.value)}
+                      onChange={(value) => setCurriculumTopic(value)}
                       placeholder={`e.g., ${courseData.examType} ${courseData.subject} Complete Preparation`}
                       className="border-2 border-gray-200 focus:border-blue-500"
                     />
@@ -800,11 +873,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="modules-count">Number of Modules</Label>
-                      <Input
-                        id="modules-count"
-                        type="number"
+                      <ExamCourseFieldValidator
+                        field="modules-count"
                         value={numberOfModules}
-                        onChange={(e) => setNumberOfModules(parseInt(e.target.value) || 8)}
+                        onChange={(value) => setNumberOfModules(parseInt(value) || 8)}
                         min="4"
                         max="20"
                         className="border-2 border-gray-200 focus:border-blue-500"
@@ -813,10 +885,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
                     <div className="space-y-2">
                       <Label htmlFor="module-topics">Specific Topics</Label>
-                      <Input
-                        id="module-topics"
+                      <ExamCourseFieldValidator
+                        field="module-topics"
                         value={moduleTopics}
-                        onChange={(e) => setModuleTopics(e.target.value)}
+                        onChange={(value) => setModuleTopics(value)}
                         placeholder="e.g., Algebra, Calculus, Geometry..."
                         className="border-2 border-gray-200 focus:border-blue-500"
                       />
@@ -825,10 +897,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
                   <div className="space-y-2">
                     <Label htmlFor="teaching-notes">Teaching Notes & Focus Areas</Label>
-                    <Textarea
-                      id="teaching-notes"
+                    <ExamCourseFieldValidator
+                      field="teaching-notes"
                       value={teachingNotes}
-                      onChange={(e) => setTeachingNotes(e.target.value)}
+                      onChange={(value) => setTeachingNotes(value)}
                       placeholder="Special focus areas, exam patterns, important topics to emphasize..."
                       rows={3}
                       className="border-2 border-gray-200 focus:border-blue-500"

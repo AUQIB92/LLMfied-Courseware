@@ -11,8 +11,81 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, Loader2, Plus, Trash2, Sparkles, BookOpen, Brain, Download, FileText, Zap } from "lucide-react"
+import { Upload, Loader2, Plus, Trash2, Sparkles, BookOpen, Brain, Download, FileText, Zap, CheckCircle, AlertTriangle, Info } from "lucide-react"
 import ModuleEditor from "./ModuleEditor"
+import { useContentValidation, useContentProcessor } from "@/lib/contentDisplayHooks"
+import ContentDisplay from "@/components/ContentDisplay"
+
+// Course Field Validator Component
+function CourseFieldValidator({ field, value, onChange, placeholder, className, rows, multiline = false }) {
+  const { isValid, errors, warnings, isValidating } = useContentValidation(value)
+  const { processedContent, processed, hasErrors, hasMath } = useContentProcessor(value)
+  
+  const Component = multiline ? Textarea : Input
+  
+  const getValidationColor = () => {
+    if (!value) return "border-gray-200"
+    if (errors.length > 0) return "border-red-500"
+    if (isValid) return "border-green-500"
+    return "border-yellow-500"
+  }
+
+  const getValidationIcon = () => {
+    if (!value) return null
+    if (errors.length > 0) return <AlertTriangle className="h-4 w-4 text-red-500" />
+    if (isValid) return <CheckCircle className="h-4 w-4 text-green-500" />
+    return <Info className="h-4 w-4 text-yellow-500" />
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <Component
+          id={field}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${className} ${getValidationColor()} transition-colors duration-200`}
+          rows={rows}
+        />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          {getValidationIcon()}
+        </div>
+      </div>
+      
+      {/* Validation Messages */}
+      {value && (
+        <div className="space-y-1">
+          {errors.length > 0 && (
+            <Alert className="py-2">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                {errors.join(", ")}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {warnings.length > 0 && (
+            <Alert className="py-2 border-yellow-200 bg-yellow-50">
+              <Info className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-sm text-yellow-700">
+                {warnings.join(", ")}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {isValid && processed && (
+            <div className="text-xs text-green-600 flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Content validated • Ready for course creation
+              {hasMath && " • LaTeX equations detected"}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function CourseCreator({ onCourseCreated }) {
   const [step, setStep] = useState(1)
@@ -613,10 +686,10 @@ export default function CourseCreator({ onCourseCreated }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Course Title *</Label>
-                <Input
-                  id="title"
+                <CourseFieldValidator
+                  field="title"
                   value={courseData.title}
-                  onChange={(e) => setCourseData((prev) => ({ ...prev, title: e.target.value }))}
+                  onChange={(value) => setCourseData((prev) => ({ ...prev, title: value }))}
                   placeholder="e.g., Complete JavaScript Masterclass"
                   className="h-12"
                 />
@@ -691,13 +764,14 @@ export default function CourseCreator({ onCourseCreated }) {
 
             <div className="space-y-2">
               <Label htmlFor="description">Course Description</Label>
-              <Textarea
-                id="description"
+              <CourseFieldValidator
+                field="description"
                 value={courseData.description}
-                onChange={(e) => setCourseData((prev) => ({ ...prev, description: e.target.value }))}
+                onChange={(value) => setCourseData((prev) => ({ ...prev, description: value }))}
                 placeholder="Describe what students will learn, key skills they'll gain, and who this course is for..."
                 rows={4}
                 className="resize-none"
+                multiline={true}
               />
             </div>
           </CardContent>

@@ -18,6 +18,90 @@ const getUserIdFromToken = (request) => {
   }
 };
 
+// Function to specifically handle the new enhanced JSON structure
+const optimizeCourseDataStructure = (courseData) => {
+  // Clone the course data to avoid modifying the original
+  const optimized = JSON.parse(JSON.stringify(courseData));
+  
+  // Optimize modules and subsections
+  if (optimized.modules && Array.isArray(optimized.modules)) {
+    optimized.modules = optimized.modules.map(module => {
+      if (module.detailedSubsections && Array.isArray(module.detailedSubsections)) {
+        module.detailedSubsections = module.detailedSubsections.map(subsection => {
+          const optimizedSubsection = { ...subsection };
+          
+          // Handle new simplified flashcard-only structure
+          if (subsection.flashCards && Array.isArray(subsection.flashCards)) {
+            optimizedSubsection.flashCards = subsection.flashCards.slice(0, 10).map(card => ({
+              question: (card.question || "").substring(0, 200),
+              answer: (card.answer || "").substring(0, 200)
+            }));
+            
+            // Keep only essential fields for the simplified structure
+            optimizedSubsection.title = subsection.title || "";
+            optimizedSubsection.summary = (subsection.summary || "").substring(0, 300);
+            optimizedSubsection.difficulty = subsection.difficulty || "Intermediate";
+            optimizedSubsection.estimatedTime = subsection.estimatedTime || "5-10 minutes";
+            
+            // Remove old complex structures if they exist
+            delete optimizedSubsection.conceptGroups;
+            delete optimizedSubsection.problemSolvingWorkflows;
+            delete optimizedSubsection.conceptBullets;
+            delete optimizedSubsection.practicalUseCase;
+            delete optimizedSubsection.pages;
+            delete optimizedSubsection.keyPoints;
+            
+            return optimizedSubsection;
+          }
+          
+          // Legacy support: If we have the old complex structure, convert to flashcards
+          if (subsection.conceptGroups && Array.isArray(subsection.conceptGroups)) {
+            const flashCards = [];
+            
+            // Convert conceptGroups to flashcards
+            subsection.conceptGroups.slice(0, 5).forEach(group => {
+              if (group.title && group.description) {
+                flashCards.push({
+                  question: `What is ${group.title}?`,
+                  answer: group.description.substring(0, 200)
+                });
+              }
+              if (group.formulas && group.formulas.length > 0) {
+                group.formulas.slice(0, 2).forEach(formula => {
+                  flashCards.push({
+                    question: `What is the formula for ${group.title}?`,
+                    answer: formula
+                  });
+                });
+              }
+            });
+            
+            // Add existing flashCards if any
+            if (subsection.flashCards && Array.isArray(subsection.flashCards)) {
+              flashCards.push(...subsection.flashCards.slice(0, 5));
+            }
+            
+            return {
+              title: subsection.title || "",
+              summary: (subsection.summary || "").substring(0, 300),
+              flashCards: flashCards.slice(0, 10),
+              difficulty: subsection.difficulty || "Intermediate",
+              estimatedTime: subsection.estimatedTime || "5-10 minutes"
+            };
+          }
+          
+          // Keep original structure for any other cases
+          return optimizedSubsection;
+        });
+      }
+      
+      return module;
+    });
+  }
+  
+  return optimized;
+};
+
 export async function POST(request) {
   try {
     const userId = getUserIdFromToken(request);

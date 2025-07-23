@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Rendering Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .test-title {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .math-content {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .success { color: #16a085; }
+        .error { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <h1>🧮 Math Rendering Test</h1>
+    <p>This page tests various mathematical expressions to ensure KaTeX rendering works correctly:</p>
+
+    <div class="test-section">
+        <h3 class="test-title">1. Basic Inline Math</h3>
+        <div class="math-content">
+            <p>Newton's second law: $F = ma$</p>
+            <p>Ohm's law: $V = IR$</p>
+            <p>Energy equation: $E = mc^2$</p>
+        </div>
+        <div id="test1-status" class="status">⏳ Testing...</div>
+    </div>
+
+    <div class="test-section">
+        <h3 class="test-title">2. Fractions and Complex Expressions</h3>
+        <div class="math-content">
+            <p>Quadratic formula: $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$</p>
+            <p>Kinetic energy: $KE = \frac{1}{2}mv^2$</p>
+            <p>Resistance: $R = \rho \frac{L}{A}$</p>
+        </div>
+        <div id="test2-status" class="status">⏳ Testing...</div>
+    </div>
+
+    <div class="test-section">
+        <h3 class="test-title">3. Display Math (Block)</h3>
+        <div class="math-content">
+            <p>Integration:</p>
+            $$\int_{0}^{1} x^2 dx = \frac{1}{3}$$
+            <p>Summation:</p>
+            $$\sum_{i=1}^{n} i = \frac{n(n+1)}{2}$$
+        </div>
+        <div id="test3-status" class="status">⏳ Testing...</div>
+    </div>
+
+    <div class="test-section">
+        <h3 class="test-title">4. Greek Letters and Special Symbols</h3>
+        <div class="math-content">
+            <p>Greek letters: $\alpha$, $\beta$, $\gamma$, $\delta$, $\theta$, $\pi$, $\sigma$, $\omega$, $\Omega$</p>
+            <p>Special symbols: $\infty$, $\partial$, $\nabla$, $\pm$, $\neq$, $\leq$, $\geq$</p>
+            <p>With units: $\rho = 1.68 \times 10^{-8} \, \Omega \cdot \text{m}$</p>
+        </div>
+        <div id="test4-status" class="status">⏳ Testing...</div>
+    </div>
+
+    <div class="test-section">
+        <h3 class="test-title">5. Functions and Operators</h3>
+        <div class="math-content">
+            <p>Trigonometric: $\sin(x)$, $\cos(x)$, $\tan(x)$</p>
+            <p>Logarithmic: $\log(x)$, $\ln(x)$, $\exp(x)$</p>
+            <p>Limits: $\lim_{x \to 0} \frac{\sin(x)}{x} = 1$</p>
+        </div>
+        <div id="test5-status" class="status">⏳ Testing...</div>
+    </div>
+
+    <div class="test-section">
+        <h3 class="test-title">📊 Overall Test Results</h3>
+        <div id="overall-status" class="status">⏳ Running tests...</div>
+        <div id="recommendations" style="margin-top: 10px;"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Render math with KaTeX
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ],
+                throwOnError: false,
+                errorColor: "#cc0000",
+                strict: false
+            });
+
+            // Test each section
+            setTimeout(() => {
+                const tests = [
+                    { id: 'test1-status', name: 'Basic Inline Math' },
+                    { id: 'test2-status', name: 'Fractions and Complex' },
+                    { id: 'test3-status', name: 'Display Math' },
+                    { id: 'test4-status', name: 'Greek Letters and Symbols' },
+                    { id: 'test5-status', name: 'Functions and Operators' }
+                ];
+
+                let passedTests = 0;
+                
+                tests.forEach((test, index) => {
+                    const element = document.getElementById(test.id);
+                    const section = element.parentElement;
+                    const mathElements = section.querySelectorAll('.katex');
+                    const errorElements = section.querySelectorAll('.katex-error');
+                    
+                    if (mathElements.length > 0 && errorElements.length === 0) {
+                        element.innerHTML = '✅ Passed';
+                        element.className = 'status success';
+                        passedTests++;
+                    } else if (errorElements.length > 0) {
+                        element.innerHTML = '❌ Failed - Math rendering errors detected';
+                        element.className = 'status error';
+                    } else {
+                        element.innerHTML = '⚠️ Warning - No math elements found';
+                        element.className = 'status error';
+                    }
+                });
+
+                // Overall status
+                const overallElement = document.getElementById('overall-status');
+                const recommendationsElement = document.getElementById('recommendations');
+                
+                if (passedTests === tests.length) {
+                    overallElement.innerHTML = `🎉 All ${tests.length} tests passed! Math rendering is working perfectly.`;
+                    overallElement.className = 'status success';
+                    recommendationsElement.innerHTML = '<p style="color: #16a085;">✅ Math rendering system is ready for production use!</p>';
+                } else {
+                    overallElement.innerHTML = `⚠️ ${passedTests}/${tests.length} tests passed. Some issues detected.`;
+                    overallElement.className = 'status error';
+                    recommendationsElement.innerHTML = `
+                        <p style="color: #e74c3c;">Recommendations:</p>
+                        <ul>
+                            <li>Check KaTeX CDN loading</li>
+                            <li>Verify LaTeX syntax in failed sections</li>
+                            <li>Ensure proper delimiters ($ for inline, $$ for display)</li>
+                            <li>Check browser console for errors</li>
+                        </ul>
+                    `;
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

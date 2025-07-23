@@ -61,6 +61,139 @@ import {
   Loader2,
 } from "lucide-react";
 import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
+import UniversalContentRenderer from "@/components/UniversalContentRenderer";
+
+// Add CSS for 3D flip cards
+const flipCardStyles = `
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .transform-style-preserve-3d {
+    transform-style: preserve-3d;
+  }
+  
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+  
+  .group:hover .hover\\:rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+`;
+
+// Inject styles
+if (typeof document !== "undefined") {
+  const styleElement = document.createElement("style");
+  styleElement.textContent = flipCardStyles;
+  document.head.appendChild(styleElement);
+}
+
+// Helper function to handle the new simplified flashcard structure
+function getSubsectionData(subsection) {
+  console.log('🔍 getSubsectionData called with:', {
+    hasFlashCards: !!subsection.flashCards,
+    flashCardsLength: subsection.flashCards?.length || 0,
+    hasConceptGroups: !!subsection.conceptGroups,
+    hasPages: !!subsection.pages,
+    subsectionKeys: Object.keys(subsection)
+  });
+
+  // Handle new simplified flashcard structure
+  if (subsection.flashCards && Array.isArray(subsection.flashCards)) {
+    console.log('✅ Returning flashCards type');
+    return {
+      type: 'flashCards',
+      data: subsection
+    };
+  }
+
+  // Legacy: Handle old conceptGroups structure
+  if (subsection.conceptGroups && Array.isArray(subsection.conceptGroups)) {
+    console.log('🔄 Converting conceptGroups to flashCards type');
+    // Convert conceptGroups to flashcards for display
+    const flashCards = [];
+    
+    subsection.conceptGroups.forEach(group => {
+      if (group.title && group.description) {
+        flashCards.push({
+          question: `What is ${group.title}?`,
+          answer: group.description
+        });
+      }
+      if (group.formulas && group.formulas.length > 0) {
+        group.formulas.forEach(formula => {
+          flashCards.push({
+            question: `What is the formula for ${group.title}?`,
+            answer: formula
+          });
+        });
+      }
+    });
+    
+    // Add existing flashCards if any
+    if (subsection.flashCards && Array.isArray(subsection.flashCards)) {
+      flashCards.push(...subsection.flashCards);
+    }
+    
+    return {
+      type: 'flashCards',
+      data: {
+        ...subsection,
+        flashCards: flashCards
+      }
+    };
+  }
+
+  // Legacy: Handle old pages structure
+  if (subsection.pages && Array.isArray(subsection.pages)) {
+    console.log('⚠️ Converting pages to flashCards type');
+    const flashCards = [];
+    
+    // Convert pages to flashcards
+    subsection.pages.forEach((page, index) => {
+      if (page.pageTitle && page.content) {
+        flashCards.push({
+          question: `What should you know about ${page.pageTitle}?`,
+          answer: page.content.substring(0, 200) + (page.content.length > 200 ? '...' : '')
+        });
+      }
+    });
+    
+    return {
+      type: 'flashCards',
+      data: {
+        title: subsection.title,
+        summary: subsection.summary || 'Legacy content converted to flashcards',
+        flashCards: flashCards,
+        difficulty: subsection.difficulty || 'Intermediate',
+        estimatedTime: subsection.estimatedTime || '5-10 minutes'
+      }
+    };
+  }
+
+  // Fallback: Create minimal flashcard structure
+  console.log('⚠️ Creating fallback flashCards structure');
+  return {
+    type: 'flashCards',
+    data: {
+      title: subsection.title || 'Subsection',
+      summary: subsection.summary || 'Content will be available soon',
+      flashCards: [
+        {
+          question: `What is the main concept of ${subsection.title || 'this subsection'}?`,
+          answer: subsection.summary || 'Content will be available soon'
+        }
+      ],
+      difficulty: 'Intermediate',
+      estimatedTime: '5-10 minutes'
+    }
+  };
+}
 
 function parseMarkdownToPages(markdown) {
   if (!markdown || typeof markdown !== "string") {
@@ -240,7 +373,7 @@ export default function ExamModuleEditorEnhanced({
         title: mdSub.title, // overwrite with the one from markdown for consistency
         formattedTitle: formattedTitle,
         // Pre-parse the pages here, outside the render loop
-        subsectionPages: parseMarkdownToPages(aiSub.generatedMarkdown),
+        subsectionPages: getSubsectionData(aiSub),
       };
     });
   }, [module.content, module.detailedSubsections]);
@@ -995,11 +1128,54 @@ export default function ExamModuleEditorEnhanced({
 
       const data = await response.json();
 
-      // Update the subsection with the generated content
+      // Add debug logging to see what we received
+      console.log('🔍 API Response data.content:', data.content);
+      console.log('🔍 Type of data.content:', typeof data.content);
+      if (typeof data.content === 'object') {
+        console.log('🔍 Content properties:', Object.keys(data.content));
+        console.log('🔍 Has conceptGroups:', !!data.content.conceptGroups);
+        console.log('🔍 ConceptGroups length:', data.content.conceptGroups?.length || 0);
+      }
+
+      // Handle new structured JSON format with conceptGroups, flashCards, etc.
+      if (typeof data.content === 'object' && data.content.conceptGroups) {
+        console.log('✅ Processing new JSON structure with conceptGroups');
+        // New enhanced JSON format with conceptGroups
+        updateSubsection(subsectionIndex, {
+          conceptGroups: data.content.conceptGroups,
+          problemSolvingWorkflows: data.content.problemSolvingWorkflows || [],
+          flashCards: data.content.flashCards || [],
+          conceptBullets: data.content.conceptBullets || [],
+          practicalUseCase: data.content.practicalUseCase,
+          summary: data.content.summary,
+          difficulty: data.content.difficulty || "Intermediate",
+          estimatedTime: data.content.estimatedTime || "15-20 minutes",
+          isGenerating: false,
+        });
+      } else if (typeof data.content === 'object' && data.content.pages) {
+        // Legacy JSON format with pages - keep for backward compatibility
+        updateSubsection(subsectionIndex, {
+          pages: data.content.pages,
+          summary: data.content.summary,
+          keyPoints: data.content.keyPoints || [],
+          practicalExample: data.content.practicalExample,
+          commonPitfalls: data.content.commonPitfalls || [],
+          refresherBoost: data.content.refresherBoost,
+          isGenerating: false,
+        });
+      } else if (typeof data.content === 'string') {
+        // Legacy markdown format - keep for backward compatibility
       updateSubsection(subsectionIndex, {
         generatedMarkdown: data.content,
         isGenerating: false,
       });
+      } else {
+        // Fallback - treat any content as markdown
+        updateSubsection(subsectionIndex, {
+          generatedMarkdown: JSON.stringify(data.content, null, 2),
+          isGenerating: false,
+        });
+      }
 
       toast.success(
         `Content generated successfully for subsection: ${subsection.title}`
@@ -1974,46 +2150,287 @@ export default function ExamModuleEditorEnhanced({
                             Content
                           </Label>
                           {editingSubsection === globalIndex ? (
+                            <div className="space-y-4">
+                              {/* Enhanced JSON Structure Editor */}
+                              {subsection.conceptGroups && Array.isArray(subsection.conceptGroups) ? (
+                                <div className="space-y-6">
+                                  <div className="text-sm text-purple-600 font-medium">
+                                    🧠 Enhanced Learning Content (JSON Format)
+                                  </div>
+                                  
+                                  {/* Summary */}
+                                  <div className="space-y-2">
+                                    <Label className="font-semibold">Summary</Label>
                             <Textarea
-                              value={subsection.generatedMarkdown || ""}
-                              onChange={(e) =>
-                                updateSubsection(globalIndex, {
-                                  generatedMarkdown: e.target.value,
-                                })
-                              }
-                              rows={15}
+                                      value={subsection.summary || ""}
+                                      onChange={(e) => updateSubsection(globalIndex, { summary: e.target.value })}
+                                      placeholder="Brief overview of the subsection..."
+                                      rows={2}
+                                      className="border-2 border-purple-300 focus:border-purple-500"
+                                    />
+                                  </div>
+
+                                  {/* Concept Groups */}
+                                  <div className="space-y-4">
+                                    <Label className="font-semibold">📚 Concept Groups</Label>
+                                    {subsection.conceptGroups.map((group, groupIndex) => (
+                                      <Card key={groupIndex} className="p-4 border-blue-200">
+                                        <div className="space-y-3">
+                                          <Input
+                                            value={group.title || ""}
+                                            onChange={(e) => {
+                                              const updatedGroups = [...subsection.conceptGroups];
+                                              updatedGroups[groupIndex] = { ...updatedGroups[groupIndex], title: e.target.value };
+                                              updateSubsection(globalIndex, { conceptGroups: updatedGroups });
+                                            }}
+                                            placeholder="Concept Group Title"
+                                            className="font-medium"
+                                          />
+                                          <Textarea
+                                            value={group.description || ""}
+                                            onChange={(e) => {
+                                              const updatedGroups = [...subsection.conceptGroups];
+                                              updatedGroups[groupIndex] = { ...updatedGroups[groupIndex], description: e.target.value };
+                                              updateSubsection(globalIndex, { conceptGroups: updatedGroups });
+                                            }}
+                                            rows={4}
+                                            placeholder="Concept description with LaTeX support..."
                               className="border-2 border-blue-300 focus:border-blue-500"
-                              placeholder="Enter detailed subsection content..."
-                            />
-                          ) : (
-                            <div
-                              className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 min-h-[100px]"
-                              onClick={() => setEditingSubsection(globalIndex)}
-                            >
-                              {subsection.generatedMarkdown ? (
+                                          />
+                                        </div>
+                                      </Card>
+                                    ))}
+                                  </div>
+
+                                  {/* Flashcards */}
+                                  {subsection.flashCards && subsection.flashCards.length > 0 && (
+                                    <div className="space-y-4">
+                                      <Label className="font-semibold text-lg flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                                          💡
+                                        </div>
+                                        Flashcards ({subsection.flashCards.length})
+                                      </Label>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {subsection.flashCards.map((card, cardIndex) => (
+                                          <div key={cardIndex} className="group perspective-1000">
+                                            <div className="relative w-full h-48 transform-style-preserve-3d transition-transform duration-500 hover:rotate-y-180">
+                                              {/* Front of card - Question */}
+                                              <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-200 rounded-xl p-6 flex flex-col justify-center items-center shadow-lg hover:shadow-xl transition-all duration-300">
+                                                <div className="w-full text-center">
+                                                  <div className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-3">Question</div>
+                                                  <div className="text-gray-800 font-medium leading-relaxed">
+                                                    <UniversalContentRenderer 
+                                                      content={card.question || ""}
+                                                      renderingMode="math-optimized"
+                                                      className="text-center"
+                                                      enableTelemetry={false}
+                                                    />
+                                                  </div>
+                                                </div>
+                                                <div className="absolute bottom-3 right-3 text-green-500">
+                                                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                                                    <span className="text-xs">?</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              
+                                              {/* Back of card - Answer */}
+                                              <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6 flex flex-col justify-center items-center shadow-lg">
+                                                <div className="w-full text-center">
+                                                  <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-3">Answer</div>
+                                                  <div className="text-gray-800 font-medium leading-relaxed">
+                                                    <UniversalContentRenderer 
+                                                      content={card.answer || ""}
+                                                      renderingMode="math-optimized"
+                                                      className="text-center"
+                                                      enableTelemetry={false}
+                                                    />
+                                                  </div>
+                                                </div>
+                                                <div className="absolute bottom-3 right-3 text-blue-500">
+                                                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                                                    <span className="text-xs">✓</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                            
+                                            {/* Hover instruction */}
+                                            <div className="text-center mt-2 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                              Hover to reveal answer
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      
+                                      {/* Edit Mode for Flashcards */}
+                                      <div className="space-y-3 mt-6">
+                                        <Label className="font-semibold text-gray-700">Edit Flashcards</Label>
+                                        {subsection.flashCards.map((card, cardIndex) => (
+                                          <Card key={`edit-${cardIndex}`} className="p-4 border-green-200 bg-green-50/30">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                              <div className="space-y-2">
+                                                <Label className="text-sm font-medium text-green-700">Question</Label>
+                                                <Textarea
+                                                  value={card.question || ""}
+                                                  onChange={(e) => {
+                                                    const updatedCards = [...subsection.flashCards];
+                                                    updatedCards[cardIndex] = { ...updatedCards[cardIndex], question: e.target.value };
+                                                    updateSubsection(globalIndex, { flashCards: updatedCards });
+                                                  }}
+                                                  rows={3}
+                                                  placeholder="Enter flashcard question with LaTeX support ($E = mc^2$)..."
+                                                  className="border-2 border-green-300 focus:border-green-500 bg-white/80"
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label className="text-sm font-medium text-blue-700">Answer</Label>
+                                                <Textarea
+                                                  value={card.answer || ""}
+                                                  onChange={(e) => {
+                                                    const updatedCards = [...subsection.flashCards];
+                                                    updatedCards[cardIndex] = { ...updatedCards[cardIndex], answer: e.target.value };
+                                                    updateSubsection(globalIndex, { flashCards: updatedCards });
+                                                  }}
+                                                  rows={3}
+                                                  placeholder="Enter flashcard answer with LaTeX support..."
+                                                  className="border-2 border-blue-300 focus:border-blue-500 bg-white/80"
+                                                />
+                                              </div>
+                                            </div>
+                                            <div className="flex justify-end mt-3">
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                  const updatedCards = subsection.flashCards.filter((_, idx) => idx !== cardIndex);
+                                                  updateSubsection(globalIndex, { flashCards: updatedCards });
+                                                }}
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          </Card>
+                                        ))}
+                                        
+                                        {/* Add New Flashcard */}
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            const updatedCards = [...subsection.flashCards, { question: "", answer: "" }];
+                                            updateSubsection(globalIndex, { flashCards: updatedCards });
+                                          }}
+                                          className="bg-green-500 hover:bg-green-600 text-white"
+                                        >
+                                          <Plus className="h-4 w-4 mr-2" />
+                                          Add Flashcard
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Concept Bullets */}
+                                  {subsection.conceptBullets && subsection.conceptBullets.length > 0 && (
+                                    <div className="space-y-2">
+                                      <Label className="font-semibold">⚡ Concept Bullets</Label>
+                                      {subsection.conceptBullets.map((bullet, bulletIndex) => (
+                                        <Input
+                                          key={bulletIndex}
+                                          value={bullet || ""}
+                                          onChange={(e) => {
+                                            const updatedBullets = [...subsection.conceptBullets];
+                                            updatedBullets[bulletIndex] = e.target.value;
+                                            updateSubsection(globalIndex, { conceptBullets: updatedBullets });
+                                          }}
+                                          placeholder="Concept bullet with emoji and LaTeX..."
+                                          className="border-2 border-yellow-300 focus:border-yellow-500"
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Practical Use Case */}
+                                  {subsection.practicalUseCase && (
+                                    <div className="space-y-2">
+                                      <Label className="font-semibold">🎯 Practical Use Case</Label>
+                                      <Textarea
+                                        value={subsection.practicalUseCase || ""}
+                                        onChange={(e) => updateSubsection(globalIndex, { practicalUseCase: e.target.value })}
+                                        rows={3}
+                                        placeholder="Real-world application example..."
+                                        className="border-2 border-indigo-300 focus:border-indigo-500"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Metadata */}
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label className="text-sm">Difficulty</Label>
+                                      <Select
+                                        value={subsection.difficulty || "Intermediate"}
+                                        onValueChange={(value) => updateSubsection(globalIndex, { difficulty: value })}
+                                      >
+                                        <SelectTrigger className="border-2 border-gray-300">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Beginner">Beginner</SelectItem>
+                                          <SelectItem value="Intermediate">Intermediate</SelectItem>
+                                          <SelectItem value="Advanced">Advanced</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm">Estimated Time</Label>
+                                      <Input
+                                        value={subsection.estimatedTime || ""}
+                                        onChange={(e) => updateSubsection(globalIndex, { estimatedTime: e.target.value })}
+                                        placeholder="e.g., 15-20 minutes"
+                                        className="border-2 border-gray-300 focus:border-gray-500"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : subsection.pages && Array.isArray(subsection.pages) ? (
+                                // Legacy pages structure display
                                 <>
                                   {currentPageData ? (
                                     <div className="prose prose-sm max-w-none">
                                       <h4 className="font-semibold text-md mb-2">
                                         {currentPageData.title}
                                       </h4>
-                                      <MathMarkdownRenderer
+                                      <UniversalContentRenderer
                                         content={currentPageData.content}
+                                        renderingMode="math-optimized"
+                                        className="page-content"
+                                        enableTelemetry={false}
                                       />
+                                      {currentPageData.keyTakeaway && (
+                                        <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                                          <p className="text-sm text-blue-800 italic">
+                                            💡 Key Takeaway: {currentPageData.keyTakeaway}
+                                          </p>
+                                        </div>
+                                      )}
                                     </div>
                                   ) : (
                                     <div className="prose prose-sm max-w-none">
-                                      {/* Fallback for when parsing fails or for single-page content */}
+                                      <h4 className="font-semibold text-md mb-2">
+                                        {subsectionPages.data[0].title || "Content"}
+                                      </h4>
                                       <MathMarkdownRenderer
-                                        content={subsection.generatedMarkdown}
+                                        content={subsectionPages.data[0].content || "No content available"}
                                       />
                                     </div>
                                   )}
-                                  {subsectionPages.length > 1 && (
+                                  {subsectionPages.data.length > 1 && (
                                     <div className="flex items-center justify-end gap-2 mt-4">
                                       <span className="text-xs text-gray-500">
                                         Page {currentSubsectionPage + 1} of{" "}
-                                        {subsectionPages.length}
+                                        {subsectionPages.data.length}
                                       </span>
                                       <Button
                                         size="sm"
@@ -2040,14 +2457,298 @@ export default function ExamModuleEditorEnhanced({
                                           setCurrentExplanationPageForSubsection(
                                             globalIndex,
                                             Math.min(
-                                              subsectionPages.length - 1,
+                                              subsectionPages.data.length - 1,
                                               currentSubsectionPage + 1
                                             )
                                           );
                                         }}
                                         disabled={
                                           currentSubsectionPage >=
-                                          subsectionPages.length - 1
+                                          subsectionPages.data.length - 1
+                                        }
+                                      >
+                                        <ChevronRight className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="space-y-4 text-center py-4">
+                                  <p className="text-sm text-gray-500 italic">
+                                    This subsection has no detailed content yet.
+                                  </p>
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      generateSubsectionContent(
+                                        subsection,
+                                        globalIndex
+                                      );
+                                    }}
+                                    disabled={subsection.isGenerating}
+                                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                                  >
+                                    {subsection.isGenerating ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Generating...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Sparkles className="h-4 w-4 mr-2" />
+                                        Generate with AI
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div
+                              className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 min-h-[100px]"
+                              onClick={() => setEditingSubsection(globalIndex)}
+                            >
+                              {/* Handle different content structure types */}
+                              {subsectionPages.type === 'flashCards' ? (
+                                // New simplified flashcard structure display
+                                <div className="space-y-4">
+                                  <div className="prose prose-sm max-w-none">
+                                    <h4 className="font-semibold text-lg mb-2 text-green-700">
+                                      💡 Flashcards for Quick Review
+                                    </h4>
+                                    <p className="text-gray-700 mb-3">
+                                      {subsectionPages.data.summary || "Important concepts and formulas in flashcard format."}
+                                    </p>
+                                  </div>
+
+                                  {/* Concept Groups Preview */}
+                                  {subsectionPages.data.conceptGroups && subsectionPages.data.conceptGroups.length > 0 && (
+                                    <div className="bg-blue-50 p-4 rounded-lg">
+                                      <h5 className="font-semibold text-blue-800 mb-2">📚 Concept Groups</h5>
+                                      <div className="space-y-2">
+                                        {subsectionPages.data.conceptGroups.slice(0, 2).map((group, idx) => (
+                                          <div key={idx} className="bg-white p-3 rounded-lg">
+                                            <h6 className="font-medium text-blue-700">{group.title}</h6>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                              {group.description?.substring(0, 100)}...
+                                            </p>
+                                            {group.formulas && group.formulas.length > 0 && (
+                                              <div className="mt-2">
+                                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                                  {group.formulas.length} formulas
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                        {subsectionPages.data.conceptGroups.length > 2 && (
+                                          <p className="text-sm text-blue-600 italic">
+                                            +{subsectionPages.data.conceptGroups.length - 2} more concept groups...
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Problem-Solving Workflows Preview */}
+                                  {subsectionPages.data.problemSolvingWorkflows && subsectionPages.data.problemSolvingWorkflows.length > 0 && (
+                                    <div className="bg-orange-50 p-4 rounded-lg">
+                                      <h5 className="font-semibold text-orange-800 mb-2">🔧 Problem-Solving Strategies</h5>
+                                      <div className="space-y-2">
+                                        {subsectionPages.data.problemSolvingWorkflows.slice(0, 1).map((workflow, idx) => (
+                                          <div key={idx} className="bg-white p-3 rounded-lg">
+                                            <h6 className="font-medium text-orange-700">{workflow.strategy}</h6>
+                                            <ul className="text-sm text-gray-600 mt-1 list-disc list-inside">
+                                              {workflow.steps.slice(0, 2).map((step, stepIdx) => (
+                                                <li key={stepIdx}>{step}</li>
+                                              ))}
+                                              {workflow.steps.length > 2 && (
+                                                <li className="italic">...and {workflow.steps.length - 2} more steps</li>
+                                              )}
+                                            </ul>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Flashcards Preview */}
+                                  {subsectionPages.data.flashCards && subsectionPages.data.flashCards.length > 0 && (
+                                    <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-6 rounded-xl border-2 border-green-200">
+                                      <h5 className="font-bold text-green-800 mb-4 flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                                          💡
+                                        </div>
+                                        Quick Review Flashcards ({subsectionPages.data.flashCards.length})
+                                      </h5>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {subsectionPages.data.flashCards.slice(0, 4).map((card, idx) => (
+                                          <div key={idx} className="group perspective-1000">
+                                            <div className="relative w-full h-32 transform-style-preserve-3d transition-transform duration-500 hover:rotate-y-180">
+                                              {/* Front of card - Question */}
+                                              <div className="absolute inset-0 w-full h-full backface-hidden bg-white rounded-lg p-4 flex flex-col justify-center items-center shadow-md hover:shadow-lg transition-all duration-300 border border-green-200">
+                                                <div className="w-full text-center">
+                                                  <div className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Q</div>
+                                                  <div className="text-gray-800 text-sm font-medium leading-snug">
+                                                    <UniversalContentRenderer 
+                                                      content={card.question}
+                                                      renderingMode="math-optimized"
+                                                      className="text-center"
+                                                      enableTelemetry={false}
+                                                    />
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              
+                                              {/* Back of card - Answer */}
+                                              <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 flex flex-col justify-center items-center shadow-md border border-blue-200">
+                                                <div className="w-full text-center">
+                                                  <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">A</div>
+                                                  <div className="text-gray-800 text-sm font-medium leading-snug">
+                                                    <UniversalContentRenderer 
+                                                      content={card.answer}
+                                                      renderingMode="math-optimized"
+                                                      className="text-center"
+                                                      enableTelemetry={false}
+                                                    />
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {subsectionPages.data.flashCards.length > 4 && (
+                                        <p className="text-sm text-green-600 italic mt-4 text-center">
+                                          +{subsectionPages.data.flashCards.length - 4} more flashcards available
+                                        </p>
+                                      )}
+                                      <div className="text-center mt-3">
+                                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                          Hover cards to reveal answers
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Concept Bullets */}
+                                  {subsectionPages.data.conceptBullets && subsectionPages.data.conceptBullets.length > 0 && (
+                                    <div className="bg-yellow-50 p-4 rounded-lg">
+                                      <h5 className="font-semibold text-yellow-800 mb-2">⚡ Key Concepts</h5>
+                                      <div className="space-y-1">
+                                        {subsectionPages.data.conceptBullets.slice(0, 3).map((bullet, idx) => (
+                                          <p key={idx} className="text-sm text-yellow-700">{bullet}</p>
+                                        ))}
+                                        {subsectionPages.data.conceptBullets.length > 3 && (
+                                          <p className="text-sm text-yellow-600 italic">
+                                            +{subsectionPages.data.conceptBullets.length - 3} more concepts...
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Practical Use Case */}
+                                  {subsectionPages.data.practicalUseCase && (
+                                    <div className="bg-indigo-50 p-4 rounded-lg">
+                                      <h5 className="font-semibold text-indigo-800 mb-2">🎯 Practical Application</h5>
+                                      <p className="text-sm text-indigo-700">
+                                        {subsectionPages.data.practicalUseCase.substring(0, 150)}...
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* Metadata */}
+                                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                      📚 {subsectionPages.data.conceptGroups?.length || 0} Concept Groups
+                                    </span>
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                      💡 {subsectionPages.data.flashCards?.length || 0} Flashcards
+                                    </span>
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                      🔧 {subsectionPages.data.problemSolvingWorkflows?.length || 0} Workflows
+                                    </span>
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                      📊 {subsectionPages.data.difficulty || 'Intermediate'}
+                                    </span>
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                      ⏱️ {subsectionPages.data.estimatedTime || '15-20 min'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : subsectionPages.type === 'pages' && subsectionPages.data.length > 0 ? (
+                                // Legacy pages structure display
+                                <>
+                                  {currentPageData ? (
+                                    <div className="prose prose-sm max-w-none">
+                                      <h4 className="font-semibold text-md mb-2">
+                                        {currentPageData.title}
+                                      </h4>
+                                      <UniversalContentRenderer
+                                        content={currentPageData.content}
+                                        renderingMode="math-optimized"
+                                        className="page-content"
+                                        enableTelemetry={false}
+                                      />
+                                      {currentPageData.keyTakeaway && (
+                                        <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                                          <p className="text-sm text-blue-800 italic">
+                                            💡 Key Takeaway: {currentPageData.keyTakeaway}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="prose prose-sm max-w-none">
+                                      <h4 className="font-semibold text-md mb-2">
+                                        {subsectionPages.data[0].title || "Content"}
+                                      </h4>
+                                      <MathMarkdownRenderer
+                                        content={subsectionPages.data[0].content || "No content available"}
+                                      />
+                                    </div>
+                                  )}
+                                  {subsectionPages.data.length > 1 && (
+                                    <div className="flex items-center justify-end gap-2 mt-4">
+                                      <span className="text-xs text-gray-500">
+                                        Page {currentSubsectionPage + 1} of{" "}
+                                        {subsectionPages.data.length}
+                                      </span>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setCurrentExplanationPageForSubsection(
+                                            globalIndex,
+                                            Math.max(
+                                              0,
+                                              currentSubsectionPage - 1
+                                            )
+                                          );
+                                        }}
+                                        disabled={currentSubsectionPage === 0}
+                                      >
+                                        <ChevronLeft className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setCurrentExplanationPageForSubsection(
+                                            globalIndex,
+                                            Math.min(
+                                              subsectionPages.data.length - 1,
+                                              currentSubsectionPage + 1
+                                            )
+                                          );
+                                        }}
+                                        disabled={
+                                          currentSubsectionPage >=
+                                          subsectionPages.data.length - 1
                                         }
                                       >
                                         <ChevronRight className="h-3 w-3" />

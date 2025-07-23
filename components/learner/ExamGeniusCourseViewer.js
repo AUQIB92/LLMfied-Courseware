@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import PerfectMathRenderer from "@/components/PerfectMathRenderer";
+import ContentDisplay from "@/components/ContentDisplay";
 import {
   ChevronLeft,
   ChevronRight,
@@ -69,6 +69,77 @@ const cardVariants = {
   },
 };
 
+// CSS for 3D flashcard animations
+const flashcardStyles = `
+  .flashcard-container {
+    perspective: 1000px;
+  }
+  
+  .flashcard {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease-in-out;
+    cursor: pointer;
+  }
+  
+  .flashcard.flipped {
+    transform: rotateY(180deg);
+  }
+  
+  .flashcard-side {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  }
+  
+  .flashcard-front {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+  
+  .flashcard-back {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    transform: rotateY(180deg);
+  }
+  
+  .flashcard-content {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .flashcard-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+    margin-bottom: 1rem;
+  }
+  
+  .flashcard-text {
+    font-size: 1.125rem;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+`;
+
+// Inject styles
+if (typeof document !== "undefined") {
+  const styleElement = document.createElement("style");
+  styleElement.textContent = flashcardStyles;
+  document.head.appendChild(styleElement);
+}
+
 export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const { getAuthHeaders } = useAuth();
   const [viewerCourse, setViewerCourse] = useState(course);
@@ -91,6 +162,10 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const [activeContentTab, setActiveContentTab] = useState("content");
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [activeFlashcardIndex, setActiveFlashcardIndex] = useState(0);
+  const [showFlashcards, setShowFlashcards] = useState(false);
+  const [currentFlashcardSet, setCurrentFlashcardSet] = useState([]);
+  const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false);
 
   const resourceCategories = {
     books: { icon: BookOpen, label: "Books" },
@@ -208,9 +283,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                 `📝 Processing generatedMarkdown for: ${subsection.title}`
               );
 
-              // Parse the generatedMarkdown into the expected structure
-              const parsed = parseGeneratedMarkdownToSubsection(
-                subsection.generatedMarkdown,
+              // Parse the subsection data (JSON or markdown) into the expected structure
+              const parsed = parseSubsectionData(
+                subsection.pages ? subsection : subsection.generatedMarkdown,
                 subsection.title
               );
 
@@ -323,7 +398,28 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
         const data = await response.json();
         console.log("✅ Received detailed content:", data);
 
-        if (data.detailedSubsections && data.detailedSubsections.length > 0) {
+        // Handle both structured JSON content and legacy format
+        if (data.content && typeof data.content === 'object') {
+          console.log("🔧 Processing JSON structured content from API");
+          
+          // Update module with structured JSON content
+          setViewerCourse((prevCourse) => {
+            const newModules = [...prevCourse.modules];
+            newModules[moduleIndex] = {
+              ...newModules[moduleIndex],
+              content: data.content, // Store the full JSON structure
+              summary: data.content.summary || newModules[moduleIndex].summary,
+              objectives: data.content.objectives || newModules[moduleIndex].objectives,
+              examples: data.content.examples || newModules[moduleIndex].examples,
+              resources: data.content.resources || newModules[moduleIndex].resources,
+              detailedSubsections: data.content.detailedSubsections || newModules[moduleIndex].detailedSubsections,
+            };
+            return { ...prevCourse, modules: newModules };
+          });
+          console.log(`✅ Updated module ${moduleIndex} with JSON structured content`);
+          
+        } else if (data.detailedSubsections && data.detailedSubsections.length > 0) {
+          // Legacy format with detailedSubsections array
           setViewerCourse((prevCourse) => {
             const newModules = [...prevCourse.modules];
             newModules[moduleIndex] = {
@@ -335,10 +431,26 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           console.log(
             `✅ Updated module ${moduleIndex} with ${data.detailedSubsections.length} subsections`
           );
+          
+        } else if (data.markdownContent && typeof data.markdownContent === 'string') {
+          console.log("🔧 Processing markdown content from API");
+          
+          // Handle markdown content response
+          setViewerCourse((prevCourse) => {
+            const newModules = [...prevCourse.modules];
+            newModules[moduleIndex] = {
+              ...newModules[moduleIndex],
+              enhancedMarkdown: data.markdownContent,
+              content: data.markdownContent,
+            };
+            return { ...prevCourse, modules: newModules };
+          });
+          console.log(`✅ Updated module ${moduleIndex} with markdown content`);
+          
         } else {
-          console.log("⚠️ No detailed subsections in response");
+          console.log("⚠️ No recognized content format in response");
           toast.error(
-            `No detailed content available for module ${moduleIndex + 1}`
+            `No compatible content available for module ${moduleIndex + 1}`
           );
         }
       } else {
@@ -494,10 +606,89 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
     return keyPoints.slice(0, 5); // Limit to 5 key points
   };
 
-  // New function to parse individual generatedMarkdown into subsection structure
-  const parseGeneratedMarkdownToSubsection = (generatedMarkdown, title) => {
+  // Updated function to handle subsection data from new JSON format or legacy content
+  const parseSubsectionData = (subsectionData, title) => {
+    // Handle new enhanced JSON structure with conceptGroups (from generateCompetitiveExamSubsectionDetails)
+    if (subsectionData && typeof subsectionData === "object" && subsectionData.conceptGroups) {
+      console.log(`🧠 Processing enhanced JSON subsection data for "${title}"`);
+      
+      return {
+        type: 'conceptGroups',
+        data: subsectionData,
+        summary: subsectionData.summary || `Learn about ${title}`,
+        keyPoints: subsectionData.conceptBullets || [
+          `Master the fundamentals of ${title}`,
+          `Apply problem-solving techniques`,
+          `Understand practical applications`,
+        ],
+        practicalExample: subsectionData.practicalUseCase || `Practical example for ${title}`,
+        commonPitfalls: subsectionData.conceptGroups?.flatMap(g => g.misconceptions || []) || [`Common issues with ${title}`],
+        refresherBoost: {
+          conceptBullets: subsectionData.conceptBullets || [`🔥 Key concept for ${title}`],
+          flashCards: subsectionData.flashCards || [{
+            question: `What is ${title}?`,
+            answer: `${title} is an important concept for exam preparation.`
+          }]
+        },
+        difficulty: subsectionData.difficulty || "Intermediate",
+        estimatedTime: subsectionData.estimatedTime || "15-20 minutes"
+      };
+    }
+
+    // Handle legacy JSON structure with pages
+    if (subsectionData && typeof subsectionData === "object" && subsectionData.pages) {
+      console.log(`🔧 Processing legacy JSON subsection data for "${title}"`);
+      
+      return {
+        type: 'pages',
+        data: subsectionData,
+        summary: subsectionData.summary || `Learn about ${title}`,
+        keyPoints: subsectionData.keyPoints || [
+          `Master the fundamentals of ${title}`,
+          `Apply practical problem-solving techniques`,
+          `Understand real-world applications`,
+        ],
+        pages: subsectionData.pages.map((page, index) => ({
+          id: `page-${index + 1}`,
+          pageNumber: page.pageNumber || index + 1,
+          title: page.pageTitle || page.title || `Page ${index + 1}`,
+          content: page.content || "",
+          keyTakeaway: page.keyTakeaway || `Key learning from page ${index + 1}`,
+        })),
+        practicalExample: subsectionData.practicalExample || `Practical example for ${title}`,
+        commonPitfalls: subsectionData.commonPitfalls || [`Common issues with ${title}`],
+        refresherBoost: subsectionData.refresherBoost || {
+          conceptBullets: [`🔥 Key concept for ${title}`],
+          flashCards: [{
+            question: `What is ${title}?`,
+            answer: `${title} is an important concept for exam preparation.`
+          }]
+        }
+      };
+    }
+
+    // Handle legacy markdown format
+    const generatedMarkdown = typeof subsectionData === "string" ? subsectionData : subsectionData?.generatedMarkdown;
+    
     if (!generatedMarkdown || typeof generatedMarkdown !== "string") {
-      return {};
+      return {
+        type: 'fallback',
+        summary: `Learn about ${title}`,
+        keyPoints: [
+          `Master the fundamentals of ${title}`,
+          `Apply practical problem-solving techniques`,
+          `Understand real-world applications`,
+        ],
+        pages: [{
+          id: "page-1",
+          pageNumber: 1,
+          title: "Overview",
+          content: `Content for ${title} will be generated.`,
+          keyTakeaway: `Understanding ${title} concepts`,
+        }],
+        practicalExample: `Practical example for ${title}`,
+        commonPitfalls: [`Common issues with ${title}`],
+      };
     }
 
     console.log(
@@ -505,7 +696,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
       generatedMarkdown.substring(0, 200) + "..."
     );
 
-    // Use the markdown as-is since the AI prompt now generates proper LaTeX
+    // Process legacy markdown content
     const processedMarkdown = generatedMarkdown;
 
     // Extract summary
@@ -912,7 +1103,11 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
             {resource.description && (
               <div className="p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/40 group-hover:bg-white/80 transition-all duration-300">
                 <div className="text-slate-700 text-sm leading-relaxed line-clamp-3">
-                  <PerfectMathRenderer content={resource.description} />
+                  <ContentDisplay 
+                    content={resource.description} 
+                    renderingMode="math-optimized"
+                    className="resource-description"
+                  />
                 </div>
               </div>
             )}
@@ -976,9 +1171,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
     return currentPageTabs[key] || 0;
   };
 
-  const setCurrentPageTab = (moduleIndex, subsectionIndex, pageIndex) => {
+  const setCurrentPageTab = (moduleIndex, subsectionIndex, tabIndex) => {
     const key = `${moduleIndex}-${subsectionIndex}`;
-    setCurrentPageTabs((prev) => ({ ...prev, [key]: pageIndex }));
+    setCurrentPageTabs(prev => ({ ...prev, [key]: tabIndex }));
   };
 
   const toggleSidebar = () => {
@@ -1002,6 +1197,69 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
     setCurrentModule(moduleIndex);
     setCurrentSubsection(0);
     setCurrentPage(0);
+  };
+
+  // Flashcard functions
+  const openFlashcards = (subsectionData) => {
+    const hasConceptCards = subsectionData?.conceptFlashCards && subsectionData.conceptFlashCards.length > 0;
+    const hasFormulaCards = subsectionData?.formulaFlashCards && subsectionData.formulaFlashCards.length > 0;
+    
+    if (hasConceptCards || hasFormulaCards) {
+      // Combine both types with category labels
+      const allCards = [];
+      
+      if (hasConceptCards) {
+        subsectionData.conceptFlashCards.forEach(card => {
+          allCards.push({
+            ...card,
+            category: 'concept',
+            categoryLabel: '📚 Important Concept'
+          });
+        });
+      }
+      
+      if (hasFormulaCards) {
+        subsectionData.formulaFlashCards.forEach(card => {
+          allCards.push({
+            ...card,
+            category: 'formula',
+            categoryLabel: '🧮 Mathematical Formula'
+          });
+        });
+      }
+      
+      setCurrentFlashcardSet(allCards);
+      setActiveFlashcardIndex(0);
+      setIsFlashcardFlipped(false);
+      setShowFlashcards(true);
+    } else {
+      toast.error("No flashcards available for this section");
+    }
+  };
+
+  const closeFlashcards = () => {
+    setShowFlashcards(false);
+    setCurrentFlashcardSet([]);
+    setActiveFlashcardIndex(0);
+    setIsFlashcardFlipped(false);
+  };
+
+  const nextFlashcard = () => {
+    if (activeFlashcardIndex < currentFlashcardSet.length - 1) {
+      setActiveFlashcardIndex(activeFlashcardIndex + 1);
+      setIsFlashcardFlipped(false);
+    }
+  };
+
+  const prevFlashcard = () => {
+    if (activeFlashcardIndex > 0) {
+      setActiveFlashcardIndex(activeFlashcardIndex - 1);
+      setIsFlashcardFlipped(false);
+    }
+  };
+
+  const flipFlashcard = () => {
+    setIsFlashcardFlipped(!isFlashcardFlipped);
   };
 
   if (showQuiz && quizData) {
@@ -1041,6 +1299,195 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
             </Card>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // If showing flashcards, render the flashcard modal
+  if (showFlashcards && currentFlashcardSet.length > 0) {
+    const currentCard = currentFlashcardSet[activeFlashcardIndex];
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold flex items-center gap-3">
+                  <Brain className="h-8 w-8" />
+                  Study Flashcards
+                </h2>
+                <p className="text-purple-100 mt-1">
+                  Card {activeFlashcardIndex + 1} of {currentFlashcardSet.length}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeFlashcards}
+                className="text-white hover:bg-white/20 rounded-full"
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+            
+            {/* Progress bar */}
+            <div className="mt-4">
+              <Progress 
+                value={(activeFlashcardIndex + 1) / currentFlashcardSet.length * 100} 
+                className="h-2 bg-purple-500/30"
+              />
+            </div>
+          </div>
+
+          {/* Flashcard Content */}
+          <div className="p-8">
+            <div className="flashcard-container max-w-2xl mx-auto">
+              <div 
+                className={`flashcard ${isFlashcardFlipped ? 'flipped' : ''}`}
+                onClick={flipFlashcard}
+              >
+                {/* Front of card - Question */}
+                <div className={`flashcard-side ${currentCard.category === 'formula' ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-gradient-to-br from-purple-600 to-pink-700'} text-white rounded-2xl`}>
+                  <div className="flashcard-content">
+                    <div className="flashcard-label opacity-90 mb-2">
+                      {currentCard.categoryLabel || 'Question'}
+                    </div>
+                    <div className="flashcard-text">
+                      <ContentDisplay 
+                        content={currentCard.question}
+                        renderingMode="math-optimized"
+                        className="text-white flashcard-question"
+                        enableTelemetry={false}
+                      />
+                    </div>
+                    <div className="mt-6 text-sm opacity-75 flex items-center justify-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${currentCard.category === 'formula' ? 'bg-blue-300' : 'bg-purple-300'} animate-pulse`}></div>
+                      Click to reveal answer
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Back of card - Answer */}
+                <div className={`flashcard-side ${currentCard.category === 'formula' ? 'bg-gradient-to-br from-emerald-600 to-green-700' : 'bg-gradient-to-br from-orange-600 to-red-700'} text-white rounded-2xl transform rotate-y-180`}>
+                  <div className="flashcard-content">
+                    <div className="flashcard-label opacity-90 mb-2">
+                      {currentCard.categoryLabel?.replace('📚', '✅').replace('🧮', '💯') || 'Answer'}
+                    </div>
+                    <div className="flashcard-text">
+                      <ContentDisplay 
+                        content={currentCard.answer}
+                        renderingMode="math-optimized"
+                        className="text-white flashcard-answer"
+                        enableTelemetry={false}
+                      />
+                    </div>
+                    <div className="mt-6 text-sm opacity-75 flex items-center justify-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${currentCard.category === 'formula' ? 'bg-emerald-300' : 'bg-orange-300'} animate-pulse`}></div>
+                      Click to see question
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Controls */}
+            <div className="flex items-center justify-between mt-8">
+              <Button
+                onClick={prevFlashcard}
+                disabled={activeFlashcardIndex === 0}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl"
+              >
+                <ChevronLeft className="h-5 w-5 mr-2" />
+                Previous
+              </Button>
+              
+              <div className="flex flex-col items-center gap-4">
+                <Button
+                  onClick={flipFlashcard}
+                  variant="outline"
+                  className="border-purple-600 text-purple-600 hover:bg-purple-50 px-6 py-3 rounded-xl"
+                >
+                  {isFlashcardFlipped ? "Show Question" : "Show Answer"}
+                </Button>
+                
+                {/* Flashcard indicators with categories */}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex gap-2">
+                    {currentFlashcardSet.map((card, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setActiveFlashcardIndex(index);
+                          setIsFlashcardFlipped(false);
+                        }}
+                        className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                          index === activeFlashcardIndex
+                            ? (card.category === 'formula' ? 'bg-blue-600 scale-125' : 'bg-purple-600 scale-125')
+                            : (card.category === 'formula' ? 'bg-blue-300 hover:bg-blue-400' : 'bg-purple-300 hover:bg-purple-400')
+                        }`}
+                        title={`${card.categoryLabel}: ${card.question.substring(0, 50)}...`}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Category Legend */}
+                  <div className="flex items-center gap-4 text-xs text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-purple-600"></div>
+                      <span>📚 Concepts ({currentFlashcardSet.filter(c => c.category === 'concept').length})</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                      <span>🧮 Formulas ({currentFlashcardSet.filter(c => c.category === 'formula').length})</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Button
+                onClick={nextFlashcard}
+                disabled={activeFlashcardIndex === currentFlashcardSet.length - 1}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl"
+              >
+                Next
+                <ChevronRight className="h-5 w-5 ml-2" />
+              </Button>
+            </div>
+
+            {/* Study Tips */}
+            <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200">
+              <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
+                <Lightbulb className="h-5 w-5" />
+                Study Tips
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">1</div>
+                  <span>Read the question carefully before revealing the answer</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">2</div>
+                  <span>Try to answer in your mind before flipping the card</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">3</div>
+                  <span>Review cards you find difficult multiple times</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">4</div>
+                  <span>Focus on understanding concepts, not just memorization</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -1250,22 +1697,73 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                         </h3>
                         <div className="prose max-w-none">
                           {(() => {
-                            // Try different content sources in order of preference
-                            const content =
-                              currentModuleData?.enhancedMarkdown ||
-                              currentModuleData?.content ||
-                              currentModuleData?.summary;
+                            // Handle different content types (JSON object or string)
+                            const rawContent = currentModuleData?.content;
+                            let displayContent = null;
+                            let hasStructuredData = false;
 
-                            if (content && typeof content === "string") {
-                              return <PerfectMathRenderer content={content} />;
+                            if (rawContent && typeof rawContent === "object") {
+                              // Handle JSON structured content
+                              console.log("🔧 Rendering JSON structured module content");
+                              displayContent = rawContent.summary || rawContent.content || "JSON content structure detected. Check subsections for detailed content.";
+                              hasStructuredData = true;
+                              
+                              // If we have JSON structured content, also update module data
+                              if (rawContent.summary && !currentModuleData.summary) {
+                                currentModuleData.summary = rawContent.summary;
+                              }
+                              if (rawContent.objectives && !currentModuleData.objectives) {
+                                currentModuleData.objectives = rawContent.objectives;
+                              }
+                              if (rawContent.examples && !currentModuleData.examples) {
+                                currentModuleData.examples = rawContent.examples;
+                              }
+                              if (rawContent.resources && !currentModuleData.resources) {
+                                currentModuleData.resources = rawContent.resources;
+                              }
+                            } else if (rawContent && typeof rawContent === "string") {
+                              // Handle string content (markdown)
+                              displayContent = rawContent;
+                            } else {
+                              // Fallback to other sources
+                              displayContent = 
+                              currentModuleData?.enhancedMarkdown ||
+                              currentModuleData?.summary;
+                            }
+
+                            if (displayContent && typeof displayContent === "string") {
+                              return (
+                                <div>
+                                  <ContentDisplay 
+                                    content={displayContent} 
+                                    renderingMode="math-optimized"
+                                    className="module-overview"
+                                  />
+                                  {hasStructuredData && (
+                                    <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                                      <p className="text-sm text-green-700 flex items-center gap-2">
+                                        <CheckCircle className="h-4 w-4" />
+                                        ✅ Enhanced JSON content loaded with structured data
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
                             } else {
                               return (
                                 <div className="text-gray-500 italic p-4 bg-white/50 rounded-lg border">
                                   <p>📚 Module content is being processed...</p>
                                   <p className="text-sm mt-2">
-                                    Check the "Subsections" tab for detailed
-                                    content.
+                                    Check the "Subsections" tab for detailed content.
                                   </p>
+                                  {process.env.NODE_ENV === "development" && (
+                                    <div className="mt-2 text-xs text-gray-400">
+                                      <p>Content type: {typeof rawContent}</p>
+                                      <p>Has enhancedMarkdown: {!!currentModuleData?.enhancedMarkdown}</p>
+                                      <p>Has summary: {!!currentModuleData?.summary}</p>
+                                      <p>Has structured data: {hasStructuredData}</p>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             }
@@ -1283,23 +1781,32 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                               Summary
                             </h3>
                             <div className="prose max-w-none">
-                              <PerfectMathRenderer
+                              <ContentDisplay 
                                 content={currentModuleData.summary}
+                                renderingMode="math-optimized"
+                                className="module-summary"
                               />
                             </div>
                           </div>
                         )}
 
-                      {currentModuleData?.objectives &&
-                        currentModuleData.objectives.length > 0 && (
+                      {/* Learning Objectives - Handle both direct and JSON-nested objectives */}
+                      {(() => {
+                        let objectives = currentModuleData?.objectives;
+                        
+                        // If objectives is not available directly, check if it's in JSON content
+                        if (!objectives && currentModuleData?.content && typeof currentModuleData.content === 'object') {
+                          objectives = currentModuleData.content.objectives;
+                        }
+                        
+                        return objectives && objectives.length > 0 ? (
                           <div className="bg-blue-50 p-6 rounded-xl">
                             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                               <Target className="h-5 w-5 text-blue-600" />
                               Learning Objectives
                             </h3>
                             <ul className="space-y-2">
-                              {currentModuleData.objectives.map(
-                                (objective, index) => (
+                              {objectives.map((objective, index) => (
                                   <li
                                     key={index}
                                     className="flex items-start gap-3"
@@ -1308,27 +1815,36 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                       {index + 1}
                                     </div>
                                     <div className="text-gray-700 flex-1">
-                                      <PerfectMathRenderer
+                                    <ContentDisplay 
                                         content={objective}
+                                      renderingMode="math-optimized"
+                                      className="objective"
                                       />
                                     </div>
                                   </li>
-                                )
-                              )}
+                              ))}
                             </ul>
                           </div>
-                        )}
+                        ) : null;
+                      })()}
 
-                      {currentModuleData?.examples &&
-                        currentModuleData.examples.length > 0 && (
+                      {/* Key Examples - Handle both direct and JSON-nested examples */}
+                      {(() => {
+                        let examples = currentModuleData?.examples;
+                        
+                        // If examples is not available directly, check if it's in JSON content
+                        if (!examples && currentModuleData?.content && typeof currentModuleData.content === 'object') {
+                          examples = currentModuleData.content.examples;
+                        }
+                        
+                        return examples && examples.length > 0 ? (
                           <div className="bg-green-50 p-6 rounded-xl">
                             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                               <Lightbulb className="h-5 w-5 text-green-600" />
                               Key Examples
                             </h3>
                             <div className="space-y-4">
-                              {currentModuleData.examples.map(
-                                (example, index) => (
+                              {examples.map((example, index) => (
                                   <div
                                     key={index}
                                     className="bg-white p-4 rounded-lg shadow-sm"
@@ -1339,18 +1855,20 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                       </Badge>
                                       <div className="flex-1">
                                         <div className="text-gray-700">
-                                          <PerfectMathRenderer
+                                        <ContentDisplay 
                                             content={example}
+                                          renderingMode="math-optimized"
+                                          className="example"
                                           />
                                         </div>
                                       </div>
                                     </div>
                                   </div>
-                                )
-                              )}
+                              ))}
                             </div>
                           </div>
-                        )}
+                        ) : null;
+                      })()}
 
                       {/* Debug info for developers */}
                       {process.env.NODE_ENV === "development" && (
@@ -1514,8 +2032,10 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                 Overview
                                               </h4>
                                               <div className="text-blue-800">
-                                                <PerfectMathRenderer
+                                                <ContentDisplay 
                                                   content={subsection.summary}
+                                                  renderingMode="math-optimized"
+                                                  className="subsection-summary"
                                                 />
                                               </div>
                                             </div>
@@ -1659,12 +2179,165 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                             </div>
                                           )}
 
-                                          {/* Add Quiz Section for each subsection */}
-                                          <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
-                                            <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-                                              <Brain className="h-5 w-5" />
-                                              Practice Quizzes
-                                            </h4>
+                                          {/* Add Flashcard and Quiz Section for each subsection */}
+                                          <div className="space-y-4">
+                                            {/* Flashcard Section */}
+                                            {(() => {
+                                              // Check if current subsection has flashcards
+                                              const subsectionData = subsection;
+                                              const hasConceptCards = subsectionData?.conceptFlashCards && 
+                                                                     Array.isArray(subsectionData.conceptFlashCards) && 
+                                                                     subsectionData.conceptFlashCards.length > 0;
+                                              const hasFormulaCards = subsectionData?.formulaFlashCards && 
+                                                                     Array.isArray(subsectionData.formulaFlashCards) && 
+                                                                     subsectionData.formulaFlashCards.length > 0;
+                                              
+                                              // Also check legacy flashCards structure
+                                              const hasLegacyCards = subsectionData?.flashCards && 
+                                                                    Array.isArray(subsectionData.flashCards) && 
+                                                                    subsectionData.flashCards.length > 0;
+                                              
+                                              const hasAnyFlashcards = hasConceptCards || hasFormulaCards || hasLegacyCards;
+                                              
+                                              if (!hasAnyFlashcards) return null;
+                                              
+                                              const conceptCount = subsectionData.conceptFlashCards?.length || 0;
+                                              const formulaCount = subsectionData.formulaFlashCards?.length || 0;
+                                              const totalCount = conceptCount + formulaCount + (hasLegacyCards ? subsectionData.flashCards.length : 0);
+                                              
+                                              return (
+                                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+                                                  <div className="flex items-center justify-between mb-4">
+                                                    <h4 className="font-bold text-green-900 flex items-center gap-2">
+                                                      <Brain className="h-6 w-6" />
+                                                      Study Flashcards
+                                                    </h4>
+                                                    <div className="flex items-center gap-2">
+                                                      <Badge className="bg-green-100 text-green-700 border-green-300">
+                                                        Interactive Study
+                                                      </Badge>
+                                                      <Badge className="bg-white/80 text-green-800 border-green-300">
+                                                        {totalCount} Cards
+                                                      </Badge>
+                                                    </div>
+                                                  </div>
+                                                  
+                                                  {/* Category Breakdown */}
+                                                  <div className="flex items-center gap-6 mb-4">
+                                                    {conceptCount > 0 && (
+                                                      <div className="flex items-center gap-2 text-sm">
+                                                        <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                                                        <span className="text-gray-700">📚 {conceptCount} Concepts</span>
+                                                      </div>
+                                                    )}
+                                                    {formulaCount > 0 && (
+                                                      <div className="flex items-center gap-2 text-sm">
+                                                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                                        <span className="text-gray-700">🧮 {formulaCount} Formulas</span>
+                                                      </div>
+                                                    )}
+                                                    {hasLegacyCards && (
+                                                      <div className="flex items-center gap-2 text-sm">
+                                                        <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                                                        <span className="text-gray-700">📝 {subsectionData.flashCards.length} Mixed</span>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  
+                                                  <p className="text-green-700 text-sm mb-4">
+                                                    Review key concepts and formulas with interactive flashcards designed for exam success.
+                                                  </p>
+                                                  
+                                                  <div className="flex flex-wrap gap-3 mb-4">
+                                                    <Button
+                                                      onClick={() => openFlashcards(subsectionData)}
+                                                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+                                                    >
+                                                      <Brain className="h-4 w-4" />
+                                                      Start Studying
+                                                      <Badge className="bg-white/20 text-white ml-2">
+                                                        {totalCount}
+                                                      </Badge>
+                                                    </Button>
+                                                    <div className="flex items-center gap-2 text-sm text-green-600">
+                                                      <Timer className="h-4 w-4" />
+                                                      <span>~{Math.ceil(totalCount * 0.5)} min study time</span>
+                                                    </div>
+                                                  </div>
+                                                  
+                                                  {/* Preview cards by category */}
+                                                  <div className="space-y-4">
+                                                    {/* Concept Cards Preview */}
+                                                    {hasConceptCards && (
+                                                      <div>
+                                                        <h5 className="text-sm font-semibold text-purple-700 mb-2 flex items-center gap-2">
+                                                          📚 Important Concepts Preview
+                                                        </h5>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                          {subsectionData.conceptFlashCards.slice(0, 2).map((card, cardIndex) => (
+                                                            <div key={`concept-${cardIndex}`} className="bg-purple-50 p-3 rounded-lg border border-purple-200 hover:border-purple-300 transition-colors">
+                                                              <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">
+                                                                Concept Card {cardIndex + 1}
+                                                              </div>
+                                                              <div className="text-sm text-gray-700 line-clamp-2">
+                                                                <ContentDisplay 
+                                                                  content={card.question}
+                                                                  renderingMode="math-optimized"
+                                                                  className="text-sm"
+                                                                  enableTelemetry={false}
+                                                                />
+                                                              </div>
+                                                            </div>
+                                                          ))}
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                    
+                                                    {/* Formula Cards Preview */}
+                                                    {hasFormulaCards && (
+                                                      <div>
+                                                        <h5 className="text-sm font-semibold text-blue-700 mb-2 flex items-center gap-2">
+                                                          🧮 Mathematical Formulas Preview
+                                                        </h5>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                          {subsectionData.formulaFlashCards.slice(0, 2).map((card, cardIndex) => (
+                                                            <div key={`formula-${cardIndex}`} className="bg-blue-50 p-3 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors">
+                                                              <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
+                                                                Formula Card {cardIndex + 1}
+                                                              </div>
+                                                              <div className="text-sm text-gray-700 line-clamp-2">
+                                                                <ContentDisplay 
+                                                                  content={card.question}
+                                                                  renderingMode="math-optimized"
+                                                                  className="text-sm"
+                                                                  enableTelemetry={false}
+                                                                />
+                                                              </div>
+                                                            </div>
+                                                          ))}
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                    
+                                                    {/* Show count if more cards available */}
+                                                    {totalCount > 4 && (
+                                                      <div className="text-center pt-2">
+                                                        <span className="text-xs text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                                                          +{totalCount - 4} more flashcards available
+                                                        </span>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              );
+                                            })()}
+                                            
+                                            {/* Quiz Section */}
+                                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
+                                              <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                                                <Trophy className="h-5 w-5" />
+                                                Practice Quizzes
+                                              </h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                               {["Easy", "Medium", "Hard"].map(
                                                 (difficulty) => {
@@ -1754,6 +2427,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                               at different difficulty levels
                                             </p>
                                           </div>
+                                          </div>
 
                                           {subsection.keyPoints &&
                                             subsection.keyPoints.length > 0 && (
@@ -1773,8 +2447,10 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                           {pointIndex + 1}
                                                         </div>
                                                         <div className="text-green-800 flex-1">
-                                                          <PerfectMathRenderer
+                                                          <ContentDisplay 
                                                             content={point}
+                                                            renderingMode="math-optimized"
+                                                            className="key-point"
                                                           />
                                                         </div>
                                                       </li>
@@ -1811,10 +2487,12 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                         {currentPage.pageTitle}
                                                       </h4>
                                                       <div className="prose max-w-none">
-                                                        <PerfectMathRenderer
+                                                        <ContentDisplay 
                                                           content={
                                                             currentPage.content
                                                           }
+                                                          renderingMode="math-optimized"
+                                                          className="page-content"
                                                           enableTelemetry={
                                                             process.env
                                                               .NODE_ENV ===
@@ -1857,18 +2535,22 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                                       }
                                                                     </h6>
                                                                     <div className="text-purple-700 mb-2">
-                                                                      <PerfectMathRenderer
+                                                                      <ContentDisplay 
                                                                         content={
                                                                           mathItem.content
                                                                         }
+                                                                        renderingMode="math-optimized"
+                                                                        className="math-item"
                                                                       />
                                                                     </div>
                                                                     {mathItem.explanation && (
                                                                       <div className="text-sm text-purple-600">
-                                                                        <PerfectMathRenderer
+                                                                        <ContentDisplay 
                                                                           content={
                                                                             mathItem.explanation
                                                                           }
+                                                                          renderingMode="math-optimized"
+                                                                          className="math-explanation"
                                                                         />
                                                                       </div>
                                                                     )}
@@ -1877,10 +2559,12 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                                         <strong>
                                                                           Example:
                                                                         </strong>{" "}
-                                                                        <PerfectMathRenderer
+                                                                        <ContentDisplay 
                                                                           content={
                                                                             mathItem.example
                                                                           }
+                                                                          renderingMode="math-optimized"
+                                                                          className="example-example"
                                                                         />
                                                                       </div>
                                                                     )}
@@ -1899,10 +2583,12 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                                                 Key Takeaway
                                                               </h5>
                                                               <div className="text-yellow-800">
-                                                                <PerfectMathRenderer
+                                                                <ContentDisplay 
                                                                   content={
                                                                     currentPage.keyTakeaway
                                                                   }
+                                                                  renderingMode="math-optimized"
+                                                                  className="key-takeaway"
                                                                 />
                                                               </div>
                                                             </div>
@@ -2014,25 +2700,26 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                             <div className="space-y-2 text-sm">
                               <div>
                                 Inline:{" "}
-                                <PerfectMathRenderer
+                                <ContentDisplay 
                                   content="The formula $E = mc^2$ shows energy-mass equivalence."
-                                  inline={true}
-                                  enableTelemetry={true}
+                                  renderingMode="math-optimized"
+                                  className="inline-formula"
                                 />
                               </div>
                               <div>
                                 Block:{" "}
-                                <PerfectMathRenderer
+                                <ContentDisplay 
                                   content="$$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$"
-                                  enableTelemetry={true}
+                                  renderingMode="math-optimized"
+                                  className="block-formula"
                                 />
                               </div>
                               <div>
                                 Ohm's Law:{" "}
-                                <PerfectMathRenderer
+                                <ContentDisplay 
                                   content="$V = IR$ where $V$ is voltage, $I$ is current, and $R$ is resistance."
-                                  inline={true}
-                                  enableTelemetry={true}
+                                  renderingMode="math-optimized"
+                                  className="ohm-law"
                                 />
                               </div>
                             </div>
@@ -2186,8 +2873,15 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
                           {Object.entries(resourceCategories).map(
                             ([key, { icon: Icon, label }]) => {
-                              const resources =
-                                currentModuleData?.resources?.[key] || [];
+                              // Get resources from either direct property or JSON content structure
+                              let moduleResources = currentModuleData?.resources;
+                              
+                              // If resources not available directly, check if it's in JSON content
+                              if (!moduleResources && currentModuleData?.content && typeof currentModuleData.content === 'object') {
+                                moduleResources = currentModuleData.content.resources;
+                              }
+                              
+                              const resources = moduleResources?.[key] || [];
                               const count = resources.length;
                               if (count === 0) return null;
 
@@ -2231,11 +2925,18 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                           transition={{ duration: 0.3 }}
                         >
                           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {(
-                              currentModuleData?.resources?.[
-                                selectedResourceCategory
-                              ] || []
-                            ).map((resource, index) => (
+                            {(() => {
+                              // Get resources from either direct property or JSON content structure
+                              let moduleResources = currentModuleData?.resources;
+                              
+                              // If resources not available directly, check if it's in JSON content
+                              if (!moduleResources && currentModuleData?.content && typeof currentModuleData.content === 'object') {
+                                moduleResources = currentModuleData.content.resources;
+                              }
+                              
+                              const categoryResources = moduleResources?.[selectedResourceCategory] || [];
+                              
+                              return categoryResources.map((resource, index) => (
                               <ResourceCard
                                 key={`${selectedResourceCategory}-${index}`}
                                 resource={resource}
@@ -2243,19 +2944,34 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                 isInstructorChoice={resource.isInstructorChoice}
                                 resourceIndex={index}
                               />
-                            ))}
+                              ));
+                            })()}
                           </div>
-                          {(
-                            currentModuleData?.resources?.[
-                              selectedResourceCategory
-                            ] || []
-                          ).length === 0 && (
+                          {(() => {
+                            // Check if category has resources (handle both direct and JSON structure)
+                            let moduleResources = currentModuleData?.resources;
+                            
+                            if (!moduleResources && currentModuleData?.content && typeof currentModuleData.content === 'object') {
+                              moduleResources = currentModuleData.content.resources;
+                            }
+                            
+                            const categoryResources = moduleResources?.[selectedResourceCategory] || [];
+                            const hasResources = categoryResources.length > 0;
+                            
+                            return !hasResources ? (
                             <div className="text-center py-12">
                               <p className="text-slate-500">
                                 No resources in this category.
                               </p>
+                                {process.env.NODE_ENV === "development" && (
+                                  <div className="mt-2 text-xs text-gray-400">
+                                    <p>Available resources: {JSON.stringify(Object.keys(moduleResources || {}))}</p>
+                                    <p>Selected category: {selectedResourceCategory}</p>
                             </div>
                           )}
+                              </div>
+                            ) : null;
+                          })()}
                         </motion.div>
                       </AnimatePresence>
                     </div>
@@ -2389,9 +3105,10 @@ function QuizInterface({ quizData, onComplete, difficulty }) {
       </div>
       <div>
         <div className="font-medium text-lg mb-4 math-question">
-          <PerfectMathRenderer
+          <ContentDisplay 
             content={currentQ?.question}
-            inline={false}
+            renderingMode="math-optimized"
+            className="question"
             enableTelemetry={process.env.NODE_ENV === "development"}
             onRenderError={(error) =>
               console.warn("Quiz question math error:", error)
@@ -2410,9 +3127,10 @@ function QuizInterface({ quizData, onComplete, difficulty }) {
               className="w-full justify-start text-left h-auto py-3 quiz-option"
               onClick={() => handleAnswerSelect(currentQuestion, index)}
             >
-              <PerfectMathRenderer
+              <ContentDisplay 
                 content={option}
-                inline={false}
+                renderingMode="math-optimized"
+                className="option"
                 enableTelemetry={process.env.NODE_ENV === "development"}
                 onRenderError={(error) =>
                   console.warn("Quiz option math error:", error)

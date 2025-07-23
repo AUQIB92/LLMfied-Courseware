@@ -71,7 +71,7 @@ import {
   X,
 } from "lucide-react";
 import QuizModal from "./QuizModal";
-import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
+import ContentDisplay from "@/components/ContentDisplay";
 
 // Helper function to parse markdown into pages
 function parseMarkdownToPages(markdown) {
@@ -2255,8 +2255,10 @@ Return JSON format:
                         </Badge>
                       </div>
                       <div className="prose prose-lg max-w-none">
-                        <MathMarkdownRenderer
+                        <ContentDisplay
                           content={currentPageData.content}
+                          renderingMode="math-optimized"
+                          className="module-page-content"
                         />
                       </div>
                     </motion.div>
@@ -2312,7 +2314,11 @@ Return JSON format:
                   </div>
                 ) : (
                   <div className="prose prose-lg max-w-none">
-                    <MathMarkdownRenderer content={module.content} />
+                    <ContentDisplay 
+                      content={module.content}
+                      renderingMode="math-optimized"
+                      className="module-full-content"
+                    />
                   </div>
                 )}
 

@@ -55,7 +55,105 @@ import {
   Users,
   Edit,
   Save,
+  CheckCircle,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
+import { useContentValidation, useContentProcessor } from "@/lib/contentDisplayHooks";
+import ContentDisplay from "@/components/ContentDisplay";
+
+// Validated Input Component for Module Editor
+function ValidatedModuleField({ 
+  field, 
+  value, 
+  onChange, 
+  placeholder, 
+  className = "", 
+  rows, 
+  multiline = false,
+  label,
+  description 
+}) {
+  const { isValid, errors, warnings, isValidating } = useContentValidation(value);
+  const { processedContent, processed, hasErrors, hasMath } = useContentProcessor(value);
+  
+  const Component = multiline ? Textarea : Input;
+  
+  const getValidationColor = () => {
+    if (!value) return "border-gray-200";
+    if (errors.length > 0) return "border-red-500";
+    if (isValid) return "border-green-500";
+    return "border-yellow-500";
+  };
+
+  const getValidationIcon = () => {
+    if (!value) return null;
+    if (errors.length > 0) return <AlertTriangle className="h-4 w-4 text-red-500" />;
+    if (isValid) return <CheckCircle className="h-4 w-4 text-green-500" />;
+    return <Info className="h-4 w-4 text-yellow-500" />;
+  };
+
+  return (
+    <div className="space-y-3">
+      {label && (
+        <Label htmlFor={field} className="text-base font-semibold text-gray-700">
+          {label}
+        </Label>
+      )}
+      
+      <div className="relative">
+        <Component
+          id={field}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${className} border-2 ${getValidationColor()} transition-colors duration-300`}
+          rows={rows}
+        />
+        {value && (
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            {getValidationIcon()}
+          </div>
+        )}
+      </div>
+      
+      {/* Validation Messages */}
+      {value && (
+        <div className="space-y-1">
+          {errors.length > 0 && (
+            <Alert className="py-2">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                {errors.join(", ")}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {warnings.length > 0 && (
+            <Alert className="py-2 border-yellow-200 bg-yellow-50">
+              <Info className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-sm text-yellow-700">
+                {warnings.join(", ")}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {isValid && processed && (
+            <div className="text-xs text-green-600 flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Content validated • Ready for display
+              {hasMath && " • LaTeX equations detected"}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {description && (
+        <p className="text-sm text-gray-500">{description}</p>
+      )}
+    </div>
+  );
+}
 
 export default function ModuleEditor({ module, onUpdate }) {
   const { getAuthHeaders } = useAuth();
@@ -1530,20 +1628,14 @@ export default function ModuleEditor({ module, onUpdate }) {
                 {/* Basic Information */}
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="title"
-                        className="text-base font-semibold text-gray-700"
-                      >
-                        Module Title
-                      </Label>
-                      <Input
-                        id="title"
-                        value={module.title}
-                        onChange={(e) => onUpdate({ title: e.target.value })}
-                        className="h-12 text-lg border-2 border-gray-200 focus:border-blue-500 transition-colors duration-300"
-                      />
-                    </div>
+                    <ValidatedModuleField
+                      field="title"
+                      value={module.title}
+                      onChange={(value) => onUpdate({ title: value })}
+                      placeholder="Enter module title..."
+                      className="h-12 text-lg focus:border-blue-500"
+                      label="Module Title"
+                    />
 
                     <div className="space-y-3">
                       <Label
@@ -1564,40 +1656,34 @@ export default function ModuleEditor({ module, onUpdate }) {
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <Label
-                      htmlFor="content"
-                      className="text-base font-semibold text-gray-700"
-                    >
-                      Content
-                    </Label>
-                    <Textarea
-                      id="content"
-                      value={module.content}
-                      onChange={(e) => onUpdate({ content: e.target.value })}
-                      rows={8}
-                      placeholder="Enter module content..."
-                      className="text-base border-2 border-gray-200 focus:border-blue-500 transition-colors duration-300 resize-none"
-                    />
-                  </div>
+                  <ValidatedModuleField
+                    field="content"
+                    value={module.content}
+                    onChange={(value) => onUpdate({ content: value })}
+                    placeholder="Enter module content with markdown and LaTeX support..."
+                    className="text-base focus:border-blue-500 resize-none"
+                    label="Content"
+                    multiline={true}
+                    rows={8}
+                    description="Supports markdown formatting and LaTeX math expressions. Use $$....$$ for display math and $....$ for inline math."
+                  />
 
-                  <div className="space-y-3">
-                    <Label
-                      htmlFor="summary"
-                      className="text-base font-semibold text-gray-700 flex items-center gap-2"
-                    >
-                      <Zap className="h-4 w-4 text-yellow-500" />
-                      AI-Generated Summary
-                    </Label>
-                    <Textarea
-                      id="summary"
-                      value={module.summary}
-                      onChange={(e) => onUpdate({ summary: e.target.value })}
-                      rows={4}
-                      placeholder="AI will generate a summary..."
-                      className="text-base border-2 border-gray-200 focus:border-purple-500 transition-colors duration-300 resize-none bg-gradient-to-r from-purple-50/50 to-pink-50/50"
-                    />
-                  </div>
+                  <ValidatedModuleField
+                    field="summary"
+                    value={module.summary}
+                    onChange={(value) => onUpdate({ summary: value })}
+                    placeholder="AI will generate a summary..."
+                    className="text-base focus:border-purple-500 resize-none bg-gradient-to-r from-purple-50/50 to-pink-50/50"
+                    label={
+                      <span className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-yellow-500" />
+                        AI-Generated Summary
+                      </span>
+                    }
+                    multiline={true}
+                    rows={4}
+                    description="AI-generated summary of the module content. Can be edited and refined."
+                  />
                 </div>
 
                 {/* Learning Objectives and Examples */}
