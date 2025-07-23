@@ -33,6 +33,9 @@ import {
   Crown,
   Brain,
   Timer,
+  RotateCcw,
+  Star,
+  Zap,
 } from "lucide-react";
 import ModuleContent from "./ModuleContent";
 import AITutor from "./AITutor";
@@ -78,7 +81,7 @@ const flashcardStyles = `
   .flashcard {
     position: relative;
     width: 100%;
-    height: 300px;
+    height: 400px;
     transform-style: preserve-3d;
     transition: transform 0.6s ease-in-out;
     cursor: pointer;
@@ -97,8 +100,9 @@ const flashcardStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: 1.5rem;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
   }
   
   .flashcard-front {
@@ -115,21 +119,86 @@ const flashcardStyles = `
   .flashcard-content {
     text-align: center;
     width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
   }
   
   .flashcard-label {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     opacity: 0.8;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    flex-shrink: 0;
   }
   
   .flashcard-text {
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 500;
-    line-height: 1.6;
+    line-height: 1.4;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0.5rem 0;
+  }
+  
+  /* Formula-specific styling for math equations */
+  .flashcard-question .katex-display,
+  .flashcard-answer .katex-display {
+    margin: 0.5rem 0 !important;
+    font-size: 1rem !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding: 0.5rem !important;
+    border-radius: 8px !important;
+  }
+  
+  .flashcard-question .katex,
+  .flashcard-answer .katex {
+    font-size: 0.9rem !important;
+    color: white !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 0.3rem 0.5rem !important;
+    margin: 0.3rem auto !important;
+    display: inline-block !important;
+    max-width: 100% !important;
+  }
+  
+  /* Scale down very large equations */
+  .flashcard-text .katex-display {
+    transform: scale(0.85);
+    transform-origin: center center;
+  }
+  
+  .flashcard-text .katex {
+    transform: scale(0.9);
+    transform-origin: center center;
+  }
+  
+  /* Ensure text wraps properly in flashcards */
+  .flashcard-text p {
+    margin: 0.25rem 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Formula flashcard specific adjustments */
+  .formula-flashcard .flashcard-text {
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+  
+  .concept-flashcard .flashcard-text {
+    font-size: 1rem;
+    line-height: 1.4;
   }
 `;
 
@@ -166,6 +235,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const [showFlashcards, setShowFlashcards] = useState(false);
   const [currentFlashcardSet, setCurrentFlashcardSet] = useState([]);
   const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false);
+  const [studiedCards, setStudiedCards] = useState(new Set());
 
   const resourceCategories = {
     books: { icon: BookOpen, label: "Books" },
@@ -399,9 +469,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
         console.log("✅ Received detailed content:", data);
 
         // Handle both structured JSON content and legacy format
-        if (data.content && typeof data.content === 'object') {
+        if (data.content && typeof data.content === "object") {
           console.log("🔧 Processing JSON structured content from API");
-          
+
           // Update module with structured JSON content
           setViewerCourse((prevCourse) => {
             const newModules = [...prevCourse.modules];
@@ -409,16 +479,25 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
               ...newModules[moduleIndex],
               content: data.content, // Store the full JSON structure
               summary: data.content.summary || newModules[moduleIndex].summary,
-              objectives: data.content.objectives || newModules[moduleIndex].objectives,
-              examples: data.content.examples || newModules[moduleIndex].examples,
-              resources: data.content.resources || newModules[moduleIndex].resources,
-              detailedSubsections: data.content.detailedSubsections || newModules[moduleIndex].detailedSubsections,
+              objectives:
+                data.content.objectives || newModules[moduleIndex].objectives,
+              examples:
+                data.content.examples || newModules[moduleIndex].examples,
+              resources:
+                data.content.resources || newModules[moduleIndex].resources,
+              detailedSubsections:
+                data.content.detailedSubsections ||
+                newModules[moduleIndex].detailedSubsections,
             };
             return { ...prevCourse, modules: newModules };
           });
-          console.log(`✅ Updated module ${moduleIndex} with JSON structured content`);
-          
-        } else if (data.detailedSubsections && data.detailedSubsections.length > 0) {
+          console.log(
+            `✅ Updated module ${moduleIndex} with JSON structured content`
+          );
+        } else if (
+          data.detailedSubsections &&
+          data.detailedSubsections.length > 0
+        ) {
           // Legacy format with detailedSubsections array
           setViewerCourse((prevCourse) => {
             const newModules = [...prevCourse.modules];
@@ -431,10 +510,12 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           console.log(
             `✅ Updated module ${moduleIndex} with ${data.detailedSubsections.length} subsections`
           );
-          
-        } else if (data.markdownContent && typeof data.markdownContent === 'string') {
+        } else if (
+          data.markdownContent &&
+          typeof data.markdownContent === "string"
+        ) {
           console.log("🔧 Processing markdown content from API");
-          
+
           // Handle markdown content response
           setViewerCourse((prevCourse) => {
             const newModules = [...prevCourse.modules];
@@ -446,7 +527,6 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
             return { ...prevCourse, modules: newModules };
           });
           console.log(`✅ Updated module ${moduleIndex} with markdown content`);
-          
         } else {
           console.log("⚠️ No recognized content format in response");
           toast.error(
@@ -609,11 +689,15 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   // Updated function to handle subsection data from new JSON format or legacy content
   const parseSubsectionData = (subsectionData, title) => {
     // Handle new enhanced JSON structure with conceptGroups (from generateCompetitiveExamSubsectionDetails)
-    if (subsectionData && typeof subsectionData === "object" && subsectionData.conceptGroups) {
+    if (
+      subsectionData &&
+      typeof subsectionData === "object" &&
+      subsectionData.conceptGroups
+    ) {
       console.log(`🧠 Processing enhanced JSON subsection data for "${title}"`);
-      
+
       return {
-        type: 'conceptGroups',
+        type: "conceptGroups",
         data: subsectionData,
         summary: subsectionData.summary || `Learn about ${title}`,
         keyPoints: subsectionData.conceptBullets || [
@@ -621,26 +705,37 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           `Apply problem-solving techniques`,
           `Understand practical applications`,
         ],
-        practicalExample: subsectionData.practicalUseCase || `Practical example for ${title}`,
-        commonPitfalls: subsectionData.conceptGroups?.flatMap(g => g.misconceptions || []) || [`Common issues with ${title}`],
+        practicalExample:
+          subsectionData.practicalUseCase || `Practical example for ${title}`,
+        commonPitfalls: subsectionData.conceptGroups?.flatMap(
+          (g) => g.misconceptions || []
+        ) || [`Common issues with ${title}`],
         refresherBoost: {
-          conceptBullets: subsectionData.conceptBullets || [`🔥 Key concept for ${title}`],
-          flashCards: subsectionData.flashCards || [{
-            question: `What is ${title}?`,
-            answer: `${title} is an important concept for exam preparation.`
-          }]
+          conceptBullets: subsectionData.conceptBullets || [
+            `🔥 Key concept for ${title}`,
+          ],
+          flashCards: subsectionData.flashCards || [
+            {
+              question: `What is ${title}?`,
+              answer: `${title} is an important concept for exam preparation.`,
+            },
+          ],
         },
         difficulty: subsectionData.difficulty || "Intermediate",
-        estimatedTime: subsectionData.estimatedTime || "15-20 minutes"
+        estimatedTime: subsectionData.estimatedTime || "15-20 minutes",
       };
     }
 
     // Handle legacy JSON structure with pages
-    if (subsectionData && typeof subsectionData === "object" && subsectionData.pages) {
+    if (
+      subsectionData &&
+      typeof subsectionData === "object" &&
+      subsectionData.pages
+    ) {
       console.log(`🔧 Processing legacy JSON subsection data for "${title}"`);
-      
+
       return {
-        type: 'pages',
+        type: "pages",
         data: subsectionData,
         summary: subsectionData.summary || `Learn about ${title}`,
         keyPoints: subsectionData.keyPoints || [
@@ -653,39 +748,50 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           pageNumber: page.pageNumber || index + 1,
           title: page.pageTitle || page.title || `Page ${index + 1}`,
           content: page.content || "",
-          keyTakeaway: page.keyTakeaway || `Key learning from page ${index + 1}`,
+          keyTakeaway:
+            page.keyTakeaway || `Key learning from page ${index + 1}`,
         })),
-        practicalExample: subsectionData.practicalExample || `Practical example for ${title}`,
-        commonPitfalls: subsectionData.commonPitfalls || [`Common issues with ${title}`],
+        practicalExample:
+          subsectionData.practicalExample || `Practical example for ${title}`,
+        commonPitfalls: subsectionData.commonPitfalls || [
+          `Common issues with ${title}`,
+        ],
         refresherBoost: subsectionData.refresherBoost || {
           conceptBullets: [`🔥 Key concept for ${title}`],
-          flashCards: [{
-            question: `What is ${title}?`,
-            answer: `${title} is an important concept for exam preparation.`
-          }]
-        }
+          flashCards: [
+            {
+              question: `What is ${title}?`,
+              answer: `${title} is an important concept for exam preparation.`,
+            },
+          ],
+        },
       };
     }
 
     // Handle legacy markdown format
-    const generatedMarkdown = typeof subsectionData === "string" ? subsectionData : subsectionData?.generatedMarkdown;
-    
+    const generatedMarkdown =
+      typeof subsectionData === "string"
+        ? subsectionData
+        : subsectionData?.generatedMarkdown;
+
     if (!generatedMarkdown || typeof generatedMarkdown !== "string") {
       return {
-        type: 'fallback',
+        type: "fallback",
         summary: `Learn about ${title}`,
         keyPoints: [
           `Master the fundamentals of ${title}`,
           `Apply practical problem-solving techniques`,
           `Understand real-world applications`,
         ],
-        pages: [{
-          id: "page-1",
-          pageNumber: 1,
-          title: "Overview",
-          content: `Content for ${title} will be generated.`,
-          keyTakeaway: `Understanding ${title} concepts`,
-        }],
+        pages: [
+          {
+            id: "page-1",
+            pageNumber: 1,
+            title: "Overview",
+            content: `Content for ${title} will be generated.`,
+            keyTakeaway: `Understanding ${title} concepts`,
+          },
+        ],
         practicalExample: `Practical example for ${title}`,
         commonPitfalls: [`Common issues with ${title}`],
       };
@@ -1103,8 +1209,8 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
             {resource.description && (
               <div className="p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/40 group-hover:bg-white/80 transition-all duration-300">
                 <div className="text-slate-700 text-sm leading-relaxed line-clamp-3">
-                  <ContentDisplay 
-                    content={resource.description} 
+                  <ContentDisplay
+                    content={resource.description}
                     renderingMode="math-optimized"
                     className="resource-description"
                   />
@@ -1173,7 +1279,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
   const setCurrentPageTab = (moduleIndex, subsectionIndex, tabIndex) => {
     const key = `${moduleIndex}-${subsectionIndex}`;
-    setCurrentPageTabs(prev => ({ ...prev, [key]: tabIndex }));
+    setCurrentPageTabs((prev) => ({ ...prev, [key]: tabIndex }));
   };
 
   const toggleSidebar = () => {
@@ -1201,36 +1307,41 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
   // Flashcard functions
   const openFlashcards = (subsectionData) => {
-    const hasConceptCards = subsectionData?.conceptFlashCards && subsectionData.conceptFlashCards.length > 0;
-    const hasFormulaCards = subsectionData?.formulaFlashCards && subsectionData.formulaFlashCards.length > 0;
-    
+    const hasConceptCards =
+      subsectionData?.conceptFlashCards &&
+      subsectionData.conceptFlashCards.length > 0;
+    const hasFormulaCards =
+      subsectionData?.formulaFlashCards &&
+      subsectionData.formulaFlashCards.length > 0;
+
     if (hasConceptCards || hasFormulaCards) {
       // Combine both types with category labels
       const allCards = [];
-      
+
       if (hasConceptCards) {
-        subsectionData.conceptFlashCards.forEach(card => {
+        subsectionData.conceptFlashCards.forEach((card) => {
           allCards.push({
             ...card,
-            category: 'concept',
-            categoryLabel: '📚 Important Concept'
+            category: "concept",
+            categoryLabel: "📚 Important Concept",
           });
         });
       }
-      
+
       if (hasFormulaCards) {
-        subsectionData.formulaFlashCards.forEach(card => {
+        subsectionData.formulaFlashCards.forEach((card) => {
           allCards.push({
             ...card,
-            category: 'formula',
-            categoryLabel: '🧮 Mathematical Formula'
+            category: "formula",
+            categoryLabel: "🧮 Mathematical Formula",
           });
         });
       }
-      
+
       setCurrentFlashcardSet(allCards);
       setActiveFlashcardIndex(0);
       setIsFlashcardFlipped(false);
+      setStudiedCards(new Set()); // Reset studied cards when opening new set
       setShowFlashcards(true);
     } else {
       toast.error("No flashcards available for this section");
@@ -1260,6 +1371,66 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
   const flipFlashcard = () => {
     setIsFlashcardFlipped(!isFlashcardFlipped);
+  };
+
+  // Helper function to format curriculum content
+  const formatCurriculumContent = (content) => {
+    if (!content || typeof content !== "string") return content;
+
+    console.log("🔍 RAW CONTENT:", content);
+    console.log("🔍 CONTENT LENGTH:", content.length);
+    console.log("🔍 HAS ###:", content.includes("###"));
+    console.log("🔍 HAS ####:", content.includes("####"));
+
+    // Check if this looks like curriculum structure content (concatenated headers)
+    if (
+      content.includes("###") ||
+      content.includes("####") ||
+      content.includes("##")
+    ) {
+      console.log("🔧 Processing curriculum structure for formatting");
+
+      let formatted = content;
+
+      // More aggressive formatting for concatenated content
+      formatted = formatted
+        // First, handle the most common case: text directly followed by headers
+        .replace(/([a-zA-Z0-9])(#{2,4})(\s*\d)/g, "$1\n\n$2$3") // text###1.1 -> text\n\n###1.1
+        .replace(/([a-zA-Z0-9])(#{2,4})(\s*[A-Z])/g, "$1\n\n$2$3") // textR### -> text\n\n###
+
+        // Handle headers without proper spacing
+        .replace(/###(?!\s)/g, "\n\n### ") // ###Something -> \n\n### Something
+        .replace(/####(?!\s)/g, "\n\n#### ") // ####Something -> \n\n#### Something
+        .replace(/##(?!#)(?!\s)/g, "\n\n## ") // ##Something -> \n\n## Something (not ###)
+
+        // Handle words directly followed by headers
+        .replace(/([a-zA-Z0-9])(\s*###)/g, "$1\n\n###") // word### -> word\n\n###
+        .replace(/([a-zA-Z0-9])(\s*####)/g, "$1\n\n####") // word#### -> word\n\n####
+        .replace(/([a-zA-Z0-9])(\s*##)(?!#)/g, "$1\n\n##") // word## -> word\n\n##
+
+        // Clean up spacing
+        .replace(/\n\n\n+/g, "\n\n") // Clean up multiple line breaks
+        .replace(/\s+\n/g, "\n") // Remove trailing spaces
+        .trim();
+
+      console.log("🔧 FORMATTED CONTENT:", formatted);
+
+      // If it starts with "Module X:" pattern, make it a proper header
+      if (formatted.match(/^Module \d+:/)) {
+        const lines = formatted.split("\n").filter((line) => line.trim());
+        if (lines.length > 0) {
+          const moduleTitle = lines[0];
+          const restContent = lines.slice(1).join("\n");
+          formatted = `# ${moduleTitle}\n\n${restContent}`;
+        }
+      }
+
+      console.log("🎯 FINAL FORMATTED CONTENT:", formatted);
+      return formatted;
+    }
+
+    console.log("⚪ No markdown headers detected, returning original content");
+    return content;
   };
 
   if (showQuiz && quizData) {
@@ -1303,191 +1474,324 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
     );
   }
 
-  // If showing flashcards, render the flashcard modal
+  // If showing flashcards, render the elegant flashcard interface
   if (showFlashcards && currentFlashcardSet.length > 0) {
     const currentCard = currentFlashcardSet[activeFlashcardIndex];
-    
+
+    // Transform our flashcard data to match the elegant design format
+    const flashcardsArray = currentFlashcardSet.map((card, index) => ({
+      id: index + 1,
+      front: card.question,
+      back: card.answer,
+      category: card.category === "formula" ? "Formula" : "Concept",
+      difficulty: "Medium", // Could be derived from subsection difficulty
+      gradient:
+        card.category === "formula"
+          ? "from-blue-500 via-blue-600 to-indigo-700"
+          : "from-purple-500 via-violet-600 to-indigo-700",
+      accent: card.category === "formula" ? "blue" : "purple",
+      categoryIcon: card.category === "formula" ? Zap : Brain,
+    }));
+
+    const card = flashcardsArray[activeFlashcardIndex];
+    const CategoryIcon = card.categoryIcon;
+    const difficultyConfig = {
+      Easy: {
+        color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        glow: "shadow-emerald-200/50",
+        icon: "🟢",
+      },
+      Medium: {
+        color: "bg-amber-50 text-amber-700 border-amber-200",
+        glow: "shadow-amber-200/50",
+        icon: "🟡",
+      },
+      Hard: {
+        color: "bg-rose-50 text-rose-700 border-rose-200",
+        glow: "shadow-rose-200/50",
+        icon: "🔴",
+      },
+    };
+    const difficultyStyle = difficultyConfig[card.difficulty];
+
+    const nextCard = () => {
+      setActiveFlashcardIndex(
+        (prev) => (prev + 1) % currentFlashcardSet.length
+      );
+      setIsFlashcardFlipped(false);
+    };
+
+    const prevCard = () => {
+      setActiveFlashcardIndex(
+        (prev) =>
+          (prev - 1 + currentFlashcardSet.length) % currentFlashcardSet.length
+      );
+      setIsFlashcardFlipped(false);
+    };
+
+    const flipCard = () => {
+      setIsFlashcardFlipped(!isFlashcardFlipped);
+      if (!isFlashcardFlipped) {
+        setStudiedCards((prev) => new Set([...prev, card.id]));
+      }
+    };
+
+    const progress = (studiedCards.size / currentFlashcardSet.length) * 100;
+
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
-        >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold flex items-center gap-3">
-                  <Brain className="h-8 w-8" />
-                  Study Flashcards
-                </h2>
-                <p className="text-purple-100 mt-1">
-                  Card {activeFlashcardIndex + 1} of {currentFlashcardSet.length}
-                </p>
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 z-50 p-6 flex items-center justify-center relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-emerald-400/10 to-cyan-400/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="w-full max-w-3xl space-y-8 relative z-10">
+          {/* Elegant Header */}
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-lg border border-white/20">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <Brain className="w-4 h-4 text-white" />
               </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                Study Flashcards
+              </h1>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={closeFlashcards}
-                className="text-white hover:bg-white/20 rounded-full"
+                className="text-slate-600 hover:bg-slate-100 rounded-full ml-2"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
-            
-            {/* Progress bar */}
-            <div className="mt-4">
-              <Progress 
-                value={(activeFlashcardIndex + 1) / currentFlashcardSet.length * 100} 
-                className="h-2 bg-purple-500/30"
-              />
+            <p className="text-slate-600 font-medium">
+              Master your subjects with elegant learning
+            </p>
+          </div>
+
+          {/* Refined Progress */}
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
+                <span className="text-slate-700 font-semibold">
+                  Learning Progress
+                </span>
+              </div>
+              <span className="text-slate-600 font-medium">
+                {studiedCards.size} of {currentFlashcardSet.length} mastered
+              </span>
+            </div>
+            <Progress value={progress} className="h-3 bg-slate-100" />
+            <div className="mt-2 text-right">
+              <span className="text-sm text-slate-500">
+                {Math.round(progress)}% complete
+              </span>
             </div>
           </div>
 
-          {/* Flashcard Content */}
-          <div className="p-8">
-            <div className="flashcard-container max-w-2xl mx-auto">
-              <div 
-                className={`flashcard ${isFlashcardFlipped ? 'flipped' : ''}`}
-                onClick={flipFlashcard}
+          {/* Premium Flashcard */}
+          <div className="relative perspective-1000">
+            <div
+              className={`relative w-full h-96 cursor-pointer transition-all duration-700 transform-style-preserve-3d hover:scale-[1.02] ${
+                isFlashcardFlipped ? "rotate-y-180" : ""
+              }`}
+              onClick={flipCard}
+              style={{ transformStyle: "preserve-3d" }}
+            >
+              {/* Front of card - Enhanced */}
+              <Card
+                className={`absolute inset-0 w-full h-full backface-hidden shadow-2xl border-0 bg-gradient-to-br ${card.gradient} overflow-hidden group`}
               >
-                {/* Front of card - Question */}
-                <div className={`flashcard-side ${currentCard.category === 'formula' ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-gradient-to-br from-purple-600 to-pink-700'} text-white rounded-2xl`}>
-                  <div className="flashcard-content">
-                    <div className="flashcard-label opacity-90 mb-2">
-                      {currentCard.categoryLabel || 'Question'}
+                <div className="absolute inset-0 bg-black/5"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+
+                <CardContent className="p-8 h-full flex flex-col justify-between relative z-10">
+                  <div className="flex justify-between items-start">
+                    <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm font-medium px-3 py-1">
+                      <CategoryIcon className="w-3 h-3 mr-2" />
+                      {card.category}
+                    </Badge>
+                    <Badge
+                      className={`${difficultyStyle.color} ${difficultyStyle.glow} shadow-lg backdrop-blur-sm font-medium px-3 py-1`}
+                    >
+                      <span className="mr-1">{difficultyStyle.icon}</span>
+                      {card.difficulty}
+                    </Badge>
+                  </div>
+
+                  <div className="text-center space-y-6">
+                    <div className="relative">
+                      <div className="text-8xl opacity-20 text-white font-light">
+                        ?
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 bg-white/10 rounded-full animate-pulse"></div>
+                      </div>
                     </div>
-                    <div className="flashcard-text">
-                      <ContentDisplay 
-                        content={currentCard.question}
+                    <div className="text-lg font-bold leading-tight text-white drop-shadow-sm px-4">
+                      <ContentDisplay
+                        content={card.front}
                         renderingMode="math-optimized"
                         className="text-white flashcard-question"
                         enableTelemetry={false}
                       />
                     </div>
-                    <div className="mt-6 text-sm opacity-75 flex items-center justify-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${currentCard.category === 'formula' ? 'bg-blue-300' : 'bg-purple-300'} animate-pulse`}></div>
-                      Click to reveal answer
-                    </div>
                   </div>
-                </div>
-                
-                {/* Back of card - Answer */}
-                <div className={`flashcard-side ${currentCard.category === 'formula' ? 'bg-gradient-to-br from-emerald-600 to-green-700' : 'bg-gradient-to-br from-orange-600 to-red-700'} text-white rounded-2xl transform rotate-y-180`}>
-                  <div className="flashcard-content">
-                    <div className="flashcard-label opacity-90 mb-2">
-                      {currentCard.categoryLabel?.replace('📚', '✅').replace('🧮', '💯') || 'Answer'}
-                    </div>
-                    <div className="flashcard-text">
-                      <ContentDisplay 
-                        content={currentCard.answer}
-                        renderingMode="math-optimized"
-                        className="text-white flashcard-answer"
-                        enableTelemetry={false}
-                      />
-                    </div>
-                    <div className="mt-6 text-sm opacity-75 flex items-center justify-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${currentCard.category === 'formula' ? 'bg-emerald-300' : 'bg-orange-300'} animate-pulse`}></div>
-                      Click to see question
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Navigation Controls */}
-            <div className="flex items-center justify-between mt-8">
-              <Button
-                onClick={prevFlashcard}
-                disabled={activeFlashcardIndex === 0}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl"
-              >
-                <ChevronLeft className="h-5 w-5 mr-2" />
-                Previous
-              </Button>
-              
-              <div className="flex flex-col items-center gap-4">
-                <Button
-                  onClick={flipFlashcard}
-                  variant="outline"
-                  className="border-purple-600 text-purple-600 hover:bg-purple-50 px-6 py-3 rounded-xl"
-                >
-                  {isFlashcardFlipped ? "Show Question" : "Show Answer"}
-                </Button>
-                
-                {/* Flashcard indicators with categories */}
-                <div className="flex flex-col items-center gap-3">
-                  <div className="flex gap-2">
-                    {currentFlashcardSet.map((card, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          setActiveFlashcardIndex(index);
-                          setIsFlashcardFlipped(false);
-                        }}
-                        className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                          index === activeFlashcardIndex
-                            ? (card.category === 'formula' ? 'bg-blue-600 scale-125' : 'bg-purple-600 scale-125')
-                            : (card.category === 'formula' ? 'bg-blue-300 hover:bg-blue-400' : 'bg-purple-300 hover:bg-purple-400')
-                        }`}
-                        title={`${card.categoryLabel}: ${card.question.substring(0, 50)}...`}
-                      />
-                    ))}
-                  </div>
-                  
-                  {/* Category Legend */}
-                  <div className="flex items-center gap-4 text-xs text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-purple-600"></div>
-                      <span>📚 Concepts ({currentFlashcardSet.filter(c => c.category === 'concept').length})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                      <span>🧮 Formulas ({currentFlashcardSet.filter(c => c.category === 'formula').length})</span>
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                      <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                      <p className="text-white/90 text-sm font-medium">
+                        Tap to reveal answer
+                      </p>
                     </div>
                   </div>
-                </div>
-              </div>
-              
-              <Button
-                onClick={nextFlashcard}
-                disabled={activeFlashcardIndex === currentFlashcardSet.length - 1}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl"
-              >
-                Next
-                <ChevronRight className="h-5 w-5 ml-2" />
-              </Button>
-            </div>
+                </CardContent>
+              </Card>
 
-            {/* Study Tips */}
-            <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200">
-              <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
-                <Lightbulb className="h-5 w-5" />
-                Study Tips
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
-                <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">1</div>
-                  <span>Read the question carefully before revealing the answer</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">2</div>
-                  <span>Try to answer in your mind before flipping the card</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">3</div>
-                  <span>Review cards you find difficult multiple times</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">4</div>
-                  <span>Focus on understanding concepts, not just memorization</span>
-                </div>
-              </div>
+              {/* Back of card - Enhanced */}
+              <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 shadow-2xl bg-white/95 backdrop-blur-sm border border-white/20 overflow-hidden">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full -translate-y-20 translate-x-20 opacity-60"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-emerald-50 to-cyan-50 rounded-full translate-y-16 -translate-x-16 opacity-60"></div>
+
+                <CardContent className="p-8 h-full flex flex-col justify-between relative z-10">
+                  <div className="flex justify-between items-start">
+                    <Badge
+                      variant="outline"
+                      className="border-slate-200 bg-white/80 backdrop-blur-sm font-medium px-3 py-1"
+                    >
+                      <CategoryIcon className="w-3 h-3 mr-2" />
+                      {card.category}
+                    </Badge>
+                    <Badge
+                      className={`${difficultyStyle.color} ${difficultyStyle.glow} shadow-lg backdrop-blur-sm font-medium px-3 py-1`}
+                    >
+                      <span className="mr-1">{difficultyStyle.icon}</span>
+                      {card.difficulty}
+                    </Badge>
+                  </div>
+
+                  <div className="text-center space-y-6">
+                    <div className="relative">
+                      <div className="text-6xl text-emerald-500 drop-shadow-sm">
+                        ✓
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-20 h-20 bg-emerald-100 rounded-full opacity-30"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="w-12 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent mx-auto"></div>
+                      <div className="text-base text-slate-800 leading-relaxed font-medium px-4">
+                        <ContentDisplay
+                          content={card.back}
+                          renderingMode="math-optimized"
+                          className="text-slate-800 flashcard-answer"
+                          enableTelemetry={false}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-full border border-slate-200">
+                      <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                      <p className="text-slate-600 text-sm font-medium">
+                        Tap to flip back
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
-        </motion.div>
+
+          {/* Elegant Controls */}
+          <div className="flex justify-between items-center bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+            <Button
+              variant="outline"
+              onClick={prevCard}
+              disabled={activeFlashcardIndex === 0}
+              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-white/30 hover:bg-white/90 transition-all duration-300 shadow-lg hover:shadow-xl px-6 py-3"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="font-medium">Previous</span>
+            </Button>
+
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-slate-800">
+                  {activeFlashcardIndex + 1}
+                </div>
+                <div className="text-sm text-slate-500 font-medium">
+                  of {currentFlashcardSet.length}
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={flipCard}
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-white/30 hover:bg-white/90 transition-all duration-300 shadow-lg hover:shadow-xl px-4 py-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="font-medium">Flip</span>
+              </Button>
+            </div>
+
+            <Button
+              onClick={nextCard}
+              disabled={activeFlashcardIndex === currentFlashcardSet.length - 1}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl px-6 py-3"
+            >
+              <span className="font-medium">Next</span>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Sophisticated Card Indicators */}
+          <div className="flex justify-center gap-3">
+            {flashcardsArray.map((flashcard, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setActiveFlashcardIndex(index);
+                  setIsFlashcardFlipped(false);
+                }}
+                className={`relative w-4 h-4 rounded-full transition-all duration-300 transform hover:scale-110 ${
+                  index === activeFlashcardIndex
+                    ? `bg-gradient-to-r ${flashcard.gradient} shadow-lg`
+                    : studiedCards.has(flashcard.id)
+                    ? "bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-md"
+                    : "bg-slate-300 hover:bg-slate-400"
+                }`}
+              >
+                {studiedCards.has(flashcard.id) && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <style jsx>{`
+          .backface-hidden {
+            backface-visibility: hidden;
+          }
+          .rotate-y-180 {
+            transform: rotateY(180deg);
+          }
+          .transform-style-preserve-3d {
+            transform-style: preserve-3d;
+          }
+          .perspective-1000 {
+            perspective: 1000px;
+          }
+        `}</style>
       </div>
     );
   }
@@ -1651,7 +1955,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
               </CardHeader>
               <CardContent className="p-0">
                 <Tabs defaultValue="content" className="w-full">
-                  <TabsList className="grid w-full grid-cols-5 bg-gray-50">
+                  <TabsList className="grid w-full grid-cols-4 bg-gray-50">
                     <TabsTrigger
                       value="content"
                       className="flex items-center gap-2"
@@ -1660,17 +1964,17 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                       Content
                     </TabsTrigger>
                     <TabsTrigger
-                      value="subsections"
+                      value="flashcards"
                       className="flex items-center gap-2"
                     >
-                      <Sparkles className="h-4 w-4" />
-                      Subsections
+                      <Brain className="h-4 w-4" />
+                      Flashcards
                     </TabsTrigger>
                     <TabsTrigger
                       value="quiz"
                       className="flex items-center gap-2"
                     >
-                      <Brain className="h-4 w-4" />
+                      <Trophy className="h-4 w-4" />
                       Quiz
                     </TabsTrigger>
                     <TabsTrigger
@@ -1679,13 +1983,6 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                     >
                       <BookOpen className="h-4 w-4" />
                       Resources
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="progress"
-                      className="flex items-center gap-2"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      Progress
                     </TabsTrigger>
                   </TabsList>
 
@@ -1704,46 +2001,111 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
                             if (rawContent && typeof rawContent === "object") {
                               // Handle JSON structured content
-                              console.log("🔧 Rendering JSON structured module content");
-                              displayContent = rawContent.summary || rawContent.content || "JSON content structure detected. Check subsections for detailed content.";
+                              console.log(
+                                "🔧 Rendering JSON structured module content"
+                              );
+                              displayContent =
+                                rawContent.summary ||
+                                rawContent.content ||
+                                "JSON content structure detected. Check subsections for detailed content.";
                               hasStructuredData = true;
-                              
+
                               // If we have JSON structured content, also update module data
-                              if (rawContent.summary && !currentModuleData.summary) {
+                              if (
+                                rawContent.summary &&
+                                !currentModuleData.summary
+                              ) {
                                 currentModuleData.summary = rawContent.summary;
                               }
-                              if (rawContent.objectives && !currentModuleData.objectives) {
-                                currentModuleData.objectives = rawContent.objectives;
+                              if (
+                                rawContent.objectives &&
+                                !currentModuleData.objectives
+                              ) {
+                                currentModuleData.objectives =
+                                  rawContent.objectives;
                               }
-                              if (rawContent.examples && !currentModuleData.examples) {
-                                currentModuleData.examples = rawContent.examples;
+                              if (
+                                rawContent.examples &&
+                                !currentModuleData.examples
+                              ) {
+                                currentModuleData.examples =
+                                  rawContent.examples;
                               }
-                              if (rawContent.resources && !currentModuleData.resources) {
-                                currentModuleData.resources = rawContent.resources;
+                              if (
+                                rawContent.resources &&
+                                !currentModuleData.resources
+                              ) {
+                                currentModuleData.resources =
+                                  rawContent.resources;
                               }
-                            } else if (rawContent && typeof rawContent === "string") {
+                            } else if (
+                              rawContent &&
+                              typeof rawContent === "string"
+                            ) {
                               // Handle string content (markdown)
                               displayContent = rawContent;
                             } else {
                               // Fallback to other sources
-                              displayContent = 
-                              currentModuleData?.enhancedMarkdown ||
-                              currentModuleData?.summary;
+                              displayContent =
+                                currentModuleData?.enhancedMarkdown ||
+                                currentModuleData?.summary;
                             }
 
-                            if (displayContent && typeof displayContent === "string") {
+                            if (
+                              displayContent &&
+                              typeof displayContent === "string"
+                            ) {
+                              // Clean and format the content for better display using helper function
+                              const formattedContent =
+                                formatCurriculumContent(displayContent);
+
+                              // If content looks like curriculum structure, render it specially
+                              if (
+                                formattedContent.includes("###") ||
+                                formattedContent.includes("####")
+                              ) {
+                                return (
+                                  <div>
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                                      <p className="text-sm text-yellow-800">
+                                        📖{" "}
+                                        <strong>
+                                          Curriculum Structure Detected
+                                        </strong>{" "}
+                                        - Rendering with enhanced formatting
+                                      </p>
+                                    </div>
+                                    <ContentDisplay
+                                      content={formattedContent}
+                                      renderingMode="math-optimized"
+                                      className="module-overview curriculum-content"
+                                    />
+                                    {hasStructuredData && (
+                                      <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                                        <p className="text-sm text-green-700 flex items-center gap-2">
+                                          <CheckCircle className="h-4 w-4" />✅
+                                          Enhanced JSON content loaded with
+                                          structured data
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              }
+
                               return (
                                 <div>
-                                  <ContentDisplay 
-                                    content={displayContent} 
+                                  <ContentDisplay
+                                    content={formattedContent}
                                     renderingMode="math-optimized"
                                     className="module-overview"
                                   />
                                   {hasStructuredData && (
                                     <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
                                       <p className="text-sm text-green-700 flex items-center gap-2">
-                                        <CheckCircle className="h-4 w-4" />
-                                        ✅ Enhanced JSON content loaded with structured data
+                                        <CheckCircle className="h-4 w-4" />✅
+                                        Enhanced JSON content loaded with
+                                        structured data
                                       </p>
                                     </div>
                                   )}
@@ -1754,14 +2116,23 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                 <div className="text-gray-500 italic p-4 bg-white/50 rounded-lg border">
                                   <p>📚 Module content is being processed...</p>
                                   <p className="text-sm mt-2">
-                                    Check the "Subsections" tab for detailed content.
+                                    Check the "Subsections" tab for detailed
+                                    content.
                                   </p>
                                   {process.env.NODE_ENV === "development" && (
                                     <div className="mt-2 text-xs text-gray-400">
                                       <p>Content type: {typeof rawContent}</p>
-                                      <p>Has enhancedMarkdown: {!!currentModuleData?.enhancedMarkdown}</p>
-                                      <p>Has summary: {!!currentModuleData?.summary}</p>
-                                      <p>Has structured data: {hasStructuredData}</p>
+                                      <p>
+                                        Has enhancedMarkdown:{" "}
+                                        {!!currentModuleData?.enhancedMarkdown}
+                                      </p>
+                                      <p>
+                                        Has summary:{" "}
+                                        {!!currentModuleData?.summary}
+                                      </p>
+                                      <p>
+                                        Has structured data: {hasStructuredData}
+                                      </p>
                                     </div>
                                   )}
                                 </div>
@@ -1781,7 +2152,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                               Summary
                             </h3>
                             <div className="prose max-w-none">
-                              <ContentDisplay 
+                              <ContentDisplay
                                 content={currentModuleData.summary}
                                 renderingMode="math-optimized"
                                 className="module-summary"
@@ -1793,12 +2164,16 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                       {/* Learning Objectives - Handle both direct and JSON-nested objectives */}
                       {(() => {
                         let objectives = currentModuleData?.objectives;
-                        
+
                         // If objectives is not available directly, check if it's in JSON content
-                        if (!objectives && currentModuleData?.content && typeof currentModuleData.content === 'object') {
+                        if (
+                          !objectives &&
+                          currentModuleData?.content &&
+                          typeof currentModuleData.content === "object"
+                        ) {
                           objectives = currentModuleData.content.objectives;
                         }
-                        
+
                         return objectives && objectives.length > 0 ? (
                           <div className="bg-blue-50 p-6 rounded-xl">
                             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -1807,21 +2182,21 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                             </h3>
                             <ul className="space-y-2">
                               {objectives.map((objective, index) => (
-                                  <li
-                                    key={index}
-                                    className="flex items-start gap-3"
-                                  >
-                                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-0.5">
-                                      {index + 1}
-                                    </div>
-                                    <div className="text-gray-700 flex-1">
-                                    <ContentDisplay 
-                                        content={objective}
+                                <li
+                                  key={index}
+                                  className="flex items-start gap-3"
+                                >
+                                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-0.5">
+                                    {index + 1}
+                                  </div>
+                                  <div className="text-gray-700 flex-1">
+                                    <ContentDisplay
+                                      content={objective}
                                       renderingMode="math-optimized"
                                       className="objective"
-                                      />
-                                    </div>
-                                  </li>
+                                    />
+                                  </div>
+                                </li>
                               ))}
                             </ul>
                           </div>
@@ -1831,12 +2206,16 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                       {/* Key Examples - Handle both direct and JSON-nested examples */}
                       {(() => {
                         let examples = currentModuleData?.examples;
-                        
+
                         // If examples is not available directly, check if it's in JSON content
-                        if (!examples && currentModuleData?.content && typeof currentModuleData.content === 'object') {
+                        if (
+                          !examples &&
+                          currentModuleData?.content &&
+                          typeof currentModuleData.content === "object"
+                        ) {
                           examples = currentModuleData.content.examples;
                         }
-                        
+
                         return examples && examples.length > 0 ? (
                           <div className="bg-green-50 p-6 rounded-xl">
                             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -1845,25 +2224,25 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                             </h3>
                             <div className="space-y-4">
                               {examples.map((example, index) => (
-                                  <div
-                                    key={index}
-                                    className="bg-white p-4 rounded-lg shadow-sm"
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <Badge className="bg-green-100 text-green-800 mt-1">
-                                        Example {index + 1}
-                                      </Badge>
-                                      <div className="flex-1">
-                                        <div className="text-gray-700">
-                                        <ContentDisplay 
-                                            content={example}
+                                <div
+                                  key={index}
+                                  className="bg-white p-4 rounded-lg shadow-sm"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <Badge className="bg-green-100 text-green-800 mt-1">
+                                      Example {index + 1}
+                                    </Badge>
+                                    <div className="flex-1">
+                                      <div className="text-gray-700">
+                                        <ContentDisplay
+                                          content={example}
                                           renderingMode="math-optimized"
                                           className="example"
-                                          />
-                                        </div>
+                                        />
                                       </div>
                                     </div>
                                   </div>
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -1903,779 +2282,224 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="subsections" className="p-3 sm:p-6">
-                    <div className="space-y-4 sm:space-y-6">
-                      {subsections.length === 0 ? (
-                        <div className="text-center py-8 sm:py-12">
-                          <div className="space-y-4">
-                            <Sparkles className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
-                            <div>
-                              <p className="text-gray-500 text-base sm:text-lg font-medium">
-                                No detailed subsections available yet.
-                              </p>
-                              <p className="text-gray-400 text-sm mt-2">
-                                Content may be processing or available in the
-                                main Content tab.
-                              </p>
-                            </div>
+                  <TabsContent value="flashcards" className="p-6">
+                    <div className="space-y-6">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-3">
+                          <Brain className="h-8 w-8 text-purple-600" />
+                          Study Flashcards
+                        </h2>
+                        <p className="text-gray-600 mb-8">
+                          Master key concepts and formulas with interactive
+                          flashcards designed for {viewerCourse.examType} exam
+                          success
+                        </p>
+                      </div>
 
-                            {/* Show loading indicator if content is being fetched */}
-                            {loadingDetailedContent && (
-                              <div className="flex items-center justify-center gap-2 mt-4">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500"></div>
-                                <span className="text-gray-600 text-sm">
-                                  Loading detailed content...
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Retry button if no content and not loading */}
-                            {!loadingDetailedContent && (
-                              <Button
-                                variant="outline"
-                                onClick={() =>
-                                  fetchDetailedContent(currentModule)
-                                }
-                                className="mt-4"
-                              >
-                                <Sparkles className="h-4 w-4 mr-2" />
-                                Try Loading Content
-                              </Button>
-                            )}
+                      {/* Flashcards for all subsections */}
+                      <div className="space-y-6">
+                        {subsections.length === 0 ? (
+                          <div className="text-center py-12">
+                            <Brain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-500 mb-4">
+                              No flashcards available yet
+                            </p>
+                            <p className="text-sm text-gray-400">
+                              Flashcards will appear here once content is
+                              generated for the subsections.
+                            </p>
                           </div>
-                        </div>
-                      ) : (
-                        subsections.map((subsection, index) => {
-                          const pages =
-                            subsection.pages ||
-                            subsection.explanationPages ||
-                            [];
-                          const isCompleted = completedSubsections.has(
-                            `${currentModule}-${index}`
-                          );
-                          const sectionKey = `subsection-${index}`;
-                          const isExpanded = expandedSections.has(sectionKey);
+                        ) : (
+                          subsections.map((subsection, index) => {
+                            // Check if current subsection has flashcards
+                            const hasConceptCards =
+                              subsection?.conceptFlashCards &&
+                              Array.isArray(subsection.conceptFlashCards) &&
+                              subsection.conceptFlashCards.length > 0;
+                            const hasFormulaCards =
+                              subsection?.formulaFlashCards &&
+                              Array.isArray(subsection.formulaFlashCards) &&
+                              subsection.formulaFlashCards.length > 0;
 
-                          return (
-                            <Card
-                              key={index}
-                              className={`border-2 transition-all duration-300 ${
-                                isCompleted
-                                  ? "border-green-300 bg-green-50"
-                                  : "border-gray-200 hover:border-orange-300"
-                              }`}
-                            >
-                              <CardHeader className="pb-3 p-4 sm:p-6">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                                    <div
-                                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                        isCompleted
-                                          ? "bg-green-500 text-white"
-                                          : "bg-orange-500 text-white"
-                                      }`}
-                                    >
-                                      {isCompleted ? (
-                                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                                      ) : (
-                                        <span className="font-bold text-sm sm:text-base">
-                                          {index + 1}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-base sm:text-lg truncate">
-                                        {subsection.title}
-                                      </CardTitle>
-                                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                                        {subsection.estimatedTime || 15} min •{" "}
-                                        {subsection.difficulty || "medium"}
-                                        {pages.length > 0 &&
-                                          ` • ${pages.length} page${
-                                            pages.length > 1 ? "s" : ""
-                                          }`}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 flex-shrink-0">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => toggleSection(sectionKey)}
-                                      className="w-8 h-8 sm:w-10 sm:h-10"
-                                    >
-                                      {isExpanded ? (
-                                        <ChevronUp className="h-4 w-4" />
-                                      ) : (
-                                        <ChevronDown className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  </div>
-                                </div>
-                              </CardHeader>
-                              {isExpanded && (
-                                <CardContent className="p-3 sm:p-4 lg:p-6">
-                                  <div className="space-y-4 sm:space-y-6">
-                                    {loadingDetailedContent ? (
-                                      <div className="flex items-center justify-center py-8 sm:py-12">
-                                        <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-orange-500"></div>
-                                        <span className="ml-2 text-gray-600 text-sm sm:text-base">
-                                          Loading detailed content...
-                                        </span>
+                            const hasAnyFlashcards =
+                              hasConceptCards || hasFormulaCards;
+
+                            if (!hasAnyFlashcards) return null;
+
+                            const conceptCount =
+                              subsection.conceptFlashCards?.length || 0;
+                            const formulaCount =
+                              subsection.formulaFlashCards?.length || 0;
+                            const totalCount = conceptCount + formulaCount;
+
+                            return (
+                              <Card
+                                key={index}
+                                className="border-2 border-gray-200 hover:border-purple-300 transition-all duration-300 bg-gradient-to-br from-white to-purple-50/30"
+                              >
+                                <CardHeader className="pb-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold text-lg">
+                                        {index + 1}
                                       </div>
-                                    ) : (
-                                      <div className="w-full">
-                                        <div className="space-y-6">
-                                          {subsection.summary && (
-                                            <div className="bg-blue-50 p-4 rounded-lg">
-                                              <h4 className="font-semibold text-blue-900 mb-2">
-                                                Overview
-                                              </h4>
-                                              <div className="text-blue-800">
-                                                <ContentDisplay 
-                                                  content={subsection.summary}
-                                                  renderingMode="math-optimized"
-                                                  className="subsection-summary"
-                                                />
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {/* Add regenerate button for testing improved prompts */}
-                                          {subsection.generatedMarkdown && (
-                                            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                                              <div className="flex items-center justify-between mb-2">
-                                                <h4 className="font-semibold text-amber-900">
-                                                  Content Quality
-                                                </h4>
-                                                <Button
-                                                  variant="outline"
-                                                  size="sm"
-                                                  onClick={async () => {
-                                                    try {
-                                                      console.log(
-                                                        `🔄 Regenerating content for: ${subsection.title}`
-                                                      );
-
-                                                      const response =
-                                                        await fetch(
-                                                          "/api/exam-genius/generate-subsection-content",
-                                                          {
-                                                            method: "POST",
-                                                            headers: {
-                                                              "Content-Type":
-                                                                "application/json",
-                                                              ...getAuthHeaders(),
-                                                            },
-                                                            body: JSON.stringify(
-                                                              {
-                                                                content: `#### ${subsection.title}\n\nThis is a subsection about ${subsection.title} in electrical engineering.`,
-                                                                context: {
-                                                                  subject:
-                                                                    viewerCourse.subject ||
-                                                                    "Electrical Engineering",
-                                                                  examType:
-                                                                    viewerCourse.examType ||
-                                                                    "SSC",
-                                                                  moduleTitle:
-                                                                    currentModuleData.title,
-                                                                  subsectionTitle:
-                                                                    subsection.title,
-                                                                },
-                                                              }
-                                                            ),
-                                                          }
-                                                        );
-
-                                                      if (response.ok) {
-                                                        const data =
-                                                          await response.json();
-                                                        console.log(
-                                                          "✅ Regenerated content:",
-                                                          data
-                                                        );
-
-                                                        // Update the subsection with new content
-                                                        const updatedSubsections =
-                                                          [
-                                                            ...currentModuleData.detailedSubsections,
-                                                          ];
-                                                        const subsectionIndex =
-                                                          updatedSubsections.findIndex(
-                                                            (s) =>
-                                                              s.title ===
-                                                              subsection.title
-                                                          );
-                                                        if (
-                                                          subsectionIndex !== -1
-                                                        ) {
-                                                          updatedSubsections[
-                                                            subsectionIndex
-                                                          ] = {
-                                                            ...updatedSubsections[
-                                                              subsectionIndex
-                                                            ],
-                                                            generatedMarkdown:
-                                                              data.content,
-                                                            isGenerating: false,
-                                                          };
-
-                                                          setViewerCourse(
-                                                            (prevCourse) => {
-                                                              const newModules =
-                                                                [
-                                                                  ...prevCourse.modules,
-                                                                ];
-                                                              newModules[
-                                                                currentModule
-                                                              ] = {
-                                                                ...newModules[
-                                                                  currentModule
-                                                                ],
-                                                                detailedSubsections:
-                                                                  updatedSubsections,
-                                                              };
-                                                              return {
-                                                                ...prevCourse,
-                                                                modules:
-                                                                  newModules,
-                                                              };
-                                                            }
-                                                          );
-
-                                                          toast.success(
-                                                            "Content regenerated with improved math formatting!"
-                                                          );
-                                                        }
-                                                      } else {
-                                                        console.error(
-                                                          "Failed to regenerate content"
-                                                        );
-                                                        toast.error(
-                                                          "Failed to regenerate content"
-                                                        );
-                                                      }
-                                                    } catch (error) {
-                                                      console.error(
-                                                        "Error regenerating content:",
-                                                        error
-                                                      );
-                                                      toast.error(
-                                                        "Error regenerating content"
-                                                      );
-                                                    }
-                                                  }}
-                                                  className="text-xs"
-                                                >
-                                                  🔄 Regenerate with Better Math
-                                                </Button>
-                                              </div>
-                                              <p className="text-amber-800 text-sm">
-                                                Click to regenerate this content
-                                                with improved mathematical
-                                                formatting using the enhanced AI
-                                                prompt.
-                                              </p>
-                                            </div>
-                                          )}
-
-                                          {/* Add Flashcard and Quiz Section for each subsection */}
-                                          <div className="space-y-4">
-                                            {/* Flashcard Section */}
-                                            {(() => {
-                                              // Check if current subsection has flashcards
-                                              const subsectionData = subsection;
-                                              const hasConceptCards = subsectionData?.conceptFlashCards && 
-                                                                     Array.isArray(subsectionData.conceptFlashCards) && 
-                                                                     subsectionData.conceptFlashCards.length > 0;
-                                              const hasFormulaCards = subsectionData?.formulaFlashCards && 
-                                                                     Array.isArray(subsectionData.formulaFlashCards) && 
-                                                                     subsectionData.formulaFlashCards.length > 0;
-                                              
-                                              // Also check legacy flashCards structure
-                                              const hasLegacyCards = subsectionData?.flashCards && 
-                                                                    Array.isArray(subsectionData.flashCards) && 
-                                                                    subsectionData.flashCards.length > 0;
-                                              
-                                              const hasAnyFlashcards = hasConceptCards || hasFormulaCards || hasLegacyCards;
-                                              
-                                              if (!hasAnyFlashcards) return null;
-                                              
-                                              const conceptCount = subsectionData.conceptFlashCards?.length || 0;
-                                              const formulaCount = subsectionData.formulaFlashCards?.length || 0;
-                                              const totalCount = conceptCount + formulaCount + (hasLegacyCards ? subsectionData.flashCards.length : 0);
-                                              
-                                              return (
-                                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-                                                  <div className="flex items-center justify-between mb-4">
-                                                    <h4 className="font-bold text-green-900 flex items-center gap-2">
-                                                      <Brain className="h-6 w-6" />
-                                                      Study Flashcards
-                                                    </h4>
-                                                    <div className="flex items-center gap-2">
-                                                      <Badge className="bg-green-100 text-green-700 border-green-300">
-                                                        Interactive Study
-                                                      </Badge>
-                                                      <Badge className="bg-white/80 text-green-800 border-green-300">
-                                                        {totalCount} Cards
-                                                      </Badge>
-                                                    </div>
-                                                  </div>
-                                                  
-                                                  {/* Category Breakdown */}
-                                                  <div className="flex items-center gap-6 mb-4">
-                                                    {conceptCount > 0 && (
-                                                      <div className="flex items-center gap-2 text-sm">
-                                                        <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                                                        <span className="text-gray-700">📚 {conceptCount} Concepts</span>
-                                                      </div>
-                                                    )}
-                                                    {formulaCount > 0 && (
-                                                      <div className="flex items-center gap-2 text-sm">
-                                                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                                        <span className="text-gray-700">🧮 {formulaCount} Formulas</span>
-                                                      </div>
-                                                    )}
-                                                    {hasLegacyCards && (
-                                                      <div className="flex items-center gap-2 text-sm">
-                                                        <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                                                        <span className="text-gray-700">📝 {subsectionData.flashCards.length} Mixed</span>
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                  
-                                                  <p className="text-green-700 text-sm mb-4">
-                                                    Review key concepts and formulas with interactive flashcards designed for exam success.
-                                                  </p>
-                                                  
-                                                  <div className="flex flex-wrap gap-3 mb-4">
-                                                    <Button
-                                                      onClick={() => openFlashcards(subsectionData)}
-                                                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
-                                                    >
-                                                      <Brain className="h-4 w-4" />
-                                                      Start Studying
-                                                      <Badge className="bg-white/20 text-white ml-2">
-                                                        {totalCount}
-                                                      </Badge>
-                                                    </Button>
-                                                    <div className="flex items-center gap-2 text-sm text-green-600">
-                                                      <Timer className="h-4 w-4" />
-                                                      <span>~{Math.ceil(totalCount * 0.5)} min study time</span>
-                                                    </div>
-                                                  </div>
-                                                  
-                                                  {/* Preview cards by category */}
-                                                  <div className="space-y-4">
-                                                    {/* Concept Cards Preview */}
-                                                    {hasConceptCards && (
-                                                      <div>
-                                                        <h5 className="text-sm font-semibold text-purple-700 mb-2 flex items-center gap-2">
-                                                          📚 Important Concepts Preview
-                                                        </h5>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                          {subsectionData.conceptFlashCards.slice(0, 2).map((card, cardIndex) => (
-                                                            <div key={`concept-${cardIndex}`} className="bg-purple-50 p-3 rounded-lg border border-purple-200 hover:border-purple-300 transition-colors">
-                                                              <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">
-                                                                Concept Card {cardIndex + 1}
-                                                              </div>
-                                                              <div className="text-sm text-gray-700 line-clamp-2">
-                                                                <ContentDisplay 
-                                                                  content={card.question}
-                                                                  renderingMode="math-optimized"
-                                                                  className="text-sm"
-                                                                  enableTelemetry={false}
-                                                                />
-                                                              </div>
-                                                            </div>
-                                                          ))}
-                                                        </div>
-                                                      </div>
-                                                    )}
-                                                    
-                                                    {/* Formula Cards Preview */}
-                                                    {hasFormulaCards && (
-                                                      <div>
-                                                        <h5 className="text-sm font-semibold text-blue-700 mb-2 flex items-center gap-2">
-                                                          🧮 Mathematical Formulas Preview
-                                                        </h5>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                          {subsectionData.formulaFlashCards.slice(0, 2).map((card, cardIndex) => (
-                                                            <div key={`formula-${cardIndex}`} className="bg-blue-50 p-3 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors">
-                                                              <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
-                                                                Formula Card {cardIndex + 1}
-                                                              </div>
-                                                              <div className="text-sm text-gray-700 line-clamp-2">
-                                                                <ContentDisplay 
-                                                                  content={card.question}
-                                                                  renderingMode="math-optimized"
-                                                                  className="text-sm"
-                                                                  enableTelemetry={false}
-                                                                />
-                                                              </div>
-                                                            </div>
-                                                          ))}
-                                                        </div>
-                                                      </div>
-                                                    )}
-                                                    
-                                                    {/* Show count if more cards available */}
-                                                    {totalCount > 4 && (
-                                                      <div className="text-center pt-2">
-                                                        <span className="text-xs text-green-600 bg-green-100 px-3 py-1 rounded-full">
-                                                          +{totalCount - 4} more flashcards available
-                                                        </span>
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              );
-                                            })()}
-                                            
-                                            {/* Quiz Section */}
-                                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
-                                              <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-                                                <Trophy className="h-5 w-5" />
-                                                Practice Quizzes
-                                              </h4>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                              {["Easy", "Medium", "Hard"].map(
-                                                (difficulty) => {
-                                                  const quizKey = `${currentModule}-${index}-${difficulty}`;
-                                                  const result =
-                                                    quizResults[quizKey];
-                                                  const hasCompletedQuiz =
-                                                    !!result;
-                                                  const hasQuiz =
-                                                    hasQuizForSubsection(
-                                                      currentModule,
-                                                      index,
-                                                      difficulty
-                                                    );
-
-                                                  return (
-                                                    <div
-                                                      key={difficulty}
-                                                      className="relative"
-                                                    >
-                                                      <Button
-                                                        onClick={() =>
-                                                          handleQuizStart(
-                                                            difficulty,
-                                                            subsection,
-                                                            index
-                                                          )
-                                                        }
-                                                        variant={
-                                                          hasCompletedQuiz
-                                                            ? "default"
-                                                            : "outline"
-                                                        }
-                                                        size="sm"
-                                                        disabled={!hasQuiz}
-                                                        className={`w-full ${
-                                                          difficulty === "Easy"
-                                                            ? "border-green-300 text-green-700 hover:bg-green-50"
-                                                            : difficulty ===
-                                                              "Medium"
-                                                            ? "border-yellow-300 text-yellow-700 hover:bg-yellow-50"
-                                                            : "border-red-300 text-red-700 hover:bg-red-50"
-                                                        } ${
-                                                          hasCompletedQuiz
-                                                            ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
-                                                            : ""
-                                                        } ${
-                                                          !hasQuiz
-                                                            ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                                                            : ""
-                                                        }`}
-                                                      >
-                                                        <div className="flex items-center justify-center gap-2">
-                                                          {!hasQuiz ? (
-                                                            <X className="h-4 w-4" />
-                                                          ) : hasCompletedQuiz ? (
-                                                            <CheckCircle className="h-4 w-4" />
-                                                          ) : (
-                                                            <Play className="h-4 w-4" />
-                                                          )}
-                                                          <span className="text-xs font-medium">
-                                                            {difficulty}
-                                                          </span>
-                                                        </div>
-                                                      </Button>
-                                                      {hasCompletedQuiz && (
-                                                        <div className="absolute -top-2 -right-2">
-                                                          <Badge className="bg-green-100 text-green-800 text-xs px-1 py-0.5">
-                                                            {result.score}%
-                                                          </Badge>
-                                                        </div>
-                                                      )}
-                                                      {!hasQuiz && (
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                          <span className="text-xs text-gray-500 bg-white px-1 rounded">
-                                                            Not Available
-                                                          </span>
-                                                        </div>
-                                                      )}
-                                                    </div>
-                                                  );
-                                                }
-                                              )}
-                                            </div>
-                                            <p className="text-purple-700 text-xs mt-2">
-                                              Test your knowledge with quizzes
-                                              at different difficulty levels
-                                            </p>
-                                          </div>
-                                          </div>
-
-                                          {subsection.keyPoints &&
-                                            subsection.keyPoints.length > 0 && (
-                                              <div className="bg-green-50 p-4 rounded-lg">
-                                                <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
-                                                  <Target className="h-4 w-4" />
-                                                  Key Learning Points
-                                                </h4>
-                                                <ul className="space-y-2">
-                                                  {subsection.keyPoints.map(
-                                                    (point, pointIndex) => (
-                                                      <li
-                                                        key={pointIndex}
-                                                        className="flex items-start gap-2"
-                                                      >
-                                                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5 flex-shrink-0">
-                                                          {pointIndex + 1}
-                                                        </div>
-                                                        <div className="text-green-800 flex-1">
-                                                          <ContentDisplay 
-                                                            content={point}
-                                                            renderingMode="math-optimized"
-                                                            className="key-point"
-                                                          />
-                                                        </div>
-                                                      </li>
-                                                    )
-                                                  )}
-                                                </ul>
+                                      <div>
+                                        <CardTitle className="text-xl text-gray-800">
+                                          {subsection.title}
+                                        </CardTitle>
+                                        <div className="flex items-center gap-4 mt-2">
+                                          <Badge className="bg-purple-100 text-purple-700 border-purple-300">
+                                            {totalCount} Cards Total
+                                          </Badge>
+                                          <div className="flex items-center gap-3 text-sm">
+                                            {conceptCount > 0 && (
+                                              <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                                <span>
+                                                  📚 {conceptCount} Concepts
+                                                </span>
                                               </div>
                                             )}
-                                          {pages && pages.length > 0 ? (
-                                            <div className="bg-white border border-gray-200 rounded-lg">
-                                              <div className="p-6">
-                                                {(() => {
-                                                  const currentPageIndex =
-                                                    getCurrentPageTab(
-                                                      currentModule,
-                                                      index
-                                                    );
-                                                  const currentPage =
-                                                    pages[currentPageIndex];
-                                                  if (!currentPage) {
-                                                    return (
-                                                      <div className="text-center py-8">
-                                                        <p className="text-gray-500 italic">
-                                                          No content available
-                                                          for this page.
-                                                        </p>
-                                                      </div>
-                                                    );
-                                                  }
-
-                                                  return (
-                                                    <div className="space-y-6">
-                                                      <h4 className="font-semibold text-xl text-gray-800 mb-4 pb-4 border-b">
-                                                        {currentPage.pageTitle}
-                                                      </h4>
-                                                      <div className="prose max-w-none">
-                                                        <ContentDisplay 
-                                                          content={
-                                                            currentPage.content
-                                                          }
-                                                          renderingMode="math-optimized"
-                                                          className="page-content"
-                                                          enableTelemetry={
-                                                            process.env
-                                                              .NODE_ENV ===
-                                                            "development"
-                                                          }
-                                                          onRenderError={(
-                                                            error
-                                                          ) =>
-                                                            console.warn(
-                                                              "Page content math error:",
-                                                              error
-                                                            )
-                                                          }
-                                                        />
-                                                      </div>
-                                                      {currentPage.mathematicalContent &&
-                                                        currentPage
-                                                          .mathematicalContent
-                                                          .length > 0 && (
-                                                          <div className="bg-purple-50 p-4 rounded-lg">
-                                                            <h5 className="font-semibold text-purple-900 mb-3">
-                                                              Mathematical
-                                                              Concepts
-                                                            </h5>
-                                                            <div className="space-y-4">
-                                                              {currentPage.mathematicalContent.map(
-                                                                (
-                                                                  mathItem,
-                                                                  mathIndex
-                                                                ) => (
-                                                                  <div
-                                                                    key={
-                                                                      mathIndex
-                                                                    }
-                                                                    className="bg-white p-4 rounded border"
-                                                                  >
-                                                                    <h6 className="font-medium text-purple-800 mb-2">
-                                                                      {
-                                                                        mathItem.title
-                                                                      }
-                                                                    </h6>
-                                                                    <div className="text-purple-700 mb-2">
-                                                                      <ContentDisplay 
-                                                                        content={
-                                                                          mathItem.content
-                                                                        }
-                                                                        renderingMode="math-optimized"
-                                                                        className="math-item"
-                                                                      />
-                                                                    </div>
-                                                                    {mathItem.explanation && (
-                                                                      <div className="text-sm text-purple-600">
-                                                                        <ContentDisplay 
-                                                                          content={
-                                                                            mathItem.explanation
-                                                                          }
-                                                                          renderingMode="math-optimized"
-                                                                          className="math-explanation"
-                                                                        />
-                                                                      </div>
-                                                                    )}
-                                                                    {mathItem.example && (
-                                                                      <div className="mt-2 p-2 bg-purple-100 rounded text-sm">
-                                                                        <strong>
-                                                                          Example:
-                                                                        </strong>{" "}
-                                                                        <ContentDisplay 
-                                                                          content={
-                                                                            mathItem.example
-                                                                          }
-                                                                          renderingMode="math-optimized"
-                                                                          className="example-example"
-                                                                        />
-                                                                      </div>
-                                                                    )}
-                                                                  </div>
-                                                                )
-                                                              )}
-                                                            </div>
-                                                          </div>
-                                                        )}
-                                                      {currentPage.keyTakeaway && (
-                                                        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-                                                          <div className="flex items-start gap-2">
-                                                            <Lightbulb className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                                                            <div>
-                                                              <h5 className="font-semibold text-yellow-900 mb-1">
-                                                                Key Takeaway
-                                                              </h5>
-                                                              <div className="text-yellow-800">
-                                                                <ContentDisplay 
-                                                                  content={
-                                                                    currentPage.keyTakeaway
-                                                                  }
-                                                                  renderingMode="math-optimized"
-                                                                  className="key-takeaway"
-                                                                />
-                                                              </div>
-                                                            </div>
-                                                          </div>
-                                                        </div>
-                                                      )}
-                                                      <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                                                        <Button
-                                                          variant="outline"
-                                                          size="sm"
-                                                          onClick={() =>
-                                                            setCurrentPageTab(
-                                                              currentModule,
-                                                              index,
-                                                              Math.max(
-                                                                0,
-                                                                currentPageIndex -
-                                                                  1
-                                                              )
-                                                            )
-                                                          }
-                                                          disabled={
-                                                            currentPageIndex ===
-                                                            0
-                                                          }
-                                                        >
-                                                          <ChevronLeft className="h-4 w-4 mr-1" />
-                                                          Previous
-                                                        </Button>
-                                                        <span className="text-sm text-gray-600">
-                                                          Page{" "}
-                                                          {currentPageIndex + 1}{" "}
-                                                          of {pages.length}
-                                                        </span>
-                                                        <Button
-                                                          variant="outline"
-                                                          size="sm"
-                                                          onClick={() =>
-                                                            setCurrentPageTab(
-                                                              currentModule,
-                                                              index,
-                                                              Math.min(
-                                                                pages.length -
-                                                                  1,
-                                                                currentPageIndex +
-                                                                  1
-                                                              )
-                                                            )
-                                                          }
-                                                          disabled={
-                                                            currentPageIndex ===
-                                                            pages.length - 1
-                                                          }
-                                                        >
-                                                          Next
-                                                          <ChevronRight className="h-4 w-4 ml-1" />
-                                                        </Button>
-                                                      </div>
-                                                    </div>
-                                                  );
-                                                })()}
+                                            {formulaCount > 0 && (
+                                              <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                                <span>
+                                                  🧮 {formulaCount} Formulas
+                                                </span>
                                               </div>
-                                            </div>
-                                          ) : (
-                                            <div className="bg-gray-50 p-6 rounded-lg text-center">
-                                              <div className="text-gray-500">
-                                                <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                                <p className="font-medium">
-                                                  Content Coming Soon
-                                                </p>
-                                                <p className="text-sm mt-1">
-                                                  Detailed pages for this
-                                                  subsection are being prepared.
-                                                </p>
-                                              </div>
-                                            </div>
-                                          )}
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
+                                    </div>
+                                    <Button
+                                      onClick={() => openFlashcards(subsection)}
+                                      className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                    >
+                                      <Brain className="h-4 w-4 mr-2" />
+                                      Study Now
+                                    </Button>
+                                  </div>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-4">
+                                    {/* Summary */}
+                                    {subsection.summary && (
+                                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                        <p className="text-blue-800 text-sm">
+                                          <ContentDisplay
+                                            content={subsection.summary}
+                                            renderingMode="math-optimized"
+                                            className="subsection-summary"
+                                            enableTelemetry={false}
+                                          />
+                                        </p>
+                                      </div>
                                     )}
+
+                                    {/* Preview cards by category */}
+                                    <div className="space-y-4">
+                                      {/* Concept Cards Preview */}
+                                      {hasConceptCards && (
+                                        <div>
+                                          <h5 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
+                                            📚 Concept Cards Preview (
+                                            {conceptCount} total)
+                                          </h5>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {subsection.conceptFlashCards
+                                              .slice(0, 3)
+                                              .map((card, cardIndex) => (
+                                                <div
+                                                  key={`concept-${cardIndex}`}
+                                                  className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200 hover:border-blue-300 transition-all duration-300 hover:shadow-md"
+                                                >
+                                                  <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">
+                                                    Concept Card {cardIndex + 1}
+                                                  </div>
+                                                  <div className="text-sm text-gray-700 line-clamp-3">
+                                                    <ContentDisplay
+                                                      content={card.question}
+                                                      renderingMode="math-optimized"
+                                                      className="text-sm"
+                                                      enableTelemetry={false}
+                                                    />
+                                                  </div>
+                                                </div>
+                                              ))}
+                                          </div>
+                                          {conceptCount > 3 && (
+                                            <p className="text-xs text-blue-600 mt-2 text-center">
+                                              +{conceptCount - 3} more concept
+                                              cards available
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Formula Cards Preview */}
+                                      {hasFormulaCards && (
+                                        <div>
+                                          <h5 className="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2">
+                                            🧮 Formula Cards Preview (
+                                            {formulaCount} total)
+                                          </h5>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {subsection.formulaFlashCards
+                                              .slice(0, 3)
+                                              .map((card, cardIndex) => (
+                                                <div
+                                                  key={`formula-${cardIndex}`}
+                                                  className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200 hover:border-green-300 transition-all duration-300 hover:shadow-md"
+                                                >
+                                                  <div className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
+                                                    Formula Card {cardIndex + 1}
+                                                  </div>
+                                                  <div className="text-sm text-gray-700 line-clamp-3">
+                                                    <ContentDisplay
+                                                      content={card.question}
+                                                      renderingMode="math-optimized"
+                                                      className="text-sm"
+                                                      enableTelemetry={false}
+                                                    />
+                                                  </div>
+                                                </div>
+                                              ))}
+                                          </div>
+                                          {formulaCount > 3 && (
+                                            <p className="text-xs text-green-600 mt-2 text-center">
+                                              +{formulaCount - 3} more formula
+                                              cards available
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Study time estimate */}
+                                    <div className="bg-gray-50 p-3 rounded-lg flex items-center justify-between">
+                                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Timer className="h-4 w-4" />
+                                        <span>
+                                          Estimated study time: ~
+                                          {Math.ceil(totalCount * 0.5)} minutes
+                                        </span>
+                                      </div>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        {subsection.difficulty ||
+                                          "Intermediate"}
+                                      </Badge>
+                                    </div>
                                   </div>
                                 </CardContent>
-                              )}
-                            </Card>
-                          );
-                        })
-                      )}
+                              </Card>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
                   </TabsContent>
 
@@ -2700,7 +2524,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                             <div className="space-y-2 text-sm">
                               <div>
                                 Inline:{" "}
-                                <ContentDisplay 
+                                <ContentDisplay
                                   content="The formula $E = mc^2$ shows energy-mass equivalence."
                                   renderingMode="math-optimized"
                                   className="inline-formula"
@@ -2708,7 +2532,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                               </div>
                               <div>
                                 Block:{" "}
-                                <ContentDisplay 
+                                <ContentDisplay
                                   content="$$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$"
                                   renderingMode="math-optimized"
                                   className="block-formula"
@@ -2716,7 +2540,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                               </div>
                               <div>
                                 Ohm's Law:{" "}
-                                <ContentDisplay 
+                                <ContentDisplay
                                   content="$V = IR$ where $V$ is voltage, $I$ is current, and $R$ is resistance."
                                   renderingMode="math-optimized"
                                   className="ohm-law"
@@ -2874,13 +2698,19 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                           {Object.entries(resourceCategories).map(
                             ([key, { icon: Icon, label }]) => {
                               // Get resources from either direct property or JSON content structure
-                              let moduleResources = currentModuleData?.resources;
-                              
+                              let moduleResources =
+                                currentModuleData?.resources;
+
                               // If resources not available directly, check if it's in JSON content
-                              if (!moduleResources && currentModuleData?.content && typeof currentModuleData.content === 'object') {
-                                moduleResources = currentModuleData.content.resources;
+                              if (
+                                !moduleResources &&
+                                currentModuleData?.content &&
+                                typeof currentModuleData.content === "object"
+                              ) {
+                                moduleResources =
+                                  currentModuleData.content.resources;
                               }
-                              
+
                               const resources = moduleResources?.[key] || [];
                               const count = resources.length;
                               if (count === 0) return null;
@@ -2927,48 +2757,74 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {(() => {
                               // Get resources from either direct property or JSON content structure
-                              let moduleResources = currentModuleData?.resources;
-                              
+                              let moduleResources =
+                                currentModuleData?.resources;
+
                               // If resources not available directly, check if it's in JSON content
-                              if (!moduleResources && currentModuleData?.content && typeof currentModuleData.content === 'object') {
-                                moduleResources = currentModuleData.content.resources;
+                              if (
+                                !moduleResources &&
+                                currentModuleData?.content &&
+                                typeof currentModuleData.content === "object"
+                              ) {
+                                moduleResources =
+                                  currentModuleData.content.resources;
                               }
-                              
-                              const categoryResources = moduleResources?.[selectedResourceCategory] || [];
-                              
-                              return categoryResources.map((resource, index) => (
-                              <ResourceCard
-                                key={`${selectedResourceCategory}-${index}`}
-                                resource={resource}
-                                type={selectedResourceCategory}
-                                isInstructorChoice={resource.isInstructorChoice}
-                                resourceIndex={index}
-                              />
-                              ));
+
+                              const categoryResources =
+                                moduleResources?.[selectedResourceCategory] ||
+                                [];
+
+                              return categoryResources.map(
+                                (resource, index) => (
+                                  <ResourceCard
+                                    key={`${selectedResourceCategory}-${index}`}
+                                    resource={resource}
+                                    type={selectedResourceCategory}
+                                    isInstructorChoice={
+                                      resource.isInstructorChoice
+                                    }
+                                    resourceIndex={index}
+                                  />
+                                )
+                              );
                             })()}
                           </div>
                           {(() => {
                             // Check if category has resources (handle both direct and JSON structure)
                             let moduleResources = currentModuleData?.resources;
-                            
-                            if (!moduleResources && currentModuleData?.content && typeof currentModuleData.content === 'object') {
-                              moduleResources = currentModuleData.content.resources;
+
+                            if (
+                              !moduleResources &&
+                              currentModuleData?.content &&
+                              typeof currentModuleData.content === "object"
+                            ) {
+                              moduleResources =
+                                currentModuleData.content.resources;
                             }
-                            
-                            const categoryResources = moduleResources?.[selectedResourceCategory] || [];
+
+                            const categoryResources =
+                              moduleResources?.[selectedResourceCategory] || [];
                             const hasResources = categoryResources.length > 0;
-                            
+
                             return !hasResources ? (
-                            <div className="text-center py-12">
-                              <p className="text-slate-500">
-                                No resources in this category.
-                              </p>
+                              <div className="text-center py-12">
+                                <p className="text-slate-500">
+                                  No resources in this category.
+                                </p>
                                 {process.env.NODE_ENV === "development" && (
                                   <div className="mt-2 text-xs text-gray-400">
-                                    <p>Available resources: {JSON.stringify(Object.keys(moduleResources || {}))}</p>
-                                    <p>Selected category: {selectedResourceCategory}</p>
-                            </div>
-                          )}
+                                    <p>
+                                      Available resources:{" "}
+                                      {JSON.stringify(
+                                        Object.keys(moduleResources || {})
+                                      )}
+                                    </p>
+                                    <p>
+                                      Selected category:{" "}
+                                      {selectedResourceCategory}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             ) : null;
                           })()}
@@ -3105,7 +2961,7 @@ function QuizInterface({ quizData, onComplete, difficulty }) {
       </div>
       <div>
         <div className="font-medium text-lg mb-4 math-question">
-          <ContentDisplay 
+          <ContentDisplay
             content={currentQ?.question}
             renderingMode="math-optimized"
             className="question"
@@ -3127,7 +2983,7 @@ function QuizInterface({ quizData, onComplete, difficulty }) {
               className="w-full justify-start text-left h-auto py-3 quiz-option"
               onClick={() => handleAnswerSelect(currentQuestion, index)}
             >
-              <ContentDisplay 
+              <ContentDisplay
                 content={option}
                 renderingMode="math-optimized"
                 className="option"

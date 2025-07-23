@@ -5,54 +5,88 @@
 /* Import KaTeX styles for math rendering */
 @import url("https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css");
 
-/* Enhanced Math Rendering Styles */
+/* Enhanced Math Rendering Styles - Maximum Separation */
 .katex-display {
-  margin: 1.5em 0;
+  margin: 2em 0 !important;
   text-align: center;
   display: block;
   width: 100%;
+  padding: 0.8em 0;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.1);
 }
 
 .katex {
-  font-size: 1.1em;
-  display: inline-block;
-  margin: 0.2em 0.1em;
+  font-size: 1.2em;
+  display: block !important;
+  margin: 1em auto !important;
+  text-align: center;
+  padding: 0.5em;
+}
+
+/* Force ALL math to be block display for maximum clarity */
+.katex:not(.katex-display) {
+  display: block !important;
+  margin: 1.5em auto !important;
+  text-align: center !important;
+  background: rgba(99, 102, 241, 0.05);
+  padding: 0.6em;
+  border-radius: 6px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
 }
 
 /* Ensure math equations get proper line spacing */
 .katex-mathml + .katex-html {
-  margin-top: 0.5em;
+  margin-top: 0.8em;
 }
 
 /* Force block display for display math */
 .katex-display > .katex {
   display: block;
   text-align: center;
-  margin: 0.5em auto;
+  margin: 0.8em auto;
+  padding: 0.4em;
 }
 
-/* Math equation separation */
+/* Math equation separation with visual distinction */
 .math-display {
   display: block;
-  margin: 1em 0;
+  margin: 2em 0;
   text-align: center;
-  line-height: 1.6;
+  line-height: 1.8;
+  background: rgba(34, 197, 94, 0.05);
+  padding: 1em;
+  border-radius: 8px;
+  border: 1px solid rgba(34, 197, 94, 0.1);
 }
 
 .math-inline {
-  display: inline-block;
-  margin: 0 0.2em;
-  vertical-align: baseline;
+  display: block !important;
+  margin: 1.5em auto;
+  text-align: center;
+  background: rgba(245, 158, 11, 0.05);
+  padding: 0.8em;
+  border-radius: 6px;
+  border: 1px solid rgba(245, 158, 11, 0.1);
 }
 
 /* Better spacing for quiz content with math */
 .quiz-content .katex {
-  margin: 0.3em 0.1em;
+  margin: 1.5em auto !important;
+  display: block !important;
+  text-align: center !important;
+  background: rgba(139, 92, 246, 0.08);
+  padding: 0.8em;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.15);
 }
 
 .quiz-content .katex-display {
-  margin: 1em 0;
-  padding: 0.5em 0;
+  margin: 2em 0 !important;
+  padding: 1em 0;
+  background: rgba(236, 72, 153, 0.05);
+  border: 1px solid rgba(236, 72, 153, 0.1);
 }
 
 /* Specific styling for quiz questions and options */
@@ -1685,4 +1719,218 @@
   -webkit-background-clip: text;
   color: transparent;
   animation: gradient-shift-theme 6s ease infinite;
+}
+
+/* Enhanced Math Container Styles */
+.math-paragraph {
+  display: block;
+  margin: 1em 0;
+  line-height: 1.8;
+}
+
+.math-container {
+  display: block;
+  margin: 1em 0;
+}
+
+.math-heading {
+  display: block;
+  margin: 1.5em 0 1em 0;
+  text-align: center;
+}
+
+.math-list {
+  display: block;
+  margin: 1em 0;
+}
+
+.math-list-item {
+  display: block;
+  margin: 0.8em 0;
+  text-align: left;
+  padding-left: 1em;
+}
+
+.math-break {
+  display: block;
+  margin: 1em 0;
+}
+
+.math-display-block {
+  display: block;
+  margin: 2em auto;
+  text-align: center;
+  background: rgba(168, 85, 247, 0.08);
+  padding: 1.2em;
+  border-radius: 10px;
+  border: 2px solid rgba(168, 85, 247, 0.2);
+}
+
+.math-inline-block {
+  display: block;
+  margin: 1.8em auto;
+  text-align: center;
+  background: rgba(34, 197, 94, 0.08);
+  padding: 1em;
+  border-radius: 8px;
+  border: 2px solid rgba(34, 197, 94, 0.2);
+}
+
+.katex-block {
+  display: block !important;
+  margin: 1.5em auto !important;
+  text-align: center !important;
+  background: rgba(239, 68, 68, 0.06);
+  padding: 0.8em;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.perfect-math-renderer .katex-error {
+  color: #dc2626;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  display: block;
+  margin: 1em auto;
+  text-align: center;
+  max-width: 400px;
+}
+
+/* Flashcard Math Equation Styling */
+.formula-flashcard .katex-display {
+  font-size: 1rem !important;
+  margin: 0.5rem 0 !important;
+  padding: 0.6rem !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  line-height: 1.3 !important;
+  transform: scale(0.9) !important;
+  transform-origin: center center !important;
+  text-align: center !important;
+}
+
+.formula-flashcard .katex {
+  font-size: 0.9rem !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  padding: 0.3rem 0.5rem !important;
+  margin: 0.2rem auto !important;
+  color: white !important;
+  transform: scale(0.95) !important;
+  transform-origin: center center !important;
+  max-width: 95% !important;
+  overflow: hidden !important;
+  display: inline-block !important;
+}
+
+.concept-flashcard .katex-display {
+  font-size: 1rem !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 0.4rem 0.6rem !important;
+  margin: 0.4rem 0 !important;
+  color: white !important;
+  line-height: 1.3 !important;
+  text-align: center !important;
+}
+
+.concept-flashcard .katex {
+  font-size: 0.95rem !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 0.3rem 0.5rem !important;
+  margin: 0.3rem auto !important;
+  color: white !important;
+  display: inline-block !important;
+}
+
+/* Ensure flashcard math doesn't overflow */
+.flashcard-question,
+.flashcard-answer {
+  overflow: hidden !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  text-align: center !important;
+}
+
+.flashcard-question .katex-html,
+.flashcard-answer .katex-html {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-align: center !important;
+}
+
+/* Fix math equation centering and spacing */
+.flashcard-question p,
+.flashcard-answer p {
+  text-align: center !important;
+  margin: 0.2rem 0 !important;
+}
+
+/* Ensure proper math display on flashcard back (white background) */
+.rotate-y-180 .katex,
+.rotate-y-180 .katex-display {
+  color: #1e293b !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Curriculum Content Styling */
+.curriculum-content h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 2rem 0 1.5rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid #3b82f6;
+}
+
+.curriculum-content h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #374151;
+  margin: 1.5rem 0 1rem 0;
+  padding-left: 1rem;
+  border-left: 4px solid #10b981;
+}
+
+.curriculum-content h3 {
+  font-size: 1.25rem;
+  font-weight: semibold;
+  color: #4b5563;
+  margin: 1.25rem 0 0.75rem 0;
+  padding-left: 1.5rem;
+  border-left: 3px solid #f59e0b;
+}
+
+.curriculum-content h4 {
+  font-size: 1.125rem;
+  font-weight: medium;
+  color: #6b7280;
+  margin: 1rem 0 0.5rem 0;
+  padding-left: 2rem;
+  border-left: 2px solid #ef4444;
+}
+
+.curriculum-content h5 {
+  font-size: 1rem;
+  font-weight: medium;
+  color: #9ca3af;
+  margin: 0.75rem 0 0.5rem 0;
+  padding-left: 2.5rem;
+}
+
+.curriculum-content h6 {
+  font-size: 0.875rem;
+  font-weight: medium;
+  color: #d1d5db;
+  margin: 0.5rem 0 0.25rem 0;
+  padding-left: 3rem;
 }

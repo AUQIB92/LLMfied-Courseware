@@ -71,78 +71,45 @@ const KatexRenderer = ({
 
   // Enhanced components for better rendering
   const components = useMemo(() => {
-    if (inline) {
-      return {
-        // Inline mode - but still separate math equations
-        p: ({ children }) => <span className="block">{children}</span>,
-        div: ({ children }) => <span className="block">{children}</span>,
-        h1: ({ children }) => (
-          <span className="font-bold block">{children}</span>
-        ),
-        h2: ({ children }) => (
-          <span className="font-bold block">{children}</span>
-        ),
-        h3: ({ children }) => (
-          <span className="font-semibold block">{children}</span>
-        ),
-        ul: ({ children }) => <span className="block">{children}</span>,
-        li: ({ children }) => <span className="block mx-1">• {children}</span>,
-        br: () => <br />,
-        // Ensure math equations get their own line
-        ".math-display": ({ children }) => (
-          <div className="my-4 text-center">{children}</div>
-        ),
-        ".math-inline": ({ children }) => (
-          <span className="mx-1">{children}</span>
-        ),
-      };
-    }
-
-    return {
-      // Block mode - proper block elements with math spacing
-      p: ({ children, ...props }) => (
-        <div className="mb-4 leading-relaxed text-gray-800" {...props}>
-          {children}
-        </div>
+    // Force all math to be block display for maximum clarity
+    const blockMathComponents = {
+      // All content should be block for math separation
+      p: ({ children }) => <div className="math-paragraph">{children}</div>,
+      div: ({ children }) => <div className="math-container">{children}</div>,
+      h1: ({ children }) => (
+        <div className="font-bold text-lg math-heading">{children}</div>
       ),
-
-      // Math display handling
+      h2: ({ children }) => (
+        <div className="font-bold math-heading">{children}</div>
+      ),
+      h3: ({ children }) => (
+        <div className="font-semibold math-heading">{children}</div>
+      ),
+      ul: ({ children }) => <div className="math-list">{children}</div>,
+      li: ({ children }) => <div className="math-list-item">• {children}</div>,
+      br: () => <div className="math-break" style={{ height: "1em" }} />,
+      // Force all math into display mode
       ".math-display": ({ children }) => (
-        <div className="my-6 text-center">{children}</div>
+        <div className="math-display-block">{children}</div>
       ),
-
       ".math-inline": ({ children }) => (
-        <span className="mx-1">{children}</span>
+        <div className="math-inline-block">{children}</div>
       ),
-
-      // Enhanced code blocks
-      code: ({
-        inline: isInline,
-        className: codeClass,
-        children,
-        ...props
-      }) => {
-        if (isInline) {
+      span: ({ children, ...props }) => {
+        // Convert inline math spans to block divs
+        if (props.className?.includes("katex")) {
           return (
-            <code
-              className="bg-gray-100 px-1 py-0.5 rounded text-sm"
-              {...props}
-            >
+            <div className="katex-block" {...props}>
               {children}
-            </code>
+            </div>
           );
         }
-
-        return (
-          <pre className="bg-gray-50 rounded p-4 overflow-x-auto my-4 border">
-            <code className={codeClass} {...props}>
-              {children}
-            </code>
-          </pre>
-        );
+        return <div {...props}>{children}</div>;
       },
     };
-  }, [inline]);
+
+    return blockMathComponents;
+  }, []);
 
   const WrapperComponent = inline ? "span" : "div";
 

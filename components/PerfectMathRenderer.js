@@ -278,16 +278,19 @@ export default function PerfectMathRenderer({
     try {
       let processed = contextAwareSanitize(content, analysis);
 
-      // Ensure math equations are on separate lines for better clarity
+      // Ensure EVERY math equation is on its own separate line for maximum clarity
       processed = processed
-        // Add line breaks before and after display math
-        .replace(/([^$])\$\$([^$]+)\$\$([^$])/g, "$1\n\n$$$$2$$$$\n\n$3")
-        // Add space around inline math for better separation
-        .replace(/([a-zA-Z0-9])\$([^$]+)\$([a-zA-Z0-9])/g, "$1 $$$2$$ $3")
-        // Ensure equations with text have proper spacing
+        // Convert ALL inline math to display math for separate lines
+        .replace(/\$([^$\n]+)\$/g, "\n\n$$$$1$$$$\n\n")
+        // Ensure display math has proper separation
         .replace(/\$\$([^$]+)\$\$/g, "\n\n$$$$1$$$$\n\n")
-        // Clean up multiple line breaks
-        .replace(/\n{3,}/g, "\n\n")
+        // Add line breaks around mathematical expressions
+        .replace(/([^$\n])\$\$([^$]+)\$\$([^$\n])/g, "$1\n\n$$$$2$$$$\n\n$3")
+        // Clean up multiple line breaks but keep equation separation
+        .replace(/\n{4,}/g, "\n\n\n")
+        // Ensure text before and after equations is separated
+        .replace(/([a-zA-Z0-9.,;:])\n\n\$\$/g, "$1\n\n\n$$")
+        .replace(/\$\$\n\n([a-zA-Z0-9])/g, "$$\n\n\n$1")
         .trim();
 
       return processed;
