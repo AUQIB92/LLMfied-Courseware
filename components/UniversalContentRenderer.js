@@ -288,7 +288,10 @@ const getMarkdownComponents = (inline = false, onError = null) => {
       // Math error handling
       span: ({ className, children, ...props }) => {
         if (className === 'katex-error') {
-          errorHandler(children, 'inline-math');
+          // Use useEffect to avoid setState during render
+          React.useEffect(() => {
+            errorHandler(children, 'inline-math');
+          }, [children]);
           return (
             <span 
               className="text-red-500 bg-red-50 px-1 rounded border border-red-200" 
@@ -305,11 +308,34 @@ const getMarkdownComponents = (inline = false, onError = null) => {
   } else {
     return {
       // Block mode - full markdown support
-      p: ({ children, ...props }) => (
-        <p className="mb-4 leading-relaxed text-gray-800 last:mb-0" {...props}>
-          {children}
-        </p>
-      ),
+      p: ({ children, ...props }) => {
+        // Check if children contain block elements that shouldn't be in a paragraph
+        const hasBlockElements = React.Children.toArray(children).some(child => 
+          React.isValidElement(child) && 
+          (child.type === 'div' || child.type === 'blockquote' || child.type === 'pre' || child.type === 'table' ||
+           (child.props && child.props.className && 
+            (child.props.className.includes('katex-display') || 
+             child.props.className.includes('table') ||
+             child.props.className.includes('overflow-x-auto') ||
+             child.props.className.includes('my-4') ||
+             child.props.className.includes('my-6'))))
+        );
+        
+        if (hasBlockElements) {
+          // Return a div instead of p to avoid nesting issues
+          return (
+            <div className="mb-4 leading-relaxed text-gray-800 last:mb-0" {...props}>
+              {children}
+            </div>
+          );
+        }
+        
+        return (
+          <p className="mb-4 leading-relaxed text-gray-800 last:mb-0" {...props}>
+            {children}
+          </p>
+        );
+      },
       
       // Headers with proper styling
       h1: ({ children, ...props }) => (
@@ -475,15 +501,19 @@ const getMarkdownComponents = (inline = false, onError = null) => {
       // Math error handling
       span: ({ className, children, ...props }) => {
         if (className === 'katex-error') {
-          errorHandler(children, 'block-math');
+          // Use useEffect to avoid setState during render
+          React.useEffect(() => {
+            errorHandler(children, 'block-math');
+          }, [children]);
           return (
-            <div className="my-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="text-red-600 font-medium mb-1">Math Rendering Error</div>
-              <div className="text-sm text-gray-600 font-mono">{children}</div>
-              <div className="text-xs text-gray-500 mt-1">
-                This mathematical expression could not be rendered. Please check the LaTeX syntax.
-              </div>
-            </div>
+            <span 
+              className="inline-block px-2 py-1 bg-red-50 border border-red-200 rounded text-red-600"
+              title={`Math error: ${children}`}
+              {...props}
+            >
+              <span className="text-xs font-medium">⚠️ Math Error: </span>
+              <span className="text-xs font-mono">{children}</span>
+            </span>
           );
         }
         return <span className={className} {...props}>{children}</span>;
@@ -540,7 +570,10 @@ const UniversalContentRenderer = ({
       return sanitized;
     } catch (error) {
       console.warn("Content processing error:", error);
-      setRenderError(error);
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => {
+        setRenderError(error);
+      }, 0);
       return content; // Fallback to original
     }
   }, [content, contentAnalysis.complexity, renderAttempt]);
@@ -548,24 +581,28 @@ const UniversalContentRenderer = ({
   // Error handler with retry logic
   const handleRenderError = useCallback((error, context = 'unknown') => {
     console.warn(`Render error (attempt ${renderAttempt + 1}):`, error);
-    setRenderError(error);
     
     if (onRenderError) {
       onRenderError(error, { attempt: renderAttempt + 1, context });
     }
     
-    // Retry with simplified strategy
-    if (renderAttempt < maxRetries) {
-      setRenderAttempt(prev => prev + 1);
-      setRenderStrategy(prev => {
-        switch (prev) {
-          case 'full': return 'simplified';
-          case 'simplified': return 'basic';
-          case 'basic': return 'plaintext';
-          default: return 'plaintext';
-        }
-      });
-    }
+    // Use setTimeout to avoid setState during render
+    setTimeout(() => {
+      setRenderError(error);
+      
+      // Retry with simplified strategy
+      if (renderAttempt < maxRetries) {
+        setRenderAttempt(prev => prev + 1);
+        setRenderStrategy(prev => {
+          switch (prev) {
+            case 'full': return 'simplified';
+            case 'simplified': return 'basic';
+            case 'basic': return 'plaintext';
+            default: return 'plaintext';
+          }
+        });
+      }
+    }, 0);
   }, [renderAttempt, maxRetries, onRenderError]);
   
   // Render complete handler
@@ -588,11 +625,34 @@ const UniversalContentRenderer = ({
         p: ({ children }) => <>{children}</>,
         div: ({ children }) => <span>{children}</span>,
       } : {
-        p: ({ children, ...props }) => (
-          <p className="mb-4 leading-relaxed text-gray-800" {...props}>
-            {children}
-          </p>
-        ),
+        p: ({ children, ...props }) => {
+                     // Check if children contain block elements that shouldn't be in a paragraph
+           const hasBlockElements = React.Children.toArray(children).some(child => 
+             React.isValidElement(child) && 
+             (child.type === 'div' || child.type === 'blockquote' || child.type === 'pre' || child.type === 'table' ||
+              (child.props && child.props.className && 
+               (child.props.className.includes('katex-display') || 
+                child.props.className.includes('table') ||
+                child.props.className.includes('overflow-x-auto') ||
+                child.props.className.includes('my-4') ||
+                child.props.className.includes('my-6'))))
+           );
+          
+          if (hasBlockElements) {
+            // Return a div instead of p to avoid nesting issues
+            return (
+              <div className="mb-4 leading-relaxed text-gray-800" {...props}>
+                {children}
+              </div>
+            );
+          }
+          
+          return (
+            <p className="mb-4 leading-relaxed text-gray-800" {...props}>
+              {children}
+            </p>
+          );
+        },
       };
     }
     

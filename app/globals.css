@@ -94,12 +94,70 @@
   line-height: 1.8;
 }
 
+.math-question .katex-display {
+  margin: 1em 0 !important;
+  background: rgba(59, 130, 246, 0.05) !important;
+  border: 1px solid rgba(59, 130, 246, 0.1) !important;
+  padding: 0.8em !important;
+  border-radius: 8px !important;
+}
+
 .quiz-option {
   line-height: 1.6;
 }
 
 .quiz-option .katex {
   margin: 0.2em 0.05em;
+  background: rgba(34, 197, 94, 0.08) !important;
+  border: 1px solid rgba(34, 197, 94, 0.15) !important;
+  padding: 0.25em 0.4em !important;
+  border-radius: 4px !important;
+}
+
+.quiz-option .katex-display {
+  background: rgba(34, 197, 94, 0.05) !important;
+  border: 1px solid rgba(34, 197, 94, 0.1) !important;
+  padding: 0.6em !important;
+  margin: 0.5em 0 !important;
+}
+
+/* Quiz question content styling */
+.question-content .katex {
+  color: #1f2937 !important;
+}
+
+.option-content .katex {
+  color: #374151 !important;
+}
+
+/* Quiz results/review styling */
+.question-review .katex-display,
+.user-answer .katex-display,
+.correct-answer .katex-display,
+.explanation .katex-display {
+  margin: 0.8em 0 !important;
+  padding: 0.6em !important;
+  border-radius: 6px !important;
+}
+
+.question-review .katex-display {
+  background: rgba(99, 102, 241, 0.05) !important;
+  border: 1px solid rgba(99, 102, 241, 0.1) !important;
+}
+
+.user-answer .katex-display {
+  background: rgba(239, 68, 68, 0.05) !important;
+  border: 1px solid rgba(239, 68, 68, 0.1) !important;
+}
+
+.correct-answer .katex-display {
+  background: rgba(34, 197, 94, 0.05) !important;
+  border: 1px solid rgba(34, 197, 94, 0.1) !important;
+}
+
+.explanation .katex-display {
+  background: rgba(59, 130, 246, 0.05) !important;
+  border: 1px solid rgba(59, 130, 246, 0.1) !important;
 }
 
 /* Ensure display math is always on its own line */

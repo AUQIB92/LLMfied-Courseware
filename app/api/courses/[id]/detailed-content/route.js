@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { generateCompetitiveExamModuleSummary } from "@/lib/gemini";
@@ -156,10 +155,12 @@ function parseMarkdownToDetailedSubsections(markdownContent) {
 }
 
 export async function GET(request, { params }) {
-  const token = await getToken({ req: request });
-  if (!token) {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const token = authHeader.split(" ")[1];
 
   const { searchParams } = new URL(request.url);
   const moduleIndex = parseInt(searchParams.get("moduleIndex"), 10);

@@ -87,6 +87,7 @@ export default function QuizModal({ quiz, open, onOpenChange, onQuizComplete }) 
                   content={currentQuestion.question}
                   renderingMode="math-optimized"
                   className="question-content text-lg"
+                  inline={false}
                   showAnalytics={process.env.NODE_ENV === 'development'}
                 />
               </div>
@@ -111,7 +112,7 @@ export default function QuizModal({ quiz, open, onOpenChange, onQuizComplete }) 
                         content={option}
                         renderingMode="math-optimized"
                         className="option-content"
-                        inline={false}
+                        inline={true}
                       />
                     </Label>
                   </div>
@@ -163,6 +164,7 @@ export default function QuizModal({ quiz, open, onOpenChange, onQuizComplete }) 
                           content={question.question}
                           renderingMode="math-optimized"
                           className="question-review mb-3"
+                          inline={false}
                         />
                       </div>
                     </div>

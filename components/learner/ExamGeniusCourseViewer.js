@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import {
   RotateCcw,
   Star,
   Zap,
+  ArrowLeft,
 } from "lucide-react";
 import ModuleContent from "./ModuleContent";
 import AITutor from "./AITutor";
@@ -149,8 +150,7 @@ const flashcardStyles = `
   }
   
   /* Formula-specific styling for math equations */
-  .flashcard-question .katex-display,
-  .flashcard-answer .katex-display {
+  .flashcard-question .katex-display {
     margin: 0.5rem 0 !important;
     font-size: 1rem !important;
     background: rgba(255, 255, 255, 0.1) !important;
@@ -159,12 +159,32 @@ const flashcardStyles = `
     border-radius: 8px !important;
   }
   
-  .flashcard-question .katex,
-  .flashcard-answer .katex {
+  .flashcard-answer .katex-display {
+    margin: 0.5rem 0 !important;
+    font-size: 1rem !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    padding: 0.5rem !important;
+    border-radius: 8px !important;
+  }
+  
+  .flashcard-question .katex {
     font-size: 0.9rem !important;
     color: white !important;
     background: rgba(255, 255, 255, 0.1) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 0.3rem 0.5rem !important;
+    margin: 0.3rem auto !important;
+    display: inline-block !important;
+    max-width: 100% !important;
+  }
+  
+  .flashcard-answer .katex {
+    font-size: 0.9rem !important;
+    color: #1f2937 !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
     border-radius: 6px !important;
     padding: 0.3rem 0.5rem !important;
     margin: 0.3rem auto !important;
@@ -190,6 +210,27 @@ const flashcardStyles = `
     overflow-wrap: break-word;
   }
   
+  /* Inline math within flashcards should maintain readability */
+  .flashcard-question span.katex {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  }
+  
+  .flashcard-answer span.katex {
+    color: #1f2937 !important;
+    background: rgba(0, 0, 0, 0.08) !important;
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* Ensure math content is centered and readable */
+  .flashcard-question .katex-html,
+  .flashcard-answer .katex-html {
+    white-space: nowrap;
+    overflow-x: auto;
+    text-align: center;
+  }
+  
   /* Formula flashcard specific adjustments */
   .formula-flashcard .flashcard-text {
     font-size: 0.95rem;
@@ -208,6 +249,165 @@ if (typeof document !== "undefined") {
   styleElement.textContent = flashcardStyles;
   document.head.appendChild(styleElement);
 }
+
+// Inline Flashcard Component
+const InlineFlashcard = ({ card, cardIndex, onFullscreen }) => {
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    console.log('🔍 Card clicked - opening expanded view:', card.categoryLabel);
+    onFullscreen(card, isFlipped);
+  };
+
+  const handleFlipClick = (e) => {
+    e.stopPropagation();
+    console.log('🔍 Flip button clicked');
+    setIsFlipped(!isFlipped);
+  };
+
+  return (
+    <motion.div
+      className="relative h-64 sm:h-72 lg:h-80 cursor-pointer w-full"
+      onClick={handleClick}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: cardIndex * 0.1 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      {/* Card Container */}
+      <div className="relative w-full h-full perspective-1000">
+        <div
+          className={`relative w-full h-full transform-style-preserve-3d transition-transform duration-700 ${
+            isFlipped ? "rotate-y-180" : ""
+          }`}
+        >
+          {/* Front of Card - Question */}
+          <Card
+            className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br ${card.bgGradient} border-0 shadow-lg overflow-hidden group`}
+          >
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 sm:-translate-y-16 sm:translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-16 h-16 sm:w-24 sm:h-24 bg-white/5 rounded-full translate-y-8 -translate-x-8 sm:translate-y-12 sm:-translate-x-12"></div>
+
+            <CardContent className="p-3 sm:p-4 lg:p-6 h-full flex flex-col relative z-10">
+              <div className="flex justify-between items-start mb-2 sm:mb-4">
+                <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm font-medium px-2 py-1 sm:px-3 sm:py-2 text-xs">
+                  {card.categoryLabel}
+                </Badge>
+                <button
+                  onClick={handleFlipClick}
+                  className="text-white/70 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+                  title="Flip card"
+                >
+                  <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+
+              {/* Centered content area - takes up most space */}
+              <div className="flex-1 flex items-center justify-center px-1 sm:px-2">
+                <div className="text-center w-full space-y-2 sm:space-y-4">
+                  <div className="text-4xl sm:text-5xl lg:text-6xl opacity-30 text-white font-light mb-2 sm:mb-4">?</div>
+                  <div className="text-sm sm:text-base lg:text-lg font-semibold leading-relaxed text-white drop-shadow-sm">
+                    <ContentDisplay
+                      content={card.question}
+                      renderingMode="math-optimized"
+                      className="text-white flashcard-question text-center"
+                      inline={true}
+                      enableTelemetry={false}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center mt-2 sm:mt-4">
+                <div className="inline-flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-4 sm:py-2 bg-white/15 backdrop-blur-sm rounded-full border border-white/25 shadow-sm">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full animate-pulse"></div>
+                  <p className="text-white/95 text-xs sm:text-sm font-medium">
+                    Tap to expand
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Back of Card - Answer */}
+          <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-slate-900/95 backdrop-blur-sm border border-slate-700 shadow-lg overflow-hidden">
+            <div className={`absolute top-0 right-0 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-br ${card.bgColor} rounded-full -translate-y-16 translate-x-16 sm:-translate-y-20 sm:translate-x-20 opacity-20`}></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-tr from-slate-800 to-slate-700 rounded-full translate-y-12 -translate-x-12 sm:translate-y-16 sm:-translate-x-16 opacity-60"></div>
+
+            <CardContent className="p-3 sm:p-4 lg:p-6 h-full flex flex-col relative z-10">
+              <div className="flex justify-between items-start mb-2 sm:mb-4">
+                <Badge
+                  variant="outline"
+                  className={`border-slate-600 bg-slate-800/90 backdrop-blur-sm font-medium px-2 py-1 sm:px-3 sm:py-2 text-xs text-slate-200`}
+                >
+                  {card.categoryLabel}
+                </Badge>
+                <button
+                  onClick={handleFlipClick}
+                  className="text-slate-400 hover:text-white transition-colors p-1 rounded-full hover:bg-slate-800"
+                  title="Flip card"
+                >
+                  <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+
+              {/* Centered content area - takes up most space */}
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center w-full space-y-2 sm:space-y-4">
+                  <div className="text-3xl sm:text-4xl lg:text-5xl text-emerald-400 drop-shadow-sm mb-2 sm:mb-4">✓</div>
+                  <div className="w-8 sm:w-12 h-px bg-gradient-to-r from-transparent via-slate-500 to-transparent mx-auto mb-2 sm:mb-4"></div>
+                  <div className="text-sm sm:text-base lg:text-lg text-slate-100 leading-relaxed font-medium">
+                    <ContentDisplay
+                      content={card.answer}
+                      renderingMode="math-optimized"
+                      className="text-slate-100 flashcard-answer text-center"
+                      inline={true}
+                      enableTelemetry={false}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center mt-2 sm:mt-4">
+                <div className="inline-flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-4 sm:py-2 bg-slate-800/70 rounded-full border border-slate-600 shadow-sm">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full"></div>
+                  <p className="text-slate-300 text-xs sm:text-sm font-medium">
+                    Tap to expand
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Progress indicator */}
+      <div className="absolute -bottom-2 sm:-bottom-3 left-1/2 transform -translate-x-1/2">
+        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-colors duration-300 shadow-sm ${
+          isFlipped ? 'bg-emerald-400' : 'bg-indigo-400'
+        }`}></div>
+      </div>
+
+      <style jsx>{`
+        .backface-hidden {
+          backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+          transform: rotateY(180deg);
+        }
+        .transform-style-preserve-3d {
+          transform-style: preserve-3d;
+        }
+        .perspective-1000 {
+          perspective: 1000px;
+        }
+      `}</style>
+    </motion.div>
+  );
+};
 
 export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const { getAuthHeaders } = useAuth();
@@ -236,6 +436,8 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   const [currentFlashcardSet, setCurrentFlashcardSet] = useState([]);
   const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false);
   const [studiedCards, setStudiedCards] = useState(new Set());
+  const [fullscreenCard, setFullscreenCard] = useState(null);
+  const [fullscreenFlipped, setFullscreenFlipped] = useState(false);
 
   const resourceCategories = {
     books: { icon: BookOpen, label: "Books" },
@@ -412,6 +614,23 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
       }
     }
   }, [viewerCourse, currentModule, currentModuleData]);
+
+  // Keyboard event listeners for fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (fullscreenCard) {
+        if (e.key === 'Escape') {
+          closeFullscreenCard();
+        } else if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          toggleFullscreenFlip();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [fullscreenCard, fullscreenFlipped]);
 
   const fetchDetailedContent = async (moduleIndex) => {
     const module = viewerCourse.modules[moduleIndex];
@@ -1319,21 +1538,29 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
       const allCards = [];
 
       if (hasConceptCards) {
-        subsectionData.conceptFlashCards.forEach((card) => {
+        subsectionData.conceptFlashCards.forEach((card, cardIdx) => {
           allCards.push({
             ...card,
             category: "concept",
             categoryLabel: "📚 Important Concept",
+            cardId: `concept-${subsectionIndex}-${cardIdx}`,
+            bgGradient: "from-indigo-600 via-purple-600 to-violet-700",
+            bgColor: "from-indigo-600 to-violet-700",
+            textColor: "text-indigo-700",
           });
         });
       }
 
       if (hasFormulaCards) {
-        subsectionData.formulaFlashCards.forEach((card) => {
+        subsectionData.formulaFlashCards.forEach((card, cardIdx) => {
           allCards.push({
             ...card,
             category: "formula",
             categoryLabel: "🧮 Mathematical Formula",
+            cardId: `formula-${subsectionIndex}-${cardIdx}`,
+            bgGradient: "from-blue-600 via-cyan-600 to-teal-700",
+            bgColor: "from-blue-600 to-teal-700",
+            textColor: "text-blue-700",
           });
         });
       }
@@ -1371,6 +1598,36 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
   const flipFlashcard = () => {
     setIsFlashcardFlipped(!isFlashcardFlipped);
+  };
+
+  // Fullscreen card functions
+  const openFullscreenCard = (card, isFlipped = false) => {
+    console.log('🔍 Opening fullscreen card:', card.categoryLabel, 'isFlipped:', isFlipped);
+    console.log('🔍 Full card object:', card);
+    console.log('🔍 Current fullscreenCard state before:', fullscreenCard);
+    
+    // Force state update
+    setFullscreenCard(card);
+    setFullscreenFlipped(isFlipped);
+    
+    console.log('🔍 setFullscreenCard called with:', card);
+    console.log('🔍 setFullscreenFlipped called with:', isFlipped);
+    
+    // Force a re-render check
+    setTimeout(() => {
+      console.log('🔍 fullscreenCard state after 100ms:', fullscreenCard);
+    }, 100);
+  };
+
+  const closeFullscreenCard = () => {
+    console.log('🔍 Closing fullscreen card');
+    setFullscreenCard(null);
+    setFullscreenFlipped(false);
+  };
+
+  const toggleFullscreenFlip = () => {
+    console.log('🔍 Toggling fullscreen flip:', !fullscreenFlipped);
+    setFullscreenFlipped(!fullscreenFlipped);
   };
 
   // Helper function to format curriculum content
@@ -1430,8 +1687,204 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
     }
 
     console.log("⚪ No markdown headers detected, returning original content");
-    return content;
+    return content; // Fallback to original
   };
+
+  // Debug effect to monitor fullscreenCard state changes
+  useEffect(() => {
+    console.log('🔍 fullscreenCard state changed:', fullscreenCard);
+    if (fullscreenCard) {
+      console.log('🔍 ✅ FULLSCREEN CARD IS SET - Modal should render!');
+    } else {
+      console.log('🔍 ❌ FULLSCREEN CARD IS NULL - Modal will not render');
+    }
+  }, [fullscreenCard]);
+
+  // Show expanded flashcard in main content area instead of modal
+  if (fullscreenCard) {
+    console.log('🔍 🎉 RENDERING EXPANDED FLASHCARD in main area for card:', fullscreenCard);
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
+        <div
+          className="fixed left-0 top-0 w-4 h-full z-50 bg-transparent"
+          onMouseEnter={handleMouseEnter}
+        />
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-2xl">
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={closeFullscreenCard}
+                  className="text-white hover:bg-white/20"
+                >
+                  <ChevronLeft className="h-5 w-5 mr-2" /> Back to Flashcards
+                </Button>
+                <div className="h-8 w-px bg-white/30"></div>
+                <div>
+                  <h1 className="text-2xl font-bold">{fullscreenCard.categoryLabel}</h1>
+                  <div className="text-indigo-100 flex items-center gap-2 mt-1">
+                    <Brain className="h-4 w-4" /> Study Mode • Single Card View
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeFullscreenCard}
+                className="text-white hover:bg-white/20"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 py-4 sm:py-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Large Flashcard in Main Area */}
+            <div className="relative h-80 sm:h-96 lg:h-[28rem] perspective-1000">
+              <div
+                className={`relative w-full h-full cursor-pointer transition-all duration-700 transform-style-preserve-3d hover:scale-[1.02] ${
+                  fullscreenFlipped ? "rotate-y-180" : ""
+                }`}
+                onClick={toggleFullscreenFlip}
+                style={{ transformStyle: "preserve-3d" }}
+              >
+                {/* Front of card - Question */}
+                <Card
+                  className={`absolute inset-0 w-full h-full backface-hidden shadow-2xl border-0 bg-gradient-to-br ${fullscreenCard.bgGradient} overflow-hidden group`}
+                >
+                  <div className="absolute inset-0 bg-black/5"></div>
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-20 translate-x-20"></div>
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-16 -translate-x-16"></div>
+
+                  <CardContent className="p-12 h-full flex flex-col justify-between relative z-10">
+                    <div className="flex justify-between items-start">
+                      <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm font-medium px-4 py-2">
+                        {fullscreenCard.categoryLabel}
+                      </Badge>
+                      <div className="text-8xl opacity-20 text-white font-light">?</div>
+                    </div>
+
+                    <div className="text-center space-y-8">
+                      <div className="relative">
+                        <div className="text-9xl opacity-20 text-white font-light">?</div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold leading-tight text-white drop-shadow-sm px-8">
+                        <ContentDisplay
+                          content={fullscreenCard.question}
+                          renderingMode="math-optimized"
+                          className="text-white flashcard-question text-2xl"
+                          inline={true}
+                          enableTelemetry={false}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                        <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                        <p className="text-white/90 text-lg font-medium">
+                          Click to reveal answer
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Back of card - Answer */}
+                <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 shadow-2xl bg-white/95 backdrop-blur-sm border border-white/20 overflow-hidden">
+                  <div className={`absolute top-0 right-0 w-48 h-48 bg-gradient-to-br ${fullscreenCard.bgColor} rounded-full -translate-y-24 translate-x-24 opacity-30`}></div>
+                  <div className="absolute bottom-0 left-0 w-36 h-36 bg-gradient-to-tr from-gray-50 to-slate-50 rounded-full translate-y-18 -translate-x-18 opacity-60"></div>
+
+                  <CardContent className="p-12 h-full flex flex-col justify-between relative z-10">
+                    <div className="flex justify-between items-start">
+                      <Badge
+                        variant="outline"
+                        className={`border-slate-200 bg-white/80 backdrop-blur-sm font-medium px-4 py-2 ${fullscreenCard.textColor}`}
+                      >
+                        {fullscreenCard.categoryLabel}
+                      </Badge>
+                      <div className="text-6xl text-emerald-500 drop-shadow-sm">✓</div>
+                    </div>
+
+                    <div className="text-center space-y-8">
+                      <div className="relative">
+                        <div className="text-7xl text-emerald-500 drop-shadow-sm">✓</div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-24 h-24 bg-emerald-100 rounded-full opacity-30"></div>
+                        </div>
+                      </div>
+                      <div className="space-y-4 sm:space-y-6">
+                        <div className="w-16 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent mx-auto"></div>
+                        <div className="text-xl text-slate-800 leading-relaxed font-medium px-8">
+                          <ContentDisplay
+                            content={fullscreenCard.answer}
+                            renderingMode="math-optimized"
+                            className="text-slate-800 flashcard-answer text-xl"
+                            inline={true}
+                            enableTelemetry={false}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-50 rounded-full border border-slate-200">
+                        <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
+                        <p className="text-slate-600 text-lg font-medium">
+                          Click to flip back
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row justify-center items-center mt-6 sm:mt-8 gap-3 sm:gap-4 px-4">
+              <Button
+                variant="outline"
+                onClick={closeFullscreenCard}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-800/80 backdrop-blur-sm border-slate-600 text-slate-200 hover:bg-slate-700 transition-all duration-300 shadow-lg hover:shadow-xl px-4 sm:px-6 py-3"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="font-medium">Back to All Cards</span>
+              </Button>
+              <Button
+                onClick={toggleFullscreenFlip}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl px-4 sm:px-6 py-3"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="font-medium">Flip Card</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <style jsx>{`
+          .backface-hidden {
+            backface-visibility: hidden;
+          }
+          .rotate-y-180 {
+            transform: rotateY(180deg);
+          }
+          .transform-style-preserve-3d {
+            transform-style: preserve-3d;
+          }
+          .perspective-1000 {
+            perspective: 1000px;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   if (showQuiz && quizData) {
     return (
@@ -1636,6 +2089,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                         content={card.front}
                         renderingMode="math-optimized"
                         className="text-white flashcard-question"
+                        inline={true}
                         enableTelemetry={false}
                       />
                     </div>
@@ -1690,6 +2144,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                           content={card.back}
                           renderingMode="math-optimized"
                           className="text-slate-800 flashcard-answer"
+                          inline={true}
                           enableTelemetry={false}
                         />
                       </div>
@@ -2282,22 +2737,20 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="flashcards" className="p-6">
-                    <div className="space-y-6">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-3">
-                          <Brain className="h-8 w-8 text-purple-600" />
+                  <TabsContent value="flashcards" className="p-4 sm:p-6 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
+                    <div className="space-y-4 sm:space-y-6">
+                      <div className="text-center px-4">
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-3 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3">
+                          <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-400" />
                           Study Flashcards
                         </h2>
-                        <p className="text-gray-600 mb-8">
-                          Master key concepts and formulas with interactive
-                          flashcards designed for {viewerCourse.examType} exam
-                          success
+                        <p className="text-sm sm:text-base text-slate-300 mb-6 sm:mb-8">
+                          Interactive flashcards for {viewerCourse.examType} exam preparation - tap any card to expand
                         </p>
                       </div>
 
-                      {/* Flashcards for all subsections */}
-                      <div className="space-y-6">
+                      {/* Inline Flashcards for all subsections */}
+                      <div className="space-y-8">
                         {subsections.length === 0 ? (
                           <div className="text-center py-12">
                             <Brain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -2310,192 +2763,113 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                             </p>
                           </div>
                         ) : (
-                          subsections.map((subsection, index) => {
+                          subsections.map((subsectionData, subsectionIndex) => {
                             // Check if current subsection has flashcards
                             const hasConceptCards =
-                              subsection?.conceptFlashCards &&
-                              Array.isArray(subsection.conceptFlashCards) &&
-                              subsection.conceptFlashCards.length > 0;
+                              subsectionData?.conceptFlashCards &&
+                              Array.isArray(subsectionData.conceptFlashCards) &&
+                              subsectionData.conceptFlashCards.length > 0;
                             const hasFormulaCards =
-                              subsection?.formulaFlashCards &&
-                              Array.isArray(subsection.formulaFlashCards) &&
-                              subsection.formulaFlashCards.length > 0;
+                              subsectionData?.formulaFlashCards &&
+                              Array.isArray(subsectionData.formulaFlashCards) &&
+                              subsectionData.formulaFlashCards.length > 0;
 
                             const hasAnyFlashcards =
                               hasConceptCards || hasFormulaCards;
 
                             if (!hasAnyFlashcards) return null;
 
-                            const conceptCount =
-                              subsection.conceptFlashCards?.length || 0;
-                            const formulaCount =
-                              subsection.formulaFlashCards?.length || 0;
-                            const totalCount = conceptCount + formulaCount;
+                            // Combine all cards with category labels
+                            const allCards = [];
+                            if (hasConceptCards) {
+                              subsectionData.conceptFlashCards.forEach((card, cardIdx) => {
+                                allCards.push({
+                                  ...card,
+                                  category: "concept",
+                                  categoryLabel: "📚 Important Concept",
+                                  cardId: `concept-${subsectionIndex}-${cardIdx}`,
+                                  bgGradient: "from-indigo-600 via-purple-600 to-violet-700",
+                                  bgColor: "from-indigo-600 to-violet-700",
+                                  textColor: "text-indigo-700",
+                                });
+                              });
+                            }
+                            if (hasFormulaCards) {
+                              subsectionData.formulaFlashCards.forEach((card, cardIdx) => {
+                                allCards.push({
+                                  ...card,
+                                  category: "formula",
+                                  categoryLabel: "🧮 Mathematical Formula",
+                                  cardId: `formula-${subsectionIndex}-${cardIdx}`,
+                                  bgGradient: "from-blue-600 via-cyan-600 to-teal-700",
+                                  bgColor: "from-blue-600 to-teal-700",
+                                  textColor: "text-blue-700",
+                                });
+                              });
+                            }
 
                             return (
-                              <Card
-                                key={index}
-                                className="border-2 border-gray-200 hover:border-purple-300 transition-all duration-300 bg-gradient-to-br from-white to-purple-50/30"
-                              >
-                                <CardHeader className="pb-4">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold text-lg">
-                                        {index + 1}
-                                      </div>
-                                      <div>
-                                        <CardTitle className="text-xl text-gray-800">
-                                          {subsection.title}
-                                        </CardTitle>
-                                        <div className="flex items-center gap-4 mt-2">
-                                          <Badge className="bg-purple-100 text-purple-700 border-purple-300">
-                                            {totalCount} Cards Total
-                                          </Badge>
-                                          <div className="flex items-center gap-3 text-sm">
-                                            {conceptCount > 0 && (
-                                              <div className="flex items-center gap-1">
-                                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                                <span>
-                                                  📚 {conceptCount} Concepts
-                                                </span>
-                                              </div>
-                                            )}
-                                            {formulaCount > 0 && (
-                                              <div className="flex items-center gap-1">
-                                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                                <span>
-                                                  🧮 {formulaCount} Formulas
-                                                </span>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
+                              <div key={subsectionIndex} className="space-y-6">
+                                {/* Subsection Header */}
+                                <div className="bg-gradient-to-r from-slate-900 via-indigo-900 to-purple-900 p-4 sm:p-6 rounded-xl border border-indigo-800 shadow-lg">
+                                  <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg">
+                                      {subsectionIndex + 1}
                                     </div>
-                                    <Button
-                                      onClick={() => openFlashcards(subsection)}
-                                      className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                                    >
-                                      <Brain className="h-4 w-4 mr-2" />
-                                      Study Now
-                                    </Button>
-                                  </div>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="space-y-4">
-                                    {/* Summary */}
-                                    {subsection.summary && (
-                                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                        <p className="text-blue-800 text-sm">
-                                          <ContentDisplay
-                                            content={subsection.summary}
-                                            renderingMode="math-optimized"
-                                            className="subsection-summary"
-                                            enableTelemetry={false}
-                                          />
-                                        </p>
-                                      </div>
-                                    )}
-
-                                    {/* Preview cards by category */}
-                                    <div className="space-y-4">
-                                      {/* Concept Cards Preview */}
-                                      {hasConceptCards && (
-                                        <div>
-                                          <h5 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
-                                            📚 Concept Cards Preview (
-                                            {conceptCount} total)
-                                          </h5>
-                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {subsection.conceptFlashCards
-                                              .slice(0, 3)
-                                              .map((card, cardIndex) => (
-                                                <div
-                                                  key={`concept-${cardIndex}`}
-                                                  className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200 hover:border-blue-300 transition-all duration-300 hover:shadow-md"
-                                                >
-                                                  <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">
-                                                    Concept Card {cardIndex + 1}
-                                                  </div>
-                                                  <div className="text-sm text-gray-700 line-clamp-3">
-                                                    <ContentDisplay
-                                                      content={card.question}
-                                                      renderingMode="math-optimized"
-                                                      className="text-sm"
-                                                      enableTelemetry={false}
-                                                    />
-                                                  </div>
-                                                </div>
-                                              ))}
-                                          </div>
-                                          {conceptCount > 3 && (
-                                            <p className="text-xs text-blue-600 mt-2 text-center">
-                                              +{conceptCount - 3} more concept
-                                              cards available
-                                            </p>
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="text-lg sm:text-xl font-bold text-white truncate">
+                                        {subsectionData.title}
+                                      </h3>
+                                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+                                        <Badge className="bg-indigo-800/80 text-indigo-200 border-indigo-600 w-fit backdrop-blur-sm">
+                                          {allCards.length} Cards Total
+                                        </Badge>
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                                          {hasConceptCards && (
+                                            <div className="flex items-center gap-1">
+                                              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-purple-400"></div>
+                                              <span className="whitespace-nowrap text-slate-300">📚 {subsectionData.conceptFlashCards.length} Concepts</span>
+                                            </div>
+                                          )}
+                                          {hasFormulaCards && (
+                                            <div className="flex items-center gap-1">
+                                              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-cyan-400"></div>
+                                              <span className="whitespace-nowrap text-slate-300">🧮 {subsectionData.formulaFlashCards.length} Formulas</span>
+                                            </div>
                                           )}
                                         </div>
-                                      )}
-
-                                      {/* Formula Cards Preview */}
-                                      {hasFormulaCards && (
-                                        <div>
-                                          <h5 className="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2">
-                                            🧮 Formula Cards Preview (
-                                            {formulaCount} total)
-                                          </h5>
-                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {subsection.formulaFlashCards
-                                              .slice(0, 3)
-                                              .map((card, cardIndex) => (
-                                                <div
-                                                  key={`formula-${cardIndex}`}
-                                                  className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200 hover:border-green-300 transition-all duration-300 hover:shadow-md"
-                                                >
-                                                  <div className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
-                                                    Formula Card {cardIndex + 1}
-                                                  </div>
-                                                  <div className="text-sm text-gray-700 line-clamp-3">
-                                                    <ContentDisplay
-                                                      content={card.question}
-                                                      renderingMode="math-optimized"
-                                                      className="text-sm"
-                                                      enableTelemetry={false}
-                                                    />
-                                                  </div>
-                                                </div>
-                                              ))}
-                                          </div>
-                                          {formulaCount > 3 && (
-                                            <p className="text-xs text-green-600 mt-2 text-center">
-                                              +{formulaCount - 3} more formula
-                                              cards available
-                                            </p>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Study time estimate */}
-                                    <div className="bg-gray-50 p-3 rounded-lg flex items-center justify-between">
-                                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Timer className="h-4 w-4" />
-                                        <span>
-                                          Estimated study time: ~
-                                          {Math.ceil(totalCount * 0.5)} minutes
-                                        </span>
                                       </div>
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        {subsection.difficulty ||
-                                          "Intermediate"}
-                                      </Badge>
                                     </div>
                                   </div>
-                                </CardContent>
-                              </Card>
+                                  
+                                  {/* Summary */}
+                                  {subsectionData.summary && (
+                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                      <div className="text-blue-800 text-sm">
+                                        <ContentDisplay
+                                          content={subsectionData.summary}
+                                          renderingMode="math-optimized"
+                                          className="subsection-summary"
+                                          inline={true}
+                                          enableTelemetry={false}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Inline Flashcards Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                  {allCards.map((card, cardIndex) => (
+                                    <InlineFlashcard
+                                      key={card.cardId}
+                                      card={card}
+                                      cardIndex={cardIndex}
+                                      onFullscreen={openFullscreenCard}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
                             );
                           })
                         )}
@@ -2965,6 +3339,7 @@ function QuizInterface({ quizData, onComplete, difficulty }) {
             content={currentQ?.question}
             renderingMode="math-optimized"
             className="question"
+            inline={false}
             enableTelemetry={process.env.NODE_ENV === "development"}
             onRenderError={(error) =>
               console.warn("Quiz question math error:", error)
@@ -2987,6 +3362,7 @@ function QuizInterface({ quizData, onComplete, difficulty }) {
                 content={option}
                 renderingMode="math-optimized"
                 className="option"
+                inline={true}
                 enableTelemetry={process.env.NODE_ENV === "development"}
                 onRenderError={(error) =>
                   console.warn("Quiz option math error:", error)
