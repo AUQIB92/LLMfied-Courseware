@@ -2967,7 +2967,7 @@ export default function ExamModuleEditorEnhanced({
                                               >
                                                 <div className="relative w-full h-32 transform-style-preserve-3d transition-transform duration-500 hover:rotate-y-180">
                                                   {/* Front of card - Question */}
-                                                  <div className="absolute inset-0 w-full h-full backface-hidden bg-white rounded-lg p-4 flex flex-col justify-center items-center shadow-md hover:shadow-lg transition-all duration-300 border border-blue-200">
+                                                  <div className="absolute inset-0 w-full h-full backface-hidden bg-white rounded-lg p-4 flex flex-col justify-center items-center shadow-md hover:shadow-lg transition-all duration-300 border border-blue-200 editor-flashcard">
                                                     <div className="w-full text-center">
                                                       <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">
                                                         Concept
@@ -2987,7 +2987,7 @@ export default function ExamModuleEditorEnhanced({
                                                     </div>
                                                   </div>
                                                   {/* Back of card - Answer */}
-                                                  <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 flex flex-col justify-center items-center shadow-md border border-blue-200">
+                                                  <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 flex flex-col justify-center items-center shadow-md border border-blue-200 editor-flashcard">
                                                     <div className="w-full text-center">
                                                       <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">
                                                         Answer
@@ -3047,7 +3047,7 @@ export default function ExamModuleEditorEnhanced({
                                               >
                                                 <div className="relative w-full h-32 transform-style-preserve-3d transition-transform duration-500 hover:rotate-y-180">
                                                   {/* Front of card - Question */}
-                                                  <div className="absolute inset-0 w-full h-full backface-hidden bg-white rounded-lg p-4 flex flex-col justify-center items-center shadow-md hover:shadow-lg transition-all duration-300 border border-green-200">
+                                                  <div className="absolute inset-0 w-full h-full backface-hidden bg-white rounded-lg p-4 flex flex-col justify-center items-center shadow-md hover:shadow-lg transition-all duration-300 border border-green-200 editor-flashcard">
                                                     <div className="w-full text-center">
                                                       <div className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
                                                         Formula
@@ -3067,7 +3067,7 @@ export default function ExamModuleEditorEnhanced({
                                                     </div>
                                                   </div>
                                                   {/* Back of card - Answer */}
-                                                  <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 flex flex-col justify-center items-center shadow-md border border-green-200">
+                                                  <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 flex flex-col justify-center items-center shadow-md border border-green-200 editor-flashcard">
                                                     <div className="w-full text-center">
                                                       <div className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
                                                         Formula

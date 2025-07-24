@@ -256,13 +256,13 @@ const InlineFlashcard = ({ card, cardIndex, onFullscreen }) => {
 
   const handleClick = (e) => {
     e.stopPropagation();
-    console.log('🔍 Card clicked - opening expanded view:', card.categoryLabel);
+    console.log("🔍 Card clicked - opening expanded view:", card.categoryLabel);
     onFullscreen(card, isFlipped);
   };
 
   const handleFlipClick = (e) => {
     e.stopPropagation();
-    console.log('🔍 Flip button clicked');
+    console.log("🔍 Flip button clicked");
     setIsFlipped(!isFlipped);
   };
 
@@ -285,7 +285,7 @@ const InlineFlashcard = ({ card, cardIndex, onFullscreen }) => {
         >
           {/* Front of Card - Question */}
           <Card
-            className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br ${card.bgGradient} border-0 shadow-lg overflow-hidden group`}
+            className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br ${card.bgGradient} border-0 shadow-lg overflow-hidden group viewer-flashcard`}
           >
             <div className="absolute inset-0 bg-black/10"></div>
             <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 sm:-translate-y-16 sm:translate-x-16"></div>
@@ -308,7 +308,9 @@ const InlineFlashcard = ({ card, cardIndex, onFullscreen }) => {
               {/* Centered content area - takes up most space */}
               <div className="flex-1 flex items-center justify-center px-1 sm:px-2">
                 <div className="text-center w-full space-y-2 sm:space-y-4">
-                  <div className="text-4xl sm:text-5xl lg:text-6xl opacity-30 text-white font-light mb-2 sm:mb-4">?</div>
+                  <div className="text-4xl sm:text-5xl lg:text-6xl opacity-30 text-white font-light mb-2 sm:mb-4">
+                    ?
+                  </div>
                   <div className="text-sm sm:text-base lg:text-lg font-semibold leading-relaxed text-white drop-shadow-sm">
                     <ContentDisplay
                       content={card.question}
@@ -333,8 +335,10 @@ const InlineFlashcard = ({ card, cardIndex, onFullscreen }) => {
           </Card>
 
           {/* Back of Card - Answer */}
-          <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-slate-900/95 backdrop-blur-sm border border-slate-700 shadow-lg overflow-hidden">
-            <div className={`absolute top-0 right-0 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-br ${card.bgColor} rounded-full -translate-y-16 translate-x-16 sm:-translate-y-20 sm:translate-x-20 opacity-20`}></div>
+          <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-slate-900/95 backdrop-blur-sm border border-slate-700 shadow-lg overflow-hidden viewer-flashcard">
+            <div
+              className={`absolute top-0 right-0 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-br ${card.bgColor} rounded-full -translate-y-16 translate-x-16 sm:-translate-y-20 sm:translate-x-20 opacity-20`}
+            ></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-tr from-slate-800 to-slate-700 rounded-full translate-y-12 -translate-x-12 sm:translate-y-16 sm:-translate-x-16 opacity-60"></div>
 
             <CardContent className="p-3 sm:p-4 lg:p-6 h-full flex flex-col relative z-10">
@@ -357,7 +361,9 @@ const InlineFlashcard = ({ card, cardIndex, onFullscreen }) => {
               {/* Centered content area - takes up most space */}
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center w-full space-y-2 sm:space-y-4">
-                  <div className="text-3xl sm:text-4xl lg:text-5xl text-emerald-400 drop-shadow-sm mb-2 sm:mb-4">✓</div>
+                  <div className="text-3xl sm:text-4xl lg:text-5xl text-emerald-400 drop-shadow-sm mb-2 sm:mb-4">
+                    ✓
+                  </div>
                   <div className="w-8 sm:w-12 h-px bg-gradient-to-r from-transparent via-slate-500 to-transparent mx-auto mb-2 sm:mb-4"></div>
                   <div className="text-sm sm:text-base lg:text-lg text-slate-100 leading-relaxed font-medium">
                     <ContentDisplay
@@ -386,9 +392,11 @@ const InlineFlashcard = ({ card, cardIndex, onFullscreen }) => {
 
       {/* Progress indicator */}
       <div className="absolute -bottom-2 sm:-bottom-3 left-1/2 transform -translate-x-1/2">
-        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-colors duration-300 shadow-sm ${
-          isFlipped ? 'bg-emerald-400' : 'bg-indigo-400'
-        }`}></div>
+        <div
+          className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-colors duration-300 shadow-sm ${
+            isFlipped ? "bg-emerald-400" : "bg-indigo-400"
+          }`}
+        ></div>
       </div>
 
       <style jsx>{`
@@ -619,17 +627,17 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (fullscreenCard) {
-        if (e.key === 'Escape') {
+        if (e.key === "Escape") {
           closeFullscreenCard();
-        } else if (e.key === ' ' || e.key === 'Enter') {
+        } else if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
           toggleFullscreenFlip();
         }
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [fullscreenCard, fullscreenFlipped]);
 
   const fetchDetailedContent = async (moduleIndex) => {
@@ -753,17 +761,100 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           );
         }
       } else {
-        const errorText = await response.text();
-        console.error(
-          "❌ Failed to fetch detailed content:",
-          response.status,
-          errorText
-        );
-        toast.error(`Failed to load content for module ${moduleIndex + 1}`);
+        try {
+          const errorData = await response.json();
+          console.error(
+            "❌ Failed to fetch detailed content:",
+            response.status,
+            errorData
+          );
+
+          // If we get fallback data in the error response, use it
+          if (
+            errorData.detailedSubsections &&
+            Array.isArray(errorData.detailedSubsections)
+          ) {
+            console.log("🔧 Using fallback data from error response");
+            setViewerCourse((prevCourse) => {
+              const newModules = [...prevCourse.modules];
+              newModules[moduleIndex] = {
+                ...newModules[moduleIndex],
+                detailedSubsections: errorData.detailedSubsections,
+              };
+              return { ...prevCourse, modules: newModules };
+            });
+            toast.warning(
+              `Content loaded with basic information for module ${
+                moduleIndex + 1
+              }. Full content will be available soon.`
+            );
+          } else {
+            toast.error(
+              errorData.message ||
+                `Failed to load content for module ${moduleIndex + 1}`
+            );
+          }
+        } catch (parseError) {
+          const errorText = await response.text();
+          console.error(
+            "❌ Failed to fetch detailed content:",
+            response.status,
+            errorText
+          );
+          toast.error(`Failed to load content for module ${moduleIndex + 1}`);
+        }
       }
     } catch (error) {
       console.error("❌ Error fetching detailed content:", error);
-      toast.error(`An error occurred while loading content.`);
+
+      // Create basic fallback content when everything fails
+      const fallbackSubsections = [
+        {
+          title: `Introduction to ${
+            currentModuleData?.title || `Module ${moduleIndex + 1}`
+          }`,
+          summary: `Learn the fundamentals and understand the core concepts.`,
+          keyPoints: [
+            "Understand the basic concepts",
+            "Learn practical applications",
+            "Master the fundamental principles",
+          ],
+          pages: [
+            {
+              pageNumber: 1,
+              pageTitle: "Overview",
+              content:
+                currentModuleData?.content ||
+                "Content will be available soon. Please check back later or contact your instructor.",
+              keyTakeaway: "Understanding the basics",
+              codeExamples: [],
+              mathematicalContent: [],
+            },
+          ],
+          practicalExample:
+            "Real-world applications will be covered in upcoming lessons.",
+          commonPitfalls: [
+            "Best practices will be provided in the full content.",
+          ],
+          difficulty: "intermediate",
+          estimatedTime: "15-20 minutes",
+        },
+      ];
+
+      setViewerCourse((prevCourse) => {
+        const newModules = [...prevCourse.modules];
+        newModules[moduleIndex] = {
+          ...newModules[moduleIndex],
+          detailedSubsections: fallbackSubsections,
+        };
+        return { ...prevCourse, modules: newModules };
+      });
+
+      toast.warning(
+        `Basic content loaded for module ${
+          moduleIndex + 1
+        }. Full content will be available soon.`
+      );
     } finally {
       setLoadingDetailedContent(false);
     }
@@ -1602,31 +1693,36 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
   // Fullscreen card functions
   const openFullscreenCard = (card, isFlipped = false) => {
-    console.log('🔍 Opening fullscreen card:', card.categoryLabel, 'isFlipped:', isFlipped);
-    console.log('🔍 Full card object:', card);
-    console.log('🔍 Current fullscreenCard state before:', fullscreenCard);
-    
+    console.log(
+      "🔍 Opening fullscreen card:",
+      card.categoryLabel,
+      "isFlipped:",
+      isFlipped
+    );
+    console.log("🔍 Full card object:", card);
+    console.log("🔍 Current fullscreenCard state before:", fullscreenCard);
+
     // Force state update
     setFullscreenCard(card);
     setFullscreenFlipped(isFlipped);
-    
-    console.log('🔍 setFullscreenCard called with:', card);
-    console.log('🔍 setFullscreenFlipped called with:', isFlipped);
-    
+
+    console.log("🔍 setFullscreenCard called with:", card);
+    console.log("🔍 setFullscreenFlipped called with:", isFlipped);
+
     // Force a re-render check
     setTimeout(() => {
-      console.log('🔍 fullscreenCard state after 100ms:', fullscreenCard);
+      console.log("🔍 fullscreenCard state after 100ms:", fullscreenCard);
     }, 100);
   };
 
   const closeFullscreenCard = () => {
-    console.log('🔍 Closing fullscreen card');
+    console.log("🔍 Closing fullscreen card");
     setFullscreenCard(null);
     setFullscreenFlipped(false);
   };
 
   const toggleFullscreenFlip = () => {
-    console.log('🔍 Toggling fullscreen flip:', !fullscreenFlipped);
+    console.log("🔍 Toggling fullscreen flip:", !fullscreenFlipped);
     setFullscreenFlipped(!fullscreenFlipped);
   };
 
@@ -1692,17 +1788,20 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
   // Debug effect to monitor fullscreenCard state changes
   useEffect(() => {
-    console.log('🔍 fullscreenCard state changed:', fullscreenCard);
+    console.log("🔍 fullscreenCard state changed:", fullscreenCard);
     if (fullscreenCard) {
-      console.log('🔍 ✅ FULLSCREEN CARD IS SET - Modal should render!');
+      console.log("🔍 ✅ FULLSCREEN CARD IS SET - Modal should render!");
     } else {
-      console.log('🔍 ❌ FULLSCREEN CARD IS NULL - Modal will not render');
+      console.log("🔍 ❌ FULLSCREEN CARD IS NULL - Modal will not render");
     }
   }, [fullscreenCard]);
 
   // Show expanded flashcard in main content area instead of modal
   if (fullscreenCard) {
-    console.log('🔍 🎉 RENDERING EXPANDED FLASHCARD in main area for card:', fullscreenCard);
+    console.log(
+      "🔍 🎉 RENDERING EXPANDED FLASHCARD in main area for card:",
+      fullscreenCard
+    );
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
         <div
@@ -1723,7 +1822,9 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                 </Button>
                 <div className="h-8 w-px bg-white/30"></div>
                 <div>
-                  <h1 className="text-2xl font-bold">{fullscreenCard.categoryLabel}</h1>
+                  <h1 className="text-2xl font-bold">
+                    {fullscreenCard.categoryLabel}
+                  </h1>
                   <div className="text-indigo-100 flex items-center gap-2 mt-1">
                     <Brain className="h-4 w-4" /> Study Mode • Single Card View
                   </div>
@@ -1754,7 +1855,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
               >
                 {/* Front of card - Question */}
                 <Card
-                  className={`absolute inset-0 w-full h-full backface-hidden shadow-2xl border-0 bg-gradient-to-br ${fullscreenCard.bgGradient} overflow-hidden group`}
+                  className={`absolute inset-0 w-full h-full backface-hidden shadow-2xl border-0 bg-gradient-to-br ${fullscreenCard.bgGradient} overflow-hidden group viewer-flashcard`}
                 >
                   <div className="absolute inset-0 bg-black/5"></div>
                   <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-20 translate-x-20"></div>
@@ -1765,12 +1866,16 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                       <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm font-medium px-4 py-2">
                         {fullscreenCard.categoryLabel}
                       </Badge>
-                      <div className="text-8xl opacity-20 text-white font-light">?</div>
+                      <div className="text-8xl opacity-20 text-white font-light">
+                        ?
+                      </div>
                     </div>
 
                     <div className="text-center space-y-8">
                       <div className="relative">
-                        <div className="text-9xl opacity-20 text-white font-light">?</div>
+                        <div className="text-9xl opacity-20 text-white font-light">
+                          ?
+                        </div>
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
                         </div>
@@ -1798,8 +1903,10 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                 </Card>
 
                 {/* Back of card - Answer */}
-                <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 shadow-2xl bg-white/95 backdrop-blur-sm border border-white/20 overflow-hidden">
-                  <div className={`absolute top-0 right-0 w-48 h-48 bg-gradient-to-br ${fullscreenCard.bgColor} rounded-full -translate-y-24 translate-x-24 opacity-30`}></div>
+                <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 shadow-2xl bg-white/95 backdrop-blur-sm border border-white/20 overflow-hidden viewer-flashcard">
+                  <div
+                    className={`absolute top-0 right-0 w-48 h-48 bg-gradient-to-br ${fullscreenCard.bgColor} rounded-full -translate-y-24 translate-x-24 opacity-30`}
+                  ></div>
                   <div className="absolute bottom-0 left-0 w-36 h-36 bg-gradient-to-tr from-gray-50 to-slate-50 rounded-full translate-y-18 -translate-x-18 opacity-60"></div>
 
                   <CardContent className="p-12 h-full flex flex-col justify-between relative z-10">
@@ -1810,12 +1917,16 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                       >
                         {fullscreenCard.categoryLabel}
                       </Badge>
-                      <div className="text-6xl text-emerald-500 drop-shadow-sm">✓</div>
+                      <div className="text-6xl text-emerald-500 drop-shadow-sm">
+                        ✓
+                      </div>
                     </div>
 
                     <div className="text-center space-y-8">
                       <div className="relative">
-                        <div className="text-7xl text-emerald-500 drop-shadow-sm">✓</div>
+                        <div className="text-7xl text-emerald-500 drop-shadow-sm">
+                          ✓
+                        </div>
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="w-24 h-24 bg-emerald-100 rounded-full opacity-30"></div>
                         </div>
@@ -2737,7 +2848,10 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="flashcards" className="p-4 sm:p-6 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
+                  <TabsContent
+                    value="flashcards"
+                    className="p-4 sm:p-6 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950"
+                  >
                     <div className="space-y-4 sm:space-y-6">
                       <div className="text-center px-4">
                         <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-3 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3">
@@ -2745,7 +2859,8 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                           Study Flashcards
                         </h2>
                         <p className="text-sm sm:text-base text-slate-300 mb-6 sm:mb-8">
-                          Interactive flashcards for {viewerCourse.examType} exam preparation - tap any card to expand
+                          Interactive flashcards for {viewerCourse.examType}{" "}
+                          exam preparation - tap any card to expand
                         </p>
                       </div>
 
@@ -2782,30 +2897,36 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                             // Combine all cards with category labels
                             const allCards = [];
                             if (hasConceptCards) {
-                              subsectionData.conceptFlashCards.forEach((card, cardIdx) => {
-                                allCards.push({
-                                  ...card,
-                                  category: "concept",
-                                  categoryLabel: "📚 Important Concept",
-                                  cardId: `concept-${subsectionIndex}-${cardIdx}`,
-                                  bgGradient: "from-indigo-600 via-purple-600 to-violet-700",
-                                  bgColor: "from-indigo-600 to-violet-700",
-                                  textColor: "text-indigo-700",
-                                });
-                              });
+                              subsectionData.conceptFlashCards.forEach(
+                                (card, cardIdx) => {
+                                  allCards.push({
+                                    ...card,
+                                    category: "concept",
+                                    categoryLabel: "📚 Important Concept",
+                                    cardId: `concept-${subsectionIndex}-${cardIdx}`,
+                                    bgGradient:
+                                      "from-indigo-600 via-purple-600 to-violet-700",
+                                    bgColor: "from-indigo-600 to-violet-700",
+                                    textColor: "text-indigo-700",
+                                  });
+                                }
+                              );
                             }
                             if (hasFormulaCards) {
-                              subsectionData.formulaFlashCards.forEach((card, cardIdx) => {
-                                allCards.push({
-                                  ...card,
-                                  category: "formula",
-                                  categoryLabel: "🧮 Mathematical Formula",
-                                  cardId: `formula-${subsectionIndex}-${cardIdx}`,
-                                  bgGradient: "from-blue-600 via-cyan-600 to-teal-700",
-                                  bgColor: "from-blue-600 to-teal-700",
-                                  textColor: "text-blue-700",
-                                });
-                              });
+                              subsectionData.formulaFlashCards.forEach(
+                                (card, cardIdx) => {
+                                  allCards.push({
+                                    ...card,
+                                    category: "formula",
+                                    categoryLabel: "🧮 Mathematical Formula",
+                                    cardId: `formula-${subsectionIndex}-${cardIdx}`,
+                                    bgGradient:
+                                      "from-blue-600 via-cyan-600 to-teal-700",
+                                    bgColor: "from-blue-600 to-teal-700",
+                                    textColor: "text-blue-700",
+                                  });
+                                }
+                              );
                             }
 
                             return (
@@ -2828,20 +2949,34 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                           {hasConceptCards && (
                                             <div className="flex items-center gap-1">
                                               <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-purple-400"></div>
-                                              <span className="whitespace-nowrap text-slate-300">📚 {subsectionData.conceptFlashCards.length} Concepts</span>
+                                              <span className="whitespace-nowrap text-slate-300">
+                                                📚{" "}
+                                                {
+                                                  subsectionData
+                                                    .conceptFlashCards.length
+                                                }{" "}
+                                                Concepts
+                                              </span>
                                             </div>
                                           )}
                                           {hasFormulaCards && (
                                             <div className="flex items-center gap-1">
                                               <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-cyan-400"></div>
-                                              <span className="whitespace-nowrap text-slate-300">🧮 {subsectionData.formulaFlashCards.length} Formulas</span>
+                                              <span className="whitespace-nowrap text-slate-300">
+                                                🧮{" "}
+                                                {
+                                                  subsectionData
+                                                    .formulaFlashCards.length
+                                                }{" "}
+                                                Formulas
+                                              </span>
                                             </div>
                                           )}
                                         </div>
                                       </div>
                                     </div>
                                   </div>
-                                  
+
                                   {/* Summary */}
                                   {subsectionData.summary && (
                                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">

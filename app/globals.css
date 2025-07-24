@@ -25,6 +25,51 @@
   padding: 0.5em;
 }
 
+/* Fix arrow symbol rendering in LaTeX */
+.katex .mrel {
+  margin: 0 0.2777777778em !important;
+}
+
+.katex .mrel.rightarrow,
+.katex .mrel.leftarrow,
+.katex .mrel.leftrightarrow,
+.katex .mrel.uparrow,
+.katex .mrel.downarrow,
+.katex .mrel.Rightarrow,
+.katex .mrel.Leftarrow,
+.katex .mrel.Leftrightarrow,
+.katex .mrel.mapsto {
+  margin: 0 0.2777777778em !important;
+  display: inline !important;
+}
+
+/* Ensure arrow symbols display properly */
+.katex .mrel.amsrm {
+  font-family: KaTeX_Main, "Times New Roman", serif !important;
+}
+
+.katex .sizing.reset-size6.size3 {
+  line-height: 1.2 !important;
+}
+
+/* Arrow symbol character fixes */
+.katex .mord + .mrel,
+.katex .mrel + .mord {
+  margin-left: 0.2777777778em !important;
+  margin-right: 0.2777777778em !important;
+}
+
+/* Specific arrow character rendering */
+.katex .base .mrel::before {
+  content: "";
+  display: inline;
+}
+
+/* Fix spacing around arrows in limits */
+.katex .msupsub .mrel {
+  margin: 0 0.1666666667em !important;
+}
+
 /* Force ALL math to be block display for maximum clarity */
 .katex:not(.katex-display) {
   display: block !important;
@@ -1856,54 +1901,54 @@
   max-width: 400px;
 }
 
-/* Flashcard Math Equation Styling */
+/* Flashcard Math Equation Styling - Compact Version */
 .formula-flashcard .katex-display {
-  font-size: 1rem !important;
-  margin: 0.5rem 0 !important;
-  padding: 0.6rem !important;
+  font-size: 0.85rem !important;
+  margin: 0.25rem 0 !important;
+  padding: 0.4rem !important;
   background: rgba(255, 255, 255, 0.15) !important;
-  border-radius: 8px !important;
+  border-radius: 6px !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  line-height: 1.3 !important;
-  transform: scale(0.9) !important;
+  line-height: 1.2 !important;
+  transform: scale(0.8) !important;
   transform-origin: center center !important;
   text-align: center !important;
 }
 
 .formula-flashcard .katex {
-  font-size: 0.9rem !important;
+  font-size: 0.75rem !important;
   background: rgba(255, 255, 255, 0.15) !important;
-  border-radius: 6px !important;
+  border-radius: 4px !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  padding: 0.3rem 0.5rem !important;
-  margin: 0.2rem auto !important;
+  padding: 0.2rem 0.3rem !important;
+  margin: 0.1rem auto !important;
   color: white !important;
-  transform: scale(0.95) !important;
+  transform: scale(0.85) !important;
   transform-origin: center center !important;
-  max-width: 95% !important;
+  max-width: 90% !important;
   overflow: hidden !important;
   display: inline-block !important;
 }
 
 .concept-flashcard .katex-display {
-  font-size: 1rem !important;
+  font-size: 0.85rem !important;
   background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 6px !important;
+  border-radius: 4px !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  padding: 0.4rem 0.6rem !important;
-  margin: 0.4rem 0 !important;
+  padding: 0.3rem 0.4rem !important;
+  margin: 0.25rem 0 !important;
   color: white !important;
-  line-height: 1.3 !important;
+  line-height: 1.2 !important;
   text-align: center !important;
 }
 
 .concept-flashcard .katex {
-  font-size: 0.95rem !important;
+  font-size: 0.8rem !important;
   background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 6px !important;
+  border-radius: 4px !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  padding: 0.3rem 0.5rem !important;
-  margin: 0.3rem auto !important;
+  padding: 0.2rem 0.3rem !important;
+  margin: 0.2rem auto !important;
   color: white !important;
   display: inline-block !important;
 }
@@ -1938,6 +1983,132 @@
   color: #1e293b !important;
   background: rgba(59, 130, 246, 0.1) !important;
   border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Editor Flashcard Compact Math Styling */
+.editor-flashcard .katex-display {
+  font-size: 0.8rem !important;
+  margin: 0.2rem 0 !important;
+  padding: 0.3rem !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  line-height: 1.1 !important;
+  transform: scale(0.85) !important;
+  transform-origin: center center !important;
+  text-align: center !important;
+  color: #1e293b !important;
+}
+
+.editor-flashcard .katex {
+  font-size: 0.7rem !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 3px !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  padding: 0.15rem 0.25rem !important;
+  margin: 0.1rem auto !important;
+  color: #1e293b !important;
+  transform: scale(0.9) !important;
+  transform-origin: center center !important;
+  max-width: 90% !important;
+  overflow: hidden !important;
+  display: inline-block !important;
+}
+
+/* Viewer Flashcard Compact Math Styling */
+.viewer-flashcard .katex-display {
+  font-size: 0.8rem !important;
+  margin: 0.2rem 0 !important;
+  padding: 0.3rem !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  line-height: 1.1 !important;
+  transform: scale(0.85) !important;
+  transform-origin: center center !important;
+  text-align: center !important;
+}
+
+.viewer-flashcard .katex {
+  font-size: 0.7rem !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 3px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  padding: 0.15rem 0.25rem !important;
+  margin: 0.1rem auto !important;
+  color: white !important;
+  transform: scale(0.9) !important;
+  transform-origin: center center !important;
+  max-width: 90% !important;
+  overflow: hidden !important;
+  display: inline-block !important;
+}
+
+/* Ultra-compact math for small flashcards */
+.flashcard-compact .katex-display {
+  font-size: 0.65rem !important;
+  margin: 0.1rem 0 !important;
+  padding: 0.2rem !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 3px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  line-height: 1 !important;
+  transform: scale(0.7) !important;
+  transform-origin: center center !important;
+  text-align: center !important;
+}
+
+.flashcard-compact .katex {
+  font-size: 0.55rem !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 2px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 0.1rem 0.2rem !important;
+  margin: 0.05rem auto !important;
+  color: white !important;
+  transform: scale(0.8) !important;
+  transform-origin: center center !important;
+  max-width: 85% !important;
+  overflow: hidden !important;
+  display: inline-block !important;
+}
+
+/* Mobile optimization for flashcard math */
+@media (max-width: 640px) {
+  .editor-flashcard .katex-display,
+  .viewer-flashcard .katex-display,
+  .formula-flashcard .katex-display,
+  .concept-flashcard .katex-display {
+    font-size: 0.7rem !important;
+    transform: scale(0.75) !important;
+    padding: 0.2rem !important;
+    margin: 0.15rem 0 !important;
+  }
+
+  .editor-flashcard .katex,
+  .viewer-flashcard .katex,
+  .formula-flashcard .katex,
+  .concept-flashcard .katex {
+    font-size: 0.6rem !important;
+    transform: scale(0.8) !important;
+    padding: 0.1rem 0.2rem !important;
+    margin: 0.05rem auto !important;
+  }
+
+  /* Even more compact on small screens */
+  .flashcard-compact .katex-display {
+    font-size: 0.5rem !important;
+    transform: scale(0.6) !important;
+    padding: 0.15rem !important;
+    margin: 0.1rem 0 !important;
+  }
+
+  .flashcard-compact .katex {
+    font-size: 0.45rem !important;
+    transform: scale(0.7) !important;
+    padding: 0.08rem 0.15rem !important;
+    margin: 0.03rem auto !important;
+  }
 }
 
 /* Curriculum Content Styling */
