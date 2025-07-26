@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import { getDb } from "@/lib/mongodb";
+import clientPromise from "@/lib/mongodb";
 import { generateCompetitiveExamModuleSummary } from "@/lib/gemini";
 
 // Function to parse Markdown content and convert to expected structure
