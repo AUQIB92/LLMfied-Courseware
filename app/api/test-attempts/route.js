@@ -114,22 +114,36 @@ export async function POST(request) {
       })
     }
 
-    // Upsert the attempt (update if exists, insert if not)
-    const result = await db.collection("testAttempts").findOneAndUpdate(
-      {
-        learnerId: new ObjectId(user.userId),
-        testSeriesId: new ObjectId(testSeriesId),
-        testNumber
-      },
-      {
-        $set: attemptData,
-        $setOnInsert: { createdAt: new Date() }
-      },
-      {
-        upsert: true,
-        returnDocument: 'after'
-      }
-    )
+    // For completed attempts, always create a new record to track multiple attempts
+    // For in-progress attempts, update existing or create new
+    let result
+
+    if (completed) {
+      // Always insert a new completed attempt
+      const insertResult = await db.collection("testAttempts").insertOne({
+        ...attemptData,
+        createdAt: new Date()
+      })
+      result = { value: { _id: insertResult.insertedId, ...attemptData } }
+    } else {
+      // For in-progress, update existing incomplete attempt or create new
+      result = await db.collection("testAttempts").findOneAndUpdate(
+        {
+          learnerId: new ObjectId(user.userId),
+          testSeriesId: new ObjectId(testSeriesId),
+          testNumber,
+          completed: false // Only update incomplete attempts
+        },
+        {
+          $set: attemptData,
+          $setOnInsert: { createdAt: new Date() }
+        },
+        {
+          upsert: true,
+          returnDocument: 'after'
+        }
+      )
+    }
 
     return NextResponse.json({ 
       success: true, 

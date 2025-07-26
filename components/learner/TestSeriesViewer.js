@@ -25,7 +25,8 @@ import {
   TrendingUp,
   ChevronRight,
   Lock,
-  Unlock
+  Unlock,
+  RotateCcw
 } from "lucide-react"
 import TestTaking from "./TestTaking"
 
@@ -53,7 +54,14 @@ export default function TestSeriesViewer({ testSeries, onBack }) {
         const data = await response.json()
         const attemptsMap = {}
         data.attempts?.forEach(attempt => {
-          attemptsMap[attempt.testNumber] = attempt
+          if (!attemptsMap[attempt.testNumber]) {
+            attemptsMap[attempt.testNumber] = []
+          }
+          attemptsMap[attempt.testNumber].push(attempt)
+        })
+        // Sort attempts by creation date (newest first)
+        Object.keys(attemptsMap).forEach(testNumber => {
+          attemptsMap[testNumber].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         })
         setTestAttempts(attemptsMap)
       }
@@ -71,45 +79,99 @@ export default function TestSeriesViewer({ testSeries, onBack }) {
 
   const handleTestComplete = (results) => {
     // Update test attempts with new results
-    setTestAttempts(prev => ({
-      ...prev,
-      [results.testNumber]: results
-    }))
+    setTestAttempts(prev => {
+      const testNumber = results.testNumber
+      const existingAttempts = prev[testNumber] || []
+      const attemptsArray = Array.isArray(existingAttempts) ? existingAttempts : [existingAttempts]
+      
+      // Add new completed attempt to the beginning of the array
+      const updatedAttempts = [results, ...attemptsArray.filter(a => a.completed)]
+      
+      return {
+        ...prev,
+        [testNumber]: updatedAttempts
+      }
+    })
     setSelectedTest(null)
   }
 
   const getTestStatus = (testNumber) => {
-    const attempt = testAttempts[testNumber]
-    if (!attempt) return { status: 'not-attempted', score: null, completedAt: null }
+    const attempts = testAttempts[testNumber]
+    if (!attempts || (Array.isArray(attempts) && attempts.length === 0)) {
+      return { status: 'not-attempted', score: null, completedAt: null, attempts: [] }
+    }
+    
+    // Handle both single attempt (backward compatibility) and multiple attempts
+    const attemptsList = Array.isArray(attempts) ? attempts : [attempts]
+    const completedAttempts = attemptsList.filter(attempt => attempt.completed)
+    
+    if (completedAttempts.length === 0) {
+      // Has in-progress attempt
+      const inProgressAttempt = attemptsList.find(attempt => !attempt.completed)
+      return {
+        status: 'in-progress',
+        score: null,
+        completedAt: null,
+        attempts: attemptsList,
+        currentAttempt: inProgressAttempt
+      }
+    }
+    
+    // Get best score from completed attempts
+    const bestAttempt = completedAttempts.reduce((best, current) => 
+      (current.score > best.score) ? current : best
+    )
     
     return {
-      status: attempt.completed ? 'completed' : 'in-progress',
-      score: attempt.score,
-      completedAt: attempt.completedAt
+      status: 'completed',
+      score: bestAttempt.score,
+      completedAt: bestAttempt.completedAt,
+      attempts: attemptsList,
+      bestAttempt,
+      attemptCount: completedAttempts.length
     }
   }
 
   const calculateOverallProgress = () => {
-    const completedTests = Object.values(testAttempts).filter(attempt => attempt.completed).length
+    const completedTests = Object.values(testAttempts).filter(attempts => {
+      const attemptsArray = Array.isArray(attempts) ? attempts : [attempts]
+      return attemptsArray.some(attempt => attempt.completed)
+    }).length
     return (completedTests / testSeries.totalTests) * 100
   }
 
   const calculateAverageScore = () => {
-    const completedAttempts = Object.values(testAttempts).filter(attempt => attempt.completed && attempt.score !== null)
-    if (completedAttempts.length === 0) return 0
+    const testScores = Object.values(testAttempts).map(attempts => {
+      const attemptsArray = Array.isArray(attempts) ? attempts : [attempts]
+      const completedAttempts = attemptsArray.filter(attempt => attempt.completed && attempt.score !== null)
+      if (completedAttempts.length === 0) return null
+      // Return the best score for each test
+      return Math.max(...completedAttempts.map(attempt => attempt.score))
+    }).filter(score => score !== null)
     
-    const totalScore = completedAttempts.reduce((sum, attempt) => sum + attempt.score, 0)
-    return totalScore / completedAttempts.length
+    if (testScores.length === 0) return 0
+    
+    const totalScore = testScores.reduce((sum, score) => sum + score, 0)
+    return totalScore / testScores.length
   }
 
   if (selectedTest) {
+    const testAttemptData = testAttempts[selectedTest.testNumber]
+    const existingAttempt = selectedTest.isRetake 
+      ? null // Start fresh for retakes
+      : Array.isArray(testAttemptData) 
+        ? testAttemptData.find(attempt => !attempt.completed) // Get in-progress attempt
+        : testAttemptData
+    
     return (
       <TestTaking
         test={selectedTest}
         testSeries={testSeries}
         onBack={() => setSelectedTest(null)}
         onComplete={handleTestComplete}
-        existingAttempt={testAttempts[selectedTest.testNumber]}
+        existingAttempt={existingAttempt}
+        isRetake={selectedTest.isRetake}
+        previousAttempts={Array.isArray(testAttemptData) ? testAttemptData.filter(a => a.completed) : []}
       />
     )
   }
@@ -131,7 +193,10 @@ export default function TestSeriesViewer({ testSeries, onBack }) {
 
   const overallProgress = calculateOverallProgress()
   const averageScore = calculateAverageScore()
-  const completedTests = Object.values(testAttempts).filter(attempt => attempt.completed).length
+  const completedTests = Object.values(testAttempts).filter(attempts => {
+    const attemptsArray = Array.isArray(attempts) ? attempts : [attempts]
+    return attemptsArray.some(attempt => attempt.completed)
+  }).length
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -272,9 +337,16 @@ export default function TestSeriesViewer({ testSeries, onBack }) {
                     </CardTitle>
                     
                     {testStatus.status === 'completed' && (
-                      <Badge className="bg-green-100 text-green-700">
-                        {testStatus.score}%
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-100 text-green-700">
+                          Best: {testStatus.score}%
+                        </Badge>
+                        {testStatus.attemptCount > 1 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {testStatus.attemptCount} attempts
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </div>
                 </CardHeader>
@@ -306,36 +378,52 @@ export default function TestSeriesViewer({ testSeries, onBack }) {
                   )}
 
                   {!isLocked && (
-                    <Button 
-                      className={`w-full ${
-                        testStatus.status === 'completed'
-                          ? 'bg-green-500 hover:bg-green-600'
-                          : testStatus.status === 'in-progress'
-                          ? 'bg-blue-500 hover:bg-blue-600'
-                          : 'bg-purple-500 hover:bg-purple-600'
-                      } text-white`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleTestSelect(test)
-                      }}
-                    >
-                      {testStatus.status === 'completed' ? (
-                        <>
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          View Results
-                        </>
-                      ) : testStatus.status === 'in-progress' ? (
-                        <>
-                          <Play className="h-4 w-4 mr-2" />
-                          Resume Test
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4 mr-2" />
-                          Start Test
-                        </>
+                    <div className="space-y-2">
+                      <Button 
+                        className={`w-full ${
+                          testStatus.status === 'completed'
+                            ? 'bg-green-500 hover:bg-green-600'
+                            : testStatus.status === 'in-progress'
+                            ? 'bg-blue-500 hover:bg-blue-600'
+                            : 'bg-purple-500 hover:bg-purple-600'
+                        } text-white`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleTestSelect(test)
+                        }}
+                      >
+                        {testStatus.status === 'completed' ? (
+                          <>
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Results
+                          </>
+                        ) : testStatus.status === 'in-progress' ? (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Resume Test
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Start Test
+                          </>
+                        )}
+                      </Button>
+                      
+                      {testStatus.status === 'completed' && (
+                        <Button 
+                          variant="outline"
+                          className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleTestSelect({ ...test, isRetake: true })
+                          }}
+                        >
+                          <Timer className="h-4 w-4 mr-2" />
+                          Retake Test
+                        </Button>
                       )}
-                    </Button>
+                    </div>
                   )}
 
                   {isLocked && (

@@ -24,10 +24,11 @@ import {
   Pause,
   Play,
   Info,
-  X
+  X,
+  RotateCcw
 } from "lucide-react"
 
-export default function TestTaking({ test, testSeries, onBack, onComplete, existingAttempt }) {
+export default function TestTaking({ test, testSeries, onBack, onComplete, existingAttempt, isRetake = false, previousAttempts = [] }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState({})
   const [timeRemaining, setTimeRemaining] = useState(0)
@@ -234,13 +235,39 @@ export default function TestTaking({ test, testSeries, onBack, onComplete, exist
               <CardTitle className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">
                 <BookOpen className="h-8 w-8 text-purple-600" />
                 {test.title}
+                {isRetake && <Badge className="bg-orange-100 text-orange-700">Retake</Badge>}
               </CardTitle>
               <CardDescription className="text-lg text-slate-600">
-                Test Instructions
+                {isRetake ? "Retake Instructions" : "Test Instructions"}
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-8">
+              {/* Previous Attempts (for retakes) */}
+              {isRetake && previousAttempts.length > 0 && (
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                  <h4 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
+                    <RotateCcw className="h-4 w-4" />
+                    Previous Attempts
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {previousAttempts.slice(0, 3).map((attempt, index) => (
+                      <div key={index} className="bg-white p-3 rounded-lg border">
+                        <div className="text-sm text-slate-600">Attempt {previousAttempts.length - index}</div>
+                        <div className="text-lg font-bold text-orange-600">{attempt.score}%</div>
+                        <div className="text-xs text-slate-500">
+                          {new Date(attempt.completedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-orange-700 mt-3">
+                    <strong>Best Score:</strong> {Math.max(...previousAttempts.map(a => a.score))}% • 
+                    This retake will count as a new attempt. Good luck improving your score!
+                  </p>
+                </div>
+              )}
+
               {/* Test Details */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-slate-50 rounded-xl">
                 <div className="text-center">
