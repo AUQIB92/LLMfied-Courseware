@@ -26,7 +26,9 @@ import {
   CheckCircle,
   AlertCircle,
   Search,
-  Upload
+  Upload,
+  FileText,
+  Download
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -37,6 +39,8 @@ export default function TestSeriesCreator({ onTestSeriesCreated }) {
   const [currentGenerationStep, setCurrentGenerationStep] = useState("")
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [uploadedFileName, setUploadedFileName] = useState("")
+  const [isParsingFile, setIsParsingFile] = useState(false)
   
   const [testSeriesData, setTestSeriesData] = useState({
     title: "",
@@ -58,6 +62,333 @@ export default function TestSeriesCreator({ onTestSeriesCreated }) {
   })
 
   const { user, getAuthHeaders } = useAuth()
+
+  // Markdown parser function
+  const parseMarkdownFile = (content) => {
+    const lines = content.split('\n')
+    const topics = []
+    let documentTitle = ""
+    let documentDescription = ""
+    let detectedSubject = ""
+    let targetAudience = ""
+    let prerequisites = ""
+
+    // Extract document title from first # heading
+    const titleLine = lines.find(line => line.trim().startsWith('# '))
+    if (titleLine) {
+      documentTitle = titleLine.trim().replace(/^#\s*/, '').trim()
+    }
+
+    let currentModule = ''
+    let currentMarks = 0
+    let currentSubtopics = []
+    let currentSubtopicGroup = ''
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+
+      // Match Module/Topic headers (##) with marks
+      const moduleMatch = trimmed.match(/^## (.+?) \((\d+)\s*(marks?|%|percent)?\)/i) ||
+                          trimmed.match(/^## (.+?)$/i)
+      
+      if (moduleMatch) {
+        // Push previous module
+        if (currentModule && currentSubtopics.length) {
+          topics.push({
+            name: currentModule,
+            marks: currentMarks,
+            weightage: 0, // Will be calculated later
+            subtopics: [...currentSubtopics]
+          })
+        }
+        
+        currentModule = moduleMatch[1].trim()
+        // Extract marks if present
+        if (moduleMatch[2]) {
+          currentMarks = parseInt(moduleMatch[2])
+        } else {
+          // If no marks specified, try to extract from context or set to 0
+          currentMarks = 0
+        }
+        currentSubtopics = []
+        currentSubtopicGroup = ''
+        continue
+      }
+
+      // Match subtopic group headers (###)
+      const subtopicGroupMatch = trimmed.match(/^### (.+)/)
+      if (subtopicGroupMatch && currentModule) {
+        currentSubtopicGroup = subtopicGroupMatch[1].trim()
+        // Add the group as a subtopic
+        if (!currentSubtopics.includes(currentSubtopicGroup)) {
+          currentSubtopics.push(currentSubtopicGroup)
+        }
+        continue
+      }
+
+      // Match individual subtopics under ### groups (bullet points or direct lines)
+      const subtopicMatch = trimmed.match(/^- (.+)/) ||
+                           trimmed.match(/^\* (.+)/) ||
+                           trimmed.match(/^\+ (.+)/)
+      
+      if (subtopicMatch && currentModule) {
+        let subtopic = subtopicMatch[1].trim()
+        // Remove any marks notation from subtopic
+        subtopic = subtopic.replace(/\s*\(\d+\s*(marks?|%|percent)\)/i, '').trim()
+        
+        if (subtopic && !currentSubtopics.includes(subtopic)) {
+          // If we have a current group, prefix the subtopic with group name for context
+          if (currentSubtopicGroup && !subtopic.includes(currentSubtopicGroup)) {
+            subtopic = `${currentSubtopicGroup}: ${subtopic}`
+          }
+          currentSubtopics.push(subtopic)
+        }
+        continue
+      }
+
+      // Extract metadata
+      if (trimmed.toLowerCase().includes('description:') || trimmed.toLowerCase().includes('about:')) {
+        documentDescription = trimmed.replace(/^[^:]*:\s*/, '').trim()
+      }
+      else if (trimmed.toLowerCase().includes('target audience:') || trimmed.toLowerCase().includes('for:')) {
+        targetAudience = trimmed.replace(/^[^:]*:\s*/, '').trim()
+      }
+      else if (trimmed.toLowerCase().includes('prerequisites:') || trimmed.toLowerCase().includes('requirements:')) {
+        prerequisites = trimmed.replace(/^[^:]*:\s*/, '').trim()
+      }
+    }
+
+    // Push the last module
+    if (currentModule && currentSubtopics.length) {
+      topics.push({
+        name: currentModule,
+        marks: currentMarks,
+        weightage: 0,
+        subtopics: [...currentSubtopics]
+      })
+    }
+
+    // Calculate weightages based on total marks
+    const totalMarks = topics.reduce((sum, topic) => sum + (topic.marks || 0), 0)
+    
+    if (totalMarks > 0) {
+      // Calculate based on marks distribution
+      topics.forEach(topic => {
+        topic.weightage = parseFloat(((topic.marks / totalMarks) * 100).toFixed(2))
+      })
+    } else {
+      // Equal distribution if no marks specified
+      const equalWeight = topics.length > 0 ? parseFloat((100 / topics.length).toFixed(2)) : 0
+      topics.forEach((topic, index) => {
+        if (index === topics.length - 1) {
+          // Last topic gets the remainder to ensure total is 100%
+          const otherTotal = topics.slice(0, -1).reduce((sum, t) => sum + equalWeight, 0)
+          topic.weightage = parseFloat((100 - otherTotal).toFixed(2))
+        } else {
+          topic.weightage = equalWeight
+        }
+      })
+    }
+
+    // Auto-detect subject based on topics
+    detectedSubject = detectSubjectFromTopics(topics, documentTitle)
+
+    // Generate description if not found
+    if (!documentDescription && topics.length > 0) {
+      const topicNames = topics.map(t => t.name).join(', ')
+      documentDescription = `Comprehensive test series covering ${topicNames}. Designed to provide thorough practice and assessment across all major topics.`
+    }
+
+    // Ensure each topic has at least one subtopic
+    topics.forEach(topic => {
+      if (topic.subtopics.length === 0) {
+        topic.subtopics = [topic.name]
+      }
+    })
+
+    return {
+      topics,
+      basicInfo: {
+        title: documentTitle,
+        description: documentDescription,
+        subject: detectedSubject,
+        targetAudience,
+        prerequisites
+      }
+    }
+  }
+
+  // Subject detection function
+  const detectSubjectFromTopics = (topics, title) => {
+    const topicNames = topics.map(t => t.name.toLowerCase()).join(' ')
+    const titleLower = title.toLowerCase()
+    const combinedText = `${topicNames} ${titleLower}`
+
+    // Subject detection patterns
+    const subjectPatterns = {
+      'Physics': ['mechanics', 'thermodynamics', 'electromagnetism', 'optics', 'waves', 'quantum', 'nuclear', 'kinematics', 'dynamics'],
+      'Chemistry': ['organic', 'inorganic', 'physical chemistry', 'chemical bonding', 'periodic table', 'acids', 'bases', 'molecules'],
+      'Mathematics': ['algebra', 'calculus', 'geometry', 'trigonometry', 'statistics', 'probability', 'differential', 'integral', 'matrices'],
+      'Biology': ['botany', 'zoology', 'genetics', 'ecology', 'evolution', 'cell biology', 'molecular biology', 'physiology'],
+      'Computer Science Engineering': ['programming', 'algorithms', 'data structures', 'software engineering', 'databases', 'networks', 'operating systems'],
+      'Economics': ['microeconomics', 'macroeconomics', 'demand', 'supply', 'market', 'fiscal', 'monetary'],
+      'Business Administration': ['management', 'marketing', 'finance', 'operations', 'strategy', 'human resources'],
+      'English': ['grammar', 'literature', 'comprehension', 'writing', 'poetry', 'prose'],
+      'History': ['ancient', 'medieval', 'modern', 'world war', 'civilization', 'independence'],
+      'Geography': ['physical geography', 'human geography', 'climate', 'population', 'resources']
+    }
+
+    for (const [subject, keywords] of Object.entries(subjectPatterns)) {
+      const matchCount = keywords.filter(keyword => combinedText.includes(keyword)).length
+      if (matchCount >= 2) {
+        return subject
+      }
+    }
+
+    // Fallback: check for subject names in title or topics
+    for (const subject of Object.keys(subjectPatterns)) {
+      if (combinedText.includes(subject.toLowerCase())) {
+        return subject
+      }
+    }
+
+    return "" // No subject detected
+  }
+
+  // Handle file upload
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.md')) {
+      setError("Please upload a valid .md (Markdown) file")
+      return
+    }
+
+    setIsParsingFile(true)
+    setError("")
+    setUploadedFileName(file.name)
+
+    try {
+      const content = await file.text()
+      const parsedData = parseMarkdownFile(content)
+      
+      if (parsedData.topics.length === 0) {
+        setError("No topics found in the markdown file. Please ensure your file has proper headings (# or ##)")
+        return
+      }
+
+      // Update the test series data with parsed topics and basic info
+      setTestSeriesData(prev => ({
+        ...prev,
+        topics: parsedData.topics,
+        title: parsedData.basicInfo.title || prev.title,
+        description: parsedData.basicInfo.description || prev.description,
+        subject: parsedData.basicInfo.subject || prev.subject,
+        targetAudience: parsedData.basicInfo.targetAudience || prev.targetAudience,
+        prerequisites: parsedData.basicInfo.prerequisites || prev.prerequisites
+      }))
+
+      setSuccess(`Successfully parsed ${parsedData.topics.length} topics and auto-populated basic information from ${file.name}`)
+      
+      // Auto-switch to basic info tab first, then user can review and go to syllabus
+      setActiveStep("basic")
+      
+    } catch (error) {
+      console.error("Error parsing markdown file:", error)
+      setError("Failed to parse the markdown file. Please check the file format.")
+    } finally {
+      setIsParsingFile(false)
+      // Clear the file input
+      event.target.value = ''
+    }
+  }
+
+  // Download sample markdown template
+  const downloadSampleTemplate = () => {
+    const sampleContent = `# JEE Main Mathematics Complete Test Series
+
+Description: Comprehensive test series designed for JEE Main aspirants covering all essential mathematics topics with balanced theoretical and numerical questions.
+
+Target Audience: JEE Main aspirants, Class 11-12 students preparing for engineering entrance exams
+
+Prerequisites: Basic understanding of Class 10 mathematics, familiarity with algebraic operations and geometric concepts
+
+## Algebra (25 Marks)
+
+### Basic Concepts
+- Linear Equations in One and Two Variables
+- Quadratic Equations and Expressions
+- Polynomials and Rational Functions
+
+### Advanced Topics
+- Matrices and Determinants
+- Sequences and Series
+- Binomial Theorem
+- Complex Numbers
+
+## Calculus (30 Marks)
+
+### Differential Calculus
+- Limits and Continuity
+- Differentiation and Applications
+- Applications of Derivatives
+
+### Integral Calculus
+- Integration Techniques
+- Definite Integrals
+- Area Under Curves
+- Differential Equations
+
+## Coordinate Geometry (20 Marks)
+
+### Two Dimensional Geometry
+- Straight Lines and Pair of Lines
+- Circles and System of Circles
+
+### Conic Sections
+- Parabola Properties and Equations
+- Ellipse Standard Forms
+- Hyperbola and Rectangular Hyperbola
+
+### Three Dimensional Geometry
+- Points, Lines and Planes
+- Direction Cosines and Ratios
+
+## Trigonometry (15 Marks)
+
+### Basic Trigonometry
+- Trigonometric Functions and Identities
+- Trigonometric Equations
+- Inverse Trigonometric Functions
+
+### Applications
+- Heights and Distances
+- Solution of Triangles
+
+## Statistics and Probability (10 Marks)
+
+### Statistics
+- Measures of Central Tendency
+- Standard Deviation and Variance
+
+### Probability
+- Probability Theory and Rules
+- Binomial and Normal Distribution
+- Conditional Probability
+- Mathematical Expectation
+`
+
+    const blob = new Blob([sampleContent], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'test-series-syllabus-template.md'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 
   const addTopic = () => {
     setTestSeriesData((prev) => {
@@ -343,6 +674,17 @@ export default function TestSeriesCreator({ onTestSeriesCreated }) {
         </TabsList>
 
         <TabsContent value="basic" className="space-y-6">
+          {/* Auto-populated notification */}
+          {uploadedFileName && (
+            <Alert className="border-blue-200 bg-blue-50">
+              <CheckCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                <strong>Auto-populated from {uploadedFileName}:</strong> Review and modify the information below as needed. 
+                {testSeriesData.subject && <span className="ml-2">Subject detected: <strong>{testSeriesData.subject}</strong></span>}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -590,6 +932,65 @@ export default function TestSeriesCreator({ onTestSeriesCreated }) {
         </TabsContent>
 
         <TabsContent value="syllabus" className="space-y-6">
+          {/* File Upload Section */}
+          <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-800">
+                <Upload className="w-5 h-5" />
+                Quick Import from Markdown
+              </CardTitle>
+              <CardDescription>
+                Upload a .md file to automatically parse topics, subtopics, marks distribution, and basic information
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="mdFile" className="cursor-pointer">
+                    <div className="flex items-center gap-2 p-4 border-2 border-dashed border-green-300 rounded-lg hover:border-green-400 hover:bg-green-50/50 transition-colors">
+                      <FileText className="w-5 h-5 text-green-600" />
+                      <span className="text-green-700">
+                        {isParsingFile ? "Parsing file..." : uploadedFileName || "Click to upload .md file or drag & drop"}
+                      </span>
+                      {isParsingFile && <div className="ml-2 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />}
+                    </div>
+                  </Label>
+                  <Input
+                    id="mdFile"
+                    type="file"
+                    accept=".md,.markdown"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    disabled={isParsingFile}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadSampleTemplate}
+                  className="border-green-300 text-green-700 hover:bg-green-50"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Template
+                </Button>
+              </div>
+              
+                             <div className="mt-4 text-sm text-green-600">
+                 <p><strong>Supported formats:</strong></p>
+                 <ul className="list-disc list-inside space-y-1 mt-2">
+                   <li><strong>Title:</strong> First # heading becomes the test series title</li>
+                   <li><strong>Topics:</strong> Use "## Topic Name (X Marks)" format</li>
+                   <li><strong>Subtopic Groups:</strong> Use "### Group Name" for subtopic categories</li>
+                   <li><strong>Subtopics:</strong> Use bullet points (-,*,+) under ### groups</li>
+                   <li><strong>Marks:</strong> Include in parentheses after topic name (e.g., "## Algebra (25 Marks)")</li>
+                   <li><strong>Description:</strong> Add "Description: your text"</li>
+                   <li><strong>Target Audience:</strong> Add "Target Audience: your text"</li>
+                   <li><strong>Prerequisites:</strong> Add "Prerequisites: your text"</li>
+                 </ul>
+               </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">

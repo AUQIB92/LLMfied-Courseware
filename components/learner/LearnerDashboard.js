@@ -54,6 +54,7 @@ import {
 } from "lucide-react";
 import CourseLibrary from "./CourseLibrary";
 import TestSeriesLibrary from "./TestSeriesLibrary";
+import TestSeriesViewer from "./TestSeriesViewer";
 import CourseViewer from "./CourseViewer";
 import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
@@ -496,6 +497,20 @@ export default function LearnerDashboard() {
   };
 
   const renderContent = () => {
+    if (selectedTestSeries) {
+      return (
+        <TestSeriesViewer
+          testSeries={selectedTestSeries}
+          onBack={() => {
+            setSelectedTestSeries(null);
+            setHideHeader(false);
+            setIsHeaderVisible(true);
+            setLastScrollY(0);
+          }}
+        />
+      );
+    }
+
     if (selectedCourse) {
       // Enhanced enrollment check with multiple verification layers
       const isEnrolledInList =

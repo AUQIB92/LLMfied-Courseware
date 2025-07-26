@@ -11,60 +11,76 @@ const PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
 function parseAIResponse(content) {
   console.log("Attempting to parse AI response:", content.substring(0, 200) + "...")
   
+  // Strategy 1: Extract JSON from markdown code block (most common AI response format)
+  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+  if (codeBlockMatch) {
+    try {
+      let jsonString = codeBlockMatch[1].trim()
+      console.log("Extracted JSON from code block, length:", jsonString.length)
+      return JSON.parse(jsonString)
+    } catch (codeBlockError) {
+      console.warn("Code block JSON parse failed:", codeBlockError.message)
+    }
+  }
+  
+  // Strategy 2: Direct JSON parsing
   try {
-    // Strategy 1: Direct JSON parsing
     return JSON.parse(content)
   } catch (directError) {
     console.warn("Direct JSON parse failed:", directError.message)
-    
+  }
+  
+  // Strategy 3: Extract JSON from array pattern
+  try {
+    const arrayMatch = content.match(/\[[\s\S]*\]/)
+    if (arrayMatch) {
+      let jsonString = arrayMatch[0]
+      
+      // Clean the JSON string
+      jsonString = jsonString
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+        .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+        .replace(/([{,]\s*)(\w+)(?=\s*:)/g, '$1"$2"') // Add quotes to unquoted keys
+        .replace(/:\s*'([^']*)'/g, ': "$1"') // Replace single quotes with double quotes
+      
+      return JSON.parse(jsonString)
+    }
+  } catch (arrayError) {
+    console.warn("Array extraction failed:", arrayError.message)
+  }
+  
+  // Strategy 4: Use jsonrepair
+  try {
+    console.log("Attempting jsonrepair...")
+    const repairedJson = jsonrepair(content)
+    return JSON.parse(repairedJson)
+  } catch (repairError) {
+    console.warn("JSON repair failed:", repairError.message)
+  }
+  
+  // Strategy 5: JSON5 fallback
+  try {
+    console.log("Attempting JSON5 fallback...")
+    return JSON5.parse(content)
+  } catch (json5Error) {
+    console.warn("JSON5 fallback failed:", json5Error.message)
+  }
+  
+  // Strategy 6: Try to extract JSON from code block and repair it
+  if (codeBlockMatch) {
     try {
-      // Strategy 2: Extract JSON from array pattern
-      const arrayMatch = content.match(/\[[\s\S]*\]/)
-      if (arrayMatch) {
-        let jsonString = arrayMatch[0]
-        
-        // Clean the JSON string
-        jsonString = jsonString
-          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-          .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
-          .replace(/([{,]\s*)(\w+)(?=\s*:)/g, '$1"$2"') // Add quotes to unquoted keys
-          .replace(/:\s*'([^']*)'/g, ': "$1"') // Replace single quotes with double quotes
-        
-        return JSON.parse(jsonString)
-      }
-      
-      // Strategy 3: Extract JSON from code block
-      const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-      if (codeBlockMatch) {
-        let jsonString = codeBlockMatch[1]
-        jsonString = jsonString
-          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-          .replace(/,(\s*[}\]])/g, '$1')
-          .replace(/([{,]\s*)(\w+)(?=\s*:)/g, '$1"$2"')
-          .replace(/:\s*'([^']*)'/g, ': "$1"')
-        
-        return JSON.parse(jsonString)
-      }
-      
-      // Strategy 4: Use jsonrepair
-      console.log("Attempting jsonrepair...")
-      const repairedJson = jsonrepair(content)
+      let jsonString = codeBlockMatch[1].trim()
+      console.log("Attempting to repair extracted JSON...")
+      const repairedJson = jsonrepair(jsonString)
       return JSON.parse(repairedJson)
-      
-    } catch (repairError) {
-      console.warn("JSON repair failed:", repairError.message)
-      
-      try {
-        // Strategy 5: JSON5 fallback
-        console.log("Attempting JSON5 fallback...")
-        return JSON5.parse(content)
-      } catch (json5Error) {
-        console.error("All JSON parsing strategies failed:", json5Error.message)
-        console.error("Content sample:", content.substring(0, 500))
-        throw new Error(`Failed to parse AI response: ${json5Error.message}`)
-      }
+    } catch (repairCodeBlockError) {
+      console.warn("Code block repair failed:", repairCodeBlockError.message)
     }
   }
+  
+  console.error("All JSON parsing strategies failed")
+  console.error("Content sample:", content.substring(0, 500))
+  throw new Error("Failed to parse AI response: All parsing strategies exhausted")
 }
 
 export async function POST(request) {
@@ -334,4 +350,77 @@ Generate exactly ${subtopicQuestionCount} questions. Ensure variety in question 
       try {
         generatedQuestions = parseAIResponse(content)
       } catch (parseError) {
-        console.error(`
+        console.error(`Failed to parse AI response for ${topic.name} - ${subtopic}:`, parseError.message)
+        // Create fallback questions
+        generatedQuestions = []
+        for (let i = 0; i < subtopicQuestionCount; i++) {
+          generatedQuestions.push(createFallbackQuestion(topic.name, subtopic, type, config.marksPerQuestion))
+        }
+      }
+
+      // Validate and process questions
+      if (Array.isArray(generatedQuestions)) {
+        for (const question of generatedQuestions.slice(0, subtopicQuestionCount)) {
+          if (question && question.questionText && question.options && question.correctAnswer !== undefined) {
+            questions.push({
+              ...question,
+              topic: topic.name,
+              subtopic: subtopic,
+              type: type,
+              difficulty: config.difficulty,
+              marks: config.marksPerQuestion
+            })
+          }
+        }
+      }
+
+      // Fill remaining with fallback if needed
+      while (questions.length < Math.min(count, questions.length + subtopicQuestionCount)) {
+        questions.push(createFallbackQuestion(topic.name, subtopic, type, config.marksPerQuestion))
+      }
+
+    } catch (error) {
+      console.error(`Error generating questions for ${topic.name} - ${subtopic}:`, error)
+      // Create fallback questions
+      for (let i = 0; i < subtopicQuestionCount; i++) {
+        questions.push(createFallbackQuestion(topic.name, subtopic, type, config.marksPerQuestion))
+      }
+    }
+  }
+
+  return questions.slice(0, count)
+}
+
+function createFallbackQuestion(topicName, subtopic, type, marks) {
+  const questionTypes = type === "numerical" 
+    ? [`Calculate the value in ${subtopic}`, `Find the result for ${subtopic}`, `Determine the answer for ${subtopic}`]
+    : [`What is the main concept of ${subtopic}?`, `Which statement about ${subtopic} is correct?`, `Identify the key principle in ${subtopic}`]
+  
+  const questionText = questionTypes[Math.floor(Math.random() * questionTypes.length)]
+  
+  return {
+    questionText: `${questionText} (This is a placeholder question for ${topicName} - ${subtopic})`,
+    options: [
+      "Option A (placeholder)",
+      "Option B (placeholder)", 
+      "Option C (placeholder)",
+      "Option D (placeholder)"
+    ],
+    correctAnswer: 0,
+    explanation: `This is a fallback question created when AI generation failed for ${subtopic}.`,
+    marks: marks,
+    topic: topicName,
+    subtopic: subtopic,
+    type: type,
+    isFallback: true
+  }
+}
+
+function shuffleArray(array) {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}

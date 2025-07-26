@@ -184,7 +184,35 @@ export default function TestSeriesLibrary({ onTestSeriesSelect, onEnrollmentChan
           onEnrollmentChange()
         }
       } else {
-        console.error('Enrollment failed:', await response.text())
+        // Parse error response
+        try {
+          const errorData = await response.json()
+          
+          // Handle "already enrolled" as a special case
+          if (response.status === 409 && errorData.error?.includes('Already enrolled')) {
+            console.log('📝 User already enrolled in this test series - treating as success')
+            // Mark as enrolled in local state (fetch the actual enrollment)
+            const checkResponse = await fetch(`/api/enrollment?testSeriesId=${seriesId}`, {
+              headers: getAuthHeaders()
+            })
+            if (checkResponse.ok) {
+              const checkData = await checkResponse.json()
+              if (checkData.enrollment) {
+                setEnrollments(prev => ({
+                  ...prev,
+                  [seriesId]: checkData.enrollment
+                }))
+              }
+            }
+            return // Don't show as error
+          }
+          
+          console.error('Enrollment failed:', errorData.error || 'Unknown error')
+        } catch (parseError) {
+          // If JSON parsing fails, fall back to text
+          const errorText = await response.text()
+          console.error('Enrollment failed:', errorText)
+        }
       }
     } catch (error) {
       console.error('Error enrolling in test series:', error)
@@ -430,28 +458,28 @@ export default function TestSeriesLibrary({ onTestSeriesSelect, onEnrollmentChan
                       </div>
                     </div>
 
-                    {/* Action Button */}
-                    <div className="flex gap-2">
-                      {enrolled ? (
-                        <Button 
-                          className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            console.log('📝 Opening enrolled test series:', series.title)
-                            if (onTestSeriesSelect) {
-                              onTestSeriesSelect({
-                                ...series,
-                                instructorName: instructorInfo.name,
-                                instructorAvatar: instructorInfo.avatar,
-                                isEnrolled: true,
-                                enrolledAt: enrollments[series._id]?.enrolledAt || new Date().toISOString()
-                              })
-                            }
-                          }}
-                        >
-                          <Play className="h-4 w-4 mr-2" />
-                          Start Tests
-                        </Button>
+                                         {/* Action Button */}
+                     <div className="flex gap-2">
+                       {enrolled ? (
+                         <Button 
+                           className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                           onClick={(e) => {
+                             e.stopPropagation()
+                             console.log('📝 Continuing enrolled test series:', series.title)
+                             if (onTestSeriesSelect) {
+                               onTestSeriesSelect({
+                                 ...series,
+                                 instructorName: instructorInfo.name,
+                                 instructorAvatar: instructorInfo.avatar,
+                                 isEnrolled: true,
+                                 enrolledAt: enrollments[series._id]?.enrolledAt || new Date().toISOString()
+                               })
+                             }
+                           }}
+                         >
+                           <Play className="h-4 w-4 mr-2" />
+                           Continue
+                         </Button>
                       ) : (
                         <Button
                           onClick={(e) => {
