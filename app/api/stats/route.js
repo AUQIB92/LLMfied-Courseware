@@ -4,25 +4,20 @@ import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 
 async function verifyToken(request) {
-  try {
-    const token = request.headers.get("authorization")?.replace("Bearer ", "")
-    if (!token) {
-      console.error("No token provided in request")
-      throw new Error("No token provided")
-    }
+  const token = request.headers.get("authorization")?.replace("Bearer ", "")
+  if (!token) throw new Error("No token provided")
 
-    if (!process.env.JWT_SECRET) {
-      console.error("JWT_SECRET environment variable is not set")
-      throw new Error("JWT_SECRET not configured")
-    }
+  return jwt.verify(token, process.env.JWT_SECRET)
+}
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    console.log("Token verified successfully for user:", decoded.userId)
-    return decoded
-  } catch (error) {
-    console.error("Token verification failed:", error.message)
-    throw error
-  }
+// Enhanced database connection with timeout
+async function getDBWithTimeout(timeoutMs = 10000) {
+  return Promise.race([
+    clientPromise.then(client => client.db("llmfied")),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database connection timeout')), timeoutMs)
+    )
+  ])
 }
 
 export async function GET(request) {
@@ -32,8 +27,8 @@ export async function GET(request) {
     const user = await verifyToken(request)
     console.log("✅ User verified:", { userId: user.userId, role: user.role })
     
-    const client = await clientPromise
-    const db = client.db("llmfied")
+    console.log("🔗 Connecting to database with timeout...")
+    const db = await getDBWithTimeout(10000) // 10 second timeout
     console.log("✅ Database connected")
     
     const { searchParams } = new URL(request.url)
@@ -58,9 +53,12 @@ export async function GET(request) {
       
       console.log("🔍 Course filter:", JSON.stringify(courseFilter, null, 2))
       
-      const courses = await db.collection("courses")
-        .find(courseFilter)
-        .toArray()
+      const courses = await Promise.race([
+        db.collection("courses").find(courseFilter).toArray(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 8000)
+        )
+      ])
       
       console.log("📚 Found courses:", courses.length)
       
@@ -74,10 +72,14 @@ export async function GET(request) {
       })
       
       // Get total enrollment count across all educator's courses
-      const totalEnrollments = await db.collection("enrollments")
-        .countDocuments({
+      const totalEnrollments = await Promise.race([
+        db.collection("enrollments").countDocuments({
           courseId: { $in: courses.map(c => c._id) }
-        })
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Enrollment count timeout')), 5000)
+        )
+      ])
       
       console.log("👥 Total enrollments:", totalEnrollments)
       
@@ -85,17 +87,21 @@ export async function GET(request) {
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       
-      const recentEnrollments = await db.collection("enrollments")
-        .countDocuments({
+      const recentEnrollments = await Promise.race([
+        db.collection("enrollments").countDocuments({
           courseId: { $in: courses.map(c => c._id) },
           enrolledAt: { $gte: thirtyDaysAgo }
-        })
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Recent enrollments timeout')), 5000)
+        )
+      ])
       
       console.log("📈 Recent enrollments (30 days):", recentEnrollments)
       
       // Get course completion stats
-      const completionStats = await db.collection("enrollments")
-        .aggregate([
+      const completionStats = await Promise.race([
+        db.collection("enrollments").aggregate([
           { $match: { courseId: { $in: courses.map(c => c._id) } } },
           {
             $group: {
@@ -107,7 +113,11 @@ export async function GET(request) {
               averageProgress: { $avg: "$progress" }
             }
           }
-        ]).toArray()
+        ]).toArray(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Completion stats timeout')), 5000)
+        )
+      ])
       
       const stats = completionStats[0] || {
         totalEnrollments: 0,
@@ -127,8 +137,8 @@ export async function GET(request) {
       console.log("💰 Revenue calculated:", revenue)
       
       // Get engagement metrics
-      const weeklyEnrollments = await db.collection("enrollments")
-        .aggregate([
+      const weeklyEnrollments = await Promise.race([
+        db.collection("enrollments").aggregate([
           { $match: { courseId: { $in: courses.map(c => c._id) } } },
           {
             $group: {
@@ -141,13 +151,17 @@ export async function GET(request) {
           },
           { $sort: { "_id.year": -1, "_id.week": -1 } },
           { $limit: 4 }
-        ]).toArray()
+        ]).toArray(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Weekly enrollments timeout')), 5000)
+        )
+      ])
       
       console.log("📅 Weekly enrollments:", weeklyEnrollments.length)
       
       // Get course performance data
-      const coursePerformance = await db.collection("enrollments")
-        .aggregate([
+      const coursePerformance = await Promise.race([
+        db.collection("enrollments").aggregate([
           { $match: { courseId: { $in: courses.map(c => c._id) } } },
           {
             $group: {
@@ -160,7 +174,11 @@ export async function GET(request) {
               averageRating: { $avg: "$rating" }
             }
           }
-        ]).toArray()
+        ]).toArray(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Course performance timeout')), 5000)
+        )
+      ])
       
       console.log("🎯 Course performance data:", coursePerformance.length)
       
@@ -168,35 +186,21 @@ export async function GET(request) {
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
       
-      const activeLearners = await db.collection("enrollments")
-        .countDocuments({
+      const activeLearners = await Promise.race([
+        db.collection("enrollments").countDocuments({
           courseId: { $in: courses.map(c => c._id) },
           lastAccessedAt: { $gte: sevenDaysAgo }
-        })
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Active learners timeout')), 5000)
+        )
+      ])
       
       console.log("🚀 Active learners:", activeLearners)
       
-      // Calculate retention rate (learners who completed at least 50% of any course)
-      const retentionStats = await db.collection("enrollments")
-        .aggregate([
-          { $match: { courseId: { $in: courses.map(c => c._id) } } },
-          {
-            $group: {
-              _id: null,
-              totalLearners: { $sum: 1 },
-              retainedLearners: {
-                $sum: { $cond: [{ $gte: ["$progress", 50] }, 1, 0] }
-              }
-            }
-          }
-        ]).toArray()
-      
-      const retentionData = retentionStats[0] || { totalLearners: 0, retainedLearners: 0 }
-      const retentionRate = retentionData.totalLearners > 0 
-        ? Math.round((retentionData.retainedLearners / retentionData.totalLearners) * 100)
-        : 0
-      
-      console.log("📊 Retention data:", { retentionData, retentionRate })
+      // Calculate additional metrics
+      const retentionRate = totalEnrollments > 0 ? Math.round((activeLearners / totalEnrollments) * 100) : 0
+      const monthlyGrowth = recentEnrollments // Simplified calculation
       
       // Get top performing courses
       const topCourses = coursePerformance
@@ -205,48 +209,15 @@ export async function GET(request) {
         .map(perf => {
           const course = courses.find(c => c._id.toString() === perf._id.toString())
           return {
-            _id: course._id,
-            title: course.title,
+            _id: perf._id,
+            title: course?.title || "Unknown Course",
             enrollments: perf.totalEnrollments,
             completionRate: perf.totalEnrollments > 0 
               ? Math.round((perf.completedCount / perf.totalEnrollments) * 100)
               : 0,
-            averageProgress: Math.round(perf.averageProgress || 0),
-            averageRating: Math.round((perf.averageRating || 0) * 10) / 10
+            averageProgress: Math.round(perf.averageProgress || 0)
           }
         })
-      
-      console.log("🏆 Top courses:", topCourses.length)
-      
-      // Calculate monthly growth
-      const currentMonth = new Date().getMonth()
-      const currentYear = new Date().getFullYear()
-      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
-      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear
-      
-      const currentMonthEnrollments = await db.collection("enrollments")
-        .countDocuments({
-          courseId: { $in: courses.map(c => c._id) },
-          enrolledAt: {
-            $gte: new Date(currentYear, currentMonth, 1),
-            $lt: new Date(currentYear, currentMonth + 1, 1)
-          }
-        })
-      
-      const lastMonthEnrollments = await db.collection("enrollments")
-        .countDocuments({
-          courseId: { $in: courses.map(c => c._id) },
-          enrolledAt: {
-            $gte: new Date(lastMonthYear, lastMonth, 1),
-            $lt: new Date(lastMonthYear, lastMonth + 1, 1)
-          }
-        })
-      
-      const monthlyGrowth = lastMonthEnrollments > 0 
-        ? Math.round(((currentMonthEnrollments - lastMonthEnrollments) / lastMonthEnrollments) * 100)
-        : 0
-      
-      console.log("📈 Monthly growth:", { currentMonthEnrollments, lastMonthEnrollments, monthlyGrowth })
       
       const responseData = {
         // Basic stats
@@ -307,17 +278,23 @@ export async function GET(request) {
       console.log("🎓 Fetching learner statistics...")
       
       // Get learner statistics
-      const enrollments = await db.collection("enrollments")
-        .find({ learnerId: new ObjectId(user.userId) })
-        .toArray()
+      const enrollments = await Promise.race([
+        db.collection("enrollments").find({ learnerId: new ObjectId(user.userId) }).toArray(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Learner enrollments timeout')), 5000)
+        )
+      ])
       
       const enrolledCourseIds = enrollments.map(e => e.courseId)
-      const enrolledCourses = await db.collection("courses")
-        .find({ 
+      const enrolledCourses = await Promise.race([
+        db.collection("courses").find({ 
           _id: { $in: enrolledCourseIds },
           status: "published" 
-        })
-        .toArray()
+        }).toArray(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Enrolled courses timeout')), 5000)
+        )
+      ])
       
       // Calculate completion statistics
       const completedCourses = enrollments.filter(e => e.progress >= 100).length
@@ -329,49 +306,70 @@ export async function GET(request) {
       const averageProgress = enrollments.length > 0 ? totalProgress / enrollments.length : 0
       
       // Calculate learning streak (placeholder - could be enhanced with actual activity tracking)
-      const recentActivity = await db.collection("enrollments")
-        .find({ 
+      const recentActivity = await Promise.race([
+        db.collection("enrollments").find({ 
           learnerId: new ObjectId(user.userId),
           lastAccessedAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
-        })
-        .toArray()
+        }).toArray(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Recent activity timeout')), 5000)
+        )
+      ])
       
       // Calculate total time spent (placeholder - would need activity tracking)
       const totalTimeSpent = enrollments.length * 45 // Placeholder: 45 minutes per course average
       
-      // Calculate learning goals progress
-      const learningGoals = {
-        weeklyGoal: 5, // hours per week
-        monthlyGoal: 20, // hours per month
-        currentWeekProgress: Math.min(recentActivity.length * 2, 10), // placeholder
-        currentMonthProgress: Math.min(enrollments.length * 3, 25) // placeholder
+      // Get learning streak (consecutive days of activity)
+      const learningStreak = recentActivity.length > 0 ? Math.min(recentActivity.length, 7) : 0
+      
+      // Get achievements (placeholder - could be enhanced with actual achievement system)
+      const achievements = [
+        ...(completedCourses >= 1 ? ["First Course Completed"] : []),
+        ...(completedCourses >= 5 ? ["5 Courses Mastered"] : []),
+        ...(learningStreak >= 3 ? ["3-Day Learning Streak"] : []),
+        ...(averageProgress >= 80 ? ["High Achiever"] : [])
+      ]
+      
+      const learnerStats = {
+        // Enrollment stats
+        totalEnrollments: enrollments.length,
+        completedCourses,
+        inProgressCourses,
+        notStartedCourses,
+        
+        // Progress stats
+        averageProgress: Math.round(averageProgress),
+        totalTimeSpent: Math.round(totalTimeSpent),
+        learningStreak,
+        
+        // Achievement stats
+        achievements,
+        certificatesEarned: completedCourses,
+        
+        // Course details
+        enrolledCourses: enrolledCourses.map(course => {
+          const enrollment = enrollments.find(e => e.courseId.toString() === course._id.toString())
+          return {
+            _id: course._id,
+            title: course.title,
+            progress: enrollment?.progress || 0,
+            enrolledAt: enrollment?.enrolledAt,
+            lastAccessedAt: enrollment?.lastAccessedAt,
+            status: enrollment?.status || "active"
+          }
+        }),
+        
+        // Recent activity
+        recentActivity: recentActivity.length,
+        lastActiveDate: recentActivity.length > 0 
+          ? Math.max(...recentActivity.map(a => new Date(a.lastAccessedAt)))
+          : null
       }
       
-      console.log("✅ Learner stats compiled successfully")
-      
-      return NextResponse.json({
-        coursesEnrolled: enrollments.length,
-        coursesCompleted: completedCourses,
-        coursesInProgress: inProgressCourses,
-        coursesNotStarted: notStartedCourses,
-        totalTimeSpent, // in minutes
-        averageProgress: Math.round(averageProgress),
-        averageScore: 85, // Placeholder - would need quiz/assessment tracking
-        streak: Math.min(recentActivity.length, 30), // Placeholder streak calculation
-        certificates: completedCourses, // Assuming 1 certificate per completed course
-        learningGoals,
-        enrollments: enrollments.map(enrollment => {
-          const course = enrolledCourses.find(c => c._id.toString() === enrollment.courseId.toString())
-          return {
-            ...enrollment,
-            courseTitle: course?.title || "Unknown Course",
-            courseDescription: course?.description || ""
-          }
-        })
-      })
+      console.log("✅ Learner stats prepared successfully")
+      return NextResponse.json(learnerStats)
     }
     
-    console.log("❌ Invalid user role:", user.role)
     return NextResponse.json({ error: "Invalid user role" }, { status: 400 })
     
   } catch (error) {
@@ -380,29 +378,28 @@ export async function GET(request) {
     console.error("Error message:", error.message)
     console.error("Error stack:", error.stack)
     
-    // Return more specific error information
     let errorMessage = "Failed to fetch statistics"
     let statusCode = 500
     
-    if (error.name === 'JsonWebTokenError') {
-      errorMessage = "Invalid authentication token"
-      statusCode = 401
-    } else if (error.name === 'TokenExpiredError') {
-      errorMessage = "Authentication token expired"
-      statusCode = 401
+    if (error.message.includes('timeout')) {
+      errorMessage = "Database connection timeout. Please try again."
+      statusCode = 503
+    } else if (error.message.includes('ETIMEDOUT') || error.message.includes('ETIMEOUT')) {
+      errorMessage = "Network connection timeout. Please check your connection and try again."
+      statusCode = 503
     } else if (error.message.includes('No token provided')) {
       errorMessage = "Authentication required"
       statusCode = 401
-    } else if (error.message.includes('JWT_SECRET')) {
-      errorMessage = "Server configuration error"
+    } else if (error.message.includes('authentication')) {
+      errorMessage = "Database authentication failed"
       statusCode = 500
     }
     
     return NextResponse.json(
       { 
         error: errorMessage,
-        details: error.message,
-        type: error.name
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        timestamp: new Date().toISOString()
       },
       { status: statusCode }
     )

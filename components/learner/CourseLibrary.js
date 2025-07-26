@@ -247,7 +247,8 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
       console.log('🚀 Initializing enrollments using cache system (force refresh from DB)')
       
       // Force refresh from database to ensure we have the latest enrollment data
-      const { enrollments: enrollmentMap } = await enrollmentCache.getAllEnrollments(true)
+      console.log('🔄 Initializing enrollments from cache...')
+      const { enrollments: enrollmentMap, cached, stale, error } = await enrollmentCache.getAllEnrollments(true)
       
       // Convert Map to object for state
       const enrollmentObj = {}
@@ -255,11 +256,30 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
         enrollmentObj[courseId] = enrollment
       })
       
-      console.log('✅ Enrollments initialized from database:', enrollmentObj)
+      console.log('✅ Enrollments initialized:', {
+        count: Object.keys(enrollmentObj).length,
+        cached,
+        stale,
+        error
+      })
+      
+      if (error) {
+        console.warn('⚠️ Enrollment cache had errors but returned data:', error)
+        // Show a non-blocking notification to user
+        if (window.showToast) {
+          window.showToast('Warning: Some enrollment data may be outdated', 'warning')
+        }
+      }
+      
       setEnrollments(enrollmentObj)
     } catch (error) {
-      console.error('Failed to initialize enrollments:', error)
+      console.error('❌ Failed to initialize enrollments:', error)
       setEnrollments({})
+      
+      // Show user-friendly error message
+      if (window.showToast) {
+        window.showToast('Unable to load your enrollments. Please try refreshing the page.', 'error')
+      }
     }
   }
 

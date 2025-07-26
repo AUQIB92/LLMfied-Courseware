@@ -33,6 +33,7 @@ import {
   ArrowRight,
   Trophy,
   GraduationCap,
+  TestTube2,
 } from "lucide-react"
 import CourseCreator from "./CourseCreator"
 import CourseList from "./CourseList"
@@ -42,6 +43,8 @@ import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm"
 import PreferencesSettings from "@/components/profile/PreferencesSettings"
 import NotificationsSettings from "@/components/profile/NotificationsSettings"
 import ExamGenius from "@/components/exam-genius/ExamGenius"
+import TestSeriesCreator from "./TestSeriesCreator"
+import TestSeriesManager from "./TestSeriesManager"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +60,7 @@ export default function EducatorDashboard() {
   const [editingCourseId, setEditingCourseId] = useState(null)
   const [editingCourse, setEditingCourse] = useState(null)
   const [avatarKey, setAvatarKey] = useState(Date.now())
+  const [editingTestSeries, setEditingTestSeries] = useState(null)
   const [stats, setStats] = useState({
     totalCourses: 0,
     publishedCourses: 0,
@@ -261,6 +265,16 @@ export default function EducatorDashboard() {
     setEditingCourseId(null)
     setEditingCourse(null)
     setActiveTab("courses")
+  }
+
+  const handleTestSeriesCreated = () => {
+    refreshData()
+    setActiveTab("test-series-manage")
+  }
+
+  const handleEditTestSeries = (testSeries) => {
+    setEditingTestSeries(testSeries)
+    setActiveTab("test-series-edit")
   }
 
   const handleLogout = async () => {
@@ -683,6 +697,54 @@ export default function EducatorDashboard() {
           </div>
         )
 
+      case "test-series-create":
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Create Test Series
+              </h2>
+              <p className="text-slate-600">Generate AI-powered test series with Perplexity AI integration</p>
+            </div>
+            <TestSeriesCreator onTestSeriesCreated={handleTestSeriesCreated} />
+          </div>
+        )
+
+      case "test-series-manage":
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Manage Test Series
+              </h2>
+              <p className="text-slate-600">View, edit, and manage your test series collection</p>
+            </div>
+            <TestSeriesManager 
+              onEditTestSeries={handleEditTestSeries}
+              onRefresh={refreshData}
+            />
+          </div>
+        )
+
+      case "test-series-edit":
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Edit Test Series
+              </h2>
+              <p className="text-slate-600">Modify your test series configuration and content</p>
+            </div>
+            <TestSeriesCreator 
+              editingTestSeries={editingTestSeries}
+              onTestSeriesCreated={() => {
+                setEditingTestSeries(null)
+                setActiveTab("test-series-manage")
+              }}
+            />
+          </div>
+        )
+
       default:
         return null
     }
@@ -725,6 +787,17 @@ export default function EducatorDashboard() {
                 <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 group-hover:rotate-90 transition-transform duration-300" />
                 <span className="hidden sm:inline">Create Course</span>
                 <span className="sm:hidden">Create</span>
+              </Button>
+
+              {/* Test Series Button */}
+              <Button
+                onClick={() => setActiveTab("test-series-create")}
+                className="group relative bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-800 shadow-2xl hover:shadow-indigo-500/25 border-0 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-sm sm:text-base lg:text-lg font-semibold transition-all duration-300 hover:scale-105"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 to-purple-600/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <TestTube2 className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 group-hover:rotate-12 transition-transform duration-300" />
+                <span className="hidden sm:inline">Test Series</span>
+                <span className="sm:hidden">Tests</span>
               </Button>
 
               {/* ExamGenius Button */}
@@ -864,6 +937,7 @@ export default function EducatorDashboard() {
               { id: "overview", label: "Overview", icon: TrendingUp },
               { id: "courses", label: "Technical Courses", icon: BookOpen },
               { id: "create", label: "Create Course", icon: Plus },
+              { id: "test-series-manage", label: "Test Series", icon: TestTube2 },
               { id: "examgenius", label: "Competitive Exam Courses", icon: GraduationCap },
             ].map((tab) => (
               <button

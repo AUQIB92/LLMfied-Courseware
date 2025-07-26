@@ -50,8 +50,10 @@ import {
   Shield,
   GraduationCap,
   Bookmark,
+  FileQuestion,
 } from "lucide-react";
 import CourseLibrary from "./CourseLibrary";
+import TestSeriesLibrary from "./TestSeriesLibrary";
 import CourseViewer from "./CourseViewer";
 import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
@@ -70,7 +72,9 @@ import { toast } from "sonner";
 export default function LearnerDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedTestSeries, setSelectedTestSeries] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [enrolledTestSeries, setEnrolledTestSeries] = useState([]);
   const [enrollmentDataLoaded, setEnrollmentDataLoaded] = useState(false); // Track if enrollment data is loaded
   const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
@@ -1148,6 +1152,17 @@ export default function LearnerDashboard() {
             onEnrollmentChange={handleEnrollmentChange}
           />
         );
+      case "test-series":
+        return (
+          <TestSeriesLibrary
+            onTestSeriesSelect={(testSeries) => {
+              console.log("🎯 Test series selected from library:", testSeries.title);
+              setSelectedTestSeries(testSeries);
+              setHideHeader(true);
+            }}
+            onEnrollmentChange={handleEnrollmentChange}
+          />
+        );
       case "profile":
         return (
           <ProfileSettingsForm
@@ -1184,7 +1199,8 @@ export default function LearnerDashboard() {
           <div className="flex flex-wrap gap-2 sm:gap-1 w-full sm:w-auto">
             {[
               { id: "overview", label: "Dashboard", icon: BookOpen },
-              { id: "library", label: "Library", icon: BookMarked },
+              { id: "library", label: "Courses", icon: BookMarked },
+              { id: "test-series", label: "Test Series", icon: FileQuestion },
               { id: "profile", label: "Profile", icon: User },
               { id: "preferences", label: "Settings", icon: Settings },
               { id: "notifications", label: "Updates", icon: Bell },
@@ -2570,6 +2586,12 @@ export default function LearnerDashboard() {
                   label: "Course Library",
                   icon: BookOpen,
                   gradient: "from-emerald-500 to-green-600",
+                },
+                {
+                  id: "test-series",
+                  label: "Test Series",
+                  icon: FileQuestion,
+                  gradient: "from-purple-500 to-indigo-600",
                 },
               ].map((tab) => (
                 <button

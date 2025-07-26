@@ -4,6 +4,16 @@ import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 import { createProfileUpdateNotification } from "@/lib/notificationService"
 
+// Enhanced database connection with timeout
+async function connectWithTimeout(timeoutMs = 15000) {
+  return Promise.race([
+    connectToDatabase(),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database connection timeout')), timeoutMs)
+    )
+  ])
+}
+
 export async function PUT(request) {
   try {
     console.log("🔄 Profile PUT request received")
@@ -18,8 +28,8 @@ export async function PUT(request) {
       )
     }
 
-    console.log("🔗 Connecting to database...")
-    const { db } = await connectToDatabase()
+    console.log("🔗 Connecting to database with timeout...")
+    const { db } = await connectWithTimeout(10000) // 10 second timeout
     console.log("✅ Database connected successfully")
     
     console.log("📖 Reading request body...")
@@ -127,12 +137,17 @@ export async function PUT(request) {
       )
     }
 
-    // Update user profile
+    // Update user profile with timeout
     console.log("💾 Updating user profile in database...")
-    const result = await db.collection("users").updateOne(
-      { _id: new ObjectId(decoded.userId) },
-      { $set: updateData }
-    )
+    const result = await Promise.race([
+      db.collection("users").updateOne(
+        { _id: new ObjectId(decoded.userId) },
+        { $set: updateData }
+      ),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database operation timeout')), 5000)
+      )
+    ])
 
     console.log("📊 Database update result:")
     console.log("   - Matched count:", result.matchedCount)
@@ -152,50 +167,56 @@ export async function PUT(request) {
       // This is not necessarily an error - data might be identical
     }
 
-    // Get updated user data
+    // Get updated user data with timeout
     console.log("📖 Fetching updated user data...")
-    const updatedUser = await db.collection("users").findOne(
-      { _id: new ObjectId(decoded.userId) },
-      { projection: { password: 0 } }
-    )
+    const updatedUser = await Promise.race([
+      db.collection("users").findOne(
+        { _id: new ObjectId(decoded.userId) },
+        { projection: { password: 0 } }
+      ),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database fetch timeout')), 5000)
+      )
+    ])
 
     if (!updatedUser) {
-      console.error("❌ Failed to fetch updated user data")
+      console.error("❌ User not found after update")
       return NextResponse.json(
-        { error: "Failed to retrieve updated profile" },
-        { status: 500 }
+        { error: "User not found after update" },
+        { status: 404 }
       )
     }
 
     console.log("✅ Profile updated successfully")
-    console.log("👤 Updated user data:", JSON.stringify(updatedUser, null, 2))
+    
+    // Create notification for profile update (don't wait for it)
+    try {
+      await createProfileUpdateNotification(decoded.userId, updateData)
+    } catch (notificationError) {
+      console.warn("⚠️ Failed to create profile update notification:", notificationError.message)
+      // Don't fail the request if notification fails
+    }
 
-    // Create notification
-    await createProfileUpdateNotification(decoded.userId, updatedUser)
-
-    return NextResponse.json({
-      message: "Profile updated successfully",
+    return NextResponse.json({ 
       user: updatedUser,
-      changesCount: result.modifiedCount
+      message: "Profile updated successfully"
     })
 
   } catch (error) {
     console.error("💥 Profile update error:", error)
-    console.error("📍 Error stack:", error.stack)
     
-    // Provide more specific error messages
-    let errorMessage = "Internal server error"
+    let errorMessage = "Failed to update profile"
     let statusCode = 500
     
     if (error.message.includes('timeout')) {
-      errorMessage = "Database connection timeout"
+      errorMessage = "Database connection timeout. Please try again."
       statusCode = 503
-    } else if (error.message.includes('network')) {
-      errorMessage = "Network error"
+    } else if (error.message.includes('ETIMEDOUT') || error.message.includes('ETIMEOUT')) {
+      errorMessage = "Network connection timeout. Please check your connection and try again."
       statusCode = 503
-    } else if (error.message.includes('JSON')) {
-      errorMessage = "Invalid request format"
-      statusCode = 400
+    } else if (error.message.includes('authentication')) {
+      errorMessage = "Database authentication failed"
+      statusCode = 500
     }
     
     return NextResponse.json(
@@ -222,8 +243,8 @@ export async function GET(request) {
       )
     }
 
-    console.log("🔗 Connecting to database...")
-    const { db } = await connectToDatabase()
+    console.log("🔗 Connecting to database with timeout...")
+    const { db } = await connectWithTimeout(10000) // 10 second timeout
     console.log("✅ Database connected successfully")
     
     // Get token from Authorization header
@@ -246,12 +267,17 @@ export async function GET(request) {
       console.log("✅ Token decoded successfully")
       console.log("👤 User ID:", decoded.userId)
       
-      // Get user profile
+      // Get user profile with timeout
       console.log("📖 Fetching user profile...")
-      const user = await db.collection("users").findOne(
-        { _id: new ObjectId(decoded.userId) },
-        { projection: { password: 0 } }
-      )
+      const user = await Promise.race([
+        db.collection("users").findOne(
+          { _id: new ObjectId(decoded.userId) },
+          { projection: { password: 0 } }
+        ),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database fetch timeout')), 5000)
+        )
+      ])
 
       if (!user) {
         console.log("👤 User not found, creating default profile...")
@@ -275,7 +301,12 @@ export async function GET(request) {
         }
 
         console.log("💾 Inserting default user profile...")
-        await db.collection("users").insertOne(defaultUser)
+        await Promise.race([
+          db.collection("users").insertOne(defaultUser),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Database insert timeout')), 5000)
+          )
+        ])
         console.log("✅ Default profile created")
         
         return NextResponse.json({ 
@@ -296,13 +327,28 @@ export async function GET(request) {
     }
   } catch (error) {
     console.error("💥 Profile fetch error:", error)
+    
+    let errorMessage = "Failed to fetch profile"
+    let statusCode = 500
+    
+    if (error.message.includes('timeout')) {
+      errorMessage = "Database connection timeout. Please try again."
+      statusCode = 503
+    } else if (error.message.includes('ETIMEDOUT') || error.message.includes('ETIMEOUT')) {
+      errorMessage = "Network connection timeout. Please check your connection and try again."
+      statusCode = 503
+    } else if (error.message.includes('authentication')) {
+      errorMessage = "Database authentication failed"
+      statusCode = 500
+    }
+    
     return NextResponse.json(
       { 
-        error: "Internal server error",
+        error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? error.message : undefined,
         timestamp: new Date().toISOString()
       },
-      { status: 500 }
+      { status: statusCode }
     )
   }
 }
