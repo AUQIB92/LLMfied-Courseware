@@ -72,6 +72,7 @@ import {
 } from "lucide-react";
 import QuizModal from "./QuizModal";
 import ContentDisplay from "@/components/ContentDisplay";
+import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
 
 // Helper function to parse markdown into pages
 function parseMarkdownToPages(markdown) {
@@ -533,10 +534,48 @@ export default function ModuleContent({
   const [expandedExample, setExpandedExample] = useState(null);
   const [expandedChallenge, setExpandedChallenge] = useState(null);
   const [viewMode, setViewMode] = useState("content");
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [startTime, setStartTime] = useState(null);
+  const [loadingSubsections, setLoadingSubsections] = useState(false);
+  const [contentSubsections, setContentSubsections] = useState([]);
+  const [expandedSubsections, setExpandedSubsections] = useState({});
+  const [verifyingEnrollment, setVerifyingEnrollment] = useState(true);
+  const [enrollmentVerified, setEnrollmentVerified] = useState(false);
+  const [aiResources, setAiResources] = useState({
+    books: [],
+    courses: [],
+    articles: [],
+    videos: [],
+    tools: [],
+    websites: [],
+    exercises: [],
+  });
+  const [editingResource, setEditingResource] = useState(null);
+  const [editedResourceData, setEditedResourceData] = useState({});
+  const [isUpdatingResource, setIsUpdatingResource] = useState(false);
+  const [loadingExplanation, setLoadingExplanation] = useState({});
+  const [simplifiedExplanations, setSimplifiedExplanations] = useState({});
+  const [loadingChallenges, setLoadingChallenges] = useState(false);
+  const [programmingChallenges, setProgrammingChallenges] = useState([]);
+  const [selectedChallenge, setSelectedChallenge] = useState(null);
+  const [activeProgrammingChallenge, setActiveProgrammingChallenge] = useState(null);
+  const [userCode, setUserCode] = useState("");
+  const [programmingLanguage, setProgrammingLanguage] = useState("javascript");
+  const [isRunningCode, setIsRunningCode] = useState(false);
+  const [codeErrors, setCodeErrors] = useState("");
+  const [codeOutput, setCodeOutput] = useState("");
+  const [testResults, setTestResults] = useState([]);
+  const [challengeScore, setChallengeScore] = useState(0);
+  const [savedCodes, setSavedCodes] = useState({});
+  const [showHints, setShowHints] = useState(false);
+  const [showSolution, setShowSolution] = useState({});
+  const [explanationPages, setExplanationPages] = useState({});
 
   // Rich text formatting is now handled by MathMarkdownRenderer component
 
   // NEW: Helper functions for multi-page explanations
+  const wordsPerExplanationPage = 100;
   const splitExplanationIntoPages = (explanation) => {
     if (!explanation || explanation.length === 0) return [];
 
@@ -751,7 +790,7 @@ export default function ModuleContent({
     return () => {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000 / 60);
       if (timeSpent > 0) {
-        onProgressUpdate(module.id, moduleProgress.completed, timeSpent);
+        onProgress(module.id, moduleProgress.completed, timeSpent);
       }
     };
   }, [module.id]);
@@ -1195,7 +1234,7 @@ Return JSON format:
 
   const handleMarkComplete = () => {
     const timeSpent = Math.floor((Date.now() - startTime) / 1000 / 60);
-    onProgressUpdate(module.id, true, timeSpent);
+    onProgress(module.id, true, timeSpent);
   };
 
   const toggleSubsection = (subsectionId) => {
@@ -1219,8 +1258,7 @@ Return JSON format:
     });
   };
 
-  // Memoized resource handling - Clean version without debug output
-  const { legacyResources, aiResources } = useMemo(() => {
+  const { legacyResources, aiResources: memoizedAiResources } = useMemo(() => {
     let legacy = [];
 
     if (Array.isArray(module.resources)) {
@@ -1289,6 +1327,10 @@ Return JSON format:
 
     return { legacyResources: legacy, aiResources: ai };
   }, [module.resources]);
+
+  useEffect(() => {
+    setAiResources(memoizedAiResources);
+  }, [memoizedAiResources]);
 
   // Organize resources by type for the comprehensive resources section
   const instructorMasterpieces = useMemo(() => {
@@ -4509,7 +4551,7 @@ Return JSON format:
             module={module}
             onClose={() => setShowQuiz(false)}
             onComplete={(score) => {
-              onProgressUpdate(module.id, true, 0, score);
+              onProgress(module.id, true, 0, score);
               setShowQuiz(false);
             }}
           />

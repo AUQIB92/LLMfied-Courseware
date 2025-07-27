@@ -812,7 +812,7 @@ export default function CourseViewer({ course, onBack, onModuleView, isEnrolled:
               <ModuleContent
                 module={selectedModule}
                 course={course}
-                onProgressUpdate={updateProgress}
+                onProgress={updateProgress}
                 moduleProgress={getModuleProgress(selectedModule.id)}
               />
             )}
