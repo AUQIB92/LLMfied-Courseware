@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { PremiumFeatureButton, PremiumUpgradeModal } from "@/components/ui/premium-upgrade"
+import { PremiumFeatureButton } from "@/components/ui/premium-upgrade"
 import { checkPremiumFeature } from "@/lib/models"
 import { 
   ArrowLeft, 

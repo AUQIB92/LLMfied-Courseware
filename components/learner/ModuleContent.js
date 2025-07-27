@@ -1818,25 +1818,6 @@ Return JSON format:
       >
         {/* Quiz Challenge Button */}
         {checkPremiumFeature(user, "quizGeneration") ? (
-          <motion.button
-            onClick={() => setShowQuiz(true)}
-            className="group relative w-16 h-16 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 rounded-2xl shadow-2xl hover:shadow-emerald-500/25 flex items-center justify-center text-white transition-all duration-500 overflow-hidden"
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            whileTap={{ scale: 0.9 }}
-            variants={floatingVariants}
-            animate="floating"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <TestTube className="h-7 w-7 relative z-10 group-hover:scale-110 transition-transform duration-300" />
-            <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-
-            {/* Tooltip */}
-            <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
-              Take Quiz Challenge
-              <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-black/80"></div>
-            </div>
-          </motion.button>
-        ) : (
           <PremiumFeatureButton
             feature="quizGeneration"
             className="group relative w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 rounded-2xl shadow-2xl hover:shadow-amber-500/25 flex items-center justify-center text-white transition-all duration-500 overflow-hidden"
@@ -1847,9 +1828,17 @@ Return JSON format:
 
             {/* Tooltip */}
             <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
-              Quiz Challenge (Premium)
+              Quiz Challenge
               <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-black/80"></div>
             </div>
+          </PremiumFeatureButton>
+        ) : (
+          <PremiumFeatureButton
+            feature="quizGeneration"
+            className="group relative w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 rounded-2xl shadow-2xl hover:shadow-amber-500/25 flex items-center justify-center text-white transition-all duration-500 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <Brain className="h-8 w-8 relative z-10" />
           </PremiumFeatureButton>
         )}
 
@@ -3200,12 +3189,11 @@ Return JSON format:
                                               whileTap={{ scale: 0.95 }}
                                             >
                                               <PremiumFeatureButton
-                                                feature="getMoreDetails"
-                                                size="sm"
-                                                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                                feature="simplifiedExplanation"
+                                                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                                               >
-                                                <Crown className="h-4 w-4 mr-2" />
-                                                Get More Details (Premium)
+                                                <Lightbulb className="h-4 w-4 mr-2" />
+                                                Generate Simplified Explanation
                                               </PremiumFeatureButton>
                                             </motion.div>
                                           )}
@@ -4226,13 +4214,13 @@ Return JSON format:
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        <Button
-                          onClick={generateProgrammingChallenges}
+                        <PremiumFeatureButton
+                          feature="programmingChallenges"
                           className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                         >
                           <Code2 className="h-4 w-4 mr-2" />
                           Generate Programming Challenges
-                        </Button>
+                        </PremiumFeatureButton>
                       </motion.div>
                     </motion.div>
                   )}
@@ -4266,11 +4254,11 @@ Return JSON format:
                     whileTap={{ scale: 0.95 }}
                   >
                     <PremiumFeatureButton
-                      feature="quizGeneration"
-                      className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3"
+                      feature="moduleCompletion"
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                     >
-                      <Crown className="h-5 w-5 mr-2" />
-                      Take Quiz (Premium)
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Mark as Complete
                     </PremiumFeatureButton>
                   </motion.div>
                 )}
