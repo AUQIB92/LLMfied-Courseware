@@ -43,6 +43,7 @@ import {
   Download,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function TestSeriesCreator({ onTestSeriesCreated }) {
   const [activeStep, setActiveStep] = useState("basic");
@@ -53,6 +54,7 @@ export default function TestSeriesCreator({ onTestSeriesCreated }) {
   const [success, setSuccess] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [isParsingFile, setIsParsingFile] = useState(false);
+  const [provider, setProvider] = useState("perplexity");
 
   const [testSeriesData, setTestSeriesData] = useState({
     title: "",
@@ -771,6 +773,7 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
           topics: finalTopics,
           educatorId: user.id,
           educatorName: user.name,
+          provider: provider,
         }),
       });
 
@@ -1386,6 +1389,28 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label>AI Provider</Label>
+                  <RadioGroup
+                    value={provider}
+                    onValueChange={setProvider}
+                    className="mt-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="perplexity" id="perplexity" />
+                      <Label htmlFor="perplexity">Perplexity</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="gemini" id="gemini" />
+                      <Label htmlFor="gemini">Gemini</Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {provider === "perplexity"
+                      ? "Optimized for factual accuracy and broader knowledge."
+                      : "Optimized for creative and complex question generation."}
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -1724,7 +1749,7 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="totalTests">Number of Tests</Label>
                   <Input

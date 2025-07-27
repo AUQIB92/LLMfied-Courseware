@@ -12,6 +12,7 @@ import {
   createQuestionGenerationTasks,
   validateProcessedTopics,
 } from "@/lib/topicProcessor";
+import { generateContent, parseLargeGeminiResponse } from "@/lib/gemini";
 
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions";
@@ -220,6 +221,7 @@ export async function POST(request) {
       educatorName,
       targetAudience,
       prerequisites,
+      provider = "perplexity", // Default to perplexity
     } = body;
 
     // Validate required fields
@@ -316,7 +318,7 @@ export async function POST(request) {
         );
 
         try {
-          const questions = await generateQuestionsFromTask(task);
+          const questions = await generateQuestionsFromTask(task, provider);
           if (questions && questions.length > 0) {
             // Count questions with images
             const imagesInBatch = questions.filter((q) => q.hasImage).length;
@@ -553,7 +555,7 @@ export async function POST(request) {
   }
 }
 
-async function generateQuestionsFromTask(task) {
+async function generateQuestionsFromTask(task, provider = "perplexity") {
   const { promptParams, questionCount } = task;
   const maxRetries = 4; // Increased retries for atomic tasks
   let validQuestions = [];
@@ -568,10 +570,19 @@ async function generateQuestionsFromTask(task) {
       // Update attempt in prompt params
       promptParams.attempt = attempt;
 
-      const attemptQuestions = await generateQuestionsWithTemplate(
-        promptParams,
-        attempt
-      );
+      let attemptQuestions;
+      if (provider === "gemini") {
+        attemptQuestions = await generateQuestionsWithGemini(
+          promptParams,
+          attempt
+        );
+      } else {
+        attemptQuestions = await generateQuestionsWithTemplate(
+          promptParams,
+          attempt
+        );
+      }
+
       validQuestions = attemptQuestions;
 
       if (validQuestions.length === questionCount) {
@@ -803,6 +814,92 @@ async function generateQuestionsWithTemplate(promptParams, attempt) {
 
   console.log(
     `Generated ${validQuestions.length} valid questions for ${promptParams.topicName} - ${promptParams.subtopic} (attempt ${attempt})`
+  );
+  return validQuestions;
+}
+
+async function generateQuestionsWithGemini(promptParams, attempt) {
+  const validation = validatePromptParams(promptParams);
+  if (!validation.isValid) {
+    throw new Error(
+      `Invalid prompt parameters: ${validation.missingFields.join(", ")}`
+    );
+  }
+
+  const prompt = generateQuestionPrompt({ ...promptParams, attempt });
+
+  let responseText;
+  try {
+    responseText = await generateContent(prompt, { model: "gemini-1.5-flash" });
+  } catch (fetchError) {
+    console.error(
+      `Network error when calling Gemini API for ${promptParams.topicName} - ${promptParams.subtopic} (attempt ${attempt}):`,
+      fetchError.message
+    );
+    throw new Error(
+      `Network error connecting to Gemini AI: ${fetchError.message}. Please check your internet connection and try again.`
+    );
+  }
+
+  if (!responseText) {
+    console.error(
+      `No content received from Gemini for ${promptParams.topicName} - ${promptParams.subtopic} (attempt ${attempt})`
+    );
+    throw new Error(
+      `No content received from AI for ${promptParams.topicName} - ${promptParams.subtopic}`
+    );
+  }
+
+  let generatedQuestions;
+  try {
+    generatedQuestions = await parseLargeGeminiResponse(responseText);
+  } catch (parseError) {
+    console.error(
+      `Failed to parse AI response for ${promptParams.topicName} - ${promptParams.subtopic} (attempt ${attempt}):`,
+      parseError.message
+    );
+    console.error("AI Response content:", responseText.substring(0, 500));
+    throw new Error(
+      `Failed to parse AI response for ${promptParams.topicName} - ${promptParams.subtopic}: ${parseError.message}`
+    );
+  }
+
+  if (!Array.isArray(generatedQuestions)) {
+    throw new Error(
+      `Invalid AI response format for ${promptParams.topicName} - ${
+        promptParams.subtopic
+      } (attempt ${attempt}): Expected array, got ${typeof generatedQuestions}`
+    );
+  }
+
+  const validQuestions = [];
+  for (const question of generatedQuestions) {
+    if (
+      question &&
+      question.questionText &&
+      question.options &&
+      Array.isArray(question.options) &&
+      question.options.length === 4 &&
+      question.correctAnswer !== undefined &&
+      question.correctAnswer >= 0 &&
+      question.correctAnswer <= 3
+    ) {
+      validQuestions.push({
+        ...question,
+        hasImage: question.hasImage || false,
+        imageDescription: question.imageDescription || null,
+        imageAltText: question.imageAltText || null,
+      });
+    } else {
+      console.warn(
+        `Invalid question structure for ${promptParams.topicName} - ${promptParams.subtopic} (attempt ${attempt}):`,
+        question
+      );
+    }
+  }
+
+  console.log(
+    `Generated ${validQuestions.length} valid questions for ${promptParams.topicName} - ${promptParams.subtopic} with Gemini (attempt ${attempt})`
   );
   return validQuestions;
 }
