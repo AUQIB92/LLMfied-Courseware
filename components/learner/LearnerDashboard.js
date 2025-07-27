@@ -53,9 +53,11 @@ import {
   FileQuestion,
 } from "lucide-react";
 import CourseLibrary from "./CourseLibrary";
+import AcademicCourseLibrary from "./AcademicCourseLibrary";
 import TestSeriesLibrary from "./TestSeriesLibrary";
 import TestSeriesViewer from "./TestSeriesViewer";
 import CourseViewer from "./CourseViewer";
+import AcademicCourseViewer from "./AcademicCourseViewer";
 import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import PreferencesSettings from "@/components/profile/PreferencesSettings";
@@ -73,6 +75,7 @@ import { toast } from "sonner";
 export default function LearnerDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedAcademicCourse, setSelectedAcademicCourse] = useState(null);
   const [selectedTestSeries, setSelectedTestSeries] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [enrolledTestSeries, setEnrolledTestSeries] = useState([]);
@@ -503,6 +506,21 @@ export default function LearnerDashboard() {
           testSeries={selectedTestSeries}
           onBack={() => {
             setSelectedTestSeries(null);
+            setHideHeader(false);
+            setIsHeaderVisible(true);
+            setLastScrollY(0);
+          }}
+        />
+      );
+    }
+
+    if (selectedAcademicCourse) {
+      return (
+        <AcademicCourseViewer
+          courseId={selectedAcademicCourse._id}
+          user={user}
+          onBack={() => {
+            setSelectedAcademicCourse(null);
             setHideHeader(false);
             setIsHeaderVisible(true);
             setLastScrollY(0);
@@ -1167,6 +1185,19 @@ export default function LearnerDashboard() {
             onEnrollmentChange={handleEnrollmentChange}
           />
         );
+      case "academic-courses":
+        return (
+          <AcademicCourseLibrary
+            onCourseSelect={(course) => {
+              console.log("🎯 Academic course selected from library:", course.title);
+              setSelectedAcademicCourse(course);
+              setHideHeader(true);
+            }}
+            enrolledCourses={enrolledCourses}
+            enrollmentDataLoaded={enrollmentDataLoaded}
+            onEnrollmentChange={handleEnrollmentChange}
+          />
+        );
       case "test-series":
         return (
           <TestSeriesLibrary
@@ -1215,6 +1246,7 @@ export default function LearnerDashboard() {
             {[
               { id: "overview", label: "Dashboard", icon: BookOpen },
               { id: "library", label: "Courses", icon: BookMarked },
+              { id: "academic-courses", label: "Academic", icon: GraduationCap },
               { id: "test-series", label: "Test Series", icon: FileQuestion },
               { id: "profile", label: "Profile", icon: User },
               { id: "preferences", label: "Settings", icon: Settings },

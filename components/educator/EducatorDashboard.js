@@ -36,6 +36,7 @@ import {
   TestTube2,
 } from "lucide-react"
 import CourseCreator from "./CourseCreator"
+import AcademicCourseCreator from "./AcademicCourseCreator"
 import CourseList from "./CourseList"
 import CourseEditor from "./CourseEditor"
 import ExamContentEditor from "@/components/exam-genius/ExamContentEditor"
@@ -627,6 +628,19 @@ export default function EducatorDashboard() {
           </div>
         )
 
+      case "academic-courses":
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Academic Courses
+              </h2>
+              <p className="text-slate-600">Create and manage academic courses with assignments and grading</p>
+            </div>
+            <AcademicCourseCreator onCourseCreated={refreshData} />
+          </div>
+        )
+
       case "create":
         return (
           <div className="space-y-6">
@@ -936,9 +950,10 @@ export default function EducatorDashboard() {
             {[
               { id: "overview", label: "Overview", icon: TrendingUp },
               { id: "courses", label: "Technical Courses", icon: BookOpen },
+              { id: "academic-courses", label: "Academic Courses", icon: GraduationCap },
               { id: "create", label: "Create Course", icon: Plus },
               { id: "test-series-manage", label: "Test Series", icon: TestTube2 },
-              { id: "examgenius", label: "Competitive Exam Courses", icon: GraduationCap },
+              { id: "examgenius", label: "Competitive Exam Courses", icon: TestTube2 },
             ].map((tab) => (
               <button
                 key={tab.id}

@@ -36,7 +36,7 @@ export const PremiumFeatureButton = ({
       >
         {/* Original button content */}
         <div className="flex items-center justify-center opacity-50">
-          {children}
+        {children}
         </div>
         
         {/* Lock overlay in corner */}
@@ -46,7 +46,7 @@ export const PremiumFeatureButton = ({
           </div>
         </div>
       </Button>
-
+      
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -79,12 +79,12 @@ export const PremiumUpgradeModal = ({
           <DialogTitle className="text-center">Coming Soon!</DialogTitle>
           <DialogDescription className="text-center">
             This feature is currently under development. Stay tuned for updates!
-          </DialogDescription>
+            </DialogDescription>
         </DialogHeader>
         <div className="flex justify-center pt-4">
           <Button onClick={onClose} variant="outline">
             Close
-          </Button>
+              </Button>
         </div>
       </DialogContent>
     </Dialog>
