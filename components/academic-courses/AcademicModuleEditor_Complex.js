@@ -246,7 +246,7 @@ function parseMarkdownToSubsections(markdownContent) {
   return subsections.map((sub) => ({ ...sub, content: sub.content.trim() }));
 }
 
-export default function ExamModuleEditorEnhanced({
+export default function AcademicModuleEditor({
   module,
   onUpdate,
   examType,
@@ -258,7 +258,7 @@ export default function ExamModuleEditorEnhanced({
 }) {
   const { getAuthHeaders, user, apiCall, isTokenValid } = useAuth();
 
-  // Initialize local module state for editing
+  // Initialize local module state for editing (Academic Course specific)
   const [localModule, setLocalModule] = useState(() => {
     const initialState = {
       ...module,
@@ -269,11 +269,14 @@ export default function ExamModuleEditorEnhanced({
       objectives: module.objectives || [],
       examples: module.examples || [],
       detailedSubsections: module.detailedSubsections || [],
-      // Academic course specific fields
-      isAcademicCourse: course?.isAcademicCourse || false,
-      courseType: course?.courseType || examType,
+      // Force academic course specific fields - this is ALWAYS an academic course
+      isAcademicCourse: true,
+      courseType: "academic",
       hasUnits: module.hasUnits || false,
       unitStructure: module.unitStructure || {},
+      academicLevel: course?.academicLevel || learnerLevel || "undergraduate",
+      isTechnicalCourse: true,
+      moduleType: "academic",
     };
 
     console.log("📝 Initializing localModule state:", {
@@ -310,16 +313,19 @@ export default function ExamModuleEditorEnhanced({
       objectives: module.objectives || [],
       examples: module.examples || [],
       detailedSubsections: module.detailedSubsections || [],
-      // Academic course specific fields
-      isAcademicCourse: course?.isAcademicCourse || false,
-      courseType: course?.courseType || examType,
+      // Force academic course specific fields - ALWAYS academic in this component
+      isAcademicCourse: true,
+      courseType: "academic",
       hasUnits: module.hasUnits || false,
       unitStructure: module.unitStructure || {},
+      academicLevel: course?.academicLevel || learnerLevel || "undergraduate",
+      isTechnicalCourse: true,
+      moduleType: "academic",
     }));
 
     // Reset changes flag when module prop changes
     setHasChanges(false);
-  }, [module, course?.isAcademicCourse, course?.courseType, examType]);
+  }, [module, learnerLevel]);
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -485,15 +491,35 @@ export default function ExamModuleEditorEnhanced({
 
   // Enhanced local module field update function
   const updateLocalModuleField = (field, value) => {
+    const valuePreview =
+      typeof value === "string"
+        ? value.length > 100
+          ? value.substring(0, 100) + "..."
+          : value
+        : Array.isArray(value)
+        ? `Array(${value.length})`
+        : typeof value;
+
     console.log("🔄 Updating local module field:", {
       field,
-      value: value?.substring(0, 100) + "...",
+      valuePreview,
       hasChanges,
+      currentValue: localModule[field],
     });
-    setLocalModule((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+
+    setLocalModule((prev) => {
+      const updated = {
+        ...prev,
+        [field]: value,
+      };
+      console.log("🔄 Local module updated:", {
+        field,
+        oldValue: prev[field],
+        newValue: value,
+        updated: updated[field],
+      });
+      return updated;
+    });
     setHasChanges(true);
     setSaveStatus("editing");
   };
@@ -522,19 +548,12 @@ export default function ExamModuleEditorEnhanced({
     setUpdateTimeout(newTimeout);
   };
 
-  // Helper function to update module with appropriate method (debounced for academic courses)
+  // Helper function for Academic Module Editor - ALWAYS use debounced updates
   const updateModule = (updatedModule) => {
-    // For ALL academic courses, use debounced updates to prevent constant saving
-    if (localModule.isAcademicCourse || course?.isAcademicCourse) {
-      console.log("🔄 Using debounced update for academic course");
-      debouncedParentUpdate(updatedModule);
-    } else {
-      // For non-academic courses, update immediately
-      if (onUpdate) {
-        console.log("🔄 Immediate parent update for non-academic course");
-        onUpdate(updatedModule);
-      }
-    }
+    console.log(
+      "🎓 Academic Module Editor: Using debounced update for smooth editing"
+    );
+    debouncedParentUpdate(updatedModule);
   };
 
   // Enhanced update module fields for academic content
@@ -1194,8 +1213,11 @@ export default function ExamModuleEditorEnhanced({
     }
   };
 
-  // Save/Publish handlers
-  const handleSaveDraft = async () => {
+  // Academic Module Editor focuses only on module editing, not course-level actions
+  // All course save/publish operations are handled by the parent AcademicCourseCreator
+
+  // Removed handleSaveDraft and handlePublishCourse functions to prevent API conflicts
+  const handleSaveDraft_REMOVED = async () => {
     if (!course || !courseId) {
       toast.error("❌ Course information missing. Cannot save changes.");
       return;
@@ -2073,63 +2095,7 @@ export default function ExamModuleEditorEnhanced({
 
   return (
     <div className="space-y-6">
-      {/* Action Bar - Save/Publish */}
-      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 sticky top-4 z-10 shadow-lg">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center text-white">
-                <Settings className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-green-800">Course Actions</h3>
-                <p className="text-sm text-green-600">
-                  Save your changes or publish the course
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={handleSaveDraft}
-                disabled={saving || publishing}
-                variant="outline"
-                className="border-green-300 text-green-700 hover:bg-green-50"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Save Draft
-                  </>
-                )}
-              </Button>
-
-              <Button
-                onClick={handlePublishCourse}
-                disabled={saving || publishing}
-                className="bg-green-500 hover:bg-green-600 text-white"
-              >
-                {publishing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Publishing...
-                  </>
-                ) : (
-                  <>
-                    <Trophy className="h-4 w-4 mr-2" />
-                    Publish Course
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Academic Module Editor - No course-level actions, only module editing */}
 
       {/* Module Header */}
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
@@ -2149,9 +2115,9 @@ export default function ExamModuleEditorEnhanced({
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white">
-                <Trophy className="h-4 w-4 mr-1" />
-                ExamGenius
+              <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                <GraduationCap className="h-4 w-4 mr-1" />
+                Academic Course
               </Badge>
             </div>
           </div>

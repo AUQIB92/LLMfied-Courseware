@@ -53,11 +53,11 @@ import {
   FileQuestion,
 } from "lucide-react";
 import CourseLibrary from "./CourseLibrary";
-import AcademicCourseLibrary from "./AcademicCourseLibrary";
+import { AcademicCourseLibrary } from "../academic-courses";
 import TestSeriesLibrary from "./TestSeriesLibrary";
 import TestSeriesViewer from "./TestSeriesViewer";
 import CourseViewer from "./CourseViewer";
-import AcademicCourseViewer from "./AcademicCourseViewer";
+import { AcademicCourseViewer } from "../academic-courses";
 import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import PreferencesSettings from "@/components/profile/PreferencesSettings";
@@ -1189,7 +1189,10 @@ export default function LearnerDashboard() {
         return (
           <AcademicCourseLibrary
             onCourseSelect={(course) => {
-              console.log("🎯 Academic course selected from library:", course.title);
+              console.log(
+                "🎯 Academic course selected from library:",
+                course.title
+              );
               setSelectedAcademicCourse(course);
               setHideHeader(true);
             }}
@@ -1202,7 +1205,10 @@ export default function LearnerDashboard() {
         return (
           <TestSeriesLibrary
             onTestSeriesSelect={(testSeries) => {
-              console.log("🎯 Test series selected from library:", testSeries.title);
+              console.log(
+                "🎯 Test series selected from library:",
+                testSeries.title
+              );
               setSelectedTestSeries(testSeries);
               setHideHeader(true);
             }}
@@ -1246,7 +1252,11 @@ export default function LearnerDashboard() {
             {[
               { id: "overview", label: "Dashboard", icon: BookOpen },
               { id: "library", label: "Courses", icon: BookMarked },
-              { id: "academic-courses", label: "Academic", icon: GraduationCap },
+              {
+                id: "academic-courses",
+                label: "Academic",
+                icon: GraduationCap,
+              },
               { id: "test-series", label: "Test Series", icon: FileQuestion },
               { id: "profile", label: "Profile", icon: User },
               { id: "preferences", label: "Settings", icon: Settings },

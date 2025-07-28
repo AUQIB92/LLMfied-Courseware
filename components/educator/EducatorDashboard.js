@@ -1,13 +1,19 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef, useCallback } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   BookOpen,
@@ -34,34 +40,34 @@ import {
   Trophy,
   GraduationCap,
   TestTube2,
-} from "lucide-react"
-import CourseCreator from "./CourseCreator"
-import AcademicCourseCreator from "./AcademicCourseCreator"
-import CourseList from "./CourseList"
-import CourseEditor from "./CourseEditor"
-import ExamContentEditor from "@/components/exam-genius/ExamContentEditor"
-import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm"
-import PreferencesSettings from "@/components/profile/PreferencesSettings"
-import NotificationsSettings from "@/components/profile/NotificationsSettings"
-import ExamGenius from "@/components/exam-genius/ExamGenius"
-import TestSeriesCreator from "./TestSeriesCreator"
-import TestSeriesManager from "./TestSeriesManager"
+} from "lucide-react";
+import CourseCreator from "./CourseCreator";
+import { AcademicCourseCreator } from "../academic-courses";
+import CourseList from "./CourseList";
+import CourseEditor from "./CourseEditor";
+import ExamContentEditor from "@/components/exam-genius/ExamContentEditor";
+import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
+import PreferencesSettings from "@/components/profile/PreferencesSettings";
+import NotificationsSettings from "@/components/profile/NotificationsSettings";
+import ExamGenius from "@/components/exam-genius/ExamGenius";
+import TestSeriesCreator from "./TestSeriesCreator";
+import TestSeriesManager from "./TestSeriesManager";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function EducatorDashboard() {
-  const [activeTab, setActiveTab] = useState("overview")
-  const [courses, setCourses] = useState([])
-  const [editingCourseId, setEditingCourseId] = useState(null)
-  const [editingCourse, setEditingCourse] = useState(null)
-  const [avatarKey, setAvatarKey] = useState(Date.now())
-  const [editingTestSeries, setEditingTestSeries] = useState(null)
+  const [activeTab, setActiveTab] = useState("overview");
+  const [courses, setCourses] = useState([]);
+  const [editingCourseId, setEditingCourseId] = useState(null);
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [avatarKey, setAvatarKey] = useState(Date.now());
+  const [editingTestSeries, setEditingTestSeries] = useState(null);
   const [stats, setStats] = useState({
     totalCourses: 0,
     publishedCourses: 0,
@@ -81,132 +87,146 @@ export default function EducatorDashboard() {
       averageSessionDuration: 0,
       averageCoursesPerStudent: 0,
       studentSatisfaction: 0,
-      certificatesIssued: 0
-    }
-  })
+      certificatesIssued: 0,
+    },
+  });
 
-  const { user, getAuthHeaders, logout, updateProfile, updateUser } = useAuth()
-  const router = useRouter()
+  const { user, getAuthHeaders, logout, updateProfile, updateUser } = useAuth();
+  const router = useRouter();
 
-  const dataFetched = useRef(false)
+  const dataFetched = useRef(false);
 
   useEffect(() => {
     if (user && !dataFetched.current) {
-      dataFetched.current = true
-      fetchCourses()
-      fetchStats()
+      dataFetched.current = true;
+      fetchCourses();
+      fetchStats();
     } else if (!user) {
-      dataFetched.current = false
+      dataFetched.current = false;
     }
-  }, [user?._id])
+  }, [user?._id]);
 
   // Listen for user update events to refresh avatar
   useEffect(() => {
     const handleUserUpdate = (event) => {
-      console.log('User update event detected in EducatorDashboard:', event.detail)
+      console.log(
+        "User update event detected in EducatorDashboard:",
+        event.detail
+      );
       // Update avatar key to force re-render of avatar components
-      setAvatarKey(Date.now())
-    }
+      setAvatarKey(Date.now());
+    };
 
     // Listen for user update events
-    window.addEventListener('userUpdated', handleUserUpdate)
+    window.addEventListener("userUpdated", handleUserUpdate);
 
     return () => {
-      window.removeEventListener('userUpdated', handleUserUpdate)
-    }
-  }, [])
+      window.removeEventListener("userUpdated", handleUserUpdate);
+    };
+  }, []);
 
   const fetchCourses = async () => {
     try {
-      console.log("Fetching courses for educator:", user.id)
-      console.log("User ID type:", typeof user.id)
-      console.log("Full user object:", user)
+      console.log("Fetching courses for educator:", user.id);
+      console.log("User ID type:", typeof user.id);
+      console.log("Full user object:", user);
 
       const response = await fetch(`/api/courses?educatorId=${user.id}`, {
         headers: getAuthHeaders(),
-      })
+      });
 
-      console.log("Response status:", response.status)
-      console.log("Response ok:", response.ok)
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
 
-      const data = await response.json()
-      console.log("API Response:", data)
+      const data = await response.json();
+      console.log("API Response:", data);
 
       // Handle error responses from API
       if (!response.ok || data.error) {
-        console.error("API error:", data.error || "Unknown error")
-        console.error("API error details:", data.details)
-        console.error("API debug info:", data.debug)
-        console.error("API error type:", data.type)
+        console.error("API error:", data.error || "Unknown error");
+        console.error("API error details:", data.details);
+        console.error("API debug info:", data.debug);
+        console.error("API error type:", data.type);
         if (data.stack) {
-          console.error("API error stack:", data.stack)
+          console.error("API error stack:", data.stack);
         }
-        setCourses([])
-        return
+        setCourses([]);
+        return;
       }
 
-      const coursesArray = Array.isArray(data) ? data : []
-      console.log("Total courses fetched:", coursesArray.length)
-      
+      const coursesArray = Array.isArray(data) ? data : [];
+      console.log("Total courses fetched:", coursesArray.length);
+
       // Filter out ExamGenius courses from the general dashboard
-      const generalCourses = coursesArray.filter(course => !course.isExamGenius && !course.isCompetitiveExam)
-      console.log("General courses (excluding ExamGenius):", generalCourses.length)
-      console.log("ExamGenius courses filtered out:", coursesArray.length - generalCourses.length)
-      
-      setCourses(generalCourses)
+      const generalCourses = coursesArray.filter(
+        (course) => !course.isExamGenius && !course.isCompetitiveExam
+      );
+      console.log(
+        "General courses (excluding ExamGenius):",
+        generalCourses.length
+      );
+      console.log(
+        "ExamGenius courses filtered out:",
+        coursesArray.length - generalCourses.length
+      );
+
+      setCourses(generalCourses);
     } catch (error) {
-      console.error("Failed to fetch courses:", error)
-      console.error("Error type:", error.constructor.name)
-      console.error("Error message:", error.message)
-      console.error("Error stack:", error.stack)
-      setCourses([])
+      console.error("Failed to fetch courses:", error);
+      console.error("Error type:", error.constructor.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      setCourses([]);
     }
-  }
+  };
 
   const fetchStats = async () => {
     try {
-      console.log("📊 Fetching educator stats...")
-      console.log("🔑 Auth headers:", getAuthHeaders())
-      
-      const response = await fetch(`/api/stats?type=educator&excludeExamGenius=true`, {
-        headers: getAuthHeaders(),
-      })
+      console.log("📊 Fetching educator stats...");
+      console.log("🔑 Auth headers:", getAuthHeaders());
 
-      console.log("📊 Stats response status:", response.status)
-      console.log("📊 Stats response ok:", response.ok)
+      const response = await fetch(
+        `/api/stats?type=educator&excludeExamGenius=true`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+
+      console.log("📊 Stats response status:", response.status);
+      console.log("📊 Stats response ok:", response.ok);
 
       if (response.ok) {
-        const data = await response.json()
-        console.log("✅ Enhanced stats received:", data)
-        setStats(data)
+        const data = await response.json();
+        console.log("✅ Enhanced stats received:", data);
+        setStats(data);
       } else {
-        const errorText = await response.text()
-        console.error("❌ Failed to fetch stats:", errorText)
-        console.error("❌ Response status:", response.status)
-        console.error("❌ Response statusText:", response.statusText)
-        
+        const errorText = await response.text();
+        console.error("❌ Failed to fetch stats:", errorText);
+        console.error("❌ Response status:", response.status);
+        console.error("❌ Response statusText:", response.statusText);
+
         // Try to parse error details
         try {
-          const errorData = JSON.parse(errorText)
-          console.error("❌ Error details:", errorData)
-          
+          const errorData = JSON.parse(errorText);
+          console.error("❌ Error details:", errorData);
+
           // Show user-friendly error message
           if (errorData.error) {
-            console.error("❌ API Error:", errorData.error)
+            console.error("❌ API Error:", errorData.error);
             if (errorData.details) {
-              console.error("❌ Error details:", errorData.details)
+              console.error("❌ Error details:", errorData.details);
             }
           }
         } catch (parseError) {
-          console.error("❌ Could not parse error response:", parseError)
+          console.error("❌ Could not parse error response:", parseError);
         }
       }
     } catch (error) {
-      console.error("💥 Network error fetching stats:", error)
-      console.error("💥 Error name:", error.name)
-      console.error("💥 Error message:", error.message)
-      console.error("💥 Error stack:", error.stack)
-      
+      console.error("💥 Network error fetching stats:", error);
+      console.error("💥 Error name:", error.name);
+      console.error("💥 Error message:", error.message);
+      console.error("💥 Error stack:", error.stack);
+
       // Keep default stats if API fails
       setStats({
         totalCourses: 0,
@@ -226,78 +246,83 @@ export default function EducatorDashboard() {
           averageSessionDuration: 0,
           averageCoursesPerStudent: 0,
           studentSatisfaction: 0,
-          certificatesIssued: 0
-        }
-      })
+          certificatesIssued: 0,
+        },
+      });
     }
-  }
+  };
 
   const handleEditCourse = (courseId) => {
     // Find the course to determine which editor to use
-    const course = courses.find(c => c.id === courseId || c._id === courseId)
-    console.log("Editing course:", courseId, "Found course:", course)
-    console.log("Is competitive exam?", course?.isCompetitiveExam, "Is exam genius?", course?.isExamGenius)
-    
-    setEditingCourseId(courseId)
-    setEditingCourse(course)
-    
+    const course = courses.find((c) => c.id === courseId || c._id === courseId);
+    console.log("Editing course:", courseId, "Found course:", course);
+    console.log(
+      "Is competitive exam?",
+      course?.isCompetitiveExam,
+      "Is exam genius?",
+      course?.isExamGenius
+    );
+
+    setEditingCourseId(courseId);
+    setEditingCourse(course);
+
     // Route to appropriate editor based on course type
     if (course?.isCompetitiveExam || course?.isExamGenius) {
-      console.log("Routing to ExamContentEditor")
-      setActiveTab("edit-exam")
+      console.log("Routing to ExamContentEditor");
+      setActiveTab("edit-exam");
     } else {
-      console.log("Routing to regular CourseEditor")
-      setActiveTab("edit")
+      console.log("Routing to regular CourseEditor");
+      setActiveTab("edit");
     }
-  }
+  };
 
   const refreshData = async () => {
-    await Promise.all([fetchCourses(), fetchStats()])
-  }
+    await Promise.all([fetchCourses(), fetchStats()]);
+  };
 
   const handleBackFromEditor = () => {
-    setEditingCourseId(null)
-    setEditingCourse(null)
-    setActiveTab("courses")
-  }
+    setEditingCourseId(null);
+    setEditingCourse(null);
+    setActiveTab("courses");
+  };
 
   const handleCourseUpdated = () => {
-    refreshData()
-    setEditingCourseId(null)
-    setEditingCourse(null)
-    setActiveTab("courses")
-  }
+    refreshData();
+    setEditingCourseId(null);
+    setEditingCourse(null);
+    setActiveTab("courses");
+  };
 
   const handleTestSeriesCreated = () => {
-    refreshData()
-    setActiveTab("test-series-manage")
-  }
+    refreshData();
+    setActiveTab("test-series-manage");
+  };
 
   const handleEditTestSeries = (testSeries) => {
-    setEditingTestSeries(testSeries)
-    setActiveTab("test-series-edit")
-  }
+    setEditingTestSeries(testSeries);
+    setActiveTab("test-series-edit");
+  };
 
   const handleLogout = async () => {
     try {
-      logout()
-      router.push("/")
+      logout();
+      router.push("/");
     } catch (error) {
-      console.error("Logout failed:", error)
+      console.error("Logout failed:", error);
     }
-  }
+  };
 
   const navigateToProfile = () => {
-    setActiveTab("profile")
-  }
+    setActiveTab("profile");
+  };
 
   const navigateToPreferences = () => {
-    setActiveTab("preferences")
-  }
+    setActiveTab("preferences");
+  };
 
   const navigateToNotifications = () => {
-    setActiveTab("notifications")
-  }
+    setActiveTab("notifications");
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -313,7 +338,8 @@ export default function EducatorDashboard() {
                     Welcome back, {user?.name || "Educator"}!
                   </h1>
                   <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-                    Your educational impact dashboard. Create, manage, and track both technical and competitive exam courses.
+                    Your educational impact dashboard. Create, manage, and track
+                    both technical and competitive exam courses.
                   </p>
                 </div>
               </div>
@@ -326,7 +352,9 @@ export default function EducatorDashboard() {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
                     <div>
-                      <CardTitle className="text-sm font-medium text-blue-100">Total Courses</CardTitle>
+                      <CardTitle className="text-sm font-medium text-blue-100">
+                        Total Courses
+                      </CardTitle>
                       <div className="text-4xl font-bold mt-2 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
                         {stats.totalCourses}
                       </div>
@@ -348,7 +376,9 @@ export default function EducatorDashboard() {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
                     <div>
-                      <CardTitle className="text-sm font-medium text-emerald-100">Published</CardTitle>
+                      <CardTitle className="text-sm font-medium text-emerald-100">
+                        Published
+                      </CardTitle>
                       <div className="text-4xl font-bold mt-2 bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">
                         {stats.publishedCourses}
                       </div>
@@ -370,7 +400,9 @@ export default function EducatorDashboard() {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
                     <div>
-                      <CardTitle className="text-sm font-medium text-purple-100">Total Students</CardTitle>
+                      <CardTitle className="text-sm font-medium text-purple-100">
+                        Total Students
+                      </CardTitle>
                       <div className="text-4xl font-bold mt-2 bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
                         {stats.totalStudents}
                       </div>
@@ -392,7 +424,9 @@ export default function EducatorDashboard() {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
                     <div>
-                      <CardTitle className="text-sm font-medium text-orange-100">Completion Rate</CardTitle>
+                      <CardTitle className="text-sm font-medium text-orange-100">
+                        Completion Rate
+                      </CardTitle>
                       <div className="text-4xl font-bold mt-2 bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">
                         {stats.completionRate}%
                       </div>
@@ -416,92 +450,106 @@ export default function EducatorDashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Draft Courses</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Draft Courses
+                  </CardTitle>
                   <FileText className="h-4 w-4 text-orange-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">{stats.draftCourses}</div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Ready to publish
-                  </p>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {stats.draftCourses}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Ready to publish</p>
                 </CardContent>
               </Card>
 
               <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Recent Enrollments</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Recent Enrollments
+                  </CardTitle>
                   <TrendingUp className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{stats.recentEnrollments}</div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Last 30 days
-                  </p>
+                  <div className="text-2xl font-bold text-green-600">
+                    {stats.recentEnrollments}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
                 </CardContent>
               </Card>
 
               <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Average Progress</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Average Progress
+                  </CardTitle>
                   <Target className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">{stats.averageProgress}%</div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Student progress
-                  </p>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {stats.averageProgress}%
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Student progress</p>
                 </CardContent>
               </Card>
 
               <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Revenue</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Revenue
+                  </CardTitle>
                   <Sparkles className="h-4 w-4 text-purple-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">₹{stats.revenue || 0}</div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Total earnings
-                  </p>
+                  <div className="text-2xl font-bold text-purple-600">
+                    ₹{stats.revenue || 0}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Total earnings</p>
                 </CardContent>
               </Card>
 
               <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Active Learners</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Active Learners
+                  </CardTitle>
                   <Users className="h-4 w-4 text-indigo-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-indigo-600">{stats.activeLearners || 0}</div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Last 7 days
-                  </p>
+                  <div className="text-2xl font-bold text-indigo-600">
+                    {stats.activeLearners || 0}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Last 7 days</p>
                 </CardContent>
               </Card>
 
               <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Retention Rate</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Retention Rate
+                  </CardTitle>
                   <Target className="h-4 w-4 text-cyan-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-cyan-600">{stats.retentionRate || 0}%</div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    50%+ completion
-                  </p>
+                  <div className="text-2xl font-bold text-cyan-600">
+                    {stats.retentionRate || 0}%
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">50%+ completion</p>
                 </CardContent>
               </Card>
 
               <Card className="group border-0 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Monthly Growth</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Monthly Growth
+                  </CardTitle>
                   <TrendingUp className="h-4 w-4 text-emerald-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-emerald-600">{stats.monthlyGrowth || 0}%</div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    vs last month
-                  </p>
+                  <div className="text-2xl font-bold text-emerald-600">
+                    {stats.monthlyGrowth || 0}%
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">vs last month</p>
                 </CardContent>
               </Card>
             </div>
@@ -516,29 +564,44 @@ export default function EducatorDashboard() {
                     <div className="w-2 h-8 bg-gradient-to-b from-yellow-500 to-orange-600 rounded-full"></div>
                     Top Performing Courses
                   </CardTitle>
-                  <CardDescription className="text-yellow-700 mt-1">Your most successful courses</CardDescription>
+                  <CardDescription className="text-yellow-700 mt-1">
+                    Your most successful courses
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="relative p-6">
                   {stats.topCourses && stats.topCourses.length > 0 ? (
                     <div className="space-y-4">
                       {stats.topCourses.map((course, index) => (
-                        <div key={course._id} className="flex items-center justify-between p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-yellow-200/50 hover:bg-white/80 transition-all duration-300">
+                        <div
+                          key={course._id}
+                          className="flex items-center justify-between p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-yellow-200/50 hover:bg-white/80 transition-all duration-300"
+                        >
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                               {index + 1}
                             </div>
                             <div>
-                              <h4 className="font-semibold text-yellow-800 truncate max-w-48">{course.title}</h4>
-                              <p className="text-sm text-yellow-700">{course.enrollments} enrollments</p>
+                              <h4 className="font-semibold text-yellow-800 truncate max-w-48">
+                                {course.title}
+                              </h4>
+                              <p className="text-sm text-yellow-700">
+                                {course.enrollments} enrollments
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4 text-sm">
                             <div className="text-center">
-                              <p className="font-semibold text-yellow-800">{course.completionRate}%</p>
-                              <p className="text-xs text-yellow-600">completion</p>
+                              <p className="font-semibold text-yellow-800">
+                                {course.completionRate}%
+                              </p>
+                              <p className="text-xs text-yellow-600">
+                                completion
+                              </p>
                             </div>
                             <div className="text-center">
-                              <p className="font-semibold text-yellow-800">{course.averageRating}</p>
+                              <p className="font-semibold text-yellow-800">
+                                {course.averageRating}
+                              </p>
                               <p className="text-xs text-yellow-600">rating</p>
                             </div>
                           </div>
@@ -548,8 +611,12 @@ export default function EducatorDashboard() {
                   ) : (
                     <div className="text-center py-8">
                       <Trophy className="h-12 w-12 text-yellow-300 mx-auto mb-4" />
-                      <p className="text-yellow-700">No performance data available yet</p>
-                      <p className="text-sm text-yellow-600">Create and publish courses to see analytics</p>
+                      <p className="text-yellow-700">
+                        No performance data available yet
+                      </p>
+                      <p className="text-sm text-yellow-600">
+                        Create and publish courses to see analytics
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -563,7 +630,9 @@ export default function EducatorDashboard() {
                     <div className="w-2 h-8 bg-gradient-to-b from-purple-500 to-pink-600 rounded-full"></div>
                     Engagement Metrics
                   </CardTitle>
-                  <CardDescription className="text-purple-700 mt-1">Student engagement insights</CardDescription>
+                  <CardDescription className="text-purple-700 mt-1">
+                    Student engagement insights
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="relative p-6">
                   <div className="space-y-6">
@@ -571,36 +640,54 @@ export default function EducatorDashboard() {
                       <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/50">
                         <div className="flex items-center gap-3 mb-2">
                           <Clock className="h-5 w-5 text-purple-500" />
-                          <h4 className="font-semibold text-purple-800">Avg Session</h4>
+                          <h4 className="font-semibold text-purple-800">
+                            Avg Session
+                          </h4>
                         </div>
-                        <p className="text-2xl font-bold text-purple-700">{stats.engagementMetrics?.averageSessionDuration || 0}m</p>
+                        <p className="text-2xl font-bold text-purple-700">
+                          {stats.engagementMetrics?.averageSessionDuration || 0}
+                          m
+                        </p>
                         <p className="text-xs text-purple-600">per session</p>
                       </div>
                       <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/50">
                         <div className="flex items-center gap-3 mb-2">
                           <BookOpen className="h-5 w-5 text-purple-500" />
-                          <h4 className="font-semibold text-purple-800">Courses/Student</h4>
+                          <h4 className="font-semibold text-purple-800">
+                            Courses/Student
+                          </h4>
                         </div>
-                        <p className="text-2xl font-bold text-purple-700">{stats.engagementMetrics?.averageCoursesPerStudent || 0}</p>
+                        <p className="text-2xl font-bold text-purple-700">
+                          {stats.engagementMetrics?.averageCoursesPerStudent ||
+                            0}
+                        </p>
                         <p className="text-xs text-purple-600">average</p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/50">
                         <div className="flex items-center gap-3 mb-2">
                           <Star className="h-5 w-5 text-purple-500" />
-                          <h4 className="font-semibold text-purple-800">Satisfaction</h4>
+                          <h4 className="font-semibold text-purple-800">
+                            Satisfaction
+                          </h4>
                         </div>
-                        <p className="text-2xl font-bold text-purple-700">{stats.engagementMetrics?.studentSatisfaction || 0}/5</p>
+                        <p className="text-2xl font-bold text-purple-700">
+                          {stats.engagementMetrics?.studentSatisfaction || 0}/5
+                        </p>
                         <p className="text-xs text-purple-600">rating</p>
                       </div>
                       <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/50">
                         <div className="flex items-center gap-3 mb-2">
                           <Award className="h-5 w-5 text-purple-500" />
-                          <h4 className="font-semibold text-purple-800">Certificates</h4>
+                          <h4 className="font-semibold text-purple-800">
+                            Certificates
+                          </h4>
                         </div>
-                        <p className="text-2xl font-bold text-purple-700">{stats.engagementMetrics?.certificatesIssued || 0}</p>
+                        <p className="text-2xl font-bold text-purple-700">
+                          {stats.engagementMetrics?.certificatesIssued || 0}
+                        </p>
                         <p className="text-xs text-purple-600">issued</p>
                       </div>
                     </div>
@@ -609,7 +696,7 @@ export default function EducatorDashboard() {
               </Card>
             </div>
           </div>
-        )
+        );
 
       case "courses":
         return (
@@ -618,7 +705,9 @@ export default function EducatorDashboard() {
               <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
                 Technical Courses
               </h2>
-              <p className="text-slate-600">Manage and organize all your technical educational content</p>
+              <p className="text-slate-600">
+                Manage and organize all your technical educational content
+              </p>
             </div>
             <CourseList
               courses={Array.isArray(courses) ? courses : []}
@@ -626,7 +715,7 @@ export default function EducatorDashboard() {
               onEditCourse={handleEditCourse}
             />
           </div>
-        )
+        );
 
       case "academic-courses":
         return (
@@ -635,11 +724,13 @@ export default function EducatorDashboard() {
               <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
                 Academic Courses
               </h2>
-              <p className="text-slate-600">Create and manage academic courses with assignments and grading</p>
+              <p className="text-slate-600">
+                Create and manage academic courses with assignments and grading
+              </p>
             </div>
             <AcademicCourseCreator onCourseCreated={refreshData} />
           </div>
-        )
+        );
 
       case "create":
         return (
@@ -652,7 +743,7 @@ export default function EducatorDashboard() {
             </div>
             <CourseCreator onCourseCreated={refreshData} />
           </div>
-        )
+        );
 
       case "edit":
         return (
@@ -661,7 +752,7 @@ export default function EducatorDashboard() {
             onBack={handleBackFromEditor}
             onCourseUpdated={handleCourseUpdated}
           />
-        )
+        );
 
       case "edit-exam":
         return (
@@ -670,33 +761,33 @@ export default function EducatorDashboard() {
             onCourseUpdated={handleCourseUpdated}
             onBack={handleBackFromEditor}
           />
-        )
+        );
 
       case "profile":
         return (
-          <ProfileSettingsForm 
-            onBack={() => setActiveTab("overview")} 
+          <ProfileSettingsForm
+            onBack={() => setActiveTab("overview")}
             isEducator={true}
             avatarKey={avatarKey}
             setAvatarKey={setAvatarKey}
           />
-        )
+        );
 
       case "preferences":
         return (
-          <PreferencesSettings 
-            onBack={() => setActiveTab("overview")} 
+          <PreferencesSettings
+            onBack={() => setActiveTab("overview")}
             isEducator={true}
           />
-        )
+        );
 
       case "notifications":
         return (
-          <NotificationsSettings 
-            onBack={() => setActiveTab("overview")} 
+          <NotificationsSettings
+            onBack={() => setActiveTab("overview")}
             isEducator={true}
           />
-        )
+        );
 
       case "examgenius":
         return (
@@ -705,11 +796,14 @@ export default function EducatorDashboard() {
               <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
                 Competitive Exam Courses
               </h2>
-              <p className="text-slate-600">Create specialized courses for competitive exams like SSC, UPSC, CAT, Bank PO, and more</p>
+              <p className="text-slate-600">
+                Create specialized courses for competitive exams like SSC, UPSC,
+                CAT, Bank PO, and more
+              </p>
             </div>
             <ExamGenius />
           </div>
-        )
+        );
 
       case "test-series-create":
         return (
@@ -718,11 +812,13 @@ export default function EducatorDashboard() {
               <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
                 Create Test Series
               </h2>
-              <p className="text-slate-600">Generate AI-powered test series with Perplexity AI integration</p>
+              <p className="text-slate-600">
+                Generate AI-powered test series with Perplexity AI integration
+              </p>
             </div>
             <TestSeriesCreator onTestSeriesCreated={handleTestSeriesCreated} />
           </div>
-        )
+        );
 
       case "test-series-manage":
         return (
@@ -731,14 +827,16 @@ export default function EducatorDashboard() {
               <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
                 Manage Test Series
               </h2>
-              <p className="text-slate-600">View, edit, and manage your test series collection</p>
+              <p className="text-slate-600">
+                View, edit, and manage your test series collection
+              </p>
             </div>
-            <TestSeriesManager 
+            <TestSeriesManager
               onEditTestSeries={handleEditTestSeries}
               onRefresh={refreshData}
             />
           </div>
-        )
+        );
 
       case "test-series-edit":
         return (
@@ -747,30 +845,32 @@ export default function EducatorDashboard() {
               <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
                 Edit Test Series
               </h2>
-              <p className="text-slate-600">Modify your test series configuration and content</p>
+              <p className="text-slate-600">
+                Modify your test series configuration and content
+              </p>
             </div>
-            <TestSeriesCreator 
+            <TestSeriesCreator
               editingTestSeries={editingTestSeries}
               onTestSeriesCreated={() => {
-                setEditingTestSeries(null)
-                setActiveTab("test-series-manage")
+                setEditingTestSeries(null);
+                setActiveTab("test-series-manage");
               }}
             />
           </div>
-        )
+        );
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                      <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
-              <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-600/20 rounded-full blur-3xl"></div>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-indigo-400/10 to-cyan-600/10 rounded-full blur-3xl"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-600/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-indigo-400/10 to-cyan-600/10 rounded-full blur-3xl"></div>
       </div>
 
       {/* Header Section */}
@@ -786,7 +886,12 @@ export default function EducatorDashboard() {
               <div className="text-blue-200 text-sm sm:text-base lg:text-xl flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span>Welcome back, <span className="font-semibold text-white">{user?.name}</span></span>
+                  <span>
+                    Welcome back,{" "}
+                    <span className="font-semibold text-white">
+                      {user?.name}
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -839,7 +944,10 @@ export default function EducatorDashboard() {
                             className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-white/30 group-hover:ring-white/50 transition-all duration-300"
                             key={`header-avatar-${avatarKey}`}
                           >
-                            <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
+                            <AvatarImage
+                              src={user?.avatar || "/placeholder.svg"}
+                              alt={user?.name}
+                            />
                             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-sm sm:text-base">
                               {user?.name?.charAt(0)?.toUpperCase() || "U"}
                             </AvatarFallback>
@@ -847,8 +955,12 @@ export default function EducatorDashboard() {
                           <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full"></div>
                         </div>
                         <div className="hidden sm:block text-left">
-                          <p className="text-white font-semibold text-xs sm:text-sm leading-none truncate max-w-32 lg:max-w-none">{user?.name || "Educator"}</p>
-                          <p className="text-blue-200 text-xs mt-1 truncate max-w-32 lg:max-w-none">{user?.email || "educator@example.com"}</p>
+                          <p className="text-white font-semibold text-xs sm:text-sm leading-none truncate max-w-32 lg:max-w-none">
+                            {user?.name || "Educator"}
+                          </p>
+                          <p className="text-blue-200 text-xs mt-1 truncate max-w-32 lg:max-w-none">
+                            {user?.email || "educator@example.com"}
+                          </p>
                         </div>
                         <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-blue-200 group-hover:text-white transition-all duration-300 group-data-[state=open]:rotate-180" />
                       </div>
@@ -865,17 +977,26 @@ export default function EducatorDashboard() {
                           className="h-12 w-12 ring-2 ring-blue-200"
                           key={`dropdown-avatar-${avatarKey}`}
                         >
-                          <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
+                          <AvatarImage
+                            src={user?.avatar || "/placeholder.svg"}
+                            alt={user?.name}
+                          />
                           <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-lg">
                             {user?.name?.charAt(0)?.toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-900 truncate">{user?.name || "Educator Name"}</p>
-                          <p className="text-sm text-slate-600 truncate">{user?.email || "educator@example.com"}</p>
+                          <p className="font-semibold text-slate-900 truncate">
+                            {user?.name || "Educator Name"}
+                          </p>
+                          <p className="text-sm text-slate-600 truncate">
+                            {user?.email || "educator@example.com"}
+                          </p>
                           <div className="flex items-center gap-1 mt-1">
                             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-green-600 font-medium">Online</span>
+                            <span className="text-xs text-green-600 font-medium">
+                              Online
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -892,8 +1013,12 @@ export default function EducatorDashboard() {
                         <User className="h-4 w-4 text-blue-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">Profile Settings</p>
-                        <p className="text-xs text-slate-500">Manage your account</p>
+                        <p className="font-medium text-slate-900">
+                          Profile Settings
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Manage your account
+                        </p>
                       </div>
                     </DropdownMenuItem>
 
@@ -905,8 +1030,12 @@ export default function EducatorDashboard() {
                         <Settings className="h-4 w-4 text-purple-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">Preferences</p>
-                        <p className="text-xs text-slate-500">Customize your experience</p>
+                        <p className="font-medium text-slate-900">
+                          Preferences
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Customize your experience
+                        </p>
                       </div>
                     </DropdownMenuItem>
 
@@ -918,7 +1047,9 @@ export default function EducatorDashboard() {
                         <Bell className="h-4 w-4 text-amber-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-slate-900">Notifications</p>
+                        <p className="font-medium text-slate-900">
+                          Notifications
+                        </p>
                         <p className="text-xs text-slate-500">Manage alerts</p>
                       </div>
                       <div className="w-2 h-2 bg-red-500 rounded-full"></div>
@@ -936,7 +1067,9 @@ export default function EducatorDashboard() {
                       </div>
                       <div>
                         <p className="font-medium text-slate-900">Sign Out</p>
-                        <p className="text-xs text-slate-500">Logout from your account</p>
+                        <p className="text-xs text-slate-500">
+                          Logout from your account
+                        </p>
                       </div>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -950,10 +1083,22 @@ export default function EducatorDashboard() {
             {[
               { id: "overview", label: "Overview", icon: TrendingUp },
               { id: "courses", label: "Technical Courses", icon: BookOpen },
-              { id: "academic-courses", label: "Academic Courses", icon: GraduationCap },
+              {
+                id: "academic-courses",
+                label: "Academic Courses",
+                icon: GraduationCap,
+              },
               { id: "create", label: "Create Course", icon: Plus },
-              { id: "test-series-manage", label: "Test Series", icon: TestTube2 },
-              { id: "examgenius", label: "Competitive Exam Courses", icon: TestTube2 },
+              {
+                id: "test-series-manage",
+                label: "Test Series",
+                icon: TestTube2,
+              },
+              {
+                id: "examgenius",
+                label: "Competitive Exam Courses",
+                icon: TestTube2,
+              },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -966,7 +1111,9 @@ export default function EducatorDashboard() {
               >
                 <div className="flex items-center justify-center sm:justify-start gap-2">
                   <tab.icon className="h-4 w-4" />
-                  <span className="text-xs sm:text-sm font-medium">{tab.label}</span>
+                  <span className="text-xs sm:text-sm font-medium">
+                    {tab.label}
+                  </span>
                 </div>
                 {activeTab === tab.id && (
                   <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 sm:w-8 h-0.5 sm:h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
@@ -979,7 +1126,9 @@ export default function EducatorDashboard() {
 
       {/* Main Content */}
       <div className="relative max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-8 lg:py-12">
-        <div className="animate-in fade-in-50 duration-500">{renderContent()}</div>
+        <div className="animate-in fade-in-50 duration-500">
+          {renderContent()}
+        </div>
       </div>
 
       {/* Add CSS for animations */}
@@ -994,7 +1143,7 @@ export default function EducatorDashboard() {
             transform: translateY(0);
           }
         }
-        
+
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -1003,5 +1152,5 @@ export default function EducatorDashboard() {
         }
       `}</style>
     </div>
-  )
+  );
 }
