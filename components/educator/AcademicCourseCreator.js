@@ -1,672 +1,729 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
+import { useState } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
-  Plus, 
-  Trash2, 
-  Save, 
-  BookOpen, 
-  Users, 
-  GraduationCap,
-  FileText,
-  Target,
-  CheckCircle,
-  AlertCircle,
-  Calendar,
-  Award,
-  Upload,
-  Brain,
-  Sparkles,
-  Download,
-  Loader2,
-  Zap,
-  ArrowRight,
-  Edit3
-} from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import ExamModuleEditorEnhanced from "../exam-genius/ExamModuleEditorEnhanced";
+  Upload, Loader2, Plus, Trash2, Sparkles, BookOpen, Brain, Download, 
+  FileText, Zap, Trophy, Target, Timer, Award, CheckCircle, AlertCircle, 
+  ArrowRight, ArrowLeft, Edit, AlertTriangle, Info, GraduationCap 
+} from "lucide-react"
+import { toast } from "sonner"
+import ExamModuleEditorEnhanced from "../exam-genius/ExamModuleEditorEnhanced"
+import { useContentValidation, useContentProcessor } from "@/lib/contentDisplayHooks"
+import ContentDisplay from "@/components/ContentDisplay"
 
-const academicLevels = [
-  "undergraduate",
-  "graduate", 
-  "postgraduate",
-  "doctoral"
-];
-
-const subjects = [
-  "Computer Science",
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "Engineering",
-  "Business",
-  "Psychology",
-  "History",
-  "Literature",
-  "Economics",
-  "Political Science",
-  "Sociology",
-  "Philosophy",
-  "Art",
-  "Music",
-  "Other"
-];
-
-const gradingScales = [
-  "percentage",
-  "gpa",
-  "letter"
-];
-
-const initialCourseData = {
-  title: "",
-  description: "",
-  subject: "",
-  academicLevel: "",
-  semester: "",
-  credits: 3,
-  dueDate: "",
-  syllabus: "",
-  objectives: [""],
-  prerequisites: [""],
-  assessmentCriteria: {
-    assignments: 40,
-    quizzes: 20,
-    midterm: 20,
-    final: 20
-  },
-  allowDiscussions: true,
-  allowGroupWork: false,
-  gradingScale: "percentage",
-  modules: []
-};
-
-export default function AcademicCourseCreator({ onCourseCreated, editingCourse = null }) {
-  const { user, getAuthHeaders } = useAuth();
-  const [courseData, setCourseData] = useState(initialCourseData);
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [activeTab, setActiveTab] = useState("basic");
+// Course Field Validator Component for Academic Courses
+function AcademicCourseFieldValidator({ field, value, onChange, placeholder, className, rows, multiline = false }) {
+  const { isValid, errors, warnings, isValidating } = useContentValidation(value)
+  const { processedContent, processed, hasErrors, hasMath } = useContentProcessor(value)
   
-  // File upload and AI processing states
-  const [creationStep, setCreationStep] = useState(1);
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [processingStep, setProcessingStep] = useState("");
-  const [processingProgress, setProcessingProgress] = useState(0);
-  const [showModuleEditor, setShowModuleEditor] = useState(false);
-  const [editingModuleIndex, setEditingModuleIndex] = useState(null);
+  const Component = multiline ? Textarea : Input
+  
+  const getValidationColor = () => {
+    if (!value) return "border-gray-200"
+    if (errors.length > 0) return "border-red-500"
+    if (isValid) return "border-green-500"
+    return "border-yellow-500"
+  }
 
-  useEffect(() => {
-    if (editingCourse) {
-      setCourseData({
-        ...initialCourseData,
-        ...editingCourse,
-        objectives: editingCourse.objectives?.length > 0 ? editingCourse.objectives : [""],
-        prerequisites: editingCourse.prerequisites?.length > 0 ? editingCourse.prerequisites : [""],
-        modules: editingCourse.modules?.length > 0 ? editingCourse.modules : []
-      });
-      // If editing existing course with modules, skip to content tab
-      if (editingCourse.modules?.length > 0) {
-        setCreationStep(3);
-        setActiveTab("content");
-      }
-    }
-  }, [editingCourse]);
+  const getValidationIcon = () => {
+    if (!value) return null
+    if (errors.length > 0) return <AlertTriangle className="h-4 w-4 text-red-500" />
+    if (isValid) return <CheckCircle className="h-4 w-4 text-green-500" />
+    return <Info className="h-4 w-4 text-yellow-500" />
+  }
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setCourseData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <Component
+          id={field}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${className} ${getValidationColor()} transition-colors duration-200`}
+          rows={rows}
+        />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          {getValidationIcon()}
+        </div>
+      </div>
+      
+      {/* Validation Messages */}
+      {value && (
+        <div className="space-y-1">
+          {errors.length > 0 && (
+            <Alert className="py-2">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                {errors.join(", ")}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {warnings.length > 0 && (
+            <Alert className="py-2 border-yellow-200 bg-yellow-50">
+              <Info className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-sm text-yellow-700">
+                {warnings.join(", ")}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {isValid && processed && (
+            <div className="text-xs text-green-600 flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Content validated • Ready for academic course format
+              {hasMath && " • LaTeX equations detected"}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
-  const handleSelectChange = (name, value) => {
-    setCourseData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+export default function AcademicCourseCreator({ onCourseCreated }) {
+  const [step, setStep] = useState(1)
+  const [courseData, setCourseData] = useState({
+    title: "",
+    description: "",
+    modules: [],
+    subject: "",
+    academicLevel: "undergraduate",
+    semester: "",
+    credits: 3,
+    duration: "",
+    objectives: [],
+    isAcademicCourse: true,
+    courseType: "academic"
+  })
+  const [loading, setLoading] = useState(false)
+  const [processingStep, setProcessingStep] = useState("")
+  const [processingProgress, setProcessingProgress] = useState(0)
+  const [file, setFile] = useState(null)
+  const [generationType, setGenerationType] = useState("upload")
+  const [curriculumTopic, setCurriculumTopic] = useState("")
+  const [generatedCurriculum, setGeneratedCurriculum] = useState("")
+  const [showCurriculumPreview, setShowCurriculumPreview] = useState(false)
+  const [currentCourseId, setCurrentCourseId] = useState(null)
+  const [numberOfModules, setNumberOfModules] = useState(8)
+  const [moduleTopics, setModuleTopics] = useState("")
+  const [teachingNotes, setTeachingNotes] = useState("")
+  const [selectedModule, setSelectedModule] = useState(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [totalJobs, setTotalJobs] = useState(0)
+  const { getAuthHeaders } = useAuth()
 
-  const handleSwitchChange = (name, checked) => {
-    setCourseData(prev => ({
-      ...prev,
-      [name]: checked
-    }));
-  };
+  const academicLevels = [
+    { id: "undergraduate", name: "Undergraduate", icon: "🎓" },
+    { id: "graduate", name: "Graduate", icon: "📚" },
+    { id: "postgraduate", name: "Postgraduate", icon: "🔬" },
+    { id: "doctoral", name: "Doctoral", icon: "🏆" }
+  ]
 
-  const handleAssessmentChange = (type, value) => {
-    const numValue = parseInt(value) || 0;
-    setCourseData(prev => ({
-      ...prev,
-      assessmentCriteria: {
-        ...prev.assessmentCriteria,
-        [type]: numValue
-      }
-    }));
-  };
+  const subjects = [
+    "Computer Science", "Mathematics", "Physics", "Chemistry", "Biology", "Engineering",
+    "Business", "Psychology", "History", "Literature", "Economics", "Political Science",
+    "Sociology", "Philosophy", "Art", "Music", "Other"
+  ]
 
-  // File upload handling
-  const handleFileSelection = (event) => {
-    const selectedFile = event.target.files[0];
+  const handleFileSelection = (e) => {
+    const selectedFile = e.target.files[0]
     if (selectedFile) {
-      // Check file size (25MB limit)
-      if (selectedFile.size > 25 * 1024 * 1024) {
-        toast.error("File size must be less than 25MB");
-        return;
-      }
-
-      // Check file type
-      const allowedTypes = ["application/pdf", "text/markdown", "text/plain", "application/x-markdown"];
-      if (!allowedTypes.includes(selectedFile.type) && !selectedFile.name.endsWith('.md')) {
-        toast.error("Please select a PDF, Markdown (.md), or Text (.txt) file");
-        return;
-      }
-
-      setFile(selectedFile);
-      toast.success(`File "${selectedFile.name}" selected successfully`);
+      setFile(selectedFile)
+      toast.success(`✅ File selected: ${selectedFile.name}`)
     }
-  };
+  }
 
-  // Process uploaded syllabus file
   const handleProcessFile = async () => {
     if (!file) {
-      toast.error("Please select a syllabus file first");
-      return;
+      toast.error("Please select a file first")
+      return
     }
 
-    // Validate basic course info
-    if (!courseData.title.trim() || !courseData.subject || !courseData.academicLevel) {
-      toast.error("Please fill in course title, subject, and academic level before processing syllabus");
-      return;
-    }
-
-    setLoading(true);
-    setProcessingStep("📄 Processing uploaded syllabus...");
-    setProcessingProgress(0);
+    setLoading(true)
+    setProcessingStep("📄 Processing uploaded content...")
+    setProcessingProgress(10)
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("title", courseData.title);
-      formData.append("description", courseData.description);
-      formData.append("subject", courseData.subject);
-      formData.append("academicLevel", courseData.academicLevel);
-      formData.append("credits", courseData.credits.toString());
-      formData.append("isAcademicCourse", "true");
+      // Step 1: Upload the file and get its structured content
+      const formData = new FormData()
+      formData.append("file", file)
+      
+      setProcessingStep("📖 Reading file content...")
+      setProcessingProgress(30)
 
-      const progressStages = [
-        { step: "📖 Reading and analyzing syllabus content...", progress: 20 },
-        { step: "🧠 Extracting key academic concepts...", progress: 40 },
-        { step: "📚 Creating structured learning modules...", progress: 60 },
-        { step: "🎯 Organizing academic objectives...", progress: 80 },
-        { step: "✨ Finalizing course structure...", progress: 95 }
-      ];
+             // First API call to get the structured content from the file
+       const fileResponse = await fetch("/api/academic-courses/upload/content", {
+         method: "POST",
+         headers: getAuthHeaders(),
+         body: formData,
+       })
 
-      let currentStage = 0;
-      const progressInterval = setInterval(() => {
-        if (currentStage < progressStages.length) {
-          setProcessingStep(progressStages[currentStage].step);
-          setProcessingProgress(progressStages[currentStage].progress);
-          currentStage++;
-        }
-      }, 3000);
-
-      const response = await fetch("/api/academic-courses/process", {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: formData,
-      });
-
-      clearInterval(progressInterval);
-      setProcessingProgress(100);
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setProcessingStep("✅ Syllabus processed successfully!");
-        setCourseData(prev => ({
-          ...prev,
-          modules: data.modules || [],
-          objectives: data.objectives || prev.objectives,
-          syllabus: data.syllabus || prev.syllabus
-        }));
-        
-        setTimeout(() => {
-          setCreationStep(3);
-          setActiveTab("content");
-          toast.success(`🎉 Syllabus Processing Complete!\n\n✨ Successfully created ${data.modules?.length || 0} academic modules\n\n📚 Your academic course is ready for content editing!`);
-        }, 1000);
-      } else {
-        console.error("File processing error:", data);
-        toast.error(data.error || "Failed to process syllabus. Please try again.");
-        setProcessingStep("❌ Processing failed");
+      if (!fileResponse.ok) {
+        const error = await fileResponse.json()
+        throw new Error(error.error || "Failed to upload file")
       }
+
+             const fileData = await fileResponse.json()
+       
+       if (!fileData.content) {
+         throw new Error("Failed to extract content from file")
+       }
+       
+       setProcessingStep("🧠 Processing content with AI...")
+       setProcessingProgress(60)
+       
+       // Step 2: Process the content with AI to generate modules
+       const processResponse = await fetch("/api/academic-courses/process-content", {
+         method: "POST",
+         headers: {
+           "Content-Type": "application/json",
+           ...getAuthHeaders(),
+         },
+         body: JSON.stringify({
+           content: fileData.content,
+           title: courseData.title,
+           description: courseData.description,
+           subject: courseData.subject,
+           academicLevel: courseData.academicLevel,
+           credits: courseData.credits,
+           semester: courseData.semester,
+           objectives: courseData.objectives
+         }),
+       })
+
+       if (!processResponse.ok) {
+         const error = await processResponse.json()
+         throw new Error(error.error || "Failed to process content")
+       }
+
+       const processData = await processResponse.json()
+       const structuredModules = processData.modules || [];
+      
+      // Update course data with the structured modules
+      const updatedCourseData = {
+        ...courseData,
+        modules: structuredModules,
+        isAcademicCourse: true,
+        courseType: "academic"
+      };
+      
+      setCourseData(updatedCourseData);
+      
+      setProcessingStep("🔄 Saving course template...")
+      setProcessingProgress(90)
+      
+      // Save the course as a draft without generating detailed content
+      await handleSaveDraft(updatedCourseData, true)
+      
+      // Final step: Complete and move to next step
+      setProcessingStep("✅ Course template created successfully!")
+      setProcessingProgress(100)
+      
+      setCourseData(updatedCourseData)
+      
+      setTimeout(() => {
+        setStep(3)
+        toast.success(`🎉 Course Structure Imported Successfully!\n\n✨ Created ${updatedCourseData.modules.length} modules with structured content\n\n🎓 Your academic course template is ready for review and content generation!`)
+      }, 1000)
     } catch (error) {
-      console.error("File processing error:", error);
-      toast.error(`Failed to process syllabus: ${error.message}`);
-      setProcessingStep("❌ Processing failed");
+      console.error("Processing error:", error)
+      toast.error(`Failed to process content: ${error.message}`)
+      setProcessingStep("❌ Processing failed")
     } finally {
       setTimeout(() => {
-        setLoading(false);
-        setProcessingStep("");
-        setProcessingProgress(0);
-      }, 2000);
+        setLoading(false)
+        setProcessingStep("")
+        setProcessingProgress(0)
+      }, 2000)
     }
-  };
+  }
 
-  // Generate modules using AI
-  const handleGenerateModules = async () => {
-    if (!courseData.title.trim() || !courseData.subject || !courseData.academicLevel) {
-      toast.error("Please fill in course title, subject, and academic level first");
-      return;
+  const handleGenerateCurriculum = async () => {
+    if (!curriculumTopic.trim()) {
+      toast.error("Please enter a curriculum topic")
+      return
     }
 
-    setLoading(true);
-    setProcessingStep("🧠 AI is generating academic modules...");
-    setProcessingProgress(0);
+    setLoading(true)
+    setProcessingStep("🧠 AI is creating your academic curriculum...")
+    setProcessingProgress(0)
 
     try {
-      const progressStages = [
-        { step: "🔍 Analyzing course requirements...", progress: 25 },
-        { step: "📚 Creating academic module structure...", progress: 50 },
-        { step: "🎯 Organizing learning objectives...", progress: 75 },
-        { step: "✨ Adding assessments and resources...", progress: 90 }
-      ];
-
-      let currentStage = 0;
-      const progressInterval = setInterval(() => {
-        if (currentStage < progressStages.length) {
-          setProcessingStep(progressStages[currentStage].step);
-          setProcessingProgress(progressStages[currentStage].progress);
-          currentStage++;
-        }
-      }, 2000);
-
-      const response = await fetch("/api/academic-courses/generate-modules", {
+      const response = await fetch("/api/academic-courses/generate-curriculum", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          title: courseData.title,
-          description: courseData.description,
+          title: curriculumTopic,
+          topic: curriculumTopic,
           subject: courseData.subject,
           academicLevel: courseData.academicLevel,
           credits: courseData.credits,
           semester: courseData.semester,
-          objectives: courseData.objectives.filter(obj => obj.trim()),
-          numberOfModules: 8 // Default number of modules
+          numberOfModules: numberOfModules,
+          moduleTopics: moduleTopics,
+          teachingNotes: teachingNotes,
+          isAcademicCourse: true
         }),
-      });
-
-      clearInterval(progressInterval);
-      setProcessingProgress(100);
-
-      const data = await response.json();
+      })
 
       if (response.ok) {
-        setProcessingStep("✅ Academic modules generated!");
-        setCourseData(prev => ({
-          ...prev,
-          modules: data.modules || []
-        }));
+        const data = await response.json()
+        setGeneratedCurriculum(data.curriculum)
         
-        setTimeout(() => {
-          setCreationStep(3);
-          setActiveTab("content");
-          toast.success(`🎉 AI Module Generation Complete!\n\n📖 Topic: ${courseData.title}\n🎯 Level: ${courseData.academicLevel}\n📊 Modules: ${data.modules?.length || 0}\n\n📚 Academic curriculum ready for editing!`);
-        }, 1000);
+                 // Process the curriculum
+         const processResponse = await fetch("/api/academic-courses/process-curriculum", {
+           method: "POST",
+           headers: {
+             "Content-Type": "application/json",
+             ...getAuthHeaders(),
+           },
+           body: JSON.stringify({
+             curriculum: data.curriculum,
+             title: courseData.title,
+             description: courseData.description,
+             subject: courseData.subject,
+             academicLevel: courseData.academicLevel,
+             credits: courseData.credits,
+             semester: courseData.semester,
+             objectives: courseData.objectives
+           }),
+         })
+
+        if (processResponse.ok) {
+          const processData = await processResponse.json()
+          setCourseData(prev => ({ ...prev, modules: processData.modules }))
+          setStep(3)
+          toast.success("Academic curriculum generated and processed successfully!")
+
+          // Automatically save as draft after generating and processing
+          await handleSaveDraft({ ...courseData, modules: processData.modules }, true);
+
+        }
       } else {
-        console.error("Module generation error:", data);
-        toast.error(data.error || "Failed to generate modules. Please try again.");
-        setProcessingStep("❌ Generation failed");
+        const error = await response.json()
+        throw new Error(error.error || "Failed to generate curriculum")
       }
     } catch (error) {
-      console.error("Module generation error:", error);
-      toast.error(`Failed to generate modules: ${error.message}`);
-      setProcessingStep("❌ Generation failed");
+      console.error("Generation error:", error)
+      toast.error(`Failed to generate curriculum: ${error.message}`)
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setProcessingStep("");
-        setProcessingProgress(0);
-      }, 2000);
+      setLoading(false)
+      setProcessingStep("")
+      setProcessingProgress(0)
     }
-  };
+  }
 
-  const addObjective = () => {
-    setCourseData(prev => ({
-      ...prev,
-      objectives: [...prev.objectives, ""]
-    }));
-  };
-
-  const updateObjective = (index, value) => {
-    setCourseData(prev => ({
-      ...prev,
-      objectives: prev.objectives.map((obj, i) => i === index ? value : obj)
-    }));
-  };
-
-  const removeObjective = (index) => {
-    setCourseData(prev => ({
-      ...prev,
-      objectives: prev.objectives.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addPrerequisite = () => {
-    setCourseData(prev => ({
-      ...prev,
-      prerequisites: [...prev.prerequisites, ""]
-    }));
-  };
-
-  const updatePrerequisite = (index, value) => {
-    setCourseData(prev => ({
-      ...prev,
-      prerequisites: prev.prerequisites.map((prereq, i) => i === index ? value : prereq)
-    }));
-  };
-
-  const removePrerequisite = (index) => {
-    setCourseData(prev => ({
-      ...prev,
-      prerequisites: prev.prerequisites.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addModule = () => {
-    const newModule = {
-      id: Date.now(),
-      title: "",
-      content: "",
-      summary: "",
-      order: courseData.modules.length + 1
-    };
-    setCourseData(prev => ({
-      ...prev,
-      modules: [...prev.modules, newModule]
-    }));
-  };
-
-  const updateModule = (index, field, value) => {
-    setCourseData(prev => ({
-      ...prev,
-      modules: prev.modules.map((module, i) => 
-        i === index ? { ...module, [field]: value } : module
-      )
-    }));
-  };
-
-  const removeModule = (index) => {
-    setCourseData(prev => ({
-      ...prev,
-      modules: prev.modules.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleEditModule = (index) => {
-    setEditingModuleIndex(index);
-    setShowModuleEditor(true);
-  };
-
-  const handleModuleUpdate = (updatedModule) => {
-    if (editingModuleIndex !== null) {
-      updateModule(editingModuleIndex, 'title', updatedModule.title);
-      updateModule(editingModuleIndex, 'content', updatedModule.content);
-      updateModule(editingModuleIndex, 'summary', updatedModule.summary);
-    }
-    setShowModuleEditor(false);
-    setEditingModuleIndex(null);
-  };
-
-  const validateCourse = () => {
-    if (!courseData.title.trim()) return "Course title is required";
-    if (!courseData.description.trim()) return "Course description is required";
-    if (!courseData.subject) return "Subject is required";
-    if (!courseData.academicLevel) return "Academic level is required";
-    if (!courseData.dueDate) return "Due date is required";
-    
-    // Validate objectives
-    const validObjectives = courseData.objectives.filter(obj => obj.trim());
-    if (validObjectives.length === 0) return "At least one learning objective is required";
-    
-    // Validate assessment criteria totals 100%
-    const total = Object.values(courseData.assessmentCriteria).reduce((sum, val) => sum + val, 0);
-    if (total !== 100) return "Assessment criteria must total 100%";
-    
-    return null;
-  };
-
-  const handleCreateCourse = async () => {
-    const validationError = validateCourse();
-    if (validationError) {
-      setError(validationError);
-      return;
+  const handleCreateAssignment = async (module, assignmentIndex) => {
+    // Validate required data
+    if (!module.title) {
+      toast.error("❌ Module title is required to create an assignment")
+      return
     }
 
-    setIsCreating(true);
-    setError("");
-    setSuccess("");
+    if (!module.content && !module.summary) {
+      toast.error("❌ Module content is required to create an assignment")
+      return
+    }
 
     try {
-      // Filter out empty objectives and prerequisites
-      const processedData = {
-        ...courseData,
-        objectives: courseData.objectives.filter(obj => obj.trim()),
-        prerequisites: courseData.prerequisites.filter(prereq => prereq.trim()),
-        modules: courseData.modules.filter(module => module.title?.trim()),
-        status: "published",
-        courseType: "academic"
-      };
+      setLoading(true)
+      toast.info("📝 Creating academic assignment...")
 
-      const endpoint = editingCourse 
-        ? `/api/academic-courses/${editingCourse._id}`
-        : "/api/academic-courses";
-      
-      const method = editingCourse ? "PUT" : "POST";
+      const assignmentPayload = {
+        concept: module.title,
+        content: module.content || module.summary || `Module content for ${module.title}`,
+        subject: courseData.subject,
+        academicLevel: courseData.academicLevel,
+        assignmentType: assignmentIndex === 0 ? "Research Paper" : "Problem Solving"
+      }
 
-      const response = await fetch(endpoint, {
-        method,
+      const response = await fetch("/api/academic-courses/generate-assignment", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify(processedData),
-      });
+        body: JSON.stringify(assignmentPayload),
+      })
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${editingCourse ? 'update' : 'create'} academic course`);
+      if (response.ok) {
+        const data = await response.json()
+        toast.success("📋 Assignment created successfully!")
+        
+        const updatedModules = courseData.modules.map(m => {
+          if (m.id === module.id) {
+            const updatedAssignments = [...(m.assignments || [])]
+            updatedAssignments[assignmentIndex] = data.assignment
+            return { ...m, assignments: updatedAssignments }
+          }
+          return m
+        })
+        setCourseData(prev => ({ ...prev, modules: updatedModules }))
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to create assignment")
       }
-
-      const result = await response.json();
-      setSuccess(`Academic course ${editingCourse ? 'updated' : 'created'} successfully!`);
-      
-      if (onCourseCreated) {
-        onCourseCreated(result);
-      }
-
-      if (!editingCourse) {
-        setCourseData(initialCourseData);
-        setActiveTab("basic");
-        setCreationStep(1);
-      }
-
     } catch (error) {
-      console.error("Error creating academic course:", error);
-      setError(error.message);
+      console.error("Assignment creation error:", error)
+      toast.error(`Failed to create assignment: ${error.message}`)
     } finally {
-      setIsCreating(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const getTotalPercentage = () => {
-    return Object.values(courseData.assessmentCriteria).reduce((sum, val) => sum + val, 0);
-  };
+  const handleCreateQuiz = async (module) => {
+    // Validate required data
+    if (!module.title) {
+      toast.error("❌ Module title is required to create a quiz")
+      return
+    }
 
-  // Show module editor modal
-  if (showModuleEditor && editingModuleIndex !== null) {
-    const module = courseData.modules[editingModuleIndex];
+    if (!module.content && !module.summary) {
+      toast.error("❌ Module content is required to create a quiz")
+      return
+    }
+
+    try {
+      setLoading(true)
+      toast.info("🎯 Creating academic quiz...")
+
+      const quizPayload = {
+        concept: module.title,
+        content: module.content || module.summary || `Module content for ${module.title}`,
+        subject: courseData.subject,
+        academicLevel: courseData.academicLevel
+      }
+
+      const response = await fetch("/api/academic-courses/generate-quiz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(quizPayload),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast.success("🏆 Quiz created successfully!")
+        
+        const updatedModules = courseData.modules.map(m => 
+          m.id === module.id ? { ...m, quiz: data.quiz } : m
+        )
+        setCourseData(prev => ({ ...prev, modules: updatedModules }))
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to create quiz")
+      }
+    } catch (error) {
+      console.error("Quiz creation error:", error)
+      toast.error(`Failed to create quiz: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveDraft = async (currentCourseData = courseData, isAutoSave = false) => {
+    try {
+      if (!isAutoSave) setLoading(true);
+      
+      toast.info(isAutoSave ? "🔄 Automatically saving draft..." : "🔍 Saving draft...");
+      
+      if (!currentCourseData.title || !currentCourseData.subject || !currentCourseData.academicLevel) {
+        toast.error("❌ Please fill in all required fields (Title, Subject, Academic Level)")
+        return
+      }
+
+      if (!currentCourseData.modules || currentCourseData.modules.length === 0) {
+        toast.error("❌ Course must have at least one module before saving")
+        return
+      }
+
+      const payload = {
+        ...currentCourseData, 
+        status: "draft",
+        isAcademicCourse: true,
+        courseType: "academic"
+      }
+
+      const response = await fetch("/api/academic-courses/save-course", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentCourseId(data.courseId)
+        
+        if (!isAutoSave) {
+          toast.success("✅ Academic course draft saved successfully!")
+        }
+        
+        return data
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to save draft")
+      }
+    } catch (error) {
+      console.error("Save draft error:", error)
+      toast.error(`Failed to save draft: ${error.message}`)
+    } finally {
+      if (!isAutoSave) setLoading(false)
+    }
+  }
+
+  const handlePublishCourse = async () => {
+    try {
+      setLoading(true)
+      
+      if (!courseData.title || !courseData.subject || !courseData.academicLevel) {
+        toast.error("❌ Please fill in all required fields before publishing")
+        return
+      }
+
+      if (!courseData.modules || courseData.modules.length === 0) {
+        toast.error("❌ Course must have at least one module before publishing")
+        return
+      }
+
+      const payload = {
+        ...courseData,
+        status: "published",
+        isAcademicCourse: true,
+        courseType: "academic"
+      }
+
+      const response = await fetch("/api/academic-courses/save-course", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast.success("🎉 Academic course published successfully!")
+        
+        if (onCourseCreated) {
+          onCourseCreated(data)
+        }
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to publish course")
+      }
+    } catch (error) {
+      console.error("Publish course error:", error)
+      toast.error(`Failed to publish course: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEditModule = (module) => {
+    setSelectedModule(module)
+  }
+
+  const handleModuleUpdate = (updatedModule) => {
+    setCourseData(prev => ({
+      ...prev,
+      modules: prev.modules.map(module => 
+        module.id === updatedModule.id ? updatedModule : module
+      )
+    }))
+    setSelectedModule(null)
+    toast.success("📚 Module updated successfully!")
+  }
+
+  const resetForm = () => {
+    setCourseData({
+      title: "",
+      description: "",
+      modules: [],
+      subject: "",
+      academicLevel: "undergraduate",
+      semester: "",
+      credits: 3,
+      duration: "",
+      objectives: [],
+      isAcademicCourse: true,
+      courseType: "academic"
+    })
+    setStep(1)
+    setFile(null)
+    setCurriculumTopic("")
+    setGeneratedCurriculum("")
+    setShowCurriculumPreview(false)
+    setCurrentCourseId(null)
+    setSelectedModule(null)
+    toast.success("Form reset successfully")
+  }
+
+  if (selectedModule) {
     return (
       <ExamModuleEditorEnhanced
-        module={module}
-        onSave={handleModuleUpdate}
-        onCancel={() => {
-          setShowModuleEditor(false);
-          setEditingModuleIndex(null);
+        module={selectedModule}
+        onUpdate={handleModuleUpdate}
+        examType="technical"
+        subject={courseData.subject}
+        learnerLevel={courseData.academicLevel}
+        course={{
+          ...courseData,
+          isAcademicCourse: true,
+          courseType: "academic",
+          isTechnicalCourse: true
         }}
-        isAcademicMode={true}
+        courseId={currentCourseId}
+        onSaveSuccess={() => setSelectedModule(null)}
       />
-    );
+    )
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {editingCourse ? 'Edit Academic Course' : 'Create Academic Course'}
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Design comprehensive academic courses with AI-powered content generation
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <GraduationCap className="h-8 w-8 text-blue-600" />
-          <Badge variant="secondary">Academic</Badge>
-        </div>
-      </div>
-
-      {/* Progress indicator for creation steps */}
-      {!editingCourse && (
-        <div className="flex items-center justify-center space-x-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-          <div className={`flex items-center space-x-2 ${creationStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${creationStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>1</div>
-            <span className="text-sm font-medium">Course Info</span>
-          </div>
-          <ArrowRight className="h-4 w-4 text-gray-400" />
-          <div className={`flex items-center space-x-2 ${creationStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${creationStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>2</div>
-            <span className="text-sm font-medium">Syllabus/AI</span>
-          </div>
-          <ArrowRight className="h-4 w-4 text-gray-400" />
-          <div className={`flex items-center space-x-2 ${creationStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${creationStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>3</div>
-            <span className="text-sm font-medium">Content & Settings</span>
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-700">{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {success && (
-        <Alert className="border-green-200 bg-green-50">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-700">{success}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Processing indicator */}
-      {loading && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-              <div className="flex-1">
-                <p className="text-blue-800 font-medium">{processingStep}</p>
-                <Progress value={processingProgress} className="mt-2" />
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg">
+              <GraduationCap className="h-10 w-10 text-white" />
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Academic Course Creator
+              </h1>
+              <p className="text-lg text-gray-600 mt-2">
+                Create comprehensive academic courses with AI-powered content generation
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Award className="h-3 w-3" />
+              Academic Standards
+            </Badge>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <FileText className="h-3 w-3" />
+              2 Assignments
+            </Badge>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Brain className="h-3 w-3" />
+              1 Quiz
+            </Badge>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Target className="h-3 w-3" />
+              AI-Powered
+            </Badge>
+          </div>
+        </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="basic" disabled={editingCourse && creationStep > 1}>Basic Info</TabsTrigger>
-          <TabsTrigger value="syllabus" disabled={editingCourse && creationStep > 2}>Syllabus/AI</TabsTrigger>
-          <TabsTrigger value="content" disabled={creationStep < 3}>Content</TabsTrigger>
-          <TabsTrigger value="assessment" disabled={creationStep < 3}>Assessment</TabsTrigger>
-          <TabsTrigger value="settings" disabled={creationStep < 3}>Settings</TabsTrigger>
-        </TabsList>
+        {/* Progress Steps */}
+        <div className="flex items-center justify-center space-x-8 mb-8">
+          <div className={`flex items-center space-x-2 ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+              1
+            </div>
+            <span className="font-medium">Course Info</span>
+          </div>
+          <ArrowRight className="h-5 w-5 text-gray-400" />
+          <div className={`flex items-center space-x-2 ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+              2
+            </div>
+            <span className="font-medium">Upload Content</span>
+          </div>
+          <ArrowRight className="h-5 w-5 text-gray-400" />
+          <div className={`flex items-center space-x-2 ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+              3
+            </div>
+            <span className="font-medium">Review & Publish</span>
+          </div>
+        </div>
 
-        <TabsContent value="basic" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BookOpen className="h-5 w-5" />
-                <span>Basic Information</span>
+        {/* Loading State */}
+        {loading && (
+          <Card className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-800">{processingStep}</h3>
+                  <Progress value={processingProgress} className="mt-2 h-3" />
+                  <p className="text-sm text-blue-600 mt-1">{processingProgress}% complete</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 1: Course Information */}
+        {step === 1 && (
+          <Card className="w-full max-w-4xl mx-auto">
+            <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-purple-50">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <BookOpen className="h-6 w-6 text-blue-600" />
+                Academic Course Information
               </CardTitle>
               <CardDescription>
-                Enter the fundamental details of your academic course
+                Enter the essential details for your academic course
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6 p-6">
+              <div className="space-y-2">
+                <Label htmlFor="title">Course Title *</Label>
+                <AcademicCourseFieldValidator
+                  field="title"
+                  value={courseData.title}
+                  onChange={(value) => setCourseData(prev => ({ ...prev, title: value }))}
+                  placeholder="e.g., Advanced Data Structures and Algorithms"
+                  className="border-2 border-gray-200 focus:border-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Course Description *</Label>
+                <AcademicCourseFieldValidator
+                  field="description"
+                  value={courseData.description}
+                  onChange={(value) => setCourseData(prev => ({ ...prev, description: value }))}
+                  placeholder="Provide a comprehensive description of what students will learn in this course..."
+                  multiline={true}
+                  rows={4}
+                  className="border-2 border-gray-200 focus:border-blue-500"
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="col-span-1 md:col-span-2">
-                  <Label htmlFor="title">Course Title *</Label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={courseData.title}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Advanced Data Structures and Algorithms"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="subject">Subject *</Label>
-                  <Select 
-                    name="subject" 
-                    value={courseData.subject} 
-                    onValueChange={(value) => handleSelectChange("subject", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a subject" />
+                <div className="space-y-2">
+                  <Label>Subject *</Label>
+                  <Select value={courseData.subject} onValueChange={(value) => setCourseData(prev => ({ ...prev, subject: value }))}>
+                    <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500">
+                      <SelectValue placeholder="Select subject" />
                     </SelectTrigger>
                     <SelectContent>
-                      {subjects.map((subject) => (
+                      {subjects.map(subject => (
                         <SelectItem key={subject} value={subject}>
                           {subject}
                         </SelectItem>
@@ -674,527 +731,408 @@ export default function AcademicCourseCreator({ onCourseCreated, editingCourse =
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="academicLevel">Academic Level *</Label>
-                  <Select 
-                    name="academicLevel" 
-                    value={courseData.academicLevel} 
-                    onValueChange={(value) => handleSelectChange("academicLevel", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select academic level" />
+
+                <div className="space-y-2">
+                  <Label>Academic Level *</Label>
+                  <Select value={courseData.academicLevel} onValueChange={(value) => setCourseData(prev => ({ ...prev, academicLevel: value }))}>
+                    <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500">
+                      <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
-                      {academicLevels.map((level) => (
-                        <SelectItem key={level} value={level}>
-                          {level.charAt(0).toUpperCase() + level.slice(1)}
+                      {academicLevels.map(level => (
+                        <SelectItem key={level.id} value={level.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{level.icon}</span>
+                            <span>{level.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="semester">Semester/Term</Label>
-                  <Input
-                    id="semester"
-                    name="semester"
-                    value={courseData.semester}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Fall 2024, Spring 2025"
-                  />
-                </div>
-                <div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="credits">Credits</Label>
                   <Input
-                    id="credits"
-                    name="credits"
                     type="number"
                     min="1"
                     max="10"
                     value={courseData.credits}
-                    onChange={handleInputChange}
+                    onChange={(e) => setCourseData(prev => ({ ...prev, credits: parseInt(e.target.value) || 3 }))}
+                    className="border-2 border-gray-200 focus:border-blue-500"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="dueDate">Course Due Date *</Label>
-                  <Input
-                    id="dueDate"
-                    name="dueDate"
-                    type="date"
-                    value={courseData.dueDate}
-                    onChange={handleInputChange}
+
+                <div className="space-y-2">
+                  <Label htmlFor="semester">Semester/Term</Label>
+                  <AcademicCourseFieldValidator
+                    field="semester"
+                    value={courseData.semester}
+                    onChange={(value) => setCourseData(prev => ({ ...prev, semester: value }))}
+                    placeholder="e.g., Fall 2024"
+                    className="border-2 border-gray-200 focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Duration</Label>
+                  <AcademicCourseFieldValidator
+                    field="duration"
+                    value={courseData.duration}
+                    onChange={(value) => setCourseData(prev => ({ ...prev, duration: value }))}
+                    placeholder="e.g., 16 weeks"
+                    className="border-2 border-gray-200 focus:border-blue-500"
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="description">Course Description *</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={courseData.description}
-                  onChange={handleInputChange}
-                  placeholder="Provide a comprehensive description of what students will learn in this course..."
-                  rows={4}
-                />
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => setStep(2)}
+                  disabled={!courseData.title || !courseData.subject || !courseData.academicLevel}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                >
+                  Next: Upload Content
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
               </div>
             </CardContent>
           </Card>
+        )}
 
-          {!editingCourse && (
-            <div className="flex justify-end">
-              <Button 
-                onClick={() => setCreationStep(2)} 
-                disabled={!courseData.title.trim() || !courseData.subject || !courseData.academicLevel}
-              >
-                Continue to Syllabus/AI
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="syllabus" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Upload className="h-5 w-5" />
-                <span>Upload Syllabus</span>
+        {/* Step 2: Content Upload */}
+        {step === 2 && (
+          <Card className="w-full max-w-4xl mx-auto">
+            <CardHeader className="text-center bg-gradient-to-r from-green-50 to-blue-50">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Upload className="h-6 w-6 text-green-600" />
+                Content Upload & Generation
               </CardTitle>
               <CardDescription>
-                Upload your syllabus file and let AI extract modules and content automatically
+                Upload existing content or generate academic curriculum with AI
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <Label htmlFor="syllabus-file" className="cursor-pointer">
-                  <span className="text-lg font-medium text-gray-700">
-                    Drop your syllabus file here or click to browse
-                  </span>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Supports PDF, Markdown (.md), and Text (.txt) files (max 25MB)
-                  </p>
-                </Label>
-                <Input
-                  id="syllabus-file"
-                  type="file"
-                  accept=".pdf,.md,.txt,.markdown"
-                  onChange={handleFileSelection}
-                  className="hidden"
-                />
+            <CardContent className="space-y-6 p-6">
+              <div className="flex justify-center gap-4">
+                <Button
+                  variant={generationType === "upload" ? "default" : "outline"}
+                  onClick={() => setGenerationType("upload")}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Content
+                </Button>
+                <Button
+                  variant={generationType === "generate" ? "default" : "outline"}
+                  onClick={() => setGenerationType("generate")}
+                  className="flex items-center gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Generate Curriculum
+                </Button>
               </div>
 
-              {file && (
-                <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="font-medium text-green-800">{file.name}</p>
-                      <p className="text-sm text-green-600">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
+              {generationType === "upload" && (
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Upload Your Academic Content</h3>
+                    <p className="text-gray-600 mb-4">
+                      Support PDF, Markdown, or Text files (max 25MB)
+                    </p>
+                    <Input
+                      type="file"
+                      accept=".pdf,.md,.txt,.markdown"
+                      onChange={handleFileSelection}
+                      className="max-w-xs mx-auto"
+                    />
+                    {file && (
+                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-green-800 font-medium">✅ File selected: {file.name}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {file && (
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={handleProcessFile}
+                        disabled={loading}
+                        className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Brain className="h-4 w-4 mr-2" />
+                            Process for {courseData.academicLevel}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {generationType === "generate" && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="curriculum-topic">Curriculum Topic *</Label>
+                    <AcademicCourseFieldValidator
+                      field="curriculum-topic"
+                      value={curriculumTopic}
+                      onChange={(value) => setCurriculumTopic(value)}
+                      placeholder={`e.g., ${courseData.subject} Complete Academic Course`}
+                      className="border-2 border-gray-200 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="modules-count">Number of Modules</Label>
+                      <Input
+                        type="number"
+                        min="4"
+                        max="20"
+                        value={numberOfModules}
+                        onChange={(e) => setNumberOfModules(parseInt(e.target.value) || 8)}
+                        className="border-2 border-gray-200 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="module-topics">Specific Topics</Label>
+                      <AcademicCourseFieldValidator
+                        field="module-topics"
+                        value={moduleTopics}
+                        onChange={(value) => setModuleTopics(value)}
+                        placeholder="e.g., Theory, Practice, Research..."
+                        className="border-2 border-gray-200 focus:border-blue-500"
+                      />
                     </div>
                   </div>
-                  <Button 
-                    onClick={handleProcessFile}
-                    disabled={loading}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Brain className="h-4 w-4 mr-2" />
-                        Process with AI
-                      </>
-                    )}
-                  </Button>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="teaching-notes">Teaching Notes & Focus Areas</Label>
+                    <AcademicCourseFieldValidator
+                      field="teaching-notes"
+                      value={teachingNotes}
+                      onChange={(value) => setTeachingNotes(value)}
+                      placeholder="Special instructions for content generation..."
+                      multiline={true}
+                      rows={3}
+                      className="border-2 border-gray-200 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={handleGenerateCurriculum}
+                      disabled={loading || !curriculumTopic}
+                      className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Generate Academic Curriculum
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
+
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+              </div>
             </CardContent>
           </Card>
+        )}
 
-          <div className="text-center py-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">OR</span>
-              </div>
-            </div>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Sparkles className="h-5 w-5" />
-                <span>Generate with AI</span>
+        {/* Step 3: Review & Publish */}
+        {step === 3 && (
+          <Card className="w-full max-w-6xl mx-auto">
+            <CardHeader className="text-center bg-gradient-to-r from-purple-50 to-blue-50">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Trophy className="h-6 w-6 text-purple-600" />
+                Review & Publish Academic Course
               </CardTitle>
               <CardDescription>
-                Let AI create a comprehensive academic curriculum based on your course information
+                Review your course modules and publish when ready
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={handleGenerateModules}
-                disabled={loading || !courseData.title.trim()}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                size="lg"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Generating Modules...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-5 w-5 mr-2" />
-                    Generate Academic Modules with AI
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {!editingCourse && courseData.modules.length === 0 && (
-            <div className="text-center text-gray-500 py-8">
-              <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-lg font-medium">No modules created yet</p>
-              <p>Upload a syllabus file or generate modules with AI to continue</p>
-            </div>
-          )}
-
-          {courseData.modules.length > 0 && (
-            <div className="flex justify-end">
-              <Button 
-                onClick={() => {
-                  setCreationStep(3);
-                  setActiveTab("content");
-                }}
-              >
-                Continue to Content Editing
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="content" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BookOpen className="h-5 w-5" />
-                <span>Course Modules ({courseData.modules.length})</span>
-              </CardTitle>
-              <CardDescription>
-                Review and edit your course modules. Click on any module to open the advanced editor.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {courseData.modules.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-lg font-medium text-gray-500">No modules available</p>
-                  <p className="text-gray-400">Go to the Syllabus/AI tab to create modules first</p>
+            <CardContent className="space-y-6 p-6">
+              {/* Course Summary */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-2">{courseData.title}</h3>
+                <p className="text-gray-600 mb-2">{courseData.description}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">{courseData.subject}</Badge>
+                  <Badge variant="secondary">{courseData.academicLevel}</Badge>
+                  <Badge variant="secondary">{courseData.modules.length} modules</Badge>
+                  <Badge variant="secondary">{courseData.modules.length * 2} assignments</Badge>
+                  <Badge variant="secondary">{courseData.modules.length} quizzes</Badge>
                 </div>
-              ) : (
-                <>
-                  {courseData.modules.map((module, index) => (
-                    <Card key={module.id || index} className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">
-                            Module {index + 1}: {module.title || `Untitled Module`}
-                          </CardTitle>
-                          <div className="flex space-x-2">
+              </div>
+
+              {/* Modules List */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold">Course Modules ({courseData.modules.length})</h3>
+                {courseData.modules.length === 0 ? (
+                  <div className="text-center py-12">
+                    <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">No Modules Available</h3>
+                    <p className="text-gray-500 mb-4">
+                      Please go back and upload content or generate curriculum.
+                    </p>
+                    <Button onClick={() => setStep(2)} variant="outline">
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Upload
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {courseData.modules.map((module, index) => (
+                      <Card key={module.id || index} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-lg">
+                              Module {index + 1}: {module.title || `Untitled Module`}
+                            </h4>
                             <Button
-                              variant="outline"
+                              onClick={() => handleEditModule(module)}
                               size="sm"
-                              onClick={() => handleEditModule(index)}
+                              variant="outline"
                             >
-                              <Edit3 className="h-4 w-4 mr-1" />
+                              <Edit className="h-4 w-4 mr-1" />
                               Edit
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeModule(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {module.summary && (
-                          <p className="text-sm text-gray-600 mb-2">{module.summary}</p>
-                        )}
-                        <div className="text-xs text-gray-500">
-                          Content: {module.content ? `${module.content.slice(0, 100)}...` : 'No content yet'}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  
-                  <Button variant="outline" onClick={addModule} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Manual Module
+                          
+                          <p className="text-gray-600 mb-3 text-sm">
+                            {module.summary || 'No summary available'}
+                          </p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Assignments */}
+                            <div className="space-y-2">
+                              <h5 className="font-medium text-sm text-blue-600">Assignments (2)</h5>
+                              {module.assignments?.map((assignment, idx) => (
+                                <div key={idx} className="p-2 bg-blue-50 rounded text-xs">
+                                  <p className="font-medium">{assignment.title}</p>
+                                  <p className="text-gray-600">{assignment.type} - {assignment.points} points</p>
+                                </div>
+                              )) || (
+                                <div className="space-y-1">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => handleCreateAssignment(module, 0)}
+                                    className="w-full text-xs"
+                                  >
+                                    Create Assignment 1
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => handleCreateAssignment(module, 1)}
+                                    className="w-full text-xs"
+                                  >
+                                    Create Assignment 2
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Quiz */}
+                            <div className="space-y-2">
+                              <h5 className="font-medium text-sm text-green-600">Quiz (1)</h5>
+                              {module.quiz ? (
+                                <div className="p-2 bg-green-50 rounded text-xs">
+                                  <p className="font-medium">{module.quiz.title}</p>
+                                  <p className="text-gray-600">{module.quiz.questions} questions - {module.quiz.points} points</p>
+                                </div>
+                              ) : (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => handleCreateQuiz(module)}
+                                  className="w-full text-xs"
+                                >
+                                  Create Quiz
+                                </Button>
+                              )}
+                            </div>
+
+                            {/* Module Info */}
+                            <div className="space-y-2">
+                              <h5 className="font-medium text-sm text-gray-600">Module Info</h5>
+                              <div className="text-xs text-gray-500 space-y-1">
+                                <p>Subject: {courseData.subject}</p>
+                                <p>Level: {courseData.academicLevel}</p>
+                                <p>Study Time: {module.estimatedStudyTime || '3-4 hours'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              {courseData.modules.length > 0 && (
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={() => setStep(2)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Upload
                   </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Learning Objectives */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Target className="h-5 w-5" />
-                <span>Learning Objectives</span>
-              </CardTitle>
-              <CardDescription>
-                Define what students will be able to do after completing this course
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {courseData.objectives.map((objective, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Input
-                    value={objective}
-                    onChange={(e) => updateObjective(index, e.target.value)}
-                    placeholder="e.g., Analyze complex algorithms and their time complexity"
-                  />
-                  {courseData.objectives.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeObjective(index)}
+                  
+                  <div className="space-x-2">
+                    <Button 
+                      onClick={handleSaveDraft}
+                      variant="outline"
+                      disabled={loading}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      Save Draft
                     </Button>
-                  )}
-                </div>
-              ))}
-              <Button variant="outline" onClick={addObjective} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Learning Objective
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Prerequisites */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="h-5 w-5" />
-                <span>Prerequisites</span>
-              </CardTitle>
-              <CardDescription>
-                List courses or knowledge students should have before taking this course
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {courseData.prerequisites.map((prerequisite, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Input
-                    value={prerequisite}
-                    onChange={(e) => updatePrerequisite(index, e.target.value)}
-                    placeholder="e.g., Introduction to Programming, Discrete Mathematics"
-                  />
-                  {courseData.prerequisites.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removePrerequisite(index)}
+                    <Button 
+                      onClick={handlePublishCourse}
+                      disabled={loading}
+                      className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trophy className="h-4 w-4 mr-2" />
+                      Publish Course
                     </Button>
-                  )}
+                  </div>
                 </div>
-              ))}
-              <Button variant="outline" onClick={addPrerequisite} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Prerequisite
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="assessment" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Award className="h-5 w-5" />
-                <span>Assessment Criteria</span>
-              </CardTitle>
-              <CardDescription>
-                Define how student performance will be evaluated (must total 100%)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="assignments">Assignments (%)</Label>
-                  <Input
-                    id="assignments"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={courseData.assessmentCriteria.assignments}
-                    onChange={(e) => handleAssessmentChange("assignments", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="quizzes">Quizzes (%)</Label>
-                  <Input
-                    id="quizzes"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={courseData.assessmentCriteria.quizzes}
-                    onChange={(e) => handleAssessmentChange("quizzes", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="midterm">Midterm Exam (%)</Label>
-                  <Input
-                    id="midterm"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={courseData.assessmentCriteria.midterm}
-                    onChange={(e) => handleAssessmentChange("midterm", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="final">Final Exam (%)</Label>
-                  <Input
-                    id="final"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={courseData.assessmentCriteria.final}
-                    onChange={(e) => handleAssessmentChange("final", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="font-medium">Total:</span>
-                <span className={`font-bold ${getTotalPercentage() === 100 ? 'text-green-600' : 'text-red-600'}`}>
-                  {getTotalPercentage()}%
-                </span>
-              </div>
-              {getTotalPercentage() !== 100 && (
-                <Alert className="border-amber-200 bg-amber-50">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-700">
-                    Assessment criteria must total exactly 100%
-                  </AlertDescription>
-                </Alert>
               )}
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Grading Scale</CardTitle>
-              <CardDescription>
-                Choose how grades will be displayed to students
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Select 
-                name="gradingScale" 
-                value={courseData.gradingScale} 
-                onValueChange={(value) => handleSelectChange("gradingScale", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select grading scale" />
-                </SelectTrigger>
-                <SelectContent>
-                  {gradingScales.map((scale) => (
-                    <SelectItem key={scale} value={scale}>
-                      {scale === "percentage" ? "Percentage (0-100%)" : 
-                       scale === "gpa" ? "GPA (0.0-4.0)" : 
-                       "Letter Grades (A-F)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5" />
-                <span>Course Features</span>
-              </CardTitle>
-              <CardDescription>
-                Configure additional features for your academic course
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="allowDiscussions">Discussion Forums</Label>
-                  <p className="text-sm text-gray-500">
-                    Allow students to participate in course discussions
-                  </p>
-                </div>
-                <Switch
-                  id="allowDiscussions"
-                  checked={courseData.allowDiscussions}
-                  onCheckedChange={(checked) => handleSwitchChange("allowDiscussions", checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="allowGroupWork">Group Work</Label>
-                  <p className="text-sm text-gray-500">
-                    Enable collaborative assignments and group projects
-                  </p>
-                </div>
-                <Switch
-                  id="allowGroupWork"
-                  checked={courseData.allowGroupWork}
-                  onCheckedChange={(checked) => handleSwitchChange("allowGroupWork", checked)}
-                />
+              {/* New Course Button */}
+              <div className="flex justify-center pt-6 border-t">
+                <Button onClick={resetForm} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Course
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
-
-      <div className="flex justify-end space-x-4 pt-6 border-t">
-        <Button variant="outline" onClick={() => setActiveTab("basic")}>
-          Reset
-        </Button>
-        <Button 
-          onClick={handleCreateCourse} 
-          disabled={isCreating || getTotalPercentage() !== 100}
-          className="min-w-[120px]"
-        >
-          {isCreating ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {editingCourse ? 'Updating...' : 'Creating...'}
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              {editingCourse ? 'Update Course' : 'Create Course'}
-            </>
-          )}
-        </Button>
+        )}
       </div>
     </div>
-  );
+  )
 } 
