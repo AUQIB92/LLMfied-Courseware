@@ -117,63 +117,64 @@ if (typeof document !== "undefined") {
   document.head.appendChild(styleElement);
 }
 
-// Helper function to handle the new simplified flashcard structure
-function getSubsectionData(subsection) {
-  console.log("🔍 getSubsectionData called with:", {
-    hasConceptFlashCards: !!subsection.conceptFlashCards,
-    conceptFlashCardsLength: subsection.conceptFlashCards?.length || 0,
-    hasFormulaFlashCards: !!subsection.formulaFlashCards,
-    formulaFlashCardsLength: subsection.formulaFlashCards?.length || 0,
-    hasLegacyFlashCards: !!subsection.flashCards,
-    legacyFlashCardsLength: subsection.flashCards?.length || 0,
+// Helper function to handle academic multipage content (NOT flashcards)
+function getAcademicSubsectionData(subsection) {
+  console.log("🔍 getAcademicSubsectionData called with:", {
+    hasPages: !!subsection.pages,
+    pagesLength: subsection.pages?.length || 0,
+    hasDetailedContent: !!subsection.detailedContent,
+    isAcademicContent: subsection.isAcademicContent,
     subsectionKeys: Object.keys(subsection),
   });
 
-  // FORCE categorized structure for ALL subsections - ignore any legacy data
+  // Academic courses use MULTIPAGE content, not flashcards
   console.log(
-    "🔄 Converting to categorized flashcard structure for:",
+    "🎓 Processing multipage academic content for:",
     subsection.title
   );
 
-  // If we have categorized data, use it
+  // Check if we have generated multipage content
   if (
-    (subsection.conceptFlashCards &&
-      Array.isArray(subsection.conceptFlashCards) &&
-      subsection.conceptFlashCards.length > 0) ||
-    (subsection.formulaFlashCards &&
-      Array.isArray(subsection.formulaFlashCards) &&
-      subsection.formulaFlashCards.length > 0)
+    subsection.pages &&
+    Array.isArray(subsection.pages) &&
+    subsection.pages.length > 0
   ) {
-    console.log("✅ Using existing categorized flashCards");
+    console.log(
+      "✅ Using existing multipage content for academic subsection:",
+      subsection.pages.length,
+      "pages"
+    );
     return {
-      type: "categorizedFlashCards",
+      type: "pages",
       data: {
         ...subsection,
-        // Remove any legacy data to prevent confusion
+        pages: subsection.pages,
+        // Remove any flashcard data to prevent confusion
+        conceptFlashCards: undefined,
+        formulaFlashCards: undefined,
         flashCards: undefined,
         conceptGroups: undefined,
-        pages: undefined,
       },
     };
   }
 
-  // Create empty categorized structure (ignore any legacy data)
-  console.log("📋 Creating empty categorized structure - legacy data ignored");
+  // Create empty multipage structure for academic content
+  console.log("📋 Creating empty multipage structure for academic content");
   return {
-    type: "categorizedFlashCards",
+    type: "pages",
     data: {
-      title: subsection.title || "Subsection",
+      title: subsection.title || "Academic Subsection",
       summary:
         subsection.summary ||
-        "Generate content to see concept and formula cards",
-      conceptFlashCards: [],
-      formulaFlashCards: [],
+        "Generate detailed content to see multipage academic explanations",
+      pages: [],
       difficulty: subsection.difficulty || "Intermediate",
-      estimatedTime: subsection.estimatedTime || "5-10 minutes",
-      // Explicitly remove legacy data
+      estimatedTime: subsection.estimatedTime || "25-30 minutes",
+      // Explicitly remove flashcard data
+      conceptFlashCards: undefined,
+      formulaFlashCards: undefined,
       flashCards: undefined,
       conceptGroups: undefined,
-      pages: undefined,
     },
   };
 }
@@ -293,7 +294,7 @@ export default function AcademicModuleEditorEnhanced({
   // Track if module has been modified
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState("saved"); // "saved", "editing", "saving"
-  
+
   // Debounced parent update to prevent constant saving while editing
   const [updateTimeout, setUpdateTimeout] = useState(null);
 
@@ -362,6 +363,74 @@ export default function AcademicModuleEditorEnhanced({
   const [subsectionQuizzes, setSubsectionQuizzes] = useState(
     module.subsectionQuizzes || {}
   );
+
+  // Academic detailed content generation state
+  const [generatingDetailedContent, setGeneratingDetailedContent] =
+    useState(false);
+
+  // Function to generate detailed academic subsections with multipage content
+  const generateDetailedAcademicContent = async () => {
+    if (!courseId || !localModule.content) {
+      toast.error("Course ID and module content are required");
+      return;
+    }
+
+    setGeneratingDetailedContent(true);
+
+    try {
+      console.log("🎓 Generating detailed academic content...");
+
+      const response = await fetch(
+        "/api/academic-courses/generate-detailed-content",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify({
+            courseId: courseId,
+            moduleIndex: localModule.order - 1, // Convert to 0-based index
+            academicLevel:
+              course?.academicLevel || learnerLevel || "undergraduate",
+            subject: course?.subject || subject || "General Studies",
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate detailed content");
+      }
+
+      console.log("✅ Detailed academic content generated successfully:", data);
+
+      // Update the local module with the new detailed subsections
+      const updatedModule = {
+        ...localModule,
+        detailedSubsections: data.detailedSubsections,
+        hasDetailedContent: true,
+        lastUpdated: new Date(),
+      };
+
+      setLocalModule(updatedModule);
+
+      // Update parent immediately for this important change
+      if (onUpdate) {
+        onUpdate(updatedModule);
+      }
+
+      toast.success(
+        `Generated ${data.totalSubsections} detailed subsections with ${data.totalPages} pages!`
+      );
+    } catch (error) {
+      console.error("❌ Error generating detailed content:", error);
+      toast.error(error.message || "Failed to generate detailed content");
+    } finally {
+      setGeneratingDetailedContent(false);
+    }
+  };
 
   // Resource management
   const [showManualResourceForm, setShowManualResourceForm] = useState(false);
@@ -481,9 +550,9 @@ export default function AcademicModuleEditorEnhanced({
         title: mdSub.title, // overwrite with the one from markdown for consistency
         formattedTitle: formattedTitle,
         unitContext: mdSub.unitContext, // Add unit context
-        isAcademicContent: mdSub.isAcademicContent,
+        isAcademicContent: true, // Force academic content for academic courses
         // Pre-parse the pages here, outside the render loop
-        subsectionPages: getSubsectionData(aiSub),
+        subsectionPages: getAcademicSubsectionData(aiSub),
       };
     });
   }, [localModule.content, localModule.detailedSubsections]);
@@ -492,7 +561,8 @@ export default function AcademicModuleEditorEnhanced({
   const updateLocalModuleField = (field, value) => {
     console.log("🔄 Updating local module field:", {
       field,
-      value: typeof value === 'string' ? value?.substring(0, 100) + "..." : value,
+      value:
+        typeof value === "string" ? value?.substring(0, 100) + "..." : value,
       hasChanges,
     });
     setLocalModule((prev) => ({
@@ -1204,7 +1274,7 @@ export default function AcademicModuleEditorEnhanced({
       courseId: courseId,
       courseTitle: course?.title,
       courseAcademicLevel: course?.academicLevel,
-      courseSubject: course?.subject
+      courseSubject: course?.subject,
     });
 
     if (!course) {
@@ -1544,8 +1614,71 @@ export default function AcademicModuleEditorEnhanced({
     setShowManualResourceForm(false);
   };
 
-  // Add this function to generate content for a specific subsection
+  // DISABLED FUNCTION - Academic courses should not use individual subsection generation
   const generateSubsectionContent = async (subsection, subsectionIndex) => {
+    console.error(
+      "🚨 BLOCKED: generateSubsectionContent should not be called for academic courses!"
+    );
+    console.error("Subsection:", subsection?.title);
+    console.error(
+      "Please use the 'Generate Detailed Subsections' button instead."
+    );
+
+    // Show user-friendly error
+    if (typeof toast !== "undefined" && toast.error) {
+      toast.error(
+        "Please use the 'Generate Detailed Subsections' button to create academic content."
+      );
+    }
+
+    return; // Exit immediately
+
+    // Debug: Log all course information to understand what we're working with
+    console.log("🔍 generateSubsectionContent called with:", {
+      subsectionTitle: subsection.title,
+      subsectionIndex,
+      courseData: course,
+      moduleData: {
+        isAcademicCourse: localModule.isAcademicCourse,
+        courseType: localModule.courseType,
+        moduleType: localModule.moduleType,
+      },
+    });
+
+    // For academic courses, use the new multipage content generation instead
+    // Check multiple indicators for academic courses
+    const isAcademic =
+      course?.isAcademicCourse ||
+      course?.courseType === "academic" ||
+      localModule.isAcademicCourse ||
+      localModule.courseType === "academic" ||
+      localModule.moduleType === "academic" ||
+      // Also check if we're in the Academic Course component (safety check)
+      true; // Since this is AcademicModuleEditorEnhanced, it should always be academic
+
+    if (isAcademic) {
+      console.log(
+        "🎓 Academic course detected - BLOCKED old flashcard generation"
+      );
+      console.log("Academic indicators:", {
+        courseIsAcademic: course?.isAcademicCourse,
+        courseCourseType: course?.courseType,
+        moduleIsAcademic: localModule.isAcademicCourse,
+        moduleCourseType: localModule.courseType,
+        moduleType: localModule.moduleType,
+        subsectionTitle: subsection.title,
+      });
+      console.trace("Call stack for blocked generateSubsectionContent");
+      toast.info(
+        "🎓 Academic courses use multipage content. Please use the 'Generate Detailed Subsections' button above."
+      );
+      return;
+    }
+
+    console.log(
+      "⚠️ Non-academic course detected, proceeding with flashcard generation"
+    );
+
     try {
       // Show loading state
       setEditingSubsection(subsectionIndex);
@@ -1577,27 +1710,43 @@ export default function AcademicModuleEditorEnhanced({
       // Add module context to help the AI
       const moduleContext = `Module: ${localModule.title}\nSubject: ${subject}\nAcademic Level: ${academicLevel}\nSemester: ${semester}\n\n${focusedContent}`;
 
-      // Call the API to generate content (using exam-genius endpoint for now)
-      const response = await fetch(
-        "/api/exam-genius/generate-subsection-content",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...getAuthHeaders(),
-          },
-          body: JSON.stringify({
-            content: moduleContext,
-            context: {
-              ...context,
-              type: "academic",
-              semester: semester,
-              courseType: "academic"
-            },
-            type: "subsection"
-          }),
-        }
+      // COMPLETELY BLOCK API call for academic courses - this should NEVER happen
+      console.error(
+        "🚨 CRITICAL: Academic course trying to call exam-genius API!"
       );
+      console.error("This should be blocked by the guard clause above!");
+      console.error("Context:", {
+        context,
+        moduleContext: moduleContext.substring(0, 200),
+      });
+
+      throw new Error(
+        "Academic courses should use the 'Generate Detailed Subsections' button, not individual flashcard generation!"
+      );
+
+      return; // Exit immediately for academic courses
+
+      // OLD CODE - DISABLED FOR ACADEMIC COURSES
+      // const response = await fetch(
+      //   "/api/exam-genius/generate-subsection-content",
+      //   {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       ...getAuthHeaders(),
+      //     },
+      //     body: JSON.stringify({
+      //       content: moduleContext,
+      //       context: {
+      //         ...context,
+      //         type: "academic",
+      //         semester: semester,
+      //         courseType: "academic",
+      //       },
+      //       type: "subsection",
+      //     }),
+      //   }
+      // );
 
       if (!response.ok) {
         let errorMessage = "Failed to generate content";
@@ -1728,6 +1877,70 @@ export default function AcademicModuleEditorEnhanced({
       );
     } finally {
       setEditingSubsection(null);
+    }
+  };
+
+  // Individual Academic Subsection Generation - No courseData references
+  const generateIndividualAcademicSubsection = async (
+    subsection,
+    subsectionIndex
+  ) => {
+    console.log(
+      "🎓 Generating individual academic subsection:",
+      subsection?.title
+    );
+
+    try {
+      updateSubsection(subsectionIndex, { isGenerating: true });
+
+      const response = await fetch(
+        "/api/academic-courses/generate-detailed-content",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseId: localModule._id || "individual-generation",
+            moduleIndex: 0,
+            subsectionTitle: subsection.title,
+            moduleTitle: localModule.title,
+            academicLevel: academicLevel || "undergraduate",
+            subject: subject || "General Studies",
+            singleSubsection: true,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate content: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("✅ Individual academic content generated:", result);
+
+      if (result.success && result.content && result.content.pages) {
+        updateSubsection(subsectionIndex, {
+          pages: result.content.pages,
+          summary: result.content.summary,
+          difficulty: result.content.difficulty,
+          estimatedTime: result.content.estimatedTime,
+          isAcademicContent: true,
+          type: "pages",
+          isGenerating: false,
+        });
+
+        toast.success(
+          `✅ Generated ${result.content.pages.length} pages of academic content for "${subsection.title}"`
+        );
+      } else {
+        throw new Error("Invalid response format from academic content API");
+      }
+    } catch (error) {
+      console.error(
+        "❌ Error generating individual academic subsection:",
+        error
+      );
+      updateSubsection(subsectionIndex, { isGenerating: false });
+      toast.error(`Failed to generate academic content: ${error.message}`);
     }
   };
 
@@ -2674,7 +2887,34 @@ Detailed discussion here..."
                 <CardTitle className="flex items-center gap-2">
                   <Layers className="h-5 w-5" />
                   Detailed Subsections
+                  {detailedSubsections.length > 0 && (
+                    <Badge variant="outline" className="ml-2">
+                      {detailedSubsections.length} subsections,{" "}
+                      {detailedSubsections.length * 8} pages
+                    </Badge>
+                  )}
                 </CardTitle>
+                {detailedSubsections.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={generateDetailedAcademicContent}
+                    disabled={generatingDetailedContent}
+                    className="ml-auto"
+                  >
+                    {generatingDetailedContent ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Regenerate Content
+                      </>
+                    )}
+                  </Button>
+                )}
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-600">
                     Page {currentExplanationPage + 1} of {totalExplanationPages}
@@ -2707,23 +2947,53 @@ Detailed discussion here..."
                 <div className="text-center py-8">
                   <Layers className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">
-                    No subsections found in module content.
+                    No detailed subsections generated yet.
                   </p>
                   <p className="text-sm text-gray-400 mt-2">
-                    AI is generating content, or you can add `##` or `###`
-                    headings to your module content to create subsections.
+                    Generate detailed multipage subsections like technical
+                    courses, or add `###` headings to your module content.
                   </p>
+                  <div className="mt-6">
+                    <Button
+                      onClick={generateDetailedAcademicContent}
+                      disabled={
+                        generatingDetailedContent || !localModule.content
+                      }
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                    >
+                      {generatingDetailedContent ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating Detailed Content...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Generate Detailed Subsections
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Creates 8-page detailed content for each subsection, just
+                      like technical courses
+                    </p>
+                  </div>
                 </div>
               ) : (
                 currentPageExplanations.map((subsection, pageIndex) => {
                   const globalIndex = startExplanationIndex + pageIndex;
 
                   // Pages are now pre-parsed in the detailedSubsections memo
-                  const subsectionPages = subsection.subsectionPages || [];
+                  const subsectionPages = subsection.subsectionPages || {};
                   const currentSubsectionPage =
                     getCurrentExplanationPage(globalIndex);
-                  const currentPageData =
-                    subsectionPages[currentSubsectionPage];
+
+                  // Handle academic multipage structure
+                  const pages =
+                    subsectionPages.type === "pages"
+                      ? subsectionPages.data?.pages || []
+                      : subsectionPages.data || [];
+                  const currentPageData = pages[currentSubsectionPage];
 
                   return (
                     <Card
@@ -3366,23 +3636,23 @@ Detailed discussion here..."
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      generateSubsectionContent(
+                                      generateIndividualAcademicSubsection(
                                         subsection,
                                         globalIndex
                                       );
                                     }}
                                     disabled={subsection.isGenerating}
-                                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
                                   >
                                     {subsection.isGenerating ? (
                                       <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Generating...
+                                        Generating Academic Content...
                                       </>
                                     ) : (
                                       <>
-                                        <Sparkles className="h-4 w-4 mr-2" />
-                                        Generate with AI
+                                        <BookOpen className="h-4 w-4 mr-2" />
+                                        Generate Academic Content
                                       </>
                                     )}
                                   </Button>
@@ -3395,8 +3665,10 @@ Detailed discussion here..."
                               onClick={() => setEditingSubsection(globalIndex)}
                             >
                               {/* Handle different content structure types */}
+                              {/* Force academic courses to use pages, not flashcards */}
                               {subsectionPages.type ===
-                              "categorizedFlashCards" ? (
+                                "categorizedFlashCards" &&
+                              !subsection.isAcademicContent ? (
                                 // Categorized flashcard structure display (concept + formula cards)
                                 <div className="space-y-4">
                                   <div className="prose prose-sm max-w-none">
@@ -3624,15 +3896,29 @@ Detailed discussion here..."
                                     </span>
                                   </div>
                                 </div>
-                              ) : subsectionPages.type === "pages" &&
-                                subsectionPages.data.length > 0 ? (
-                                // Legacy pages structure display
+                              ) : (subsectionPages.type === "pages" &&
+                                  pages.length > 0) ||
+                                (subsection.isAcademicContent &&
+                                  pages.length > 0) ? (
+                                // Academic multipage content display
                                 <>
                                   {currentPageData ? (
                                     <div className="prose prose-sm max-w-none">
-                                      <h4 className="font-semibold text-md mb-2">
-                                        {currentPageData.title}
-                                      </h4>
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-semibold text-md">
+                                          {currentPageData.pageTitle ||
+                                            currentPageData.title}
+                                        </h4>
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs"
+                                        >
+                                          Page{" "}
+                                          {currentPageData.pageNumber ||
+                                            currentSubsectionPage + 1}{" "}
+                                          of {pages.length}
+                                        </Badge>
+                                      </div>
                                       <UniversalContentRenderer
                                         content={currentPageData.content}
                                         renderingMode="math-optimized"
@@ -3651,22 +3937,23 @@ Detailed discussion here..."
                                   ) : (
                                     <div className="prose prose-sm max-w-none">
                                       <h4 className="font-semibold text-md mb-2">
-                                        {subsectionPages.data[0].title ||
-                                          "Content"}
+                                        {pages[0]?.pageTitle ||
+                                          pages[0]?.title ||
+                                          "Academic Content"}
                                       </h4>
                                       <MathMarkdownRenderer
                                         content={
-                                          subsectionPages.data[0].content ||
+                                          pages[0]?.content ||
                                           "No content available"
                                         }
                                       />
                                     </div>
                                   )}
-                                  {subsectionPages.data.length > 1 && (
+                                  {pages.length > 1 && (
                                     <div className="flex items-center justify-end gap-2 mt-4">
                                       <span className="text-xs text-gray-500">
                                         Page {currentSubsectionPage + 1} of{" "}
-                                        {subsectionPages.data.length}
+                                        {pages.length}
                                       </span>
                                       <Button
                                         size="sm"
@@ -3693,14 +3980,14 @@ Detailed discussion here..."
                                           setCurrentExplanationPageForSubsection(
                                             globalIndex,
                                             Math.min(
-                                              subsectionPages.data.length - 1,
+                                              pages.length - 1,
                                               currentSubsectionPage + 1
                                             )
                                           );
                                         }}
                                         disabled={
                                           currentSubsectionPage >=
-                                          subsectionPages.data.length - 1
+                                          pages.length - 1
                                         }
                                       >
                                         <ChevronRight className="h-3 w-3" />
@@ -3708,6 +3995,37 @@ Detailed discussion here..."
                                     </div>
                                   )}
                                 </>
+                              ) : subsection.isAcademicContent ? (
+                                <div className="space-y-4 text-center py-4">
+                                  <p className="text-sm text-gray-500 italic">
+                                    This subsection has no detailed multipage
+                                    content yet.
+                                  </p>
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      generateIndividualAcademicSubsection(
+                                        subsection,
+                                        globalIndex
+                                      );
+                                    }}
+                                    disabled={subsection.isGenerating}
+                                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                                  >
+                                    {subsection.isGenerating ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Generating Academic Content...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <BookOpen className="h-4 w-4 mr-2" />
+                                        Generate Academic Content
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
                               ) : (
                                 <div className="space-y-4 text-center py-4">
                                   <p className="text-sm text-gray-500 italic">
@@ -3717,23 +4035,23 @@ Detailed discussion here..."
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      generateSubsectionContent(
+                                      generateIndividualAcademicSubsection(
                                         subsection,
                                         globalIndex
                                       );
                                     }}
                                     disabled={subsection.isGenerating}
-                                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
                                   >
                                     {subsection.isGenerating ? (
                                       <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Generating...
+                                        Generating Academic Content...
                                       </>
                                     ) : (
                                       <>
-                                        <Sparkles className="h-4 w-4 mr-2" />
-                                        Generate with AI
+                                        <BookOpen className="h-4 w-4 mr-2" />
+                                        Generate Academic Content
                                       </>
                                     )}
                                   </Button>
