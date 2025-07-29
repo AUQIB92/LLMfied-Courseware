@@ -259,6 +259,13 @@ export default function AcademicModuleEditorEnhanced({
 }) {
   const { getAuthHeaders, user, apiCall, isTokenValid } = useAuth();
 
+  // Helper function to safely render content
+  const safeContent = (content) => {
+    if (typeof content === "string") return content;
+    if (content == null) return "";
+    return JSON.stringify(content);
+  };
+
   // Initialize local module state for editing
   const [localModule, setLocalModule] = useState(() => {
     const initialState = {
@@ -3553,7 +3560,14 @@ Detailed discussion here..."
                                         {currentPageData.title}
                                       </h4>
                                       <UniversalContentRenderer
-                                        content={currentPageData.content}
+                                        content={
+                                          typeof currentPageData.content ===
+                                          "string"
+                                            ? currentPageData.content
+                                            : JSON.stringify(
+                                                currentPageData.content
+                                              )
+                                        }
                                         renderingMode="math-optimized"
                                         className="page-content"
                                         enableTelemetry={false}
@@ -3920,7 +3934,14 @@ Detailed discussion here..."
                                         </Badge>
                                       </div>
                                       <UniversalContentRenderer
-                                        content={currentPageData.content}
+                                        content={
+                                          typeof currentPageData.content ===
+                                          "string"
+                                            ? currentPageData.content
+                                            : JSON.stringify(
+                                                currentPageData.content
+                                              )
+                                        }
                                         renderingMode="math-optimized"
                                         className="page-content"
                                         enableTelemetry={false}
