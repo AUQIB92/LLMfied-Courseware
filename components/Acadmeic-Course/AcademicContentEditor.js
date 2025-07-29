@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import ExamModuleEditorEnhanced from "./ExamModuleEditorEnhanced"
+import AcademicModuleEditorEnhanced from "./AcademicModuleEditorEnhanced"
 import { toast } from "sonner"
 import {
   Save,
@@ -24,10 +24,11 @@ import {
   Settings,
   FileText,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  GraduationCap
 } from "lucide-react"
 
-export default function ExamContentEditor({ course, onBack, onSave }) {
+export default function AcademicContentEditor({ course, onBack, onSave }) {
   const { getAuthHeaders } = useAuth()
   const [editedCourse, setEditedCourse] = useState(course)
   const [activeModule, setActiveModule] = useState(null)
@@ -73,10 +74,10 @@ export default function ExamContentEditor({ course, onBack, onSave }) {
         exercises: []
       },
       detailedSubsections: [],
-      isCompetitiveExam: true,
-      examType: editedCourse.examType,
+      isAcademicCourse: true,
+      academicLevel: editedCourse.academicLevel,
       subject: editedCourse.subject,
-      learnerLevel: editedCourse.learnerLevel
+      semester: editedCourse.semester
     }
 
     setEditedCourse(prev => ({
@@ -118,7 +119,7 @@ export default function ExamContentEditor({ course, onBack, onSave }) {
     setSaving(true)
     try {
       await onSave(editedCourse, status)
-      toast.success(`Competitive exam course ${status === 'draft' ? 'saved as draft' : 'published'} successfully!`)
+      toast.success(`Academic course ${status === 'draft' ? 'saved as draft' : 'published'} successfully!`)
     } catch (error) {
       console.error("Error saving course:", error)
       toast.error("Failed to save course. Please try again.")
@@ -225,17 +226,17 @@ export default function ExamContentEditor({ course, onBack, onSave }) {
                 Module {activeModule + 1}: {editedCourse.modules[activeModule]?.title || "Untitled Module"}
               </h1>
               <p className="text-gray-600">
-                {editedCourse.examType} • {editedCourse.subject} • {editedCourse.learnerLevel}
+                {editedCourse.academicLevel} • {editedCourse.subject} • Semester {editedCourse.semester}
               </p>
             </div>
           </div>
           
-          <ExamModuleEditorEnhanced
+          <AcademicModuleEditorEnhanced
             module={editedCourse.modules[activeModule]}
             onUpdate={(updates) => handleModuleUpdate(activeModule, updates)}
-            examType={editedCourse.examType}
+            academicLevel={editedCourse.academicLevel}
             subject={editedCourse.subject}
-            learnerLevel={editedCourse.learnerLevel}
+            semester={editedCourse.semester}
             course={editedCourse}
             courseId={editedCourse._id}
             onSaveSuccess={(savedCourse, status) => {
@@ -264,18 +265,18 @@ export default function ExamContentEditor({ course, onBack, onSave }) {
           </Button>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-              Competitive Exam Course Editor
+              Academic Course Editor
             </h1>
             <p className="text-gray-600 mt-1">
-              {editedCourse.examType} • {editedCourse.subject} • {editedCourse.learnerLevel}
+              {editedCourse.academicLevel} • {editedCourse.subject} • Semester {editedCourse.semester}
             </p>
           </div>
         </div>
         
         <div className="flex items-center gap-3">
           <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-            <Trophy className="h-4 w-4 mr-1" />
-            Competitive Exam
+            <GraduationCap className="h-4 w-4 mr-1" />
+            Academic Course
           </Badge>
           <Button
             onClick={() => handleSave("draft")}

@@ -53,11 +53,11 @@ import {
   FileQuestion,
 } from "lucide-react";
 import CourseLibrary from "./CourseLibrary";
-import { AcademicCourseLibrary } from "../academic-courses";
+// import { AcademicCourseLibrary } from "../Acadmeic-Course"; // TODO: Create this component
 import TestSeriesLibrary from "./TestSeriesLibrary";
 import TestSeriesViewer from "./TestSeriesViewer";
 import CourseViewer from "./CourseViewer";
-import { AcademicCourseViewer } from "../academic-courses";
+// import { AcademicCourseViewer } from "../Acadmeic-Course"; // TODO: Create this component
 import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import PreferencesSettings from "@/components/profile/PreferencesSettings";
@@ -516,16 +516,31 @@ export default function LearnerDashboard() {
 
     if (selectedAcademicCourse) {
       return (
-        <AcademicCourseViewer
-          courseId={selectedAcademicCourse._id}
-          user={user}
-          onBack={() => {
-            setSelectedAcademicCourse(null);
-            setHideHeader(false);
-            setIsHeaderVisible(true);
-            setLastScrollY(0);
-          }}
-        />
+        <div className="p-4 text-center">
+          <p>AcademicCourseViewer component not yet implemented</p>
+          <button 
+            onClick={() => {
+              setSelectedAcademicCourse(null);
+              setHideHeader(false);
+              setIsHeaderVisible(true);
+              setLastScrollY(0);
+            }}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+        // TODO: Implement AcademicCourseViewer component
+        // <AcademicCourseViewer
+        //   courseId={selectedAcademicCourse._id}
+        //   user={user}
+        //   onBack={() => {
+        //     setSelectedAcademicCourse(null);
+        //     setHideHeader(false);
+        //     setIsHeaderVisible(true);
+        //     setLastScrollY(0);
+        //   }}
+        // />
       );
     }
 
@@ -1187,19 +1202,23 @@ export default function LearnerDashboard() {
         );
       case "academic-courses":
         return (
-          <AcademicCourseLibrary
-            onCourseSelect={(course) => {
-              console.log(
-                "🎯 Academic course selected from library:",
-                course.title
-              );
-              setSelectedAcademicCourse(course);
-              setHideHeader(true);
-            }}
-            enrolledCourses={enrolledCourses}
-            enrollmentDataLoaded={enrollmentDataLoaded}
-            onEnrollmentChange={handleEnrollmentChange}
-          />
+          <div className="p-4 text-center">
+            <p>AcademicCourseLibrary component not yet implemented</p>
+            {/* TODO: Implement AcademicCourseLibrary component */}
+            {/* <AcademicCourseLibrary
+              onCourseSelect={(course) => {
+                console.log(
+                  "🎯 Academic course selected from library:",
+                  course.title
+                );
+                setSelectedAcademicCourse(course);
+                setHideHeader(true);
+              }}
+              enrolledCourses={enrolledCourses}
+              enrollmentDataLoaded={enrollmentDataLoaded}
+              onEnrollmentChange={handleEnrollmentChange}
+            /> */}
+          </div>
         );
       case "test-series":
         return (

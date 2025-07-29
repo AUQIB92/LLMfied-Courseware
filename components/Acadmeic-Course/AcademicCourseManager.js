@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import ExamContentEditor from "./ExamContentEditor"
-import ExamGeniusCourseCreator from "./ExamGeniusCourseCreator"
+import AcademicContentEditor from "./AcademicContentEditor"
+import AcademicCourseCreator from "./AcademicCourseCreator"
 import { toast } from "sonner"
 import {
   Plus,
@@ -52,10 +52,10 @@ import {
   Eye
 } from "lucide-react"
 
-export default function ExamGenius() {
+export default function AcademicCourseManager() {
   const { user, getAuthHeaders } = useAuth()
   const [activeView, setActiveView] = useState("dashboard")
-  const [examCourses, setExamCourses] = useState([])
+  const [academicCourses, setAcademicCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [editingCourse, setEditingCourse] = useState(null)
   const [showCourseCreator, setShowCourseCreator] = useState(false)
@@ -76,16 +76,16 @@ export default function ExamGenius() {
   const [newCourseData, setNewCourseData] = useState({
     title: "",
     description: "",
-    examType: "",
+    academicLevel: "",
     subject: "",
-    learnerLevel: "intermediate",
+    semester: "intermediate",
     duration: "",
     difficultyLevel: "medium",
     modules: []
   })
 
   const [stats, setStats] = useState({
-    totalExamCourses: 0,
+    totalAcademicCourses: 0,
     activeStudents: 0,
     completionRate: 0,
     averageScore: 0
@@ -96,12 +96,12 @@ export default function ExamGenius() {
   const [statusFilter, setStatusFilter] = useState("all") // "all", "published", "draft"
 
   // Computed filtered courses
-  const filteredCourses = examCourses.filter(course => {
+  const filteredCourses = academicCourses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.subject?.toLowerCase().includes(searchTerm.toLowerCase())
     
-    const matchesExamType = filterType === "all" || course.examType === filterType
+    const matchesExamType = filterType === "all" || course.academicLevel === filterType
     
     const matchesStatus = statusFilter === "all" || 
                          (statusFilter === "published" && course.isPublished) ||
@@ -111,15 +111,15 @@ export default function ExamGenius() {
   })
 
   // Separate published and draft courses
-  const publishedCourses = examCourses.filter(course => 
+  const publishedCourses = academicCourses.filter(course => 
     course.status === "published" || course.isPublished === true
   )
   
-  const draftCourses = examCourses.filter(course => 
+  const draftCourses = academicCourses.filter(course => 
     course.status !== "published" && course.isPublished !== true
   )
 
-  const examTypes = [
+  const academicLevels = [
     { id: "jee", name: "JEE Main/Advanced", icon: "🔬", color: "blue" },
     { id: "neet", name: "NEET", icon: "🏥", color: "green" },
     { id: "gate", name: "GATE", icon: "⚙️", color: "purple" },
@@ -137,40 +137,40 @@ export default function ExamGenius() {
 
   useEffect(() => {
     if (user) {
-      fetchExamCourses()
+      fetchAcademicCourses()
       fetchStats()
     }
   }, [user])
 
-  const fetchExamCourses = async () => {
+  const fetchAcademicCourses = async () => {
     try {
       setLoading(true)
-      console.log("🔍 ExamGenius: Fetching courses for user:", user.id)
+      console.log("🔍 Academic Course: Fetching courses for user:", user.id)
       
       // First try the debug endpoint to see what's in the database
-      console.log("🔬 Checking database directly for ExamGenius courses...");
+      console.log("🔬 Checking database directly for Academic Course courses...");
       const debugResponse = await fetch(`/api/debug-exam-courses?userId=${user.id}`, {
         headers: getAuthHeaders(),
       });
       
       if (debugResponse.ok) {
         const debugData = await debugResponse.json();
-        console.log(`🔬 Debug found ${debugData.count} ExamGenius courses in database:`, debugData);
+        console.log(`🔬 Debug found ${debugData.count} Academic Course courses in database:`, debugData);
       }
       
-      // Now fetch courses through the regular API with explicit ExamGenius filter
-      const response = await fetch(`/api/courses?educatorId=${user.id}&isExamGenius=true`, {
+      // Now fetch courses through the regular API with explicit Academic Course filter
+      const response = await fetch(`/api/courses?educatorId=${user.id}&isAcademicCourse=true`, {
         headers: getAuthHeaders(),
       })
 
       if (response.ok) {
         const data = await response.json()
-        console.log("📊 ExamGenius: Raw courses data:", data)
-        console.log("📊 ExamGenius: Total courses received:", data.length)
+        console.log("📊 Academic Course: Raw courses data:", data)
+        console.log("📊 Academic Course: Total courses received:", data.length)
         
         if (!Array.isArray(data)) {
-          console.error("❌ ExamGenius: Invalid courses data format, expected array but got:", typeof data)
-          setExamCourses([])
+          console.error("❌ Academic Course: Invalid courses data format, expected array but got:", typeof data)
+          setAcademicCourses([])
           return
         }
         
@@ -180,7 +180,7 @@ export default function ExamGenius() {
             id: course._id,
             status: course.status,
             isPublished: course.isPublished,
-            isExamGenius: course.isExamGenius,
+            isAcademicCourse: course.isAcademicCourse,
             isCompetitiveExam: course.isCompetitiveExam,
             moduleCount: course.modules?.length || 0
           })
@@ -204,7 +204,7 @@ export default function ExamGenius() {
         });
         
         // Set all courses to state
-        setExamCourses(normalizedCourses)
+        setAcademicCourses(normalizedCourses)
         
         // Count published and draft courses
         const published = normalizedCourses.filter(course => 
@@ -215,7 +215,7 @@ export default function ExamGenius() {
           course.status !== "published" && course.isPublished !== true
         )
         
-        console.log(`📊 ExamGenius courses breakdown: ${published.length} published, ${drafts.length} drafts`)
+        console.log(`📊 Academic Course courses breakdown: ${published.length} published, ${drafts.length} drafts`)
         
         // Log published courses for debugging
         published.forEach(course => {
@@ -227,12 +227,12 @@ export default function ExamGenius() {
           })
         })
       } else {
-        console.error("❌ ExamGenius: Failed to fetch exam courses", response.status)
-        setExamCourses([])
+        console.error("❌ Academic Course: Failed to fetch academic courses", response.status)
+        setAcademicCourses([])
       }
     } catch (error) {
-      console.error("❌ ExamGenius: Error fetching exam courses:", error)
-      setExamCourses([])
+      console.error("❌ Academic Course: Error fetching academic courses:", error)
+      setAcademicCourses([])
     } finally {
       setLoading(false)
     }
@@ -240,7 +240,7 @@ export default function ExamGenius() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`/api/stats?type=examgenius&isExamGenius=true`, {
+      const response = await fetch(`/api/stats?type=examgenius&isAcademicCourse=true`, {
         headers: getAuthHeaders(),
       })
 
@@ -252,7 +252,7 @@ export default function ExamGenius() {
       console.error("Error fetching stats:", error)
       // Set default stats if API fails
       setStats({
-        totalExamCourses: 0,
+        totalAcademicCourses: 0,
         activeStudents: 0,
         completionRate: 0,
         averageScore: 0
@@ -282,15 +282,15 @@ export default function ExamGenius() {
     }
   }
 
-  // Generate curriculum with ExamGenius AI
+  // Generate curriculum with Academic Course AI
   const handleGenerateCurriculum = async () => {
-    if (!curriculumTopic.trim() || !newCourseData.examType || !newCourseData.subject) {
+    if (!curriculumTopic.trim() || !newCourseData.academicLevel || !newCourseData.subject) {
       alert("Please enter a topic, select exam type, and subject")
       return
     }
 
     setLoading(true)
-    setProcessingStep("🧠 AI is creating your competitive exam curriculum...")
+    setProcessingStep("🧠 AI is creating your academic course curriculum...")
     setProcessingProgress(0)
 
     try {
@@ -310,7 +310,7 @@ export default function ExamGenius() {
         }
       }, 2000)
 
-      const response = await fetch("/api/exam-genius/generate-curriculum", {
+      const response = await fetch("/api/academic-courses/generate-curriculum", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -318,9 +318,9 @@ export default function ExamGenius() {
         },
         body: JSON.stringify({
           topic: curriculumTopic,
-          examType: newCourseData.examType,
+          academicLevel: newCourseData.academicLevel,
           subject: newCourseData.subject,
-          learnerLevel: newCourseData.learnerLevel,
+          semester: newCourseData.semester,
           duration: newCourseData.duration,
           title: newCourseData.title,
           description: newCourseData.description,
@@ -341,7 +341,7 @@ export default function ExamGenius() {
         setShowCurriculumPreview(true)
         
         setTimeout(() => {
-          toast.success(`🎉 ${newCourseData.examType.toUpperCase()} Curriculum Created!\n\n📖 Topic: ${curriculumTopic}\n🎯 Level: ${newCourseData.learnerLevel}\n📊 Modules: ${data.moduleCount || numberOfModules}\n\n🏆 Exam-focused curriculum with strategies, shortcuts, and practice questions ready for processing!`)
+          toast.success(`🎉 ${newCourseData.academicLevel.toUpperCase()} Curriculum Created!\n\n📖 Topic: ${curriculumTopic}\n🎯 Level: ${newCourseData.semester}\n📊 Modules: ${data.moduleCount || numberOfModules}\n\n🏆 Exam-focused curriculum with strategies, shortcuts, and practice questions ready for processing!`)
         }, 1000)
       } else {
         console.error("Curriculum generation error:", data)
@@ -375,12 +375,12 @@ export default function ExamGenius() {
     try {
       const formData = new FormData()
       formData.append("file", file)
-      formData.append("learnerLevel", newCourseData.learnerLevel)
+      formData.append("semester", newCourseData.semester)
       formData.append("subject", newCourseData.subject)
       formData.append("title", newCourseData.title)
       formData.append("description", newCourseData.description)
       formData.append("duration", newCourseData.duration)
-      formData.append("examType", newCourseData.examType)
+      formData.append("academicLevel", newCourseData.academicLevel)
       formData.append("isCompetitiveExam", "true")
 
       const progressStages = [
@@ -420,7 +420,7 @@ export default function ExamGenius() {
         
         setTimeout(() => {
           setCreationStep(3)
-          toast.success(`🎉 Content Processing Complete!\n\n✨ Successfully created ${data.modules.length} exam-focused modules\n\n🏆 Your competitive exam course is ready for final review and publishing!`)
+          toast.success(`🎉 Content Processing Complete!\n\n✨ Successfully created ${data.modules.length} exam-focused modules\n\n🏆 Your academic course course is ready for final review and publishing!`)
         }, 1000)
       } else {
         console.error("File processing error:", data)
@@ -445,7 +445,7 @@ export default function ExamGenius() {
     if (!generatedCurriculum) return
 
     setLoading(true)
-    setProcessingStep("🚀 Processing curriculum into detailed competitive exam modules...")
+    setProcessingStep("🚀 Processing curriculum into detailed academic course modules...")
     setProcessingProgress(0)
 
     try {
@@ -455,7 +455,7 @@ export default function ExamGenius() {
         { step: "🎯 Creating practice questions and strategies...", progress: 50 },
         { step: "⚡ Adding shortcuts and time-saving techniques...", progress: 70 },
         { step: "🏆 Integrating exam-specific resources...", progress: 85 },
-        { step: "✨ Finalizing competitive exam course...", progress: 95 }
+        { step: "✨ Finalizing academic course course...", progress: 95 }
       ]
 
       let currentStage = 0
@@ -467,7 +467,7 @@ export default function ExamGenius() {
         }
       }, 3000)
 
-      const response = await fetch("/api/exam-genius/process-curriculum", {
+      const response = await fetch("/api/academic-courses/process-curriculum", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -478,7 +478,7 @@ export default function ExamGenius() {
           courseData: {
             ...newCourseData,
             isCompetitiveExam: true,
-            isExamGenius: true
+            isAcademicCourse: true
           }
         }),
       })
@@ -498,7 +498,7 @@ export default function ExamGenius() {
         setTimeout(() => {
           setCreationStep(3)
           setShowCurriculumPreview(false)
-          toast.success(`🎉 ${newCourseData.examType.toUpperCase()} Curriculum Processing Complete!\n\n✨ Successfully generated ${data.modules.length} detailed competitive exam modules\n\n🏆 Your course now includes exam strategies, shortcuts, practice questions, and time-saving techniques!`)
+          toast.success(`🎉 ${newCourseData.academicLevel.toUpperCase()} Curriculum Processing Complete!\n\n✨ Successfully generated ${data.modules.length} detailed academic course modules\n\n🏆 Your course now includes exam strategies, shortcuts, practice questions, and time-saving techniques!`)
         }, 1000)
       } else {
         console.error("Curriculum processing error:", data)
@@ -524,14 +524,14 @@ export default function ExamGenius() {
       const courseData = {
         ...newCourseData,
         isCompetitiveExam: true,
-        isExamGenius: true,
+        isAcademicCourse: true,
         educatorId: user.id,
         modules: newCourseData.modules.map(module => ({
           ...module,
           isCompetitiveExam: true,
-          examType: newCourseData.examType,
+          academicLevel: newCourseData.academicLevel,
           subject: newCourseData.subject,
-          learnerLevel: newCourseData.learnerLevel
+          semester: newCourseData.semester
         }))
       }
 
@@ -552,7 +552,7 @@ export default function ExamGenius() {
         
         // Reset form
         resetCourseForm()
-        fetchExamCourses()
+        fetchAcademicCourses()
       } else {
         const error = await response.json()
         toast.error(error.message || "Failed to create course")
@@ -579,9 +579,9 @@ export default function ExamGenius() {
     setNewCourseData({
       title: "",
       description: "",
-      examType: "",
+      academicLevel: "",
       subject: "",
-      learnerLevel: "intermediate",
+      semester: "intermediate",
       duration: "",
       difficultyLevel: "medium",
       modules: []
@@ -601,7 +601,7 @@ export default function ExamGenius() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${newCourseData.title || curriculumTopic}-${newCourseData.examType}-curriculum.md`
+    a.download = `${newCourseData.title || curriculumTopic}-${newCourseData.academicLevel}-curriculum.md`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -623,7 +623,7 @@ export default function ExamGenius() {
       })
 
       if (response.ok) {
-        setExamCourses(examCourses.filter(c => c.id !== courseId && c._id !== courseId))
+        setAcademicCourses(academicCourses.filter(c => c.id !== courseId && c._id !== courseId))
         toast.success("Course deleted successfully!")
       } else {
         throw new Error("Failed to delete course")
@@ -637,24 +637,24 @@ export default function ExamGenius() {
   const handleBackFromEditor = () => {
     setEditingCourse(null)
     setActiveView("dashboard")
-    fetchExamCourses()
+    fetchAcademicCourses()
     fetchStats()
   }
 
   const handleCourseCreated = (newCourse) => {
     setShowCourseCreator(false)
     setActiveView("dashboard")
-    fetchExamCourses()
+    fetchAcademicCourses()
     fetchStats()
     toast.success("🎉 Course created successfully! You can now edit and manage your modules.")
   }
 
   const handleCourseSaved = async (updatedCourse, status = "draft") => {
     try {
-      console.log("🔄 Saving ExamGenius course:", {
+      console.log("🔄 Saving Academic Course course:", {
         courseId: updatedCourse.id || updatedCourse._id,
         title: updatedCourse.title,
-        examType: updatedCourse.examType,
+        academicLevel: updatedCourse.academicLevel,
         moduleCount: updatedCourse.modules?.length || 0,
         requestedStatus: status,
         currentStatus: updatedCourse.status
@@ -674,8 +674,8 @@ export default function ExamGenius() {
       
       console.log(`📝 Setting course status to: ${courseStatus}`);
 
-      // Use the ExamGenius save-course endpoint for updating courses
-      const response = await fetch("/api/exam-genius/save-course", {
+      // Use the Academic Course save-course endpoint for updating courses
+      const response = await fetch("/api/academic-courses/save-course", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -685,7 +685,7 @@ export default function ExamGenius() {
           course: {
             ...updatedCourse,
             _id: updatedCourse.id || updatedCourse._id,
-            isExamGenius: true,
+            isAcademicCourse: true,
             isCompetitiveExam: true,
             status: courseStatus,
             isPublished: courseStatus === "published"
@@ -706,14 +706,14 @@ export default function ExamGenius() {
         // Use the returned course data from the API
         if (data.course) {
           // Immediately refresh the course list to show the updated course
-          await fetchExamCourses()
+          await fetchAcademicCourses()
           
           toast.success(`🎉 Course ${status === 'published' ? 'published' : 'saved'} successfully!`)
         } else {
           console.warn("⚠️ No course data returned from API")
           toast.success("🎉 Course saved successfully!")
           // Still refresh courses even if we don't have course data
-          await fetchExamCourses()
+          await fetchAcademicCourses()
         }
       } else {
         const errorText = await response.text()
@@ -735,8 +735,8 @@ export default function ExamGenius() {
     }
   }
 
-  const getExamTypeConfig = (examType) => {
-    return examTypes.find(type => type.id === examType) || examTypes[examTypes.length - 1]
+  const getExamTypeConfig = (academicLevel) => {
+    return academicLevels.find(type => type.id === academicLevel) || academicLevels[academicLevels.length - 1]
   }
   
   // Function to directly publish a draft course
@@ -766,7 +766,7 @@ export default function ExamGenius() {
         console.log("✅ Course published successfully:", data);
         
         // Refresh the courses list
-        await fetchExamCourses();
+        await fetchAcademicCourses();
         
         toast.success(`🎉 Course "${course.title}" published successfully!`);
       } else {
@@ -791,7 +791,7 @@ export default function ExamGenius() {
 
   if (activeView === "editor" && editingCourse) {
     return (
-      <ExamContentEditor
+      <AcademicContentEditor
         course={editingCourse}
         onBack={handleBackFromEditor}
         onSave={handleCourseSaved}
@@ -813,7 +813,7 @@ export default function ExamGenius() {
               Back to Dashboard
             </Button>
           </div>
-          <ExamGeniusCourseCreator onCourseCreated={handleCourseCreated} />
+          <AcademicCourseCreator onCourseCreated={handleCourseCreated} />
         </div>
       </div>
     )
@@ -830,7 +830,7 @@ export default function ExamGenius() {
             </div>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                ExamGenius
+                Academic Course
               </h1>
               <p className="text-gray-600">Competitive Exam Course Creator</p>
             </div>
@@ -846,7 +846,7 @@ export default function ExamGenius() {
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Create First ExamGenius Course
+              Create First Academic Course Course
             </Button>
           </div>
         </div>
@@ -859,7 +859,7 @@ export default function ExamGenius() {
                 <BookOpen className="h-8 w-8" />
                 <div>
                   <p className="text-blue-100">Total Courses</p>
-                  <p className="text-2xl font-bold">{stats.totalExamCourses}</p>
+                  <p className="text-2xl font-bold">{stats.totalAcademicCourses}</p>
                 </div>
               </div>
             </CardContent>
@@ -907,7 +907,7 @@ export default function ExamGenius() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="courses" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
-              All Courses ({examCourses.length})
+              All Courses ({academicCourses.length})
             </TabsTrigger>
             <TabsTrigger value="published" className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
@@ -926,7 +926,7 @@ export default function ExamGenius() {
               <div className="flex items-center gap-2 text-blue-800">
                 <Trophy className="h-5 w-5" />
                 <p className="text-sm font-medium">
-                  All ExamGenius courses - specialized for competitive exam preparation
+                  All Academic Course courses - specialized for academic course preparation
                 </p>
               </div>
             </div>
@@ -948,7 +948,7 @@ export default function ExamGenius() {
                 className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Exams</option>
-                {examTypes.map(type => (
+                {academicLevels.map(type => (
                   <option key={type.id} value={type.id}>{type.name}</option>
                 ))}
               </select>
@@ -980,22 +980,22 @@ export default function ExamGenius() {
             ) : filteredCourses.length === 0 ? (
               <div className="text-center py-12">
                 <Brain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-500 mb-2">No ExamGenius Courses Yet</h3>
+                <h3 className="text-lg font-medium text-gray-500 mb-2">No Academic Course Courses Yet</h3>
                 <p className="text-gray-400 mb-4">
-                  Create your first competitive exam course to get started.
+                  Create your first academic course course to get started.
                 </p>
                 <Button
                   onClick={() => setShowCourseCreator(true)}
                   className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create First ExamGenius Course
+                  Create First Academic Course Course
                 </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCourses.map((course) => {
-                  const examConfig = getExamTypeConfig(course.examType)
+                  const examConfig = getExamTypeConfig(course.academicLevel)
                   return (
                     <Card key={course.id || course._id} className="hover:shadow-lg transition-shadow duration-200">
                       <CardHeader className="pb-3">
@@ -1047,7 +1047,7 @@ export default function ExamGenius() {
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-500">Level:</span>
-                            <span className="font-medium capitalize">{course.learnerLevel}</span>
+                            <span className="font-medium capitalize">{course.semester}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-500">Modules:</span>
@@ -1078,7 +1078,7 @@ export default function ExamGenius() {
               <div className="flex items-center gap-2 text-green-800">
                 <CheckCircle className="h-5 w-5" />
                 <p className="text-sm font-medium">
-                  Published ExamGenius courses - live and available to students
+                  Published Academic Course courses - live and available to students
                 </p>
               </div>
             </div>
@@ -1088,7 +1088,7 @@ export default function ExamGenius() {
                 <CheckCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-500 mb-2">No Published Courses</h3>
                 <p className="text-gray-400 mb-4">
-                  You haven't published any ExamGenius courses yet. Create and publish your first course to get started.
+                  You haven't published any Academic Course courses yet. Create and publish your first course to get started.
                 </p>
                 <Button
                   onClick={() => setShowCourseCreator(true)}
@@ -1101,7 +1101,7 @@ export default function ExamGenius() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {publishedCourses.map((course) => {
-                  const examConfig = getExamTypeConfig(course.examType)
+                  const examConfig = getExamTypeConfig(course.academicLevel)
                   return (
                     <Card key={course.id || course._id} className="hover:shadow-lg transition-shadow duration-200 border-green-200">
                       <CardHeader className="pb-3">
@@ -1154,7 +1154,7 @@ export default function ExamGenius() {
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-500">Level:</span>
-                            <span className="font-medium capitalize">{course.learnerLevel}</span>
+                            <span className="font-medium capitalize">{course.semester}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-500">Modules:</span>
@@ -1192,7 +1192,7 @@ export default function ExamGenius() {
               <div className="flex items-center gap-2 text-yellow-800">
                 <FileText className="h-5 w-5" />
                 <p className="text-sm font-medium">
-                  Draft ExamGenius courses - not yet published, continue editing to complete
+                  Draft Academic Course courses - not yet published, continue editing to complete
                 </p>
               </div>
             </div>
@@ -1202,7 +1202,7 @@ export default function ExamGenius() {
                 <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-500 mb-2">No Draft Courses</h3>
                 <p className="text-gray-400 mb-4">
-                  You don't have any draft ExamGenius courses. Start creating a new course to save as draft.
+                  You don't have any draft Academic Course courses. Start creating a new course to save as draft.
                 </p>
                 <Button
                   onClick={() => setShowCourseCreator(true)}
@@ -1215,7 +1215,7 @@ export default function ExamGenius() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {draftCourses.map((course) => {
-                  const examConfig = getExamTypeConfig(course.examType)
+                  const examConfig = getExamTypeConfig(course.academicLevel)
                   return (
                     <Card key={course.id || course._id} className="hover:shadow-lg transition-shadow duration-200 border-yellow-200">
                       <CardHeader className="pb-3">
@@ -1268,7 +1268,7 @@ export default function ExamGenius() {
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-500">Level:</span>
-                            <span className="font-medium capitalize">{course.learnerLevel}</span>
+                            <span className="font-medium capitalize">{course.semester}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-500">Modules:</span>

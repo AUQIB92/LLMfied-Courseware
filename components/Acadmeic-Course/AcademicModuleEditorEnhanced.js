@@ -246,12 +246,12 @@ function parseMarkdownToSubsections(markdownContent) {
   return subsections.map((sub) => ({ ...sub, content: sub.content.trim() }));
 }
 
-export default function ExamModuleEditorEnhanced({
+export default function AcademicModuleEditorEnhanced({
   module,
   onUpdate,
-  examType,
+  academicLevel,
   subject,
-  learnerLevel,
+  semester,
   course,
   courseId,
   onSaveSuccess,
@@ -270,8 +270,10 @@ export default function ExamModuleEditorEnhanced({
       examples: module.examples || [],
       detailedSubsections: module.detailedSubsections || [],
       // Academic course specific fields
-      isAcademicCourse: course?.isAcademicCourse || false,
-      courseType: course?.courseType || examType,
+      isAcademicCourse: course?.isAcademicCourse || true,
+      courseType: course?.courseType || "academic",
+      academicLevel: academicLevel || course?.academicLevel || "undergraduate",
+      semester: semester || course?.semester || 1,
       hasUnits: module.hasUnits || false,
       unitStructure: module.unitStructure || {},
     };
@@ -291,6 +293,9 @@ export default function ExamModuleEditorEnhanced({
   // Track if module has been modified
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState("saved"); // "saved", "editing", "saving"
+  
+  // Debounced parent update to prevent constant saving while editing
+  const [updateTimeout, setUpdateTimeout] = useState(null);
 
   // Sync local module state when module prop changes (important for Academic courses)
   useEffect(() => {
@@ -312,14 +317,14 @@ export default function ExamModuleEditorEnhanced({
       detailedSubsections: module.detailedSubsections || [],
       // Academic course specific fields
       isAcademicCourse: course?.isAcademicCourse || false,
-      courseType: course?.courseType || examType,
+      courseType: course?.courseType || academicLevel,
       hasUnits: module.hasUnits || false,
       unitStructure: module.unitStructure || {},
     }));
 
     // Reset changes flag when module prop changes
     setHasChanges(false);
-  }, [module, course?.isAcademicCourse, course?.courseType, examType]);
+  }, [module, course?.isAcademicCourse, course?.courseType, academicLevel]);
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -487,7 +492,7 @@ export default function ExamModuleEditorEnhanced({
   const updateLocalModuleField = (field, value) => {
     console.log("🔄 Updating local module field:", {
       field,
-      value: value?.substring(0, 100) + "...",
+      value: typeof value === 'string' ? value?.substring(0, 100) + "..." : value,
       hasChanges,
     });
     setLocalModule((prev) => ({
@@ -497,9 +502,6 @@ export default function ExamModuleEditorEnhanced({
     setHasChanges(true);
     setSaveStatus("editing");
   };
-
-  // Debounced parent update to prevent constant saving while editing
-  const [updateTimeout, setUpdateTimeout] = useState(null);
 
   const debouncedParentUpdate = (updatedModule) => {
     if (updateTimeout) {
@@ -869,20 +871,21 @@ export default function ExamModuleEditorEnhanced({
       subsectionContent = `
         Topic: ${subsection.title || "Unknown Topic"}
         Subject: ${subject || "General"}
-        Exam Type: ${examType || "General Exam"}
+        Academic Level: ${academicLevel || "Undergraduate"}
+        Semester: ${semester || "1"}
         
         This subsection covers important concepts related to ${
           subsection.title || "the topic"
         } 
         in the context of ${subject || "the subject area"} for ${
-        examType || "competitive exams"
+        academicLevel || "academic courses"
       }.
         
         Key areas of focus include fundamental principles, practical applications, 
-        and exam-specific strategies for mastering this topic.
+        and academic strategies for mastering this topic.
         
         Students should understand the fundamental concepts, learn problem-solving techniques,
-        and practice applying knowledge in exam scenarios.
+        and practice applying knowledge in academic scenarios.
       `.trim();
     }
 
@@ -905,7 +908,7 @@ export default function ExamModuleEditorEnhanced({
       ),
       contentLength: subsectionContent.length,
       contentPreview: subsectionContent.substring(0, 200) + "...",
-      examType: examType,
+      academicLevel: academicLevel,
       subject: subject,
       difficulty: difficulty,
       allFields: Object.keys(subsection),
@@ -953,15 +956,15 @@ export default function ExamModuleEditorEnhanced({
         difficulty: difficulty,
         context: {
           concept: subsection.title,
-          examType: examType,
+          academicLevel: academicLevel,
           subject: subject,
-          learnerLevel: difficulty, // Use difficulty as learner level
+          semester: difficulty, // Use difficulty as learner level
         },
         provider: selectedProviders.quiz, // Include selected provider
       };
 
       console.log("📤 Sending quiz generation request:", {
-        url: "/api/exam-genius/generate-quiz",
+        url: "/api/academic-courses/generate-quiz",
         payload: requestPayload,
         contentLength: subsectionContent.length,
         headers: getAuthHeaders(),
@@ -970,7 +973,7 @@ export default function ExamModuleEditorEnhanced({
         isAuthenticated: !!user,
       });
 
-      const response = await apiCall("/api/exam-genius/generate-quiz", {
+      const response = await apiCall("/api/academic-courses/generate-quiz", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1196,9 +1199,23 @@ export default function ExamModuleEditorEnhanced({
 
   // Save/Publish handlers
   const handleSaveDraft = async () => {
-    if (!course || !courseId) {
-      toast.error("❌ Course information missing. Cannot save changes.");
+    console.log("🔍 Save Draft Debug:", {
+      hasEntryCourse: !!course,
+      courseId: courseId,
+      courseTitle: course?.title,
+      courseAcademicLevel: course?.academicLevel,
+      courseSubject: course?.subject
+    });
+
+    if (!course) {
+      toast.error("❌ Course object missing. Cannot save changes.");
+      console.error("Course object is missing:", { course, courseId });
       return;
+    }
+
+    // Note: courseId can be null for new courses that haven't been saved yet
+    if (!courseId) {
+      console.log("ℹ️ No courseId provided - this will create a new course");
     }
 
     setSaving(true);
@@ -1210,7 +1227,7 @@ export default function ExamModuleEditorEnhanced({
         currentModule: localModule.title,
       });
 
-      const response = await fetch("/api/exam-genius/save-course", {
+      const response = await fetch("/api/academic-courses/save-course", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1221,8 +1238,8 @@ export default function ExamModuleEditorEnhanced({
             ...course,
             _id: courseId,
             status: "draft",
-            isExamGenius: true,
-            isCompetitiveExam: true,
+            isAcademicCourse: true,
+            courseType: "academic",
             modules: course.modules, // Include all modules with current changes
           },
         }),
@@ -1242,7 +1259,7 @@ export default function ExamModuleEditorEnhanced({
 
         toast.success(
           `📝 Draft Saved Successfully! 🎯 "${course.title}" • 📚 ${
-            course.examType
+            course.academicLevel
           } • �� ${course.subject} • 📋 ${moduleCount} modules${
             subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ""
           } • ✨ Continue editing or publish when ready!`,
@@ -1285,7 +1302,7 @@ export default function ExamModuleEditorEnhanced({
       hasTitle: !!course?.title,
       hasCourseId: !!courseId,
       moduleCount: course?.modules?.length || 0,
-      examType: course?.examType,
+      academicLevel: course?.academicLevel,
       subject: course?.subject,
     });
 
@@ -1302,13 +1319,13 @@ export default function ExamModuleEditorEnhanced({
       );
     }
 
-    if (!course.title || !course.examType || !course.subject) {
+    if (!course.title || !course.academicLevel || !course.subject) {
       toast.error(
-        "❌ Course must have title, exam type, and subject before publishing"
+        "❌ Course must have title, academic level, and subject before publishing"
       );
       console.error("Missing required fields:", {
         title: course.title,
-        examType: course.examType,
+        academicLevel: course.academicLevel,
         subject: course.subject,
       });
       return;
@@ -1340,8 +1357,8 @@ export default function ExamModuleEditorEnhanced({
           ...course,
           status: "published",
           isPublished: true,
-          isExamGenius: true,
-          isCompetitiveExam: true,
+          isAcademicCourse: true,
+          isAcademicCourse: true,
           modules: course.modules,
         },
       };
@@ -1364,7 +1381,7 @@ export default function ExamModuleEditorEnhanced({
         },
       });
 
-      const response = await fetch("/api/exam-genius/save-course", {
+      const response = await fetch("/api/academic-courses/save-course", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1403,7 +1420,7 @@ export default function ExamModuleEditorEnhanced({
         toast.success(
           `🎉 Course Published Successfully! 🏆 "${
             course.title
-          }" is now live • 📚 ${course.examType} • 📖 ${
+          }" is now live • 📚 ${course.academicLevel} • 📖 ${
             course.subject
           } • 📋 ${moduleCount} modules${
             subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ""
@@ -1540,7 +1557,7 @@ export default function ExamModuleEditorEnhanced({
       // Prepare the context for the API
       const context = {
         subject: subject || "General",
-        examType: examType || "General",
+        academicLevel: academicLevel || "General",
         moduleTitle: localModule.title,
         subsectionTitle: subsection.title,
       };
@@ -1555,12 +1572,12 @@ export default function ExamModuleEditorEnhanced({
       const subsectionContentMatch = localModule.content.match(subsectionRegex);
       const focusedContent = subsectionContentMatch
         ? subsectionContentMatch[0]
-        : `#### ${subsection.title}\n\nThis is a subsection of the module "${localModule.title}" for ${examType} exam preparation in ${subject}.`;
+        : `#### ${subsection.title}\n\nThis is a subsection of the module "${localModule.title}" for ${academicLevel} academic learning in ${subject}.`;
 
       // Add module context to help the AI
-      const moduleContext = `Module: ${localModule.title}\nSubject: ${subject}\nExam: ${examType}\n\n${focusedContent}`;
+      const moduleContext = `Module: ${localModule.title}\nSubject: ${subject}\nAcademic Level: ${academicLevel}\nSemester: ${semester}\n\n${focusedContent}`;
 
-      // Call the API to generate content
+      // Call the API to generate content (using exam-genius endpoint for now)
       const response = await fetch(
         "/api/exam-genius/generate-subsection-content",
         {
@@ -1571,17 +1588,40 @@ export default function ExamModuleEditorEnhanced({
           },
           body: JSON.stringify({
             content: moduleContext,
-            context: context,
+            context: {
+              ...context,
+              type: "academic",
+              semester: semester,
+              courseType: "academic"
+            },
+            type: "subsection"
           }),
         }
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to generate content");
+        let errorMessage = "Failed to generate content";
+        try {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } catch (e) {
+          console.error("Failed to parse error response:", e);
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        const responseText = await response.text();
+        if (!responseText.trim()) {
+          throw new Error("Empty response from server");
+        }
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse JSON response:", e);
+        throw new Error("Invalid response format from server");
+      }
 
       // Add debug logging to see what we received
       console.log("🔍 API Response data.content:", data.content);
@@ -1703,7 +1743,7 @@ export default function ExamModuleEditorEnhanced({
         "";
       const fullContent = `${moduleContent}\n\n${subsectionsContent}`;
 
-      const response = await fetch("/api/exam-genius/generate-resources", {
+      const response = await fetch("/api/academic-courses/generate-resources", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1712,9 +1752,9 @@ export default function ExamModuleEditorEnhanced({
         body: JSON.stringify({
           moduleTitle: localModule.title,
           moduleContent: fullContent,
-          examType,
+          academicLevel,
           subject,
-          learnerLevel,
+          semester,
         }),
       });
 
@@ -2144,14 +2184,14 @@ export default function ExamModuleEditorEnhanced({
                   {localModule.title || "Untitled Module"}
                 </CardTitle>
                 <p className="text-gray-600">
-                  {examType} • {subject} • {learnerLevel}
+                  {academicLevel} • {subject} • {semester}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white">
                 <Trophy className="h-4 w-4 mr-1" />
-                ExamGenius
+                Academic Course
               </Badge>
             </div>
           </div>
@@ -2241,7 +2281,7 @@ export default function ExamModuleEditorEnhanced({
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">Difficulty</Label>
                   <Select
-                    value={localModule.difficulty || learnerLevel}
+                    value={localModule.difficulty || semester}
                     onValueChange={(value) =>
                       updateModuleField("difficulty", value)
                     }
@@ -2612,13 +2652,13 @@ Detailed discussion here..."
                     {currentPageExplanations.length}
                   </div>
                   <div>
-                    <strong>ExamType:</strong> {examType}
+                    <strong>Academic Level:</strong> {academicLevel}
                   </div>
                   <div>
                     <strong>Subject:</strong> {subject}
                   </div>
                   <div>
-                    <strong>LearnerLevel:</strong> {learnerLevel}
+                    <strong>Semester:</strong> {semester}
                   </div>
                 </div>
               </CardContent>

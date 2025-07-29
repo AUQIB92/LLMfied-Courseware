@@ -17,12 +17,12 @@ import {
   ArrowRight, ArrowLeft, Edit, AlertTriangle, Info 
 } from "lucide-react"
 import { toast } from "sonner"
-import ExamModuleEditorEnhanced from "./ExamModuleEditorEnhanced"
+import AcademicModuleEditorEnhanced from "./AcademicModuleEditorEnhanced"
 import { useContentValidation, useContentProcessor } from "@/lib/contentDisplayHooks"
 import ContentDisplay from "@/components/ContentDisplay"
 
-// Course Field Validator Component for ExamGenius
-function ExamCourseFieldValidator({ field, value, onChange, placeholder, className, rows, multiline = false }) {
+// Course Field Validator Component for Academic Courses
+function AcademicCourseFieldValidator({ field, value, onChange, placeholder, className, rows, multiline = false }) {
   const { isValid, errors, warnings, isValidating } = useContentValidation(value)
   const { processedContent, processed, hasErrors, hasMath } = useContentProcessor(value)
   
@@ -82,7 +82,7 @@ function ExamCourseFieldValidator({ field, value, onChange, placeholder, classNa
           {isValid && processed && (
             <div className="text-xs text-green-600 flex items-center gap-1">
               <CheckCircle className="h-3 w-3" />
-              Content validated • Ready for competitive exam format
+              Content validated • Ready for academic course format
               {hasMath && " • LaTeX equations detected"}
             </div>
           )}
@@ -92,19 +92,19 @@ function ExamCourseFieldValidator({ field, value, onChange, placeholder, classNa
   )
 }
 
-export default function ExamGeniusCourseCreator({ onCourseCreated }) {
+export default function AcademicCourseCreator({ onCourseCreated }) {
   const [step, setStep] = useState(1)
   const [courseData, setCourseData] = useState({
     title: "",
     description: "",
     modules: [],
-    examType: "",
+    academicLevel: "undergraduate",
     subject: "",
-    learnerLevel: "intermediate",
+    semester: 1,
     duration: "",
     objectives: [],
-    isExamGenius: true,
-    isCompetitiveExam: true
+    isAcademicCourse: true,
+    courseType: "academic"
   })
   const [loading, setLoading] = useState(false)
   const [processingStep, setProcessingStep] = useState("")
@@ -123,7 +123,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
   const [totalJobs, setTotalJobs] = useState(0);
   const { getAuthHeaders } = useAuth()
 
-  const examTypes = [
+  const academicLevels = [
     { id: "jee", name: "JEE Main/Advanced", icon: "🔬" },
     { id: "neet", name: "NEET", icon: "🏥" },
     { id: "gate", name: "GATE", icon: "⚙️" },
@@ -204,10 +204,10 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
           title: module.title,
           content: moduleContent,
           id: `module-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          examType: courseData.examType,
+          academicLevel: courseData.academicLevel,
           subject: courseData.subject,
-          learnerLevel: courseData.learnerLevel,
-          isExamGenius: true,
+          semester: courseData.semester,
+          isAcademicCourse: true,
           isCompetitiveExam: true
         };
       });
@@ -216,7 +216,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
       const updatedCourseData = {
         ...courseData,
         modules: structuredModules,
-        isExamGenius: true,
+        isAcademicCourse: true,
         isCompetitiveExam: true
       };
       
@@ -260,11 +260,11 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
     }
 
     setLoading(true)
-    setProcessingStep("🧠 AI is creating your competitive exam curriculum...")
+    setProcessingStep("🧠 AI is creating your academic course curriculum...")
     setProcessingProgress(0)
 
     try {
-      const response = await fetch("/api/exam-genius/generate-curriculum", {
+      const response = await fetch("/api/academic-courses/generate-curriculum", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -273,9 +273,9 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         body: JSON.stringify({
           title: curriculumTopic,
           topic: curriculumTopic,
-          examType: courseData.examType,
+          academicLevel: courseData.academicLevel,
           subject: courseData.subject,
-          learnerLevel: courseData.learnerLevel,
+          semester: courseData.semester,
           numberOfModules: numberOfModules,
           moduleTopics: moduleTopics,
           teachingNotes: teachingNotes
@@ -287,7 +287,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         setGeneratedCurriculum(data.curriculum)
         
         // Process the curriculum
-        const processResponse = await fetch("/api/exam-genius/process-curriculum", {
+        const processResponse = await fetch("/api/academic-courses/process-curriculum", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -337,19 +337,19 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
     try {
       setLoading(true)
-      toast.info("🎯 Creating competitive exam quiz...")
+      toast.info("🎯 Creating academic course quiz...")
 
       const quizPayload = {
         concept: module.title,
         content: module.content || module.summary || `Module content for ${module.title}`,
-        examType: courseData.examType,
+        academicLevel: courseData.academicLevel,
         subject: courseData.subject,
-        learnerLevel: module.difficulty || courseData.learnerLevel
+        semester: module.difficulty || courseData.semester
       }
 
       console.log("🎯 Quiz creation payload:", quizPayload)
 
-      const response = await fetch("/api/exam-genius/generate-quiz", {
+      const response = await fetch("/api/academic-courses/generate-quiz", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -384,7 +384,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
       
       toast.info(isAutoSave ? "🔄 Automatically saving draft..." : "🔍 Saving draft...");
       
-      if (!currentCourseData.title || !currentCourseData.examType || !currentCourseData.subject) {
+      if (!currentCourseData.title || !currentCourseData.academicLevel || !currentCourseData.subject) {
         toast.error("❌ Please fill in all required fields (Title, Exam Type, Subject)")
         return
       }
@@ -397,7 +397,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
       const payload = {
         ...currentCourseData, 
           status: "draft",
-          isExamGenius: true,
+          isAcademicCourse: true,
           isCompetitiveExam: true
       };
 
@@ -405,7 +405,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         payload._id = currentCourseId;
         }
       
-      const response = await fetch("/api/exam-genius/save-course", {
+      const response = await fetch("/api/academic-courses/save-course", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -466,7 +466,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
       }
       
       // Validate required fields
-      if (!courseData.title || !courseData.examType || !courseData.subject) {
+      if (!courseData.title || !courseData.academicLevel || !courseData.subject) {
         toast.error("❌ Please fill in all required fields (Title, Exam Type, Subject)")
         return
       }
@@ -488,7 +488,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
       console.log("🔍 DEBUG: Publishing course data:", {
         title: courseData.title,
-        examType: courseData.examType,
+        academicLevel: courseData.academicLevel,
         subject: courseData.subject,
         modules: courseData.modules.length,
         currentCourseId: finalCourseId,
@@ -501,11 +501,11 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
         ...courseData, 
         _id: finalCourseId,
         status: "published",
-        isExamGenius: true,
+        isAcademicCourse: true,
         isCompetitiveExam: true
       }
       
-      const response = await fetch("/api/exam-genius/save-course", {
+      const response = await fetch("/api/academic-courses/save-course", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -539,7 +539,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
           return total + (module.quiz ? 1 : 0)
         }, 0) || 0
         
-        toast.success(`🎉 Course Published Successfully! 🏆 "${courseData.title}" is now live • 📚 ${courseData.examType} • 📖 ${courseData.subject} • 📋 ${moduleCount} modules${subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ''}${quizCount > 0 ? ` • 🎯 ${quizCount} quizzes` : ''} • 🚀 Students can now enroll and learn!`, {
+        toast.success(`🎉 Course Published Successfully! 🏆 "${courseData.title}" is now live • 📚 ${courseData.academicLevel} • 📖 ${courseData.subject} • 📋 ${moduleCount} modules${subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ''}${quizCount > 0 ? ` • 🎯 ${quizCount} quizzes` : ''} • 🚀 Students can now enroll and learn!`, {
           duration: 8000,
         })
         
@@ -552,12 +552,12 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
           title: "",
           description: "",
           modules: [],
-          examType: "",
+          academicLevel: "",
           subject: "",
-          learnerLevel: "intermediate",
+          semester: "intermediate",
           duration: "",
           objectives: [],
-          isExamGenius: true,
+          isAcademicCourse: true,
           isCompetitiveExam: true
         })
         setCurrentCourseId(null)
@@ -615,9 +615,9 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
             </div>
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                ExamGenius Course Creator
+                Academic Course Course Creator
               </h1>
-              <p className="text-gray-600 mt-2">Create competitive exam-focused courses with AI-powered content generation</p>
+              <p className="text-gray-600 mt-2">Create academic course-focused courses with AI-powered content generation</p>
             </div>
           </div>
           
@@ -674,13 +674,13 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                 Competitive Exam Course Information
               </CardTitle>
               <CardDescription>
-                Set up your competitive exam course with exam-specific details
+                Set up your academic course course with exam-specific details
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 p-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Course Title *</Label>
-                <ExamCourseFieldValidator
+                <AcademicCourseFieldValidator
                   field="title"
                   value={courseData.title}
                   onChange={(value) => setCourseData(prev => ({ ...prev, title: value }))}
@@ -691,11 +691,11 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <ExamCourseFieldValidator
+                <AcademicCourseFieldValidator
                   field="description"
                   value={courseData.description}
                   onChange={(value) => setCourseData(prev => ({ ...prev, description: value }))}
-                  placeholder="Describe your competitive exam course and what students will achieve..."
+                  placeholder="Describe your academic course course and what students will achieve..."
                   rows={4}
                   className="border-2 border-gray-200 focus:border-blue-500"
                 />
@@ -704,12 +704,12 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Exam Type *</Label>
-                  <Select value={courseData.examType} onValueChange={(value) => setCourseData(prev => ({ ...prev, examType: value }))}>
+                  <Select value={courseData.academicLevel} onValueChange={(value) => setCourseData(prev => ({ ...prev, academicLevel: value }))}>
                     <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500">
                       <SelectValue placeholder="Select exam type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {examTypes.map(exam => (
+                      {academicLevels.map(exam => (
                         <SelectItem key={exam.id} value={exam.id}>
                           <div className="flex items-center gap-2">
                             <span>{exam.icon}</span>
@@ -741,7 +741,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Learner Level *</Label>
-                  <Select value={courseData.learnerLevel} onValueChange={(value) => setCourseData(prev => ({ ...prev, learnerLevel: value }))}>
+                  <Select value={courseData.semester} onValueChange={(value) => setCourseData(prev => ({ ...prev, semester: value }))}>
                     <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500">
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
@@ -756,7 +756,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
                 <div className="space-y-2">
                   <Label htmlFor="duration">Duration</Label>
-                  <ExamCourseFieldValidator
+                  <AcademicCourseFieldValidator
                     field="duration"
                     value={courseData.duration}
                     onChange={(value) => setCourseData(prev => ({ ...prev, duration: value }))}
@@ -769,7 +769,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
               <div className="flex justify-end">
                 <Button
                   onClick={() => setStep(2)}
-                  disabled={!courseData.title || !courseData.examType || !courseData.subject || !courseData.learnerLevel}
+                  disabled={!courseData.title || !courseData.academicLevel || !courseData.subject || !courseData.semester}
                   className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
                 >
                   Next: Upload Content
@@ -789,7 +789,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                 Content Upload & Generation
               </CardTitle>
               <CardDescription>
-                Upload existing content or generate competitive exam curriculum with AI
+                Upload existing content or generate academic course curriculum with AI
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 p-6">
@@ -848,7 +848,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                         ) : (
                           <>
                             <Brain className="h-4 w-4 mr-2" />
-                            Process for {courseData.examType}
+                            Process for {courseData.academicLevel}
                           </>
                         )}
                       </Button>
@@ -861,11 +861,11 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="curriculum-topic">Curriculum Topic *</Label>
-                    <ExamCourseFieldValidator
+                    <AcademicCourseFieldValidator
                       field="curriculum-topic"
                       value={curriculumTopic}
                       onChange={(value) => setCurriculumTopic(value)}
-                      placeholder={`e.g., ${courseData.examType} ${courseData.subject} Complete Preparation`}
+                      placeholder={`e.g., ${courseData.academicLevel} ${courseData.subject} Complete Preparation`}
                       className="border-2 border-gray-200 focus:border-blue-500"
                     />
                   </div>
@@ -873,7 +873,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="modules-count">Number of Modules</Label>
-                      <ExamCourseFieldValidator
+                      <AcademicCourseFieldValidator
                         field="modules-count"
                         value={numberOfModules}
                         onChange={(value) => setNumberOfModules(parseInt(value) || 8)}
@@ -885,7 +885,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
                     <div className="space-y-2">
                       <Label htmlFor="module-topics">Specific Topics</Label>
-                      <ExamCourseFieldValidator
+                      <AcademicCourseFieldValidator
                         field="module-topics"
                         value={moduleTopics}
                         onChange={(value) => setModuleTopics(value)}
@@ -897,7 +897,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
 
                   <div className="space-y-2">
                     <Label htmlFor="teaching-notes">Teaching Notes & Focus Areas</Label>
-                    <ExamCourseFieldValidator
+                    <AcademicCourseFieldValidator
                       field="teaching-notes"
                       value={teachingNotes}
                       onChange={(value) => setTeachingNotes(value)}
@@ -934,7 +934,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                   <div className="text-center">
                     <div className="text-lg font-semibold text-gray-800">{processingStep}</div>
                     <div className="text-sm text-gray-600 mt-1">
-                      Creating competitive exam-focused content...
+                      Creating academic course-focused content...
                     </div>
                   </div>
                   <Progress value={processingProgress} className="h-3" />
@@ -994,16 +994,16 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                     </Button>
                   </div>
                   
-                  <ExamModuleEditorEnhanced
+                  <AcademicModuleEditorEnhanced
                     module={courseData.modules[selectedModule]}
                     onUpdate={(updatedModule) => {
                       const updatedModules = [...courseData.modules]
                       updatedModules[selectedModule] = updatedModule
                       setCourseData({ ...courseData, modules: updatedModules })
                     }}
-                    examType={courseData.examType}
+                    academicLevel={courseData.academicLevel}
                     subject={courseData.subject}
-                    learnerLevel={courseData.learnerLevel}
+                    semester={courseData.semester}
                     course={courseData}
                     courseId={currentCourseId}
                     onSaveSuccess={(savedCourse, status) => {
@@ -1109,7 +1109,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                 </div>
                 <h3 className="text-xl font-bold mb-2">Ready to Launch!</h3>
                 <p className="text-gray-600 mb-6">
-                  Your competitive exam course is ready to help students achieve their goals.
+                  Your academic course course is ready to help students achieve their goals.
                 </p>
               </div>
 
@@ -1120,7 +1120,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Exam Type:</span>
-                  <span className="font-medium">{courseData.examType}</span>
+                  <span className="font-medium">{courseData.academicLevel}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subject:</span>
@@ -1136,7 +1136,7 @@ export default function ExamGeniusCourseCreator({ onCourseCreated }) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Level:</span>
-                  <span className="font-medium">{courseData.learnerLevel}</span>
+                  <span className="font-medium">{courseData.semester}</span>
                 </div>
               </div>
 

@@ -42,14 +42,13 @@ import {
   TestTube2,
 } from "lucide-react";
 import CourseCreator from "./CourseCreator";
-import { AcademicCourseCreator } from "../academic-courses";
+import { AcademicCourseCreator } from "../Acadmeic-Course";
 import CourseList from "./CourseList";
 import CourseEditor from "./CourseEditor";
-import ExamContentEditor from "@/components/exam-genius/ExamContentEditor";
+import { AcademicContentEditor, AcademicCourseManager } from "../Acadmeic-Course";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import PreferencesSettings from "@/components/profile/PreferencesSettings";
 import NotificationsSettings from "@/components/profile/NotificationsSettings";
-import ExamGenius from "@/components/exam-genius/ExamGenius";
 import TestSeriesCreator from "./TestSeriesCreator";
 import TestSeriesManager from "./TestSeriesManager";
 import {
@@ -756,7 +755,7 @@ export default function EducatorDashboard() {
 
       case "edit-exam":
         return (
-          <ExamContentEditor
+          <AcademicContentEditor
             course={editingCourse}
             onCourseUpdated={handleCourseUpdated}
             onBack={handleBackFromEditor}
@@ -801,7 +800,7 @@ export default function EducatorDashboard() {
                 CAT, Bank PO, and more
               </p>
             </div>
-            <ExamGenius />
+            <AcademicCourseManager />
           </div>
         );
 

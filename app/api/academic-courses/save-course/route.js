@@ -26,6 +26,8 @@ export async function POST(request) {
     }
 
     const body = await request.json();
+    // Handle both direct course data and nested course object
+    const requestData = body.course || body;
     const {
       title,
       description,
@@ -44,7 +46,7 @@ export async function POST(request) {
       status,
       isAcademicCourse,
       courseType
-    } = body;
+    } = requestData;
 
     if (!title?.trim() || !subject || !academicLevel) {
       return NextResponse.json(
