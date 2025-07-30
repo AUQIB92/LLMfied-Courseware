@@ -117,63 +117,131 @@ if (typeof document !== "undefined") {
   document.head.appendChild(styleElement);
 }
 
-// Helper function to handle academic multipage content (NOT flashcards)
+// Helper function to handle academic flashcard content
 function getAcademicSubsectionData(subsection) {
   console.log("🔍 getAcademicSubsectionData called with:", {
     hasPages: !!subsection.pages,
     pagesLength: subsection.pages?.length || 0,
-    hasDetailedContent: !!subsection.detailedContent,
-    isAcademicContent: subsection.isAcademicContent,
+    hasFlashcards: !!(subsection.pages?.[0]?.flashcards),
+    isFlashcardContent: subsection.pages?.[0]?.isFlashcardContent,
     subsectionKeys: Object.keys(subsection),
   });
 
-  // Academic courses use MULTIPAGE content, not flashcards
+  // Academic courses now use FLASHCARDS, not multipage content
   console.log(
-    "🎓 Processing multipage academic content for:",
+    "🃏 Processing flashcard academic content for:",
     subsection.title
   );
 
-  // Check if we have generated multipage content
+  // Check if we have generated flashcard content
   if (
     subsection.pages &&
     Array.isArray(subsection.pages) &&
-    subsection.pages.length > 0
+    subsection.pages.length > 0 &&
+    subsection.pages[0].flashcards &&
+    Array.isArray(subsection.pages[0].flashcards)
   ) {
+    const flashcards = subsection.pages[0].flashcards;
     console.log(
-      "✅ Using existing multipage content for academic subsection:",
-      subsection.pages.length,
-      "pages"
+      "✅ Using existing flashcard content for academic subsection:",
+      flashcards.length,
+      "flashcards"
     );
     return {
-      type: "pages",
+      type: "flashcards",
       data: {
         ...subsection,
-        pages: subsection.pages,
-        // Remove any flashcard data to prevent confusion
+        flashcards: flashcards,
+        title: subsection.title || "Academic Subsection",
+        summary: subsection.pages[0].content || "Academic flashcards for study and review",
+        difficulty: "Intermediate",
+        estimatedTime: "10-15 minutes",
+        // Remove page data since we're using flashcards
+        pages: undefined,
         conceptFlashCards: undefined,
         formulaFlashCards: undefined,
-        flashCards: undefined,
         conceptGroups: undefined,
       },
     };
   }
 
-  // Create empty multipage structure for academic content
-  console.log("📋 Creating empty multipage structure for academic content");
+  // Check for legacy pages structure (fallback to convert to flashcards)
+  if (
+    subsection.pages &&
+    Array.isArray(subsection.pages) &&
+    subsection.pages.length > 0
+  ) {
+    console.log("🔄 Converting legacy pages to flashcard structure");
+    // Create basic flashcards from page content
+    const basicFlashcards = [
+      {
+        id: 1,
+        question: `What is ${subsection.title}?`,
+        answer: subsection.pages[0].content?.substring(0, 200) || "Academic concept to be studied",
+        category: "definition",
+        difficulty: "basic"
+      },
+      {
+        id: 2,
+        question: `Why is ${subsection.title} important?`,
+        answer: subsection.pages[0].keyTakeaway || "Important for academic understanding",
+        category: "concept",
+        difficulty: "intermediate"
+      },
+      {
+        id: 3,
+        question: `How does ${subsection.title} apply in practice?`,
+        answer: "Practical applications will be covered in detailed study",
+        category: "application", 
+        difficulty: "intermediate"
+      },
+      {
+        id: 4,
+        question: `What should students remember about ${subsection.title}?`,
+        answer: "Key concepts and principles for academic success",
+        category: "concept",
+        difficulty: "intermediate"
+      },
+      {
+        id: 5,
+        question: `How does ${subsection.title} connect to broader topics?`,
+        answer: "Connects theoretical knowledge with practical applications",
+        category: "analysis",
+        difficulty: "advanced"
+      }
+    ];
+
+    return {
+      type: "flashcards",
+      data: {
+        ...subsection,
+        flashcards: basicFlashcards,
+        title: subsection.title || "Academic Subsection",
+        summary: "Converted legacy content to flashcard format",
+        difficulty: "Intermediate",
+        estimatedTime: "10-15 minutes",
+        pages: undefined,
+        conceptFlashCards: undefined,
+        formulaFlashCards: undefined,
+        conceptGroups: undefined,
+      },
+    };
+  }
+
+  // Create empty flashcard structure for academic content
+  console.log("📋 Creating empty flashcard structure for academic content");
   return {
-    type: "pages",
+    type: "flashcards",
     data: {
       title: subsection.title || "Academic Subsection",
-      summary:
-        subsection.summary ||
-        "Generate detailed content to see multipage academic explanations",
-      pages: [],
-      difficulty: subsection.difficulty || "Intermediate",
-      estimatedTime: subsection.estimatedTime || "25-30 minutes",
-      // Explicitly remove flashcard data
+      summary: "Generate detailed content to see 5 academic flashcards",
+      flashcards: [],
+      difficulty: "Intermediate",
+      estimatedTime: "10-15 minutes",
+      // Explicitly remove other content types
+      pages: undefined,
       conceptFlashCards: undefined,
       formulaFlashCards: undefined,
-      flashCards: undefined,
       conceptGroups: undefined,
     },
   };
@@ -305,6 +373,12 @@ export default function AcademicModuleEditorEnhanced({
   // Debounced parent update to prevent constant saving while editing
   const [updateTimeout, setUpdateTimeout] = useState(null);
 
+  // Page editing state
+  const [editingPage, setEditingPage] = useState(null); // { subsectionIndex, pageIndex }
+  const [editingContent, setEditingContent] = useState("");
+  const [editingTitle, setEditingTitle] = useState("");
+  const [editingTakeaway, setEditingTakeaway] = useState("");
+
   // Sync local module state when module prop changes (important for Academic courses)
   useEffect(() => {
     console.log("🔄 Module prop changed, updating localModule:", {
@@ -342,6 +416,54 @@ export default function AcademicModuleEditorEnhanced({
       }
     };
   }, [updateTimeout]);
+
+  // Page editing functions
+  const startEditingPage = (subsectionIndex, pageIndex) => {
+    const subsection = localModule.detailedSubsections[subsectionIndex];
+    const page = subsection.pages[pageIndex];
+    
+    setEditingPage({ subsectionIndex, pageIndex });
+    setEditingContent(page.content || "");
+    setEditingTitle(page.pageTitle || page.title || "");
+    setEditingTakeaway(page.keyTakeaway || "");
+  };
+
+  const savePageEdit = () => {
+    if (!editingPage) return;
+
+    const { subsectionIndex, pageIndex } = editingPage;
+    const updatedModule = { ...localModule };
+    
+    updatedModule.detailedSubsections[subsectionIndex].pages[pageIndex] = {
+      ...updatedModule.detailedSubsections[subsectionIndex].pages[pageIndex],
+      content: editingContent,
+      pageTitle: editingTitle,
+      keyTakeaway: editingTakeaway,
+    };
+
+    setLocalModule(updatedModule);
+    setEditingPage(null);
+    setEditingContent("");
+    setEditingTitle("");
+    setEditingTakeaway("");
+    setHasChanges(true);
+    setSaveStatus("editing");
+    
+    // Show success notification
+    toast.success("Page content updated successfully!");
+    
+    // Trigger parent update
+    if (onUpdate) {
+      onUpdate(updatedModule);
+    }
+  };
+
+  const cancelPageEdit = () => {
+    setEditingPage(null);
+    setEditingContent("");
+    setEditingTitle("");
+    setEditingTakeaway("");
+  };
 
   const [toast] = useState(() => ({
     success: (message) => console.log("✅", message),
@@ -3910,6 +4032,91 @@ Detailed discussion here..."
                                     </span>
                                   </div>
                                 </div>
+                              ) : subsectionPages.type === "flashcards" &&
+                                subsectionPages.data.flashcards &&
+                                Array.isArray(subsectionPages.data.flashcards) ? (
+                                // Academic flashcard content display (exactly 5 cards)
+                                <div className="space-y-4">
+                                  <div className="prose prose-sm max-w-none">
+                                    <h4 className="font-semibold text-lg mb-2 text-blue-700">
+                                      🃏 Academic Study Cards
+                                    </h4>
+                                    <p className="text-gray-700 mb-3">
+                                      {subsectionPages.data.summary ||
+                                        "5 essential flashcards for academic study and review."}
+                                    </p>
+                                  </div>
+
+                                  {/* Show message when no cards exist yet */}
+                                  {subsectionPages.data.flashcards.length === 0 && (
+                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-dashed border-gray-300 text-center">
+                                      <div className="flex items-center justify-center mb-3">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                                          <span className="text-white text-lg">🃏</span>
+                                        </div>
+                                      </div>
+                                      <h5 className="font-semibold text-gray-700 mb-2">
+                                        No Flashcards Generated Yet
+                                      </h5>
+                                      <p className="text-gray-600 text-sm mb-3">
+                                        Generate content for this subsection to see 5 academic flashcards.
+                                      </p>
+                                      <div className="text-xs text-gray-500">
+                                        Expected: 5 Academic Study Cards
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Flashcards Display */}
+                                  {subsectionPages.data.flashcards.length > 0 && (
+                                    <div className="grid gap-3">
+                                      {subsectionPages.data.flashcards.slice(0, 5).map((card, cardIndex) => (
+                                        <div
+                                          key={card.id || cardIndex}
+                                          className="perspective-1000"
+                                        >
+                                          <div className="group relative w-full h-32 transform-style-preserve-3d transition-transform duration-500 hover:rotate-y-180">
+                                            {/* Front of card */}
+                                            <div className="absolute inset-0 w-full h-full backface-hidden rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+                                              <div className="text-center">
+                                                <div className="text-xs text-blue-600 mb-1">
+                                                  Q{cardIndex + 1} • {card.category || 'concept'} • {card.difficulty || 'intermediate'}
+                                                </div>
+                                                <p className="text-sm font-medium text-blue-900 leading-relaxed">
+                                                  {card.question}
+                                                </p>
+                                              </div>
+                                            </div>
+                                            {/* Back of card */}
+                                            <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
+                                              <div className="text-center">
+                                                <div className="text-xs text-green-600 mb-1">
+                                                  Answer
+                                                </div>
+                                                <p className="text-sm text-green-900 leading-relaxed">
+                                                  {card.answer}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Metadata */}
+                                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
+                                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                      🃏 {subsectionPages.data.flashcards?.length || 0} Study Cards
+                                    </span>
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                      📊 {subsectionPages.data.difficulty || "Intermediate"}
+                                    </span>
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                      ⏱️ {subsectionPages.data.estimatedTime || "10-15 min"}
+                                    </span>
+                                  </div>
+                                </div>
                               ) : (subsectionPages.type === "pages" &&
                                   pages.length > 0) ||
                                 (subsection.isAcademicContent &&
@@ -3923,36 +4130,130 @@ Detailed discussion here..."
                                           {currentPageData.pageTitle ||
                                             currentPageData.title}
                                         </h4>
-                                        <Badge
-                                          variant="outline"
-                                          className="text-xs"
-                                        >
-                                          Page{" "}
-                                          {currentPageData.pageNumber ||
-                                            currentSubsectionPage + 1}{" "}
-                                          of {pages.length}
-                                        </Badge>
-                                      </div>
-                                      <UniversalContentRenderer
-                                        content={
-                                          typeof currentPageData.content ===
-                                          "string"
-                                            ? currentPageData.content
-                                            : JSON.stringify(
-                                                currentPageData.content
-                                              )
-                                        }
-                                        renderingMode="math-optimized"
-                                        className="page-content"
-                                        enableTelemetry={false}
-                                      />
-                                      {currentPageData.keyTakeaway && (
-                                        <div className="mt-3 p-2 bg-blue-50 rounded-lg">
-                                          <p className="text-sm text-blue-800 italic">
-                                            💡 Key Takeaway:{" "}
-                                            {currentPageData.keyTakeaway}
-                                          </p>
+                                        <div className="flex items-center gap-2">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              startEditingPage(globalIndex, currentSubsectionPage);
+                                            }}
+                                            className="text-xs"
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            Edit Page
+                                          </Button>
+                                          <Badge
+                                            variant="outline"
+                                            className="text-xs"
+                                          >
+                                            Page{" "}
+                                            {currentPageData.pageNumber ||
+                                              currentSubsectionPage + 1}{" "}
+                                            of {pages.length}
+                                          </Badge>
                                         </div>
+                                      </div>
+                                      
+                                      {editingPage && 
+                                       editingPage.subsectionIndex === globalIndex && 
+                                       editingPage.pageIndex === currentSubsectionPage ? (
+                                        // Edit mode
+                                        <div className="space-y-4 border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
+                                          <div className="flex items-center justify-between">
+                                            <h5 className="font-medium text-blue-800">Editing Page Content</h5>
+                                            <div className="flex gap-2">
+                                              <Button size="sm" onClick={savePageEdit}>
+                                                <CheckCircle className="h-3 w-3 mr-1" />
+                                                Save
+                                              </Button>
+                                              <Button size="sm" variant="outline" onClick={cancelPageEdit}>
+                                                <X className="h-3 w-3 mr-1" />
+                                                Cancel
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="space-y-3">
+                                            <div>
+                                              <Label htmlFor="edit-page-title" className="text-sm font-medium">
+                                                Page Title
+                                              </Label>
+                                              <Input
+                                                id="edit-page-title"
+                                                value={editingTitle}
+                                                onChange={(e) => setEditingTitle(e.target.value)}
+                                                className="mt-1"
+                                                placeholder="Enter page title"
+                                              />
+                                            </div>
+                                            
+                                            <div>
+                                              <Label htmlFor="edit-page-content" className="text-sm font-medium">
+                                                Content (Markdown supported)
+                                              </Label>
+                                              <Textarea
+                                                id="edit-page-content"
+                                                value={editingContent}
+                                                onChange={(e) => setEditingContent(e.target.value)}
+                                                rows={15}
+                                                className="mt-1 font-mono text-sm"
+                                                placeholder="Enter page content using Markdown formatting..."
+                                              />
+                                            </div>
+                                            
+                                            <div>
+                                              <Label htmlFor="edit-page-takeaway" className="text-sm font-medium">
+                                                Key Takeaway
+                                              </Label>
+                                              <Input
+                                                id="edit-page-takeaway"
+                                                value={editingTakeaway}
+                                                onChange={(e) => setEditingTakeaway(e.target.value)}
+                                                className="mt-1"
+                                                placeholder="Enter key takeaway for this page"
+                                              />
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Preview */}
+                                          <div className="border-t pt-3">
+                                            <Label className="text-sm font-medium mb-2 block">Preview:</Label>
+                                            <div className="bg-white rounded border p-3 max-h-40 overflow-y-auto">
+                                              <UniversalContentRenderer
+                                                content={editingContent || "No content to preview"}
+                                                renderingMode="math-optimized"
+                                                className="text-sm"
+                                                enableTelemetry={false}
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        // View mode
+                                        <>
+                                          <UniversalContentRenderer
+                                            content={
+                                              typeof currentPageData.content ===
+                                              "string"
+                                                ? currentPageData.content
+                                                : JSON.stringify(
+                                                    currentPageData.content
+                                                  )
+                                            }
+                                            renderingMode="math-optimized"
+                                            className="page-content"
+                                            enableTelemetry={false}
+                                          />
+                                          {currentPageData.keyTakeaway && (
+                                            <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                                              <p className="text-sm text-blue-800 italic">
+                                                💡 Key Takeaway:{" "}
+                                                {currentPageData.keyTakeaway}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </>
                                       )}
                                     </div>
                                   ) : (

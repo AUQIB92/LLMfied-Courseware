@@ -10,108 +10,206 @@ async function generateAcademicMultipageContent(
   academicLevel = "undergraduate",
   subject = "General Studies"
 ) {
-  // Generate AI-powered academic content using Gemini
-  const academicPrompt = `
-Create comprehensive academic content for "${subsectionTitle}" within the context of "${moduleContext}" for ${academicLevel} level ${subject} students.
+  // Generate exactly 5 flashcards for academic subsections
+  const flashcardPrompt = `
+Create exactly 5 academic flashcards for "${subsectionTitle}" within the context of "${moduleContext}" for ${academicLevel} level ${subject} students.
 
 REQUIREMENTS:
-- Create 8 detailed academic pages with substantial, meaningful content
-- Focus on theoretical depth, critical analysis, and scholarly approach
-- Include specific examples, case studies, and real-world applications
-- Use proper academic language and structure
-- Provide detailed explanations, not generic templates
+- Create exactly 5 flashcards - no more, no less
+- Focus on key concepts, definitions, principles, and applications
+- Use appropriate academic language for ${academicLevel} level
+- Include a mix of: definitions, concepts, applications, examples, and analytical questions
+- Make questions clear and answers comprehensive but concise
 
-CONTENT STRUCTURE (8 pages):
-1. Introduction & Theoretical Foundation
-2. Core Theory & Principles (Part 1)
-3. Core Theory & Principles (Part 2)
-4. Mathematical Formulations & Models (if applicable)
-5. Practical Applications & Case Studies
-6. Research Methods & Analytical Frameworks
-7. Current Developments & Future Directions
-8. Summary & Academic Integration
-
-Return ONLY a JSON object with this exact structure:
+Return ONLY a valid JSON object with this exact structure:
 {
-  "pages": [
+  "flashcards": [
     {
-      "pageNumber": 1,
-      "pageTitle": "Specific Page Title",
-      "content": "Detailed markdown content with proper academic depth...",
-      "keyTakeaway": "Specific key insight for this page"
+      "id": 1,
+      "question": "Clear, specific question about a key concept",
+      "answer": "Comprehensive but concise answer with academic depth",
+      "category": "definition|concept|application|example|analysis",
+      "difficulty": "basic|intermediate|advanced"
+    },
+    {
+      "id": 2,
+      "question": "Second flashcard question",
+      "answer": "Second flashcard answer", 
+      "category": "definition|concept|application|example|analysis",
+      "difficulty": "basic|intermediate|advanced"
+    },
+    {
+      "id": 3,
+      "question": "Third flashcard question",
+      "answer": "Third flashcard answer",
+      "category": "definition|concept|application|example|analysis", 
+      "difficulty": "basic|intermediate|advanced"
+    },
+    {
+      "id": 4,
+      "question": "Fourth flashcard question",
+      "answer": "Fourth flashcard answer",
+      "category": "definition|concept|application|example|analysis",
+      "difficulty": "basic|intermediate|advanced"
+    },
+    {
+      "id": 5,
+      "question": "Fifth flashcard question", 
+      "answer": "Fifth flashcard answer",
+      "category": "definition|concept|application|example|analysis",
+      "difficulty": "basic|intermediate|advanced"
     }
-    // ... continue for all 8 pages
   ]
 }
 
-Generate real, substantive academic content about ${subsectionTitle} - not generic templates or placeholders.
+Generate real, substantive academic flashcards about ${subsectionTitle} - no templates or placeholders.
 `;
 
   try {
-    console.log(`🤖 Generating AI content for: ${subsectionTitle}`);
-    const aiResponse = await generateModuleSummary(academicPrompt);
+    console.log(`🃏 Generating 5 flashcards for: ${subsectionTitle}`);
+    
+    // Use direct content generation for flashcards
+    const { generateContent } = await import('@/lib/gemini');
+    const aiResponse = await generateContent(flashcardPrompt, {
+      temperature: 0.7,
+      maxOutputTokens: 4096
+    });
 
-    // Parse the AI response
-    let aiContent;
+    // Parse the JSON response
+    let parsedContent;
     try {
-      aiContent = JSON.parse(aiResponse);
-    } catch (parseError) {
-      console.log(
-        "📝 AI response not valid JSON, creating structured content..."
-      );
-
-      // Fallback: create one comprehensive page with AI content
-      aiContent = {
-        pages: [
-          {
+      // Use our enhanced parsing function
+      const { parseLargeGeminiResponse } = await import('@/lib/gemini');
+      parsedContent = await parseLargeGeminiResponse(aiResponse);
+      
+      if (parsedContent && parsedContent.flashcards && Array.isArray(parsedContent.flashcards)) {
+        // Ensure exactly 5 flashcards
+        const flashcards = parsedContent.flashcards.slice(0, 5);
+        if (flashcards.length === 5) {
+          console.log(`✅ Generated exactly 5 flashcards for ${subsectionTitle}`);
+          
+          // Convert flashcards to pages format for compatibility with existing UI
+          const flashcardPages = [{
             pageNumber: 1,
-            pageTitle: `${subsectionTitle} - Comprehensive Academic Study`,
-            content: aiResponse,
-            keyTakeaway: `Understanding ${subsectionTitle} requires comprehensive academic analysis and critical thinking.`,
-          },
-        ],
-      };
+            pageTitle: `${subsectionTitle} - Study Cards`,
+            content: `# ${subsectionTitle} - Academic Flashcards\n\nThis subsection contains 5 study cards covering key concepts in ${subsectionTitle}.`,
+            keyTakeaway: `Master these 5 key concepts to understand ${subsectionTitle}.`,
+            flashcards: flashcards,
+            isFlashcardContent: true
+          }];
+          
+          return flashcardPages;
+        }
+      }
+    } catch (parseError) {
+      console.log("📝 JSON parsing failed for flashcards, creating fallback...");
     }
 
-    if (aiContent.pages && Array.isArray(aiContent.pages)) {
-      console.log(`✅ Generated ${aiContent.pages.length} AI-powered pages`);
-      return aiContent.pages;
-    } else {
-      throw new Error("Invalid AI response structure");
-    }
-  } catch (aiError) {
-    console.error("❌ AI generation failed, using fallback:", aiError);
-
-    // Fallback to a single meaningful page
-    return [
+    // Fallback: Create 5 structured flashcards
+    console.log("🔧 Creating fallback flashcards");
+    const fallbackFlashcards = [
       {
-        pageNumber: 1,
-        pageTitle: `${subsectionTitle} - Academic Overview`,
-        content: `# ${subsectionTitle} - Academic Study
-
-## Introduction
-
-${subsectionTitle} is an important topic within ${moduleContext} that requires comprehensive academic understanding at the ${academicLevel} level in ${subject}.
-
-## Core Concepts
-
-This section covers the fundamental principles and theoretical frameworks that underpin ${subsectionTitle}. Students should focus on:
-
-1. **Theoretical Foundation**: Understanding the basic principles
-2. **Academic Context**: How this fits within the broader discipline
-3. **Practical Applications**: Real-world relevance and applications
-4. **Critical Analysis**: Developing analytical skills
-
-## Learning Outcomes
-
-Upon completing this section, students will be able to demonstrate understanding of ${subsectionTitle} through theoretical knowledge and practical application.
-
-## Further Study
-
-This topic connects to other areas within ${moduleContext} and provides foundation for advanced study in ${subject}.`,
-        keyTakeaway: `${subsectionTitle} requires systematic academic study combining theoretical understanding with practical application.`,
+        id: 1,
+        question: `What is ${subsectionTitle}?`,
+        answer: `${subsectionTitle} is a fundamental concept in ${subject} that ${academicLevel} students must understand as part of ${moduleContext}.`,
+        category: "definition",
+        difficulty: "basic"
       },
+      {
+        id: 2,
+        question: `Why is ${subsectionTitle} important in ${subject}?`,
+        answer: `${subsectionTitle} is crucial because it provides the theoretical foundation for understanding advanced concepts in ${subject} at the ${academicLevel} level.`,
+        category: "concept",
+        difficulty: "intermediate"
+      },
+      {
+        id: 3,
+        question: `How does ${subsectionTitle} relate to ${moduleContext}?`,
+        answer: `${subsectionTitle} serves as a key component within ${moduleContext}, connecting theoretical principles with practical applications in ${subject}.`,
+        category: "application",
+        difficulty: "intermediate"
+      },
+      {
+        id: 4,
+        question: `What are the main principles of ${subsectionTitle}?`,
+        answer: `The main principles include systematic analysis, theoretical understanding, and practical application within the academic framework of ${subject}.`,
+        category: "concept",
+        difficulty: "intermediate"
+      },
+      {
+        id: 5,
+        question: `How should ${academicLevel} students approach studying ${subsectionTitle}?`,
+        answer: `Students should begin with foundational concepts, progress to theoretical analysis, and then apply knowledge through practical examples and case studies.`,
+        category: "analysis",
+        difficulty: "advanced"
+      }
     ];
+
+    const fallbackPages = [{
+      pageNumber: 1,
+      pageTitle: `${subsectionTitle} - Study Cards`,
+      content: `# ${subsectionTitle} - Academic Flashcards\n\nThis subsection contains 5 study cards covering key concepts in ${subsectionTitle}.`,
+      keyTakeaway: `Master these 5 key concepts to understand ${subsectionTitle}.`,
+      flashcards: fallbackFlashcards,
+      isFlashcardContent: true
+    }];
+
+    console.log(`✅ Generated 5 fallback flashcards for ${subsectionTitle}`);
+    return fallbackPages;
+
+  } catch (aiError) {
+    console.error("❌ Flashcard generation failed:", aiError);
+
+    // Final fallback with basic flashcards
+    const basicFlashcards = [
+      {
+        id: 1,
+        question: `Define ${subsectionTitle}`,
+        answer: `${subsectionTitle} is an important academic concept in ${subject}.`,
+        category: "definition",
+        difficulty: "basic"
+      },
+      {
+        id: 2,
+        question: `What is the significance of ${subsectionTitle}?`,
+        answer: `It provides foundational knowledge for ${academicLevel} students in ${subject}.`,
+        category: "concept", 
+        difficulty: "basic"
+      },
+      {
+        id: 3,
+        question: `How does ${subsectionTitle} apply in practice?`,
+        answer: `It can be applied through systematic study and analysis.`,
+        category: "application",
+        difficulty: "basic"
+      },
+      {
+        id: 4,
+        question: `What should students know about ${subsectionTitle}?`,
+        answer: `Students should understand its role in ${moduleContext} and ${subject}.`,
+        category: "concept",
+        difficulty: "basic"
+      },
+      {
+        id: 5,
+        question: `Why study ${subsectionTitle} at the ${academicLevel} level?`,
+        answer: `It prepares students for advanced coursework and professional application.`,
+        category: "analysis",
+        difficulty: "basic"
+      }
+    ];
+
+    const basicPages = [{
+      pageNumber: 1,
+      pageTitle: `${subsectionTitle} - Study Cards`, 
+      content: `# ${subsectionTitle} - Academic Flashcards\n\nThis subsection contains 5 study cards covering key concepts in ${subsectionTitle}.`,
+      keyTakeaway: `Master these 5 key concepts to understand ${subsectionTitle}.`,
+      flashcards: basicFlashcards,
+      isFlashcardContent: true
+    }];
+
+    console.log(`✅ Generated 5 basic flashcards for ${subsectionTitle}`);
+    return basicPages;
   }
 }
 
