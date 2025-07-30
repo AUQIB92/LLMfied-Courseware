@@ -69,6 +69,8 @@ import {
   RefreshCw,
   ChevronLeft,
   X,
+  Edit,
+  Plus,
 } from "lucide-react";
 import QuizModal from "./QuizModal";
 import ContentDisplay from "@/components/ContentDisplay";
@@ -479,8 +481,9 @@ const ProgrammingChallengeCard = ({
 export default function ModuleContent({
   module,
   course,
-  onProgress,
-  onToggleBookmark,
+  onProgress = () => {},
+  onToggleBookmark = () => {},
+  onModuleUpdate = () => {},
 }) {
   const { user } = useAuth();
 
@@ -491,6 +494,15 @@ export default function ModuleContent({
     notesCount: 0,
     bookmarked: false,
   });
+
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedContent, setEditedContent] = useState(module.content || "");
+  const [editedObjectives, setEditedObjectives] = useState(
+    module.objectives || []
+  );
+  const [editedSummary, setEditedSummary] = useState(module.summary || "");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Content pagination state
   const [currentPage, setCurrentPage] = useState(0);
@@ -559,7 +571,8 @@ export default function ModuleContent({
   const [loadingChallenges, setLoadingChallenges] = useState(false);
   const [programmingChallenges, setProgrammingChallenges] = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
-  const [activeProgrammingChallenge, setActiveProgrammingChallenge] = useState(null);
+  const [activeProgrammingChallenge, setActiveProgrammingChallenge] =
+    useState(null);
   const [userCode, setUserCode] = useState("");
   const [programmingLanguage, setProgrammingLanguage] = useState("javascript");
   const [isRunningCode, setIsRunningCode] = useState(false);
@@ -1237,6 +1250,59 @@ Return JSON format:
     onProgress(module.id, true, timeSpent);
   };
 
+  // Edit mode functions
+  const enterEditMode = () => {
+    setIsEditMode(true);
+    setEditedContent(module.content || "");
+    setEditedObjectives(module.objectives || []);
+    setEditedSummary(module.summary || "");
+  };
+
+  const cancelEdit = () => {
+    setIsEditMode(false);
+    setEditedContent(module.content || "");
+    setEditedObjectives(module.objectives || []);
+    setEditedSummary(module.summary || "");
+  };
+
+  const saveChanges = async () => {
+    setIsSaving(true);
+    try {
+      const updatedModule = {
+        ...module,
+        content: editedContent,
+        objectives: editedObjectives,
+        summary: editedSummary,
+      };
+
+      // Call the update function passed as prop
+      await onModuleUpdate(updatedModule);
+
+      setIsEditMode(false);
+      // Show success notification
+      console.log("Module updated successfully");
+    } catch (error) {
+      console.error("Failed to save module changes:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const addObjective = () => {
+    setEditedObjectives([...editedObjectives, ""]);
+  };
+
+  const updateObjective = (index, value) => {
+    const newObjectives = [...editedObjectives];
+    newObjectives[index] = value;
+    setEditedObjectives(newObjectives);
+  };
+
+  const removeObjective = (index) => {
+    const newObjectives = editedObjectives.filter((_, i) => i !== index);
+    setEditedObjectives(newObjectives);
+  };
+
   const toggleSubsection = (subsectionId) => {
     console.log("🔧 Toggling subsection:", subsectionId);
     console.log("📊 Current expandedSubsections:", expandedSubsections);
@@ -1842,6 +1908,33 @@ Return JSON format:
           </PremiumFeatureButton>
         )}
 
+        {/* Edit Button */}
+        <motion.button
+          onClick={isEditMode ? cancelEdit : enterEditMode}
+          className={`group relative w-14 h-14 ${
+            isEditMode
+              ? "bg-gradient-to-br from-orange-500 via-red-600 to-pink-700"
+              : "bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700"
+          } rounded-2xl shadow-2xl hover:shadow-emerald-500/25 flex items-center justify-center text-white transition-all duration-500 overflow-hidden`}
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          {isEditMode ? (
+            <X className="h-6 w-6 relative z-10" />
+          ) : (
+            <Edit className="h-6 w-6 relative z-10" />
+          )}
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+
+          {/* Tooltip */}
+          <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
+            {isEditMode ? "Cancel Edit" : "Edit Module"}
+            <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-black/80"></div>
+          </div>
+        </motion.button>
+
         {/* Enhanced Bookmark Button */}
         <motion.button
           onClick={() => setIsBookmarked(!isBookmarked)}
@@ -1908,2393 +2001,2594 @@ Return JSON format:
         </motion.div>
       </motion.div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        {/* Masterpiece Hero Section - Educator Dashboard Style */}
-        <motion.div key="hero-section" variants={itemVariants}>
-          <div className="relative">
-            {/* Enhanced background blur effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 rounded-3xl blur-3xl"></div>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="overview" className="w-full">
+          <div className="sticky top-16 z-30 bg-gradient-to-r from-white/95 via-slate-50/95 to-white/95 backdrop-blur-sm border-b border-slate-200/50 mb-8 -mx-4 px-4 py-4">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 h-auto p-2 bg-gradient-to-r from-white/80 to-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-lg">
+              <TabsTrigger
+                value="overview"
+                className="group relative flex items-center gap-3 px-6 py-4 text-slate-700 hover:text-slate-900 font-medium transition-all duration-300 rounded-xl hover:bg-white/70 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+              >
+                <div className="w-2 h-2 bg-blue-500 rounded-full group-data-[state=active]:bg-white transition-colors duration-300"></div>
+                <span className="text-sm lg:text-base">Overview</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </TabsTrigger>
 
-            <Card className="relative border-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white shadow-2xl overflow-hidden">
-              {/* Animated background elements */}
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent"></div>
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5"></div>
-
-                <motion.div
-                  className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-3xl"
-                  animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-                  transition={{
-                    duration: 20,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "linear",
-                  }}
-                />
-                <motion.div
-                  className="absolute -bottom-20 -left-20 w-60 h-60 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"
-                  animate={{ rotate: -360, scale: [1.2, 1, 1.2] }}
-                  transition={{
-                    duration: 25,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "linear",
-                  }}
-                />
-                <motion.div
-                  className="absolute top-1/2 left-1/2 w-32 h-32 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full blur-2xl"
-                  animate={{
-                    x: [-50, 50, -50],
-                    y: [-25, 25, -25],
-                    scale: [1, 1.1, 1],
-                  }}
-                  transition={{
-                    duration: 15,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                  }}
-                />
-              </div>
-
-              <CardHeader className="relative z-10 p-12">
-                {/* Decorative grid pattern */}
-                <div className="absolute inset-0 opacity-5">
-                  <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22%23ffffff%22 fillOpacity=%220.1%22%3E%3Cpath d=%22M0 0h40v40H0z%22/%3E%3Cpath d=%22M0 0h20v20H0zM20 20h20v20H20z%22/%3E%3C/g%3E%3C/svg%3E')]"></div>
-                </div>
-
-                <div className="relative flex justify-between items-start">
-                  <div className="flex-1">
-                    <motion.div
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3, duration: 0.8 }}
-                    >
-                      <motion.h1
-                        className="text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent leading-tight"
-                        style={{ backgroundSize: "200% 200%" }}
-                        variants={gradientTextVariants}
-                        animate="animate"
-                      >
-                        {module.title}
-                      </motion.h1>
-                      {module.summary && (
-                        <CardDescription className="text-blue-100 text-xl leading-relaxed max-w-4xl">
-                          {module.summary}
-                        </CardDescription>
-                      )}
-                    </motion.div>
-
-                    {/* Enhanced Summary Elements with Micro-interactions */}
-                    {module.beautifulSummaryElements && (
-                      <motion.div
-                        className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6, staggerChildren: 0.1 }}
-                      >
-                        {module.beautifulSummaryElements.difficultyLevel && (
-                          <motion.div
-                            className="group flex items-center gap-4 bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/30 hover:bg-white/30 transition-all duration-300"
-                            whileHover={{ scale: 1.05, y: -5 }}
-                            variants={floatingVariants}
-                            animate="floating"
-                          >
-                            <motion.div
-                              className="w-4 h-4 bg-gradient-to-r from-yellow-300 to-orange-300 rounded-full shadow-lg"
-                              variants={pulseVariants}
-                              animate="pulse"
-                            />
-                            <div>
-                              <span className="text-sm font-medium block">
-                                Difficulty
-                              </span>
-                              <span className="text-lg font-bold">
-                                {
-                                  module.beautifulSummaryElements
-                                    .difficultyLevel
-                                }
-                              </span>
-                            </div>
-                          </motion.div>
-                        )}
-                        {module.beautifulSummaryElements.estimatedStudyTime && (
-                          <motion.div
-                            className="group flex items-center gap-4 bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/30 hover:bg-white/30 transition-all duration-300"
-                            whileHover={{ scale: 1.05, y: -5 }}
-                            variants={floatingVariants}
-                            animate="floating"
-                          >
-                            <Clock className="h-6 w-6 text-blue-200" />
-                            <div>
-                              <span className="text-sm font-medium block">
-                                Study Time
-                              </span>
-                              <span className="text-lg font-bold">
-                                {
-                                  module.beautifulSummaryElements
-                                    .estimatedStudyTime
-                                }
-                              </span>
-                            </div>
-                          </motion.div>
-                        )}
-                        <motion.div
-                          className="group flex items-center gap-4 bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/30 hover:bg-white/30 transition-all duration-300"
-                          whileHover={{ scale: 1.05, y: -5 }}
-                          variants={floatingVariants}
-                          animate="floating"
-                        >
-                          <motion.div
-                            variants={sparkleVariants}
-                            animate="sparkle"
-                          >
-                            <Sparkles className="h-6 w-6 text-purple-200" />
-                          </motion.div>
-                          <div>
-                            <span className="text-sm font-medium block">
-                              Content Type
-                            </span>
-                            <span className="text-lg font-bold">
-                              Interactive
-                            </span>
-                          </div>
-                        </motion.div>
-                      </motion.div>
-                    )}
-                  </div>
-
-                  <motion.div
-                    className="flex items-center gap-4 ml-8"
-                    initial={{ opacity: 0, x: 30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5, duration: 0.8 }}
-                  >
-                    {moduleProgress.completed && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{
-                          delay: 0.8,
-                          type: "spring",
-                          stiffness: 200,
-                        }}
-                      >
-                        <EnhancedBadge className="flex items-center gap-3 bg-green-500/90 hover:bg-green-600/90 text-white border-green-400/50 px-6 py-3 text-lg">
-                          <motion.div
-                            variants={sparkleVariants}
-                            animate="sparkle"
-                          >
-                            <CheckCircle className="h-5 w-5" />
-                          </motion.div>
-                          Completed
-                        </EnhancedBadge>
-                      </motion.div>
-                    )}
-                    <EnhancedBadge className="flex items-center gap-3 bg-white/20 text-white border-white/30 px-6 py-3 backdrop-blur-sm text-lg">
-                      <Clock className="h-5 w-5" />
-                      {Math.floor(moduleProgress.timeSpent / 60)}min
-                    </EnhancedBadge>
-                  </motion.div>
-                </div>
-              </CardHeader>
-            </Card>
+              <TabsTrigger
+                value="resources"
+                className="group relative flex items-center gap-3 px-6 py-4 text-slate-700 hover:text-slate-900 font-medium transition-all duration-300 rounded-xl hover:bg-white/70 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+              >
+                <div className="w-2 h-2 bg-purple-500 rounded-full group-data-[state=active]:bg-white transition-colors duration-300"></div>
+                <span className="text-sm lg:text-base">Resources</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-indigo-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </motion.div>
 
-        {/* Enhanced Learning Objectives - Educator Masterpiece Style */}
-        {module.objectives && module.objectives.length > 0 && (
-          <motion.div
-            key={`learning-objectives-${module.id}`}
-            variants={itemVariants}
-          >
-            <div className="relative">
-              {/* Enhanced background blur effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 rounded-3xl blur-3xl"></div>
+          <TabsContent value="overview" className="space-y-8">
+            {/* Masterpiece Hero Section - Educator Dashboard Style */}
+            <motion.div key="hero-section" variants={itemVariants}>
+              <div className="relative">
+                {/* Enhanced background blur effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 rounded-3xl blur-3xl"></div>
 
-              <Card className="relative border-0 bg-gradient-to-br from-blue-50/90 via-indigo-50/90 to-purple-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
-                {/* Animated background elements */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <motion.div
-                    className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-blue-400/20 to-indigo-400/20 rounded-full blur-2xl"
-                    animate={{ rotate: 360, scale: [1, 1.1, 1] }}
-                    transition={{
-                      duration: 15,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "linear",
-                    }}
-                  />
-                  <motion.div
-                    className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-indigo-400/20 to-purple-400/20 rounded-full blur-2xl"
-                    animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
-                    transition={{
-                      duration: 20,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "linear",
-                    }}
-                  />
-                </div>
-
-                <CardHeader className="relative z-10 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border-b border-blue-200/50 p-8">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <motion.div
-                        className="w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl"
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 10,
-                        }}
-                      >
-                        <Target className="h-8 w-8 text-white" />
-                      </motion.div>
-
-                      <div>
-                        <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 bg-clip-text text-transparent mb-2">
-                          Learning Objectives
-                        </CardTitle>
-                        <CardDescription className="text-blue-700 text-lg font-medium">
-                          Your roadmap to mastering this module
-                        </CardDescription>
-                      </div>
-                    </div>
+                <Card className="relative border-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white shadow-2xl overflow-hidden">
+                  {/* Animated background elements */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5"></div>
 
                     <motion.div
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.3, type: "spring" }}
-                    >
-                      <Badge className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
-                        <Award className="h-4 w-4 mr-2" />
-                        {module.objectives.length} Goals
-                      </Badge>
-                    </motion.div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="relative z-10 p-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {module.objectives.map((objective, index) => (
-                      <motion.div
-                        key={`objective-${index}-${objective.substring(0, 30)}`}
-                        className="group relative"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 * index }}
-                        whileHover={{ scale: 1.02 }}
-                      >
-                        <Card className="h-full bg-gradient-to-br from-white/80 to-blue-50/50 backdrop-blur-sm border border-blue-200/50 transition-all duration-300 hover:shadow-xl hover:border-blue-300/70 overflow-hidden">
-                          {/* Subtle background animation */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                          <CardContent className="relative z-10 p-6">
-                            <div className="flex items-start gap-4">
-                              <motion.div
-                                className="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0 shadow-lg group-hover:shadow-xl transition-all duration-300"
-                                whileHover={{ scale: 1.1, rotate: 360 }}
-                                transition={{ duration: 0.5 }}
-                              >
-                                {index + 1}
-                              </motion.div>
-
-                              <div className="flex-1">
-                                <MathMarkdownRenderer content={objective} />
-                                <motion.div
-                                  className="mt-4 h-2 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 rounded-full origin-left shadow-lg"
-                                  initial={{ scaleX: 0 }}
-                                  animate={{ scaleX: 1 }}
-                                  transition={{
-                                    delay: 0.3 + 0.1 * index,
-                                    duration: 0.8,
-                                    ease: "easeOut",
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </CardContent>
-
-                          {/* Floating accent elements */}
-                          <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Enhanced Module Content with Integrated Explanations */}
-        {module.content && (
-          <motion.div
-            key={`module-content-${module.id}`}
-            variants={itemVariants}
-          >
-            <GlassCard className="bg-gradient-to-br from-gray-50/80 to-blue-50/80 border-gray-200/50">
-              <CardContent className="p-8">
-                <motion.h3
-                  className="font-bold text-2xl mb-6 flex items-center gap-3 text-gray-800"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  <motion.div
-                    className="p-3 bg-gradient-to-r from-gray-600 to-gray-700 rounded-xl shadow-lg"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                  >
-                    <FileText className="h-6 w-6 text-white" />
-                  </motion.div>
-                  Module Content
-                  <EnhancedBadge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-1 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    AI-Enhanced
-                  </EnhancedBadge>
-                </motion.h3>
-
-                {contentPages.length > 1 && currentPageData ? (
-                  <div className="space-y-6">
-                    {/* Progress indicator */}
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-600">
-                          Reading Progress
-                        </span>
-                        <span className="text-sm font-medium text-blue-600">
-                          {Math.round(
-                            ((currentPage + 1) / contentPages.length) * 100
-                          )}
-                          %
-                        </span>
-                      </div>
-                      <Progress
-                        value={((currentPage + 1) / contentPages.length) * 100}
-                        className="h-2"
-                      />
-                    </div>
-
+                      className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-3xl"
+                      animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+                      transition={{
+                        duration: 20,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "linear",
+                      }}
+                    />
                     <motion.div
-                      key={currentPage}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="flex items-center gap-3 mb-4">
-                        <h4 className="font-bold text-3xl text-gray-800">
-                          {currentPageData.title}
-                        </h4>
-                        <Badge variant="outline" className="text-xs">
-                          Section {currentPage + 1}
-                        </Badge>
-                      </div>
-                      <div className="prose prose-lg max-w-none">
-                        <ContentDisplay
-                          content={currentPageData.content}
-                          renderingMode="math-optimized"
-                          className="module-page-content"
-                        />
-                      </div>
-                    </motion.div>
-
-                    <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-                      <Button
-                        onClick={() =>
-                          setCurrentPage((p) => Math.max(0, p - 1))
-                        }
-                        disabled={currentPage === 0}
-                        variant="outline"
-                        className="flex items-center gap-2 hover:scale-105 transition-transform"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
-                      </Button>
-
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          {contentPages.map((page, index) => (
-                            <motion.button
-                              key={index}
-                              onClick={() => setCurrentPage(index)}
-                              className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                                index === currentPage
-                                  ? "bg-blue-600 scale-125"
-                                  : "bg-gray-300 hover:bg-gray-400"
-                              }`}
-                              whileHover={{ scale: 1.2 }}
-                              whileTap={{ scale: 0.9 }}
-                              title={page.title}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                          {currentPage + 1} of {contentPages.length}
-                        </span>
-                      </div>
-
-                      <Button
-                        onClick={() =>
-                          setCurrentPage((p) =>
-                            Math.min(contentPages.length - 1, p + 1)
-                          )
-                        }
-                        disabled={currentPage === contentPages.length - 1}
-                        className="flex items-center gap-2 hover:scale-105 transition-transform"
-                      >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="prose prose-lg max-w-none">
-                    <ContentDisplay 
-                      content={module.content}
-                      renderingMode="math-optimized"
-                      className="module-full-content"
+                      className="absolute -bottom-20 -left-20 w-60 h-60 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"
+                      animate={{ rotate: -360, scale: [1.2, 1, 1.2] }}
+                      transition={{
+                        duration: 25,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "linear",
+                      }}
+                    />
+                    <motion.div
+                      className="absolute top-1/2 left-1/2 w-32 h-32 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full blur-2xl"
+                      animate={{
+                        x: [-50, 50, -50],
+                        y: [-25, 25, -25],
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{
+                        duration: 15,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "easeInOut",
+                      }}
                     />
                   </div>
-                )}
 
-                {/* Detailed Explanations & Simulators Section */}
-                <div className="border-t border-gray-200 pt-8 mt-8">
-                  <motion.h4
-                    className="font-bold text-xl mb-6 flex items-center gap-3 text-cyan-800"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <motion.div
-                      className="p-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg shadow-lg"
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                    >
-                      <Layers className="h-5 w-5 text-white" />
-                    </motion.div>
-                    Detailed Explanations & Interactive Elements
-                  </motion.h4>
+                  <CardHeader className="relative z-10 p-12">
+                    {/* Decorative grid pattern */}
+                    <div className="absolute inset-0 opacity-5">
+                      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22%23ffffff%22 fillOpacity=%220.1%22%3E%3Cpath d=%22M0 0h40v40H0z%22/%3E%3Cpath d=%22M0 0h20v20H0zM20 20h20v20H20z%22/%3E%3C/g%3E%3C/svg%3E')]"></div>
+                    </div>
 
-                  <AnimatePresence mode="wait">
-                    {loadingSubsections ? (
-                      <EnhancedLoader
-                        key="loading-subsections"
-                        text="Generating beautiful explanations..."
-                      />
-                    ) : contentSubsections.length > 0 ? (
-                      <motion.div
-                        key="content-subsections"
-                        className="space-y-6"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                      >
-                        {contentSubsections.map((subsection, index) => (
+                    <div className="relative flex justify-between items-start">
+                      <div className="flex-1">
+                        <motion.div
+                          initial={{ opacity: 0, y: 30 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3, duration: 0.8 }}
+                        >
+                          <motion.h1
+                            className="text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent leading-tight"
+                            style={{ backgroundSize: "200% 200%" }}
+                            variants={gradientTextVariants}
+                            animate="animate"
+                          >
+                            {module.title}
+                          </motion.h1>
+                          {(module.summary || isEditMode) && (
+                            <CardDescription className="text-blue-100 text-xl leading-relaxed max-w-4xl">
+                              {isEditMode ? (
+                                <Textarea
+                                  value={editedSummary}
+                                  onChange={(e) =>
+                                    setEditedSummary(e.target.value)
+                                  }
+                                  placeholder="Enter module summary..."
+                                  className="bg-white/10 border-white/20 text-blue-100 placeholder-blue-200/70 resize-none min-h-[100px]"
+                                  rows={3}
+                                />
+                              ) : (
+                                <MathMarkdownRenderer
+                                  content={module.summary}
+                                />
+                              )}
+                            </CardDescription>
+                          )}
+                        </motion.div>
+
+                        {/* Enhanced Summary Elements with Micro-interactions */}
+                        {module.beautifulSummaryElements && (
                           <motion.div
-                            key={subsection.id}
-                            className="group"
+                            className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.6, staggerChildren: 0.1 }}
+                          >
+                            {module.beautifulSummaryElements
+                              .difficultyLevel && (
+                              <motion.div
+                                className="group flex items-center gap-4 bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/30 hover:bg-white/30 transition-all duration-300"
+                                whileHover={{ scale: 1.05, y: -5 }}
+                                variants={floatingVariants}
+                                animate="floating"
+                              >
+                                <motion.div
+                                  className="w-4 h-4 bg-gradient-to-r from-yellow-300 to-orange-300 rounded-full shadow-lg"
+                                  variants={pulseVariants}
+                                  animate="pulse"
+                                />
+                                <div>
+                                  <span className="text-sm font-medium block">
+                                    Difficulty
+                                  </span>
+                                  <span className="text-lg font-bold">
+                                    {
+                                      module.beautifulSummaryElements
+                                        .difficultyLevel
+                                    }
+                                  </span>
+                                </div>
+                              </motion.div>
+                            )}
+                            {module.beautifulSummaryElements
+                              .estimatedStudyTime && (
+                              <motion.div
+                                className="group flex items-center gap-4 bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/30 hover:bg-white/30 transition-all duration-300"
+                                whileHover={{ scale: 1.05, y: -5 }}
+                                variants={floatingVariants}
+                                animate="floating"
+                              >
+                                <Clock className="h-6 w-6 text-blue-200" />
+                                <div>
+                                  <span className="text-sm font-medium block">
+                                    Study Time
+                                  </span>
+                                  <span className="text-lg font-bold">
+                                    {
+                                      module.beautifulSummaryElements
+                                        .estimatedStudyTime
+                                    }
+                                  </span>
+                                </div>
+                              </motion.div>
+                            )}
+                            <motion.div
+                              className="group flex items-center gap-4 bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/30 hover:bg-white/30 transition-all duration-300"
+                              whileHover={{ scale: 1.05, y: -5 }}
+                              variants={floatingVariants}
+                              animate="floating"
+                            >
+                              <motion.div
+                                variants={sparkleVariants}
+                                animate="sparkle"
+                              >
+                                <Sparkles className="h-6 w-6 text-purple-200" />
+                              </motion.div>
+                              <div>
+                                <span className="text-sm font-medium block">
+                                  Content Type
+                                </span>
+                                <span className="text-lg font-bold">
+                                  Interactive
+                                </span>
+                              </div>
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </div>
+
+                      <motion.div
+                        className="flex items-center gap-4 ml-8"
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5, duration: 0.8 }}
+                      >
+                        {moduleProgress.completed && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{
+                              delay: 0.8,
+                              type: "spring",
+                              stiffness: 200,
+                            }}
+                          >
+                            <EnhancedBadge className="flex items-center gap-3 bg-green-500/90 hover:bg-green-600/90 text-white border-green-400/50 px-6 py-3 text-lg">
+                              <motion.div
+                                variants={sparkleVariants}
+                                animate="sparkle"
+                              >
+                                <CheckCircle className="h-5 w-5" />
+                              </motion.div>
+                              Completed
+                            </EnhancedBadge>
+                          </motion.div>
+                        )}
+                        <EnhancedBadge className="flex items-center gap-3 bg-white/20 text-white border-white/30 px-6 py-3 backdrop-blur-sm text-lg">
+                          <Clock className="h-5 w-5" />
+                          {Math.floor(moduleProgress.timeSpent / 60)}min
+                        </EnhancedBadge>
+                      </motion.div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </div>
+            </motion.div>
+
+            {/* Enhanced Learning Objectives - Educator Masterpiece Style */}
+            {((module.objectives && module.objectives.length > 0) ||
+              isEditMode) && (
+              <motion.div
+                key={`learning-objectives-${module.id}`}
+                variants={itemVariants}
+              >
+                <div className="relative">
+                  {/* Enhanced background blur effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 rounded-3xl blur-3xl"></div>
+
+                  <Card className="relative border-0 bg-gradient-to-br from-blue-50/90 via-indigo-50/90 to-purple-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
+                    {/* Animated background elements */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <motion.div
+                        className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-blue-400/20 to-indigo-400/20 rounded-full blur-2xl"
+                        animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+                        transition={{
+                          duration: 15,
+                          repeat: Number.POSITIVE_INFINITY,
+                          ease: "linear",
+                        }}
+                      />
+                      <motion.div
+                        className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-indigo-400/20 to-purple-400/20 rounded-full blur-2xl"
+                        animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
+                        transition={{
+                          duration: 20,
+                          repeat: Number.POSITIVE_INFINITY,
+                          ease: "linear",
+                        }}
+                      />
+                    </div>
+
+                    <CardHeader className="relative z-10 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border-b border-blue-200/50 p-8">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <motion.div
+                            className="w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl"
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 10,
+                            }}
+                          >
+                            <Target className="h-8 w-8 text-white" />
+                          </motion.div>
+
+                          <div>
+                            <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 bg-clip-text text-transparent mb-2">
+                              Learning Objectives
+                            </CardTitle>
+                            <CardDescription className="text-blue-700 text-lg font-medium">
+                              Your roadmap to mastering this module
+                            </CardDescription>
+                          </div>
+                        </div>
+
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.3, type: "spring" }}
+                        >
+                          <Badge className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
+                            <Award className="h-4 w-4 mr-2" />
+                            {isEditMode
+                              ? editedObjectives.length
+                              : module.objectives.length}{" "}
+                            Goals
+                          </Badge>
+                        </motion.div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="relative z-10 p-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {(isEditMode
+                          ? editedObjectives
+                          : module.objectives
+                        ).map((objective, index) => (
+                          <motion.div
+                            key={`objective-${index}-${objective.substring(
+                              0,
+                              30
+                            )}`}
+                            className="group relative"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 * index }}
+                            whileHover={{ scale: 1.02 }}
                           >
-                            {console.log(
-                              `🔍 Rendering subsection ${subsection.id}, expanded:`,
-                              expandedSubsections[subsection.id]
-                            )}
-                            <GlassCard className="bg-white/70 border-cyan-200/50 overflow-hidden">
-                              <motion.div
-                                className="p-6 cursor-pointer hover:bg-cyan-50/50 transition-colors"
-                                onClick={() => toggleSubsection(subsection.id)}
-                                whileHover={{
-                                  backgroundColor: "rgba(6, 182, 212, 0.05)",
-                                }}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-4 flex-1">
-                                    <motion.div
-                                      className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300"
-                                      whileHover={{ scale: 1.1, rotate: 360 }}
-                                      transition={{ duration: 0.3 }}
-                                    >
-                                      {index + 1}
-                                    </motion.div>
-                                    <div className="flex-1">
-                                      <h4 className="font-semibold text-cyan-900 text-lg group-hover:text-cyan-800 transition-colors">
-                                        {subsection.title}
-                                      </h4>
-                                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                        {subsection.complexity && (
-                                          <EnhancedBadge
-                                            variant="outline"
-                                            className={`text-xs ${
-                                              subsection.complexity ===
-                                              "beginner"
-                                                ? "border-green-300 text-green-700 bg-green-50"
-                                                : subsection.complexity ===
-                                                  "intermediate"
-                                                ? "border-yellow-300 text-yellow-700 bg-yellow-50"
-                                                : "border-red-300 text-red-700 bg-red-50"
-                                            }`}
-                                          >
-                                            {subsection.complexity}
-                                          </EnhancedBadge>
-                                        )}
-                                        {subsection.estimatedTime && (
-                                          <EnhancedBadge
-                                            variant="outline"
-                                            className="text-xs border-cyan-300 text-cyan-700 bg-cyan-50"
-                                          >
-                                            <Clock className="h-3 w-3 mr-1" />
-                                            {subsection.estimatedTime}
-                                          </EnhancedBadge>
-                                        )}
-                                        {subsection.needsCodeSimulation && (
-                                          <EnhancedBadge
-                                            variant="outline"
-                                            className="text-xs border-green-300 text-green-700 bg-green-50"
-                                          >
-                                            <Code className="h-3 w-3 mr-1" />
-                                            Interactive
-                                          </EnhancedBadge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
+                            <Card className="h-full bg-gradient-to-br from-white/80 to-blue-50/50 backdrop-blur-sm border border-blue-200/50 transition-all duration-300 hover:shadow-xl hover:border-blue-300/70 overflow-hidden">
+                              {/* Subtle background animation */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                              <CardContent className="relative z-10 p-6">
+                                <div className="flex items-start gap-4">
                                   <motion.div
-                                    className="ml-4"
-                                    animate={{
-                                      rotate: expandedSubsections[subsection.id]
-                                        ? 90
-                                        : 0,
-                                    }}
-                                    transition={{ duration: 0.2 }}
+                                    className="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0 shadow-lg group-hover:shadow-xl transition-all duration-300"
+                                    whileHover={{ scale: 1.1, rotate: 360 }}
+                                    transition={{ duration: 0.5 }}
                                   >
-                                    <ChevronRight className="h-5 w-5 text-cyan-600" />
+                                    {index + 1}
                                   </motion.div>
+
+                                  <div className="flex-1">
+                                    {isEditMode ? (
+                                      <div className="space-y-2">
+                                        <Textarea
+                                          value={objective}
+                                          onChange={(e) =>
+                                            updateObjective(
+                                              index,
+                                              e.target.value
+                                            )
+                                          }
+                                          placeholder={`Enter objective ${
+                                            index + 1
+                                          }...`}
+                                          className="w-full resize-none min-h-[80px]"
+                                          rows={3}
+                                        />
+                                        <div className="flex gap-2">
+                                          <Button
+                                            onClick={() =>
+                                              removeObjective(index)
+                                            }
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-red-600 border-red-300 hover:bg-red-50"
+                                          >
+                                            <X className="h-4 w-4 mr-1" />
+                                            Remove
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <MathMarkdownRenderer
+                                        content={objective}
+                                      />
+                                    )}
+                                    <motion.div
+                                      className="mt-4 h-2 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 rounded-full origin-left shadow-lg"
+                                      initial={{ scaleX: 0 }}
+                                      animate={{ scaleX: 1 }}
+                                      transition={{
+                                        delay: 0.3 + 0.1 * index,
+                                        duration: 0.8,
+                                        ease: "easeOut",
+                                      }}
+                                    />
+                                  </div>
                                 </div>
-                              </motion.div>
+                              </CardContent>
 
-                              <AnimatePresence>
-                                {expandedSubsections[subsection.id] && (
+                              {/* Floating accent elements */}
+                              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            </Card>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* Edit Mode Controls */}
+                      {isEditMode && (
+                        <div className="relative z-10 p-8 pt-0 space-y-4">
+                          <Button
+                            onClick={addObjective}
+                            variant="outline"
+                            className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Objective
+                          </Button>
+
+                          <div className="flex gap-4">
+                            <Button
+                              onClick={saveChanges}
+                              disabled={isSaving}
+                              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                            >
+                              {isSaving ? (
+                                <>
+                                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="h-4 w-4 mr-2" />
+                                  Save Changes
+                                </>
+                              )}
+                            </Button>
+
+                            <Button
+                              onClick={cancelEdit}
+                              variant="outline"
+                              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Enhanced Module Content with Integrated Explanations */}
+            {module.content && (
+              <motion.div
+                key={`module-content-${module.id}`}
+                variants={itemVariants}
+              >
+                <GlassCard className="bg-gradient-to-br from-gray-50/80 to-blue-50/80 border-gray-200/50">
+                  <CardContent className="p-8">
+                    <motion.h3
+                      className="font-bold text-2xl mb-6 flex items-center gap-3 text-gray-800"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                    >
+                      <motion.div
+                        className="p-3 bg-gradient-to-r from-gray-600 to-gray-700 rounded-xl shadow-lg"
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                      >
+                        <FileText className="h-6 w-6 text-white" />
+                      </motion.div>
+                      Module Content
+                      <EnhancedBadge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-1 flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        AI-Enhanced
+                      </EnhancedBadge>
+                    </motion.h3>
+
+                    {contentPages.length > 1 && currentPageData ? (
+                      <div className="space-y-6">
+                        {/* Progress indicator */}
+                        <div className="mb-6">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-600">
+                              Reading Progress
+                            </span>
+                            <span className="text-sm font-medium text-blue-600">
+                              {Math.round(
+                                ((currentPage + 1) / contentPages.length) * 100
+                              )}
+                              %
+                            </span>
+                          </div>
+                          <Progress
+                            value={
+                              ((currentPage + 1) / contentPages.length) * 100
+                            }
+                            className="h-2"
+                          />
+                        </div>
+
+                        <motion.div
+                          key={currentPage}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <div className="flex items-center gap-3 mb-4">
+                            <h4 className="font-bold text-3xl text-gray-800">
+                              {currentPageData.title}
+                            </h4>
+                            <Badge variant="outline" className="text-xs">
+                              Section {currentPage + 1}
+                            </Badge>
+                          </div>
+                          <div className="prose prose-lg max-w-none">
+                            <ContentDisplay
+                              content={currentPageData.content}
+                              renderingMode="math-optimized"
+                              className="module-page-content"
+                            />
+                          </div>
+                        </motion.div>
+
+                        <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                          <Button
+                            onClick={() =>
+                              setCurrentPage((p) => Math.max(0, p - 1))
+                            }
+                            disabled={currentPage === 0}
+                            variant="outline"
+                            className="flex items-center gap-2 hover:scale-105 transition-transform"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </Button>
+
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              {contentPages.map((page, index) => (
+                                <motion.button
+                                  key={index}
+                                  onClick={() => setCurrentPage(index)}
+                                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                                    index === currentPage
+                                      ? "bg-blue-600 scale-125"
+                                      : "bg-gray-300 hover:bg-gray-400"
+                                  }`}
+                                  whileHover={{ scale: 1.2 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  title={page.title}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                              {currentPage + 1} of {contentPages.length}
+                            </span>
+                          </div>
+
+                          <Button
+                            onClick={() =>
+                              setCurrentPage((p) =>
+                                Math.min(contentPages.length - 1, p + 1)
+                              )
+                            }
+                            disabled={currentPage === contentPages.length - 1}
+                            className="flex items-center gap-2 hover:scale-105 transition-transform"
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="prose prose-lg max-w-none">
+                        <ContentDisplay
+                          content={module.content}
+                          renderingMode="math-optimized"
+                          className="module-full-content"
+                        />
+                      </div>
+                    )}
+
+                    {/* Detailed Explanations & Simulators Section */}
+                    <div className="border-t border-gray-200 pt-8 mt-8">
+                      <motion.h4
+                        className="font-bold text-xl mb-6 flex items-center gap-3 text-cyan-800"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        <motion.div
+                          className="p-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg shadow-lg"
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                        >
+                          <Layers className="h-5 w-5 text-white" />
+                        </motion.div>
+                        Detailed Explanations & Interactive Elements
+                      </motion.h4>
+
+                      <AnimatePresence mode="wait">
+                        {loadingSubsections ? (
+                          <EnhancedLoader
+                            key="loading-subsections"
+                            text="Generating beautiful explanations..."
+                          />
+                        ) : contentSubsections.length > 0 ? (
+                          <motion.div
+                            key="content-subsections"
+                            className="space-y-6"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                          >
+                            {contentSubsections.map((subsection, index) => (
+                              <motion.div
+                                key={subsection.id}
+                                className="group"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 * index }}
+                              >
+                                {console.log(
+                                  `🔍 Rendering subsection ${subsection.id}, expanded:`,
+                                  expandedSubsections[subsection.id]
+                                )}
+                                <GlassCard className="bg-white/70 border-cyan-200/50 overflow-hidden">
                                   <motion.div
-                                    key={`expanded-${subsection.id}`}
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{
-                                      duration: 0.3,
-                                      ease: "easeInOut",
+                                    className="p-6 cursor-pointer hover:bg-cyan-50/50 transition-colors"
+                                    onClick={() =>
+                                      toggleSubsection(subsection.id)
+                                    }
+                                    whileHover={{
+                                      backgroundColor:
+                                        "rgba(6, 182, 212, 0.05)",
                                     }}
-                                    className="overflow-hidden"
                                   >
-                                    <div className="px-6 pb-6 border-t border-cyan-100 bg-gradient-to-r from-cyan-25 to-blue-25">
-                                      <div className="pt-6 space-y-4">
-                                        {/* Key Terms */}
-                                        {subsection.keyTerms &&
-                                          subsection.keyTerms.length > 0 && (
-                                            <div>
-                                              <h5 className="font-medium text-cyan-800 text-sm mb-3 flex items-center gap-2">
-                                                <Atom className="h-4 w-4" />
-                                                Key Terms
-                                              </h5>
-                                              <div className="flex flex-wrap gap-2">
-                                                {subsection.keyTerms.map(
-                                                  (term, termIndex) => (
-                                                    <motion.div
-                                                      key={`term-${termIndex}-${term}`}
-                                                      initial={{
-                                                        opacity: 0,
-                                                        scale: 0.8,
-                                                      }}
-                                                      animate={{
-                                                        opacity: 1,
-                                                        scale: 1,
-                                                      }}
-                                                      transition={{
-                                                        delay: 0.1 * termIndex,
-                                                      }}
-                                                    >
-                                                      <EnhancedBadge className="bg-cyan-100 text-cyan-800 hover:bg-cyan-200 border-cyan-200">
-                                                        {term}
-                                                      </EnhancedBadge>
-                                                    </motion.div>
-                                                  )
-                                                )}
-                                              </div>
-                                            </div>
-                                          )}
-
-                                        {/* Explanation */}
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-4 flex-1">
                                         <motion.div
-                                          className="p-6 bg-white/80 backdrop-blur-sm rounded-xl border border-cyan-100/50 shadow-sm"
-                                          initial={{ opacity: 0, y: 10 }}
-                                          animate={{ opacity: 1, y: 0 }}
-                                          transition={{ delay: 0.2 }}
+                                          className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300"
+                                          whileHover={{
+                                            scale: 1.1,
+                                            rotate: 360,
+                                          }}
+                                          transition={{ duration: 0.3 }}
                                         >
-                                          <h5 className="font-medium text-cyan-800 text-sm mb-3 flex items-center gap-2">
-                                            <Lightbulb className="h-4 w-4" />
-                                            Explanation
-                                          </h5>
-                                          {/* Multi-page explanation system */}
-                                          {(() => {
-                                            // Check if AI generated explanationPages exist
-                                            if (
-                                              subsection.explanationPages &&
-                                              Array.isArray(
-                                                subsection.explanationPages
-                                              ) &&
-                                              subsection.explanationPages
-                                                .length > 0
-                                            ) {
-                                              const currentPage = Math.min(
-                                                getCurrentExplanationPage(
-                                                  subsection.id
-                                                ),
-                                                subsection.explanationPages
-                                                  .length - 1
-                                              );
-                                              const totalPages =
-                                                subsection.explanationPages
-                                                  .length;
-                                              const currentPageData =
-                                                subsection.explanationPages[
-                                                  currentPage
-                                                ];
+                                          {index + 1}
+                                        </motion.div>
+                                        <div className="flex-1">
+                                          <h4 className="font-semibold text-cyan-900 text-lg group-hover:text-cyan-800 transition-colors">
+                                            {subsection.title}
+                                          </h4>
+                                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                            {subsection.complexity && (
+                                              <EnhancedBadge
+                                                variant="outline"
+                                                className={`text-xs ${
+                                                  subsection.complexity ===
+                                                  "beginner"
+                                                    ? "border-green-300 text-green-700 bg-green-50"
+                                                    : subsection.complexity ===
+                                                      "intermediate"
+                                                    ? "border-yellow-300 text-yellow-700 bg-yellow-50"
+                                                    : "border-red-300 text-red-700 bg-red-50"
+                                                }`}
+                                              >
+                                                {subsection.complexity}
+                                              </EnhancedBadge>
+                                            )}
+                                            {subsection.estimatedTime && (
+                                              <EnhancedBadge
+                                                variant="outline"
+                                                className="text-xs border-cyan-300 text-cyan-700 bg-cyan-50"
+                                              >
+                                                <Clock className="h-3 w-3 mr-1" />
+                                                {subsection.estimatedTime}
+                                              </EnhancedBadge>
+                                            )}
+                                            {subsection.needsCodeSimulation && (
+                                              <EnhancedBadge
+                                                variant="outline"
+                                                className="text-xs border-green-300 text-green-700 bg-green-50"
+                                              >
+                                                <Code className="h-3 w-3 mr-1" />
+                                                Interactive
+                                              </EnhancedBadge>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <motion.div
+                                        className="ml-4"
+                                        animate={{
+                                          rotate: expandedSubsections[
+                                            subsection.id
+                                          ]
+                                            ? 90
+                                            : 0,
+                                        }}
+                                        transition={{ duration: 0.2 }}
+                                      >
+                                        <ChevronRight className="h-5 w-5 text-cyan-600" />
+                                      </motion.div>
+                                    </div>
+                                  </motion.div>
 
-                                              // Safety check: ensure currentPageData exists and has content
-                                              if (
-                                                !currentPageData ||
-                                                !currentPageData.content
-                                              ) {
-                                                // Fallback to regular explanation if page data is malformed
-                                                return subsection.explanation ? (
-                                                  <motion.div
-                                                    className="prose prose-lg max-w-none"
-                                                    initial={{
-                                                      opacity: 0,
-                                                      y: 15,
-                                                    }}
-                                                    animate={{
-                                                      opacity: 1,
-                                                      y: 0,
-                                                    }}
-                                                    transition={{
-                                                      duration: 0.5,
-                                                    }}
-                                                  >
-                                                    <div className="bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 rounded-2xl p-8 border border-cyan-100/50 shadow-lg backdrop-blur-sm">
-                                                      <div
-                                                        className="text-slate-700 leading-8 text-lg font-medium tracking-wide"
-                                                        style={{
-                                                          lineHeight: "1.8",
-                                                          fontFamily:
-                                                            '"Inter", "system-ui", sans-serif',
-                                                          letterSpacing:
-                                                            "0.01em",
-                                                        }}
-                                                      >
-                                                        <MathMarkdownRenderer
-                                                          content={
-                                                            subsection.explanation
-                                                          }
-                                                        />
-                                                      </div>
-                                                    </div>
-                                                  </motion.div>
-                                                ) : (
-                                                  <div className="text-center py-8">
-                                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                      <FileText className="h-8 w-8 text-gray-400" />
-                                                    </div>
-                                                    <p className="text-gray-500 italic text-lg">
-                                                      No explanation available
-                                                      for this section.
-                                                    </p>
+                                  <AnimatePresence>
+                                    {expandedSubsections[subsection.id] && (
+                                      <motion.div
+                                        key={`expanded-${subsection.id}`}
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{
+                                          duration: 0.3,
+                                          ease: "easeInOut",
+                                        }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="px-6 pb-6 border-t border-cyan-100 bg-gradient-to-r from-cyan-25 to-blue-25">
+                                          <div className="pt-6 space-y-4">
+                                            {/* Key Terms */}
+                                            {subsection.keyTerms &&
+                                              subsection.keyTerms.length >
+                                                0 && (
+                                                <div>
+                                                  <h5 className="font-medium text-cyan-800 text-sm mb-3 flex items-center gap-2">
+                                                    <Atom className="h-4 w-4" />
+                                                    Key Terms
+                                                  </h5>
+                                                  <div className="flex flex-wrap gap-2">
+                                                    {subsection.keyTerms.map(
+                                                      (term, termIndex) => (
+                                                        <motion.div
+                                                          key={`term-${termIndex}-${term}`}
+                                                          initial={{
+                                                            opacity: 0,
+                                                            scale: 0.8,
+                                                          }}
+                                                          animate={{
+                                                            opacity: 1,
+                                                            scale: 1,
+                                                          }}
+                                                          transition={{
+                                                            delay:
+                                                              0.1 * termIndex,
+                                                          }}
+                                                        >
+                                                          <EnhancedBadge className="bg-cyan-100 text-cyan-800 hover:bg-cyan-200 border-cyan-200">
+                                                            {term}
+                                                          </EnhancedBadge>
+                                                        </motion.div>
+                                                      )
+                                                    )}
                                                   </div>
-                                                );
-                                              }
+                                                </div>
+                                              )}
 
-                                              return (
-                                                <div className="space-y-6">
-                                                  {/* Enhanced Page Content */}
-                                                  <div className="space-y-5">
-                                                    {currentPageData.pageTitle && (
+                                            {/* Explanation */}
+                                            <motion.div
+                                              className="p-6 bg-white/80 backdrop-blur-sm rounded-xl border border-cyan-100/50 shadow-sm"
+                                              initial={{ opacity: 0, y: 10 }}
+                                              animate={{ opacity: 1, y: 0 }}
+                                              transition={{ delay: 0.2 }}
+                                            >
+                                              <h5 className="font-medium text-cyan-800 text-sm mb-3 flex items-center gap-2">
+                                                <Lightbulb className="h-4 w-4" />
+                                                Explanation
+                                              </h5>
+                                              {/* Multi-page explanation system */}
+                                              {(() => {
+                                                // Check if AI generated explanationPages exist
+                                                if (
+                                                  subsection.explanationPages &&
+                                                  Array.isArray(
+                                                    subsection.explanationPages
+                                                  ) &&
+                                                  subsection.explanationPages
+                                                    .length > 0
+                                                ) {
+                                                  const currentPage = Math.min(
+                                                    getCurrentExplanationPage(
+                                                      subsection.id
+                                                    ),
+                                                    subsection.explanationPages
+                                                      .length - 1
+                                                  );
+                                                  const totalPages =
+                                                    subsection.explanationPages
+                                                      .length;
+                                                  const currentPageData =
+                                                    subsection.explanationPages[
+                                                      currentPage
+                                                    ];
+
+                                                  // Safety check: ensure currentPageData exists and has content
+                                                  if (
+                                                    !currentPageData ||
+                                                    !currentPageData.content
+                                                  ) {
+                                                    // Fallback to regular explanation if page data is malformed
+                                                    return subsection.explanation ? (
                                                       <motion.div
+                                                        className="prose prose-lg max-w-none"
                                                         initial={{
                                                           opacity: 0,
-                                                          y: 10,
+                                                          y: 15,
                                                         }}
                                                         animate={{
                                                           opacity: 1,
                                                           y: 0,
                                                         }}
                                                         transition={{
-                                                          duration: 0.4,
+                                                          duration: 0.5,
                                                         }}
                                                       >
-                                                        <h6 className="font-bold text-2xl bg-gradient-to-r from-cyan-800 via-blue-700 to-indigo-800 bg-clip-text text-transparent mb-3 leading-tight">
-                                                          {
-                                                            currentPageData.pageTitle
-                                                          }
-                                                        </h6>
-                                                        <div className="w-16 h-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full mb-4"></div>
-                                                      </motion.div>
-                                                    )}
-
-                                                    <motion.div
-                                                      className="prose prose-lg max-w-none"
-                                                      initial={{
-                                                        opacity: 0,
-                                                        y: 15,
-                                                      }}
-                                                      animate={{
-                                                        opacity: 1,
-                                                        y: 0,
-                                                      }}
-                                                      transition={{
-                                                        duration: 0.5,
-                                                        delay: 0.1,
-                                                      }}
-                                                    >
-                                                      <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
-                                                        <MathMarkdownRenderer
-                                                          content={
-                                                            currentPageData.content
-                                                          }
-                                                        />
-                                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-                                                        <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
-                                                          <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
-                                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                                            <span className="text-xs font-medium text-blue-700">
-                                                              Enhanced Reading
-                                                            </span>
+                                                        <div className="bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 rounded-2xl p-8 border border-cyan-100/50 shadow-lg backdrop-blur-sm">
+                                                          <div
+                                                            className="text-slate-700 leading-8 text-lg font-medium tracking-wide"
+                                                            style={{
+                                                              lineHeight: "1.8",
+                                                              fontFamily:
+                                                                '"Inter", "system-ui", sans-serif',
+                                                              letterSpacing:
+                                                                "0.01em",
+                                                            }}
+                                                          >
+                                                            <MathMarkdownRenderer
+                                                              content={
+                                                                subsection.explanation
+                                                              }
+                                                            />
                                                           </div>
                                                         </div>
+                                                      </motion.div>
+                                                    ) : (
+                                                      <div className="text-center py-8">
+                                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                          <FileText className="h-8 w-8 text-gray-400" />
+                                                        </div>
+                                                        <p className="text-gray-500 italic text-lg">
+                                                          No explanation
+                                                          available for this
+                                                          section.
+                                                        </p>
                                                       </div>
-                                                    </motion.div>
+                                                    );
+                                                  }
 
-                                                    {currentPageData.keyTakeaway && (
+                                                  return (
+                                                    <div className="space-y-6">
+                                                      {/* Enhanced Page Content */}
+                                                      <div className="space-y-5">
+                                                        {currentPageData.pageTitle && (
+                                                          <motion.div
+                                                            initial={{
+                                                              opacity: 0,
+                                                              y: 10,
+                                                            }}
+                                                            animate={{
+                                                              opacity: 1,
+                                                              y: 0,
+                                                            }}
+                                                            transition={{
+                                                              duration: 0.4,
+                                                            }}
+                                                          >
+                                                            <h6 className="font-bold text-2xl bg-gradient-to-r from-cyan-800 via-blue-700 to-indigo-800 bg-clip-text text-transparent mb-3 leading-tight">
+                                                              {
+                                                                currentPageData.pageTitle
+                                                              }
+                                                            </h6>
+                                                            <div className="w-16 h-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full mb-4"></div>
+                                                          </motion.div>
+                                                        )}
+
+                                                        <motion.div
+                                                          className="prose prose-lg max-w-none"
+                                                          initial={{
+                                                            opacity: 0,
+                                                            y: 15,
+                                                          }}
+                                                          animate={{
+                                                            opacity: 1,
+                                                            y: 0,
+                                                          }}
+                                                          transition={{
+                                                            duration: 0.5,
+                                                            delay: 0.1,
+                                                          }}
+                                                        >
+                                                          <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
+                                                            <MathMarkdownRenderer
+                                                              content={
+                                                                currentPageData.content
+                                                              }
+                                                            />
+                                                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                                                            <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
+                                                              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
+                                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                                <span className="text-xs font-medium text-blue-700">
+                                                                  Enhanced
+                                                                  Reading
+                                                                </span>
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        </motion.div>
+
+                                                        {currentPageData.keyTakeaway && (
+                                                          <motion.div
+                                                            className="mt-6 p-6 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border border-amber-200/50 shadow-lg"
+                                                            initial={{
+                                                              opacity: 0,
+                                                              scale: 0.95,
+                                                            }}
+                                                            animate={{
+                                                              opacity: 1,
+                                                              scale: 1,
+                                                            }}
+                                                            transition={{
+                                                              duration: 0.4,
+                                                              delay: 0.2,
+                                                            }}
+                                                          >
+                                                            <div className="flex items-center gap-3 mb-4">
+                                                              <div className="p-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl shadow-md">
+                                                                <Star className="h-5 w-5 text-white" />
+                                                              </div>
+                                                              <span className="text-lg font-bold bg-gradient-to-r from-amber-700 to-orange-700 bg-clip-text text-transparent">
+                                                                💡 Key Takeaway
+                                                              </span>
+                                                            </div>
+                                                            <p className="text-amber-800 text-base leading-7 font-medium italic">
+                                                              "
+                                                              {
+                                                                currentPageData.keyTakeaway
+                                                              }
+                                                              "
+                                                            </p>
+                                                          </motion.div>
+                                                        )}
+                                                      </div>
+
+                                                      {/* Page Navigation */}
+                                                      {totalPages > 1 && (
+                                                        <div className="flex items-center justify-between pt-4 border-t border-cyan-200">
+                                                          <div className="flex items-center gap-2">
+                                                            <span className="text-sm text-cyan-600">
+                                                              Page{" "}
+                                                              {currentPage + 1}{" "}
+                                                              of {totalPages}
+                                                            </span>
+                                                            <Badge
+                                                              variant="outline"
+                                                              className="text-xs border-cyan-300 text-cyan-700"
+                                                            >
+                                                              <Sparkles className="h-3 w-3 mr-1" />
+                                                              AI-generated pages
+                                                            </Badge>
+                                                          </div>
+                                                          <div className="flex items-center gap-2">
+                                                            <Button
+                                                              size="sm"
+                                                              variant="outline"
+                                                              onClick={() =>
+                                                                setCurrentExplanationPageForSubsection(
+                                                                  subsection.id,
+                                                                  Math.max(
+                                                                    0,
+                                                                    currentPage -
+                                                                      1
+                                                                  )
+                                                                )
+                                                              }
+                                                              disabled={
+                                                                currentPage ===
+                                                                0
+                                                              }
+                                                              className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                                            >
+                                                              <ChevronLeft className="h-4 w-4 mr-1" />
+                                                              Previous
+                                                            </Button>
+                                                            <Button
+                                                              size="sm"
+                                                              variant="outline"
+                                                              onClick={() =>
+                                                                setCurrentExplanationPageForSubsection(
+                                                                  subsection.id,
+                                                                  Math.min(
+                                                                    totalPages -
+                                                                      1,
+                                                                    currentPage +
+                                                                      1
+                                                                  )
+                                                                )
+                                                              }
+                                                              disabled={
+                                                                currentPage ===
+                                                                totalPages - 1
+                                                              }
+                                                              className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                                            >
+                                                              Next
+                                                              <ChevronRight className="h-4 w-4 ml-1" />
+                                                            </Button>
+                                                          </div>
+                                                        </div>
+                                                      )}
+
+                                                      {/* Page Numbers */}
+                                                      {totalPages > 1 && (
+                                                        <div className="flex justify-center gap-1 pt-2">
+                                                          {Array.from(
+                                                            {
+                                                              length: Math.min(
+                                                                totalPages,
+                                                                5
+                                                              ),
+                                                            },
+                                                            (_, i) => {
+                                                              let pageNum;
+                                                              if (
+                                                                totalPages <= 5
+                                                              ) {
+                                                                pageNum = i;
+                                                              } else if (
+                                                                currentPage < 2
+                                                              ) {
+                                                                pageNum = i;
+                                                              } else if (
+                                                                currentPage >
+                                                                totalPages - 3
+                                                              ) {
+                                                                pageNum =
+                                                                  totalPages -
+                                                                  5 +
+                                                                  i;
+                                                              } else {
+                                                                pageNum =
+                                                                  currentPage -
+                                                                  2 +
+                                                                  i;
+                                                              }
+
+                                                              return (
+                                                                <Button
+                                                                  key={`${subsection.id}-ai-page-${pageNum}`}
+                                                                  size="sm"
+                                                                  variant={
+                                                                    currentPage ===
+                                                                    pageNum
+                                                                      ? "default"
+                                                                      : "ghost"
+                                                                  }
+                                                                  onClick={() =>
+                                                                    setCurrentExplanationPageForSubsection(
+                                                                      subsection.id,
+                                                                      pageNum
+                                                                    )
+                                                                  }
+                                                                  className={`w-8 h-8 p-0 text-xs ${
+                                                                    currentPage ===
+                                                                    pageNum
+                                                                      ? "bg-cyan-600 text-white"
+                                                                      : "text-cyan-600 hover:bg-cyan-50"
+                                                                  }`}
+                                                                >
+                                                                  {pageNum + 1}
+                                                                </Button>
+                                                              );
+                                                            }
+                                                          )}
+                                                          {totalPages > 5 &&
+                                                            currentPage <
+                                                              totalPages -
+                                                                3 && (
+                                                              <React.Fragment
+                                                                key={`${subsection.id}-ai-ellipsis-fragment`}
+                                                              >
+                                                                <span
+                                                                  key={`${subsection.id}-ai-ellipsis`}
+                                                                  className="text-cyan-400 text-xs self-center"
+                                                                >
+                                                                  ...
+                                                                </span>
+                                                                <Button
+                                                                  key={`${subsection.id}-ai-last-page`}
+                                                                  size="sm"
+                                                                  variant="ghost"
+                                                                  onClick={() =>
+                                                                    setCurrentExplanationPageForSubsection(
+                                                                      subsection.id,
+                                                                      totalPages -
+                                                                        1
+                                                                    )
+                                                                  }
+                                                                  className="w-8 h-8 p-0 text-xs text-cyan-600 hover:bg-cyan-50"
+                                                                >
+                                                                  {totalPages}
+                                                                </Button>
+                                                              </React.Fragment>
+                                                            )}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                } else if (
+                                                  subsection.explanation
+                                                ) {
+                                                  // Fallback: Split explanation by words for pagination
+                                                  const pages =
+                                                    splitExplanationIntoPages(
+                                                      subsection.explanation
+                                                    );
+                                                  const currentPage =
+                                                    getCurrentExplanationPage(
+                                                      subsection.id
+                                                    );
+                                                  const totalPages =
+                                                    pages.length;
+
+                                                  if (totalPages === 1) {
+                                                    // Single page, display beautifully
+                                                    return (
                                                       <motion.div
-                                                        className="mt-6 p-6 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border border-amber-200/50 shadow-lg"
+                                                        className="prose prose-lg max-w-none"
                                                         initial={{
                                                           opacity: 0,
-                                                          scale: 0.95,
+                                                          y: 15,
                                                         }}
                                                         animate={{
                                                           opacity: 1,
-                                                          scale: 1,
+                                                          y: 0,
                                                         }}
                                                         transition={{
-                                                          duration: 0.4,
-                                                          delay: 0.2,
+                                                          duration: 0.5,
                                                         }}
                                                       >
-                                                        <div className="flex items-center gap-3 mb-4">
-                                                          <div className="p-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl shadow-md">
-                                                            <Star className="h-5 w-5 text-white" />
+                                                        <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
+                                                          <MathMarkdownRenderer
+                                                            content={
+                                                              subsection.explanation
+                                                            }
+                                                          />
+                                                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                                                          <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
+                                                            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
+                                                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                              <span className="text-xs font-medium text-blue-700">
+                                                                Enhanced Reading
+                                                              </span>
+                                                            </div>
                                                           </div>
-                                                          <span className="text-lg font-bold bg-gradient-to-r from-amber-700 to-orange-700 bg-clip-text text-transparent">
-                                                            💡 Key Takeaway
-                                                          </span>
                                                         </div>
-                                                        <p className="text-amber-800 text-base leading-7 font-medium italic">
-                                                          "
-                                                          {
-                                                            currentPageData.keyTakeaway
-                                                          }
-                                                          "
-                                                        </p>
                                                       </motion.div>
-                                                    )}
-                                                  </div>
+                                                    );
+                                                  }
 
-                                                  {/* Page Navigation */}
-                                                  {totalPages > 1 && (
-                                                    <div className="flex items-center justify-between pt-4 border-t border-cyan-200">
-                                                      <div className="flex items-center gap-2">
-                                                        <span className="text-sm text-cyan-600">
-                                                          Page {currentPage + 1}{" "}
-                                                          of {totalPages}
-                                                        </span>
-                                                        <Badge
-                                                          variant="outline"
-                                                          className="text-xs border-cyan-300 text-cyan-700"
-                                                        >
-                                                          <Sparkles className="h-3 w-3 mr-1" />
-                                                          AI-generated pages
-                                                        </Badge>
-                                                      </div>
-                                                      <div className="flex items-center gap-2">
-                                                        <Button
-                                                          size="sm"
-                                                          variant="outline"
-                                                          onClick={() =>
-                                                            setCurrentExplanationPageForSubsection(
-                                                              subsection.id,
-                                                              Math.max(
-                                                                0,
-                                                                currentPage - 1
-                                                              )
-                                                            )
-                                                          }
-                                                          disabled={
-                                                            currentPage === 0
-                                                          }
-                                                          className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
-                                                        >
-                                                          <ChevronLeft className="h-4 w-4 mr-1" />
-                                                          Previous
-                                                        </Button>
-                                                        <Button
-                                                          size="sm"
-                                                          variant="outline"
-                                                          onClick={() =>
-                                                            setCurrentExplanationPageForSubsection(
-                                                              subsection.id,
-                                                              Math.min(
-                                                                totalPages - 1,
-                                                                currentPage + 1
-                                                              )
-                                                            )
-                                                          }
-                                                          disabled={
-                                                            currentPage ===
-                                                            totalPages - 1
-                                                          }
-                                                          className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
-                                                        >
-                                                          Next
-                                                          <ChevronRight className="h-4 w-4 ml-1" />
-                                                        </Button>
-                                                      </div>
-                                                    </div>
-                                                  )}
-
-                                                  {/* Page Numbers */}
-                                                  {totalPages > 1 && (
-                                                    <div className="flex justify-center gap-1 pt-2">
-                                                      {Array.from(
-                                                        {
-                                                          length: Math.min(
-                                                            totalPages,
-                                                            5
-                                                          ),
-                                                        },
-                                                        (_, i) => {
-                                                          let pageNum;
-                                                          if (totalPages <= 5) {
-                                                            pageNum = i;
-                                                          } else if (
-                                                            currentPage < 2
-                                                          ) {
-                                                            pageNum = i;
-                                                          } else if (
-                                                            currentPage >
-                                                            totalPages - 3
-                                                          ) {
-                                                            pageNum =
-                                                              totalPages -
-                                                              5 +
-                                                              i;
-                                                          } else {
-                                                            pageNum =
-                                                              currentPage -
-                                                              2 +
-                                                              i;
-                                                          }
-
-                                                          return (
-                                                            <Button
-                                                              key={`${subsection.id}-ai-page-${pageNum}`}
-                                                              size="sm"
-                                                              variant={
-                                                                currentPage ===
-                                                                pageNum
-                                                                  ? "default"
-                                                                  : "ghost"
-                                                              }
-                                                              onClick={() =>
-                                                                setCurrentExplanationPageForSubsection(
-                                                                  subsection.id,
-                                                                  pageNum
-                                                                )
-                                                              }
-                                                              className={`w-8 h-8 p-0 text-xs ${
-                                                                currentPage ===
-                                                                pageNum
-                                                                  ? "bg-cyan-600 text-white"
-                                                                  : "text-cyan-600 hover:bg-cyan-50"
-                                                              }`}
-                                                            >
-                                                              {pageNum + 1}
-                                                            </Button>
-                                                          );
-                                                        }
-                                                      )}
-                                                      {totalPages > 5 &&
-                                                        currentPage <
-                                                          totalPages - 3 && (
-                                                          <React.Fragment
-                                                            key={`${subsection.id}-ai-ellipsis-fragment`}
-                                                          >
-                                                            <span
-                                                              key={`${subsection.id}-ai-ellipsis`}
-                                                              className="text-cyan-400 text-xs self-center"
-                                                            >
-                                                              ...
-                                                            </span>
-                                                            <Button
-                                                              key={`${subsection.id}-ai-last-page`}
-                                                              size="sm"
-                                                              variant="ghost"
-                                                              onClick={() =>
-                                                                setCurrentExplanationPageForSubsection(
-                                                                  subsection.id,
-                                                                  totalPages - 1
-                                                                )
-                                                              }
-                                                              className="w-8 h-8 p-0 text-xs text-cyan-600 hover:bg-cyan-50"
-                                                            >
-                                                              {totalPages}
-                                                            </Button>
-                                                          </React.Fragment>
-                                                        )}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              );
-                                            } else if (subsection.explanation) {
-                                              // Fallback: Split explanation by words for pagination
-                                              const pages =
-                                                splitExplanationIntoPages(
-                                                  subsection.explanation
-                                                );
-                                              const currentPage =
-                                                getCurrentExplanationPage(
-                                                  subsection.id
-                                                );
-                                              const totalPages = pages.length;
-
-                                              if (totalPages === 1) {
-                                                // Single page, display beautifully
-                                                return (
-                                                  <motion.div
-                                                    className="prose prose-lg max-w-none"
-                                                    initial={{
-                                                      opacity: 0,
-                                                      y: 15,
-                                                    }}
-                                                    animate={{
-                                                      opacity: 1,
-                                                      y: 0,
-                                                    }}
-                                                    transition={{
-                                                      duration: 0.5,
-                                                    }}
-                                                  >
-                                                    <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
-                                                      <MathMarkdownRenderer
-                                                        content={
-                                                          subsection.explanation
-                                                        }
-                                                      />
-                                                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-                                                      <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
-                                                        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
-                                                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                                          <span className="text-xs font-medium text-blue-700">
-                                                            Enhanced Reading
-                                                          </span>
+                                                  return (
+                                                    <div className="space-y-6">
+                                                      {/* Enhanced Page Content */}
+                                                      <motion.div
+                                                        className="prose prose-lg max-w-none"
+                                                        initial={{
+                                                          opacity: 0,
+                                                          y: 15,
+                                                        }}
+                                                        animate={{
+                                                          opacity: 1,
+                                                          y: 0,
+                                                        }}
+                                                        transition={{
+                                                          duration: 0.5,
+                                                        }}
+                                                        key={`page-${currentPage}`}
+                                                      >
+                                                        <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
+                                                          <MathMarkdownRenderer
+                                                            content={
+                                                              pages[currentPage]
+                                                            }
+                                                          />
+                                                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                                                          <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
+                                                            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
+                                                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                              <span className="text-xs font-medium text-blue-700">
+                                                                Enhanced Reading
+                                                              </span>
+                                                            </div>
+                                                          </div>
                                                         </div>
-                                                      </div>
-                                                    </div>
-                                                  </motion.div>
-                                                );
-                                              }
+                                                      </motion.div>
 
-                                              return (
-                                                <div className="space-y-6">
-                                                  {/* Enhanced Page Content */}
-                                                  <motion.div
-                                                    className="prose prose-lg max-w-none"
-                                                    initial={{
-                                                      opacity: 0,
-                                                      y: 15,
-                                                    }}
-                                                    animate={{
-                                                      opacity: 1,
-                                                      y: 0,
-                                                    }}
-                                                    transition={{
-                                                      duration: 0.5,
-                                                    }}
-                                                    key={`page-${currentPage}`}
-                                                  >
-                                                    <div className="group/text relative bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-2xl p-10 border border-blue-200/30 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:bg-gradient-to-br hover:from-white hover:via-blue-50/40 hover:to-indigo-50/50 transition-all duration-700 hover:scale-[1.02] transform-gpu">
-                                                      <MathMarkdownRenderer
-                                                        content={
-                                                          pages[currentPage]
-                                                        }
-                                                      />
-                                                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-                                                      <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
-                                                        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-200 shadow-lg">
-                                                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                                          <span className="text-xs font-medium text-blue-700">
-                                                            Enhanced Reading
-                                                          </span>
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                  </motion.div>
-
-                                                  {/* Page Navigation */}
-                                                  <div className="flex items-center justify-between pt-4 border-t border-cyan-200">
-                                                    <div className="flex items-center gap-2">
-                                                      <span className="text-sm text-cyan-600">
-                                                        Page {currentPage + 1}{" "}
-                                                        of {totalPages}
-                                                      </span>
-                                                      <Badge
-                                                        variant="outline"
-                                                        className="text-xs border-cyan-300 text-cyan-700"
-                                                      >
-                                                        ~
-                                                        {
-                                                          wordsPerExplanationPage
-                                                        }{" "}
-                                                        words per page
-                                                      </Badge>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                      <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                          setCurrentExplanationPageForSubsection(
-                                                            subsection.id,
-                                                            Math.max(
-                                                              0,
-                                                              currentPage - 1
-                                                            )
-                                                          )
-                                                        }
-                                                        disabled={
-                                                          currentPage === 0
-                                                        }
-                                                        className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
-                                                      >
-                                                        <ChevronLeft className="h-4 w-4 mr-1" />
-                                                        Previous
-                                                      </Button>
-                                                      <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                          setCurrentExplanationPageForSubsection(
-                                                            subsection.id,
-                                                            Math.min(
-                                                              totalPages - 1,
-                                                              currentPage + 1
-                                                            )
-                                                          )
-                                                        }
-                                                        disabled={
-                                                          currentPage ===
-                                                          totalPages - 1
-                                                        }
-                                                        className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
-                                                      >
-                                                        Next
-                                                        <ChevronRight className="h-4 w-4 ml-1" />
-                                                      </Button>
-                                                    </div>
-                                                  </div>
-
-                                                  {/* Page Numbers */}
-                                                  <div className="flex justify-center gap-1 pt-2">
-                                                    {Array.from(
-                                                      {
-                                                        length: Math.min(
-                                                          totalPages,
-                                                          5
-                                                        ),
-                                                      },
-                                                      (_, i) => {
-                                                        let pageNum;
-                                                        if (totalPages <= 5) {
-                                                          pageNum = i;
-                                                        } else if (
-                                                          currentPage < 2
-                                                        ) {
-                                                          pageNum = i;
-                                                        } else if (
-                                                          currentPage >
-                                                          totalPages - 3
-                                                        ) {
-                                                          pageNum =
-                                                            totalPages - 5 + i;
-                                                        } else {
-                                                          pageNum =
-                                                            currentPage - 2 + i;
-                                                        }
-
-                                                        return (
-                                                          <Button
-                                                            key={`${subsection.id}-fallback-page-${pageNum}`}
-                                                            size="sm"
-                                                            variant={
-                                                              currentPage ===
-                                                              pageNum
-                                                                ? "default"
-                                                                : "ghost"
-                                                            }
-                                                            onClick={() =>
-                                                              setCurrentExplanationPageForSubsection(
-                                                                subsection.id,
-                                                                pageNum
-                                                              )
-                                                            }
-                                                            className={`w-8 h-8 p-0 text-xs ${
-                                                              currentPage ===
-                                                              pageNum
-                                                                ? "bg-cyan-600 text-white"
-                                                                : "text-cyan-600 hover:bg-cyan-50"
-                                                            }`}
-                                                          >
-                                                            {pageNum + 1}
-                                                          </Button>
-                                                        );
-                                                      }
-                                                    )}
-                                                    {totalPages > 5 &&
-                                                      currentPage <
-                                                        totalPages - 3 && (
-                                                        <React.Fragment
-                                                          key={`${subsection.id}-fallback-ellipsis-fragment`}
-                                                        >
-                                                          <span
-                                                            key={`${subsection.id}-fallback-ellipsis`}
-                                                            className="text-cyan-400 text-xs self-center"
-                                                          >
-                                                            ...
-                                                          </span>
-                                                          <Button
-                                                            key={`${subsection.id}-fallback-last-page`}
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() =>
-                                                              setCurrentExplanationPageForSubsection(
-                                                                subsection.id,
-                                                                totalPages - 1
-                                                              )
-                                                            }
-                                                            className="w-8 h-8 p-0 text-xs text-cyan-600 hover:bg-cyan-50"
-                                                          >
+                                                      {/* Page Navigation */}
+                                                      <div className="flex items-center justify-between pt-4 border-t border-cyan-200">
+                                                        <div className="flex items-center gap-2">
+                                                          <span className="text-sm text-cyan-600">
+                                                            Page{" "}
+                                                            {currentPage + 1} of{" "}
                                                             {totalPages}
+                                                          </span>
+                                                          <Badge
+                                                            variant="outline"
+                                                            className="text-xs border-cyan-300 text-cyan-700"
+                                                          >
+                                                            ~
+                                                            {
+                                                              wordsPerExplanationPage
+                                                            }{" "}
+                                                            words per page
+                                                          </Badge>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                          <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() =>
+                                                              setCurrentExplanationPageForSubsection(
+                                                                subsection.id,
+                                                                Math.max(
+                                                                  0,
+                                                                  currentPage -
+                                                                    1
+                                                                )
+                                                              )
+                                                            }
+                                                            disabled={
+                                                              currentPage === 0
+                                                            }
+                                                            className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                                          >
+                                                            <ChevronLeft className="h-4 w-4 mr-1" />
+                                                            Previous
                                                           </Button>
-                                                        </React.Fragment>
-                                                      )}
-                                                  </div>
-                                                </div>
-                                              );
-                                            } else {
-                                              return (
-                                                <p className="text-cyan-500 italic">
-                                                  No explanation available for
-                                                  this section.
-                                                </p>
-                                              );
-                                            }
-                                          })()}
-                                        </motion.div>
+                                                          <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() =>
+                                                              setCurrentExplanationPageForSubsection(
+                                                                subsection.id,
+                                                                Math.min(
+                                                                  totalPages -
+                                                                    1,
+                                                                  currentPage +
+                                                                    1
+                                                                )
+                                                              )
+                                                            }
+                                                            disabled={
+                                                              currentPage ===
+                                                              totalPages - 1
+                                                            }
+                                                            className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                                          >
+                                                            Next
+                                                            <ChevronRight className="h-4 w-4 ml-1" />
+                                                          </Button>
+                                                        </div>
+                                                      </div>
 
-                                        {/* Practical Example */}
-                                        {subsection.practicalExample && (
-                                          <motion.div
-                                            className="p-6 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl border border-yellow-200 shadow-sm"
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: 0.3 }}
-                                          >
-                                            <h5 className="font-medium text-yellow-800 text-sm mb-3 flex items-center gap-2">
-                                              <TestTube className="h-4 w-4" />
-                                              Practical Example
-                                            </h5>
-                                            <MathMarkdownRenderer
-                                              content={
-                                                subsection.practicalExample
-                                              }
-                                            />
-                                          </motion.div>
-                                        )}
+                                                      {/* Page Numbers */}
+                                                      <div className="flex justify-center gap-1 pt-2">
+                                                        {Array.from(
+                                                          {
+                                                            length: Math.min(
+                                                              totalPages,
+                                                              5
+                                                            ),
+                                                          },
+                                                          (_, i) => {
+                                                            let pageNum;
+                                                            if (
+                                                              totalPages <= 5
+                                                            ) {
+                                                              pageNum = i;
+                                                            } else if (
+                                                              currentPage < 2
+                                                            ) {
+                                                              pageNum = i;
+                                                            } else if (
+                                                              currentPage >
+                                                              totalPages - 3
+                                                            ) {
+                                                              pageNum =
+                                                                totalPages -
+                                                                5 +
+                                                                i;
+                                                            } else {
+                                                              pageNum =
+                                                                currentPage -
+                                                                2 +
+                                                                i;
+                                                            }
 
-                                        {/* Action Buttons */}
-                                        <motion.div
-                                          className="flex flex-wrap gap-3 pt-4"
-                                          initial={{ opacity: 0, y: 10 }}
-                                          animate={{ opacity: 1, y: 0 }}
-                                          transition={{ delay: 0.4 }}
-                                        >
-                                          {checkPremiumFeature(
-                                            user,
-                                            "getMoreDetails"
-                                          ) ? (
+                                                            return (
+                                                              <Button
+                                                                key={`${subsection.id}-fallback-page-${pageNum}`}
+                                                                size="sm"
+                                                                variant={
+                                                                  currentPage ===
+                                                                  pageNum
+                                                                    ? "default"
+                                                                    : "ghost"
+                                                                }
+                                                                onClick={() =>
+                                                                  setCurrentExplanationPageForSubsection(
+                                                                    subsection.id,
+                                                                    pageNum
+                                                                  )
+                                                                }
+                                                                className={`w-8 h-8 p-0 text-xs ${
+                                                                  currentPage ===
+                                                                  pageNum
+                                                                    ? "bg-cyan-600 text-white"
+                                                                    : "text-cyan-600 hover:bg-cyan-50"
+                                                                }`}
+                                                              >
+                                                                {pageNum + 1}
+                                                              </Button>
+                                                            );
+                                                          }
+                                                        )}
+                                                        {totalPages > 5 &&
+                                                          currentPage <
+                                                            totalPages - 3 && (
+                                                            <React.Fragment
+                                                              key={`${subsection.id}-fallback-ellipsis-fragment`}
+                                                            >
+                                                              <span
+                                                                key={`${subsection.id}-fallback-ellipsis`}
+                                                                className="text-cyan-400 text-xs self-center"
+                                                              >
+                                                                ...
+                                                              </span>
+                                                              <Button
+                                                                key={`${subsection.id}-fallback-last-page`}
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() =>
+                                                                  setCurrentExplanationPageForSubsection(
+                                                                    subsection.id,
+                                                                    totalPages -
+                                                                      1
+                                                                  )
+                                                                }
+                                                                className="w-8 h-8 p-0 text-xs text-cyan-600 hover:bg-cyan-50"
+                                                              >
+                                                                {totalPages}
+                                                              </Button>
+                                                            </React.Fragment>
+                                                          )}
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                } else {
+                                                  return (
+                                                    <p className="text-cyan-500 italic">
+                                                      No explanation available
+                                                      for this section.
+                                                    </p>
+                                                  );
+                                                }
+                                              })()}
+                                            </motion.div>
+
+                                            {/* Practical Example */}
+                                            {subsection.practicalExample && (
+                                              <motion.div
+                                                className="p-6 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl border border-yellow-200 shadow-sm"
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.3 }}
+                                              >
+                                                <h5 className="font-medium text-yellow-800 text-sm mb-3 flex items-center gap-2">
+                                                  <TestTube className="h-4 w-4" />
+                                                  Practical Example
+                                                </h5>
+                                                <MathMarkdownRenderer
+                                                  content={
+                                                    subsection.practicalExample
+                                                  }
+                                                />
+                                              </motion.div>
+                                            )}
+
+                                            {/* Action Buttons */}
                                             <motion.div
-                                              whileHover={{ scale: 1.05 }}
-                                              whileTap={{ scale: 0.95 }}
+                                              className="flex flex-wrap gap-3 pt-4"
+                                              initial={{ opacity: 0, y: 10 }}
+                                              animate={{ opacity: 1, y: 0 }}
+                                              transition={{ delay: 0.4 }}
                                             >
-                                              <Button
-                                                onClick={() =>
-                                                  generateSimplifiedExplanation(
-                                                    {
-                                                      id: subsection.id,
-                                                      name: subsection.title,
-                                                      content:
-                                                        subsection.explanation,
+                                              {checkPremiumFeature(
+                                                user,
+                                                "getMoreDetails"
+                                              ) ? (
+                                                <motion.div
+                                                  whileHover={{ scale: 1.05 }}
+                                                  whileTap={{ scale: 0.95 }}
+                                                >
+                                                  <Button
+                                                    onClick={() =>
+                                                      generateSimplifiedExplanation(
+                                                        {
+                                                          id: subsection.id,
+                                                          name: subsection.title,
+                                                          content:
+                                                            subsection.explanation,
+                                                        }
+                                                      )
                                                     }
-                                                  )
-                                                }
-                                                disabled={
-                                                  loadingExplanation[
-                                                    subsection.id
-                                                  ]
-                                                }
-                                                size="sm"
-                                                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                                              >
-                                                {loadingExplanation[
-                                                  subsection.id
-                                                ] ? (
-                                                  <>
-                                                    <motion.div
-                                                      className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                                                      animate={{ rotate: 360 }}
-                                                      transition={{
-                                                        duration: 1,
-                                                        repeat:
-                                                          Number.POSITIVE_INFINITY,
-                                                        ease: "linear",
-                                                      }}
-                                                    />
-                                                    Generating...
-                                                  </>
-                                                ) : (
-                                                  <>
-                                                    <Brain className="h-4 w-4 mr-2" />
-                                                    Get More Details
-                                                  </>
-                                                )}
-                                              </Button>
-                                            </motion.div>
-                                          ) : (
-                                            <motion.div
-                                              whileHover={{ scale: 1.05 }}
-                                              whileTap={{ scale: 0.95 }}
-                                            >
-                                              <PremiumFeatureButton
-                                                feature="simplifiedExplanation"
-                                                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                                              >
-                                                <Lightbulb className="h-4 w-4 mr-2" />
-                                                Generate Simplified Explanation
-                                              </PremiumFeatureButton>
-                                            </motion.div>
-                                          )}
-                                        </motion.div>
-
-                                        {/* Enhanced Explanation Display */}
-                                        <AnimatePresence>
-                                          {simplifiedExplanations[
-                                            subsection.id
-                                          ] && (
-                                            <motion.div
-                                              key={`explanation-${subsection.id}`}
-                                              className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 shadow-sm"
-                                              initial={{
-                                                opacity: 0,
-                                                height: 0,
-                                              }}
-                                              animate={{
-                                                opacity: 1,
-                                                height: "auto",
-                                              }}
-                                              exit={{ opacity: 0, height: 0 }}
-                                              transition={{ duration: 0.3 }}
-                                            >
-                                              <h5 className="font-semibold text-emerald-800 mb-3 flex items-center gap-2">
-                                                <Zap className="h-4 w-4" />
-                                                Enhanced Explanation
-                                              </h5>
-                                              <div className="prose prose-lg max-w-none">
-                                                <div className="group/text relative bg-gradient-to-br from-white via-emerald-50/20 to-teal-50/30 rounded-2xl p-8 border border-emerald-200/30 shadow-lg backdrop-blur-sm hover:shadow-xl hover:bg-gradient-to-br hover:from-white hover:via-emerald-50/40 hover:to-teal-50/50 transition-all duration-700 hover:scale-[1.01] transform-gpu">
-                                                  <MathMarkdownRenderer
-                                                    content={
-                                                      simplifiedExplanations[
+                                                    disabled={
+                                                      loadingExplanation[
                                                         subsection.id
                                                       ]
                                                     }
-                                                  />
-                                                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-teal-500/5 to-green-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-                                                  <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
-                                                    <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-emerald-200 shadow-lg">
-                                                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                                                      <span className="text-xs font-medium text-emerald-700">
-                                                        AI Enhanced
-                                                      </span>
+                                                    size="sm"
+                                                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                                  >
+                                                    {loadingExplanation[
+                                                      subsection.id
+                                                    ] ? (
+                                                      <>
+                                                        <motion.div
+                                                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
+                                                          animate={{
+                                                            rotate: 360,
+                                                          }}
+                                                          transition={{
+                                                            duration: 1,
+                                                            repeat:
+                                                              Number.POSITIVE_INFINITY,
+                                                            ease: "linear",
+                                                          }}
+                                                        />
+                                                        Generating...
+                                                      </>
+                                                    ) : (
+                                                      <>
+                                                        <Brain className="h-4 w-4 mr-2" />
+                                                        Get More Details
+                                                      </>
+                                                    )}
+                                                  </Button>
+                                                </motion.div>
+                                              ) : (
+                                                <motion.div
+                                                  whileHover={{ scale: 1.05 }}
+                                                  whileTap={{ scale: 0.95 }}
+                                                >
+                                                  <PremiumFeatureButton
+                                                    feature="simplifiedExplanation"
+                                                    className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                                  >
+                                                    <Lightbulb className="h-4 w-4 mr-2" />
+                                                    Generate Simplified
+                                                    Explanation
+                                                  </PremiumFeatureButton>
+                                                </motion.div>
+                                              )}
+                                            </motion.div>
+
+                                            {/* Enhanced Explanation Display */}
+                                            <AnimatePresence>
+                                              {simplifiedExplanations[
+                                                subsection.id
+                                              ] && (
+                                                <motion.div
+                                                  key={`explanation-${subsection.id}`}
+                                                  className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 shadow-sm"
+                                                  initial={{
+                                                    opacity: 0,
+                                                    height: 0,
+                                                  }}
+                                                  animate={{
+                                                    opacity: 1,
+                                                    height: "auto",
+                                                  }}
+                                                  exit={{
+                                                    opacity: 0,
+                                                    height: 0,
+                                                  }}
+                                                  transition={{ duration: 0.3 }}
+                                                >
+                                                  <h5 className="font-semibold text-emerald-800 mb-3 flex items-center gap-2">
+                                                    <Zap className="h-4 w-4" />
+                                                    Enhanced Explanation
+                                                  </h5>
+                                                  <div className="prose prose-lg max-w-none">
+                                                    <div className="group/text relative bg-gradient-to-br from-white via-emerald-50/20 to-teal-50/30 rounded-2xl p-8 border border-emerald-200/30 shadow-lg backdrop-blur-sm hover:shadow-xl hover:bg-gradient-to-br hover:from-white hover:via-emerald-50/40 hover:to-teal-50/50 transition-all duration-700 hover:scale-[1.01] transform-gpu">
+                                                      <MathMarkdownRenderer
+                                                        content={
+                                                          simplifiedExplanations[
+                                                            subsection.id
+                                                          ]
+                                                        }
+                                                      />
+                                                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-teal-500/5 to-green-500/5 rounded-2xl opacity-0 group-hover/text:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                                                      <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-all duration-500 transform translate-x-2 group-hover/text:translate-x-0">
+                                                        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-emerald-200 shadow-lg">
+                                                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                                          <span className="text-xs font-medium text-emerald-700">
+                                                            AI Enhanced
+                                                          </span>
+                                                        </div>
+                                                      </div>
                                                     </div>
                                                   </div>
-                                                </div>
-                                              </div>
-                                            </motion.div>
-                                          )}
-                                        </AnimatePresence>
-                                      </div>
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </GlassCard>
+                                                </motion.div>
+                                              )}
+                                            </AnimatePresence>
+                                          </div>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </GlassCard>
+                              </motion.div>
+                            ))}
                           </motion.div>
-                        ))}
-                      </motion.div>
-                    ) : (
+                        ) : (
+                          <motion.div
+                            className="text-center py-8"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                          >
+                            <motion.div className="space-y-4">
+                              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                                <Layers className="h-8 w-8 text-gray-400" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-medium text-gray-700 mb-2">
+                                  Detailed Explanations Not Available
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-4">
+                                  This module is still being processed. Detailed
+                                  subsections will be available once the
+                                  curriculum processing is complete.
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  Content should be pre-generated during course
+                                  creation by the educator.
+                                </p>
+                              </div>
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </CardContent>
+                </GlassCard>
+              </motion.div>
+            )}
+
+            {/* Enhanced Instructor Masterpieces Section - Only Show if Manual Resources Available */}
+            {hasManualInstructorResources && (
+              <motion.div
+                key={`instructor-masterpieces-${module.id}`}
+                variants={itemVariants}
+              >
+                <div className="relative">
+                  {/* Enhanced background blur effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 via-orange-600/10 to-red-600/10 rounded-3xl blur-3xl"></div>
+
+                  <Card className="relative border-0 bg-gradient-to-br from-amber-50/90 via-orange-50/90 to-red-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
+                    {/* Animated background elements */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-amber-100/30 to-orange-100/30"></div>
                       <motion.div
-                        className="text-center py-8"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                      >
-                        <motion.div className="space-y-4">
-                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                            <Layers className="h-8 w-8 text-gray-400" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-medium text-gray-700 mb-2">
-                              Detailed Explanations Not Available
-                            </h3>
-                            <p className="text-sm text-gray-500 mb-4">
-                              This module is still being processed. Detailed
-                              subsections will be available once the curriculum
-                              processing is complete.
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Content should be pre-generated during course
-                              creation by the educator.
-                            </p>
-                          </div>
-                        </motion.div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </CardContent>
-            </GlassCard>
-          </motion.div>
-        )}
-
-        {/* Enhanced Instructor Masterpieces Section - Only Show if Manual Resources Available */}
-        {hasManualInstructorResources && (
-          <motion.div
-            key={`instructor-masterpieces-${module.id}`}
-            variants={itemVariants}
-          >
-            <div className="relative">
-              {/* Enhanced background blur effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 via-orange-600/10 to-red-600/10 rounded-3xl blur-3xl"></div>
-
-              <Card className="relative border-0 bg-gradient-to-br from-amber-50/90 via-orange-50/90 to-red-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
-                {/* Animated background elements */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-amber-100/30 to-orange-100/30"></div>
-                  <motion.div
-                    className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-full blur-2xl"
-                    animate={{ rotate: 360, scale: [1, 1.1, 1] }}
-                    transition={{
-                      duration: 15,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "linear",
-                    }}
-                  />
-                  <motion.div
-                    className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-orange-400/20 to-red-400/20 rounded-full blur-2xl"
-                    animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
-                    transition={{
-                      duration: 20,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "linear",
-                    }}
-                  />
-                </div>
-
-                <CardHeader className="relative z-10 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border-b border-amber-200/50 p-8">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <motion.div
-                        className="w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 rounded-2xl flex items-center justify-center shadow-xl"
-                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-full blur-2xl"
+                        animate={{ rotate: 360, scale: [1, 1.1, 1] }}
                         transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 10,
+                          duration: 15,
+                          repeat: Number.POSITIVE_INFINITY,
+                          ease: "linear",
                         }}
-                      >
-                        <Crown className="h-8 w-8 text-white" />
-                      </motion.div>
-
-                      <div>
-                        <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-amber-700 via-orange-700 to-red-700 bg-clip-text text-transparent mb-2">
-                          Instructor's Masterpieces
-                        </CardTitle>
-                        <CardDescription className="text-amber-700 text-lg font-medium">
-                          Handpicked resources curated especially for your
-                          learning journey
-                        </CardDescription>
-                      </div>
+                      />
+                      <motion.div
+                        className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-orange-400/20 to-red-400/20 rounded-full blur-2xl"
+                        animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
+                        transition={{
+                          duration: 20,
+                          repeat: Number.POSITIVE_INFINITY,
+                          ease: "linear",
+                        }}
+                      />
                     </div>
 
+                    <CardHeader className="relative z-10 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border-b border-amber-200/50 p-8">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <motion.div
+                            className="w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 rounded-2xl flex items-center justify-center shadow-xl"
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 10,
+                            }}
+                          >
+                            <Crown className="h-8 w-8 text-white" />
+                          </motion.div>
+
+                          <div>
+                            <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-amber-700 via-orange-700 to-red-700 bg-clip-text text-transparent mb-2">
+                              Instructor's Masterpieces
+                            </CardTitle>
+                            <CardDescription className="text-amber-700 text-lg font-medium">
+                              Handpicked resources curated especially for your
+                              learning journey
+                            </CardDescription>
+                          </div>
+                        </div>
+
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.3, type: "spring" }}
+                        >
+                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
+                            <Star className="h-4 w-4 mr-2" />
+                            Premium Collection
+                          </Badge>
+                        </motion.div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="relative z-10 p-8">
+                      <Tabs
+                        defaultValue={
+                          instructorMasterpieces.articles.length > 0
+                            ? "articles"
+                            : instructorMasterpieces.videos.length > 0
+                            ? "videos"
+                            : instructorMasterpieces.books.length > 0
+                            ? "books"
+                            : instructorMasterpieces.courses.length > 0
+                            ? "courses"
+                            : instructorMasterpieces.tools.length > 0
+                            ? "tools"
+                            : instructorMasterpieces.websites.length > 0
+                            ? "websites"
+                            : instructorMasterpieces.exercises.length > 0
+                            ? "exercises"
+                            : "articles"
+                        }
+                        className="w-full"
+                      >
+                        {/* Enhanced TabsList with Educator Design */}
+                        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-white/80 to-amber-50/80 backdrop-blur-sm rounded-2xl border border-amber-200/50 shadow-lg">
+                          <TabsTrigger
+                            value="articles"
+                            className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-green-50"
+                          >
+                            <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                              <FileText className="h-5 w-5 text-green-600 group-data-[state=active]:text-white" />
+                            </div>
+                            <span className="text-xs font-semibold">
+                              Articles
+                            </span>
+                            {instructorMasterpieces.articles.length > 0 && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-green-100 text-green-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {instructorMasterpieces.articles.length}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+
+                          <TabsTrigger
+                            value="videos"
+                            className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-red-50"
+                          >
+                            <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                              <Play className="h-5 w-5 text-red-600 group-data-[state=active]:text-white" />
+                            </div>
+                            <span className="text-xs font-semibold">
+                              Videos
+                            </span>
+                            {instructorMasterpieces.videos.length > 0 && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-red-100 text-red-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {instructorMasterpieces.videos.length}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+
+                          <TabsTrigger
+                            value="books"
+                            className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-blue-50"
+                          >
+                            <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                              <BookOpen className="h-5 w-5 text-blue-600 group-data-[state=active]:text-white" />
+                            </div>
+                            <span className="text-xs font-semibold">Books</span>
+                            {instructorMasterpieces.books.length > 0 && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-blue-100 text-blue-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {instructorMasterpieces.books.length}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+
+                          <TabsTrigger
+                            value="courses"
+                            className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-purple-50"
+                          >
+                            <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                              <Video className="h-5 w-5 text-purple-600 group-data-[state=active]:text-white" />
+                            </div>
+                            <span className="text-xs font-semibold">
+                              Courses
+                            </span>
+                            {instructorMasterpieces.courses.length > 0 && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-purple-100 text-purple-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {instructorMasterpieces.courses.length}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+
+                          <TabsTrigger
+                            value="tools"
+                            className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-orange-50"
+                          >
+                            <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                              <Wrench className="h-5 w-5 text-orange-600 group-data-[state=active]:text-white" />
+                            </div>
+                            <span className="text-xs font-semibold">Tools</span>
+                            {instructorMasterpieces.tools.length > 0 && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-orange-100 text-orange-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {instructorMasterpieces.tools.length}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+
+                          <TabsTrigger
+                            value="websites"
+                            className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-indigo-50"
+                          >
+                            <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                              <Globe className="h-5 w-5 text-indigo-600 group-data-[state=active]:text-white" />
+                            </div>
+                            <span className="text-xs font-semibold">
+                              Websites
+                            </span>
+                            {instructorMasterpieces.websites.length > 0 && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-indigo-100 text-indigo-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {instructorMasterpieces.websites.length}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+
+                          <TabsTrigger
+                            value="exercises"
+                            className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-pink-50"
+                          >
+                            <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                              <Target className="h-5 w-5 text-pink-600 group-data-[state=active]:text-white" />
+                            </div>
+                            <span className="text-xs font-semibold">
+                              Exercises
+                            </span>
+                            {instructorMasterpieces.exercises.length > 0 && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-pink-100 text-pink-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {instructorMasterpieces.exercises.length}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <div className="mt-8">
+                          <TabsContent value="articles" className="space-y-6">
+                            {instructorMasterpieces.articles.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {instructorMasterpieces.articles.map(
+                                  (resource, index) => (
+                                    <motion.div
+                                      key={`instructor-article-${
+                                        resource.id ||
+                                        resource.url ||
+                                        resource.title ||
+                                        index
+                                      }`}
+                                      variants={itemVariants}
+                                    >
+                                      <ResourceCard
+                                        resource={resource}
+                                        type="articles"
+                                        isInstructorChoice={true}
+                                      />
+                                    </motion.div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </TabsContent>
+
+                          <TabsContent value="videos" className="space-y-6">
+                            {instructorMasterpieces.videos.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {instructorMasterpieces.videos.map(
+                                  (resource, index) => (
+                                    <motion.div
+                                      key={`instructor-video-${
+                                        resource.id ||
+                                        resource.url ||
+                                        resource.title ||
+                                        index
+                                      }`}
+                                      variants={itemVariants}
+                                    >
+                                      <ResourceCard
+                                        resource={resource}
+                                        type="videos"
+                                        isInstructorChoice={true}
+                                      />
+                                    </motion.div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </TabsContent>
+
+                          <TabsContent value="books" className="space-y-6">
+                            {instructorMasterpieces.books.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {instructorMasterpieces.books.map(
+                                  (resource, index) => (
+                                    <motion.div
+                                      key={`instructor-book-${
+                                        resource.id ||
+                                        resource.url ||
+                                        resource.title ||
+                                        index
+                                      }`}
+                                      variants={itemVariants}
+                                    >
+                                      <ResourceCard
+                                        resource={resource}
+                                        type="books"
+                                        isInstructorChoice={true}
+                                      />
+                                    </motion.div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </TabsContent>
+
+                          <TabsContent value="courses" className="space-y-6">
+                            {instructorMasterpieces.courses.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {instructorMasterpieces.courses.map(
+                                  (resource, index) => (
+                                    <motion.div
+                                      key={`instructor-course-${
+                                        resource.id ||
+                                        resource.url ||
+                                        resource.title ||
+                                        index
+                                      }`}
+                                      variants={itemVariants}
+                                    >
+                                      <ResourceCard
+                                        resource={resource}
+                                        type="courses"
+                                        isInstructorChoice={true}
+                                      />
+                                    </motion.div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </TabsContent>
+
+                          <TabsContent value="tools" className="space-y-6">
+                            {instructorMasterpieces.tools.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {instructorMasterpieces.tools.map(
+                                  (resource, index) => (
+                                    <motion.div
+                                      key={`instructor-tool-${
+                                        resource.id ||
+                                        resource.url ||
+                                        resource.title ||
+                                        index
+                                      }`}
+                                      variants={itemVariants}
+                                    >
+                                      <ResourceCard
+                                        resource={resource}
+                                        type="tools"
+                                        isInstructorChoice={true}
+                                      />
+                                    </motion.div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </TabsContent>
+
+                          <TabsContent value="websites" className="space-y-6">
+                            {instructorMasterpieces.websites.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {instructorMasterpieces.websites.map(
+                                  (resource, index) => (
+                                    <motion.div
+                                      key={`instructor-website-${
+                                        resource.id ||
+                                        resource.url ||
+                                        resource.title ||
+                                        index
+                                      }`}
+                                      variants={itemVariants}
+                                    >
+                                      <ResourceCard
+                                        resource={resource}
+                                        type="websites"
+                                        isInstructorChoice={true}
+                                      />
+                                    </motion.div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </TabsContent>
+
+                          <TabsContent value="exercises" className="space-y-6">
+                            {instructorMasterpieces.exercises.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {instructorMasterpieces.exercises.map(
+                                  (resource, index) => (
+                                    <motion.div
+                                      key={`instructor-exercise-${
+                                        resource.id ||
+                                        resource.url ||
+                                        resource.title ||
+                                        index
+                                      }`}
+                                      variants={itemVariants}
+                                    >
+                                      <ResourceCard
+                                        resource={resource}
+                                        type="exercises"
+                                        isInstructorChoice={true}
+                                      />
+                                    </motion.div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </TabsContent>
+                        </div>
+                      </Tabs>
+                    </CardContent>
+                  </Card>
+                </div>
+              </motion.div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="resources" className="space-y-8">
+            {/* Complete Learning Resources Section - Educator Dashboard Style */}
+            <motion.div
+              key={`complete-learning-resources-${module.id}`}
+              variants={itemVariants}
+            >
+              <div className="relative">
+                {/* Enhanced background blur effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-indigo-600/10 to-blue-600/10 rounded-3xl blur-3xl"></div>
+
+                <Card className="relative border-0 bg-gradient-to-br from-purple-50/90 via-indigo-50/90 to-blue-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
+                  {/* Animated background elements */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 to-indigo-100/30"></div>
                     <motion.div
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.3, type: "spring" }}
-                    >
-                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
-                        <Star className="h-4 w-4 mr-2" />
-                        Premium Collection
-                      </Badge>
-                    </motion.div>
+                      className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 rounded-full blur-2xl"
+                      animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+                      transition={{
+                        duration: 15,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "linear",
+                      }}
+                    />
+                    <motion.div
+                      className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-indigo-400/20 to-blue-400/20 rounded-full blur-2xl"
+                      animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
+                      transition={{
+                        duration: 20,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "linear",
+                      }}
+                    />
                   </div>
-                </CardHeader>
-                <CardContent className="relative z-10 p-8">
-                  <Tabs
-                    defaultValue={
-                      instructorMasterpieces.articles.length > 0
-                        ? "articles"
-                        : instructorMasterpieces.videos.length > 0
-                        ? "videos"
-                        : instructorMasterpieces.books.length > 0
-                        ? "books"
-                        : instructorMasterpieces.courses.length > 0
-                        ? "courses"
-                        : instructorMasterpieces.tools.length > 0
-                        ? "tools"
-                        : instructorMasterpieces.websites.length > 0
-                        ? "websites"
-                        : instructorMasterpieces.exercises.length > 0
-                        ? "exercises"
-                        : "articles"
-                    }
-                    className="w-full"
-                  >
-                    {/* Enhanced TabsList with Educator Design */}
-                    <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-white/80 to-amber-50/80 backdrop-blur-sm rounded-2xl border border-amber-200/50 shadow-lg">
-                      <TabsTrigger
-                        value="articles"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-green-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <FileText className="h-5 w-5 text-green-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Articles</span>
-                        {instructorMasterpieces.articles.length > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-green-100 text-green-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                          >
-                            {instructorMasterpieces.articles.length}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
 
-                      <TabsTrigger
-                        value="videos"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-red-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <Play className="h-5 w-5 text-red-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Videos</span>
-                        {instructorMasterpieces.videos.length > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-red-100 text-red-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                          >
-                            {instructorMasterpieces.videos.length}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
+                  <CardHeader className="relative z-10 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border-b border-purple-200/50 p-8">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <motion.div
+                          className="w-16 h-16 bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl"
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 10,
+                          }}
+                        >
+                          <Sparkles className="h-8 w-8 text-white" />
+                        </motion.div>
 
-                      <TabsTrigger
-                        value="books"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-blue-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <BookOpen className="h-5 w-5 text-blue-600 group-data-[state=active]:text-white" />
+                        <div>
+                          <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 bg-clip-text text-transparent mb-2">
+                            Complete Learning Resources
+                          </CardTitle>
+                          <CardDescription className="text-purple-700 text-lg font-medium">
+                            AI-curated collection of comprehensive learning
+                            materials
+                          </CardDescription>
                         </div>
-                        <span className="text-xs font-semibold">Books</span>
-                        {instructorMasterpieces.books.length > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-blue-100 text-blue-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                          >
-                            {instructorMasterpieces.books.length}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
+                      </div>
 
-                      <TabsTrigger
-                        value="courses"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-purple-50"
+                      <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.3, type: "spring" }}
                       >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <Video className="h-5 w-5 text-purple-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Courses</span>
-                        {instructorMasterpieces.courses.length > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-purple-100 text-purple-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                          >
-                            {instructorMasterpieces.courses.length}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
+                        <Badge className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
+                          <Brain className="h-4 w-4 mr-2" />
+                          AI Curated
+                        </Badge>
+                      </motion.div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative z-10 p-8">
+                    <Tabs
+                      defaultValue={
+                        aiResources.articles && aiResources.articles.length > 0
+                          ? "articles"
+                          : aiResources.videos && aiResources.videos.length > 0
+                          ? "videos"
+                          : aiResources.books && aiResources.books.length > 0
+                          ? "books"
+                          : aiResources.courses &&
+                            aiResources.courses.length > 0
+                          ? "courses"
+                          : aiResources.tools && aiResources.tools.length > 0
+                          ? "tools"
+                          : aiResources.websites &&
+                            aiResources.websites.length > 0
+                          ? "websites"
+                          : aiResources.exercises &&
+                            aiResources.exercises.length > 0
+                          ? "exercises"
+                          : "articles"
+                      }
+                      className="w-full"
+                    >
+                      {/* Enhanced TabsList with Educator Design */}
+                      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-lg">
+                        {aiResources.articles &&
+                          aiResources.articles.length > 0 && (
+                            <TabsTrigger
+                              value="articles"
+                              className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-green-50"
+                            >
+                              <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                                <FileText className="h-5 w-5 text-green-600 group-data-[state=active]:text-white" />
+                              </div>
+                              <span className="text-xs font-semibold">
+                                Articles
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-green-100 text-green-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {aiResources.articles.length}
+                              </Badge>
+                            </TabsTrigger>
+                          )}
 
-                      <TabsTrigger
-                        value="tools"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-orange-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <Wrench className="h-5 w-5 text-orange-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Tools</span>
-                        {instructorMasterpieces.tools.length > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-orange-100 text-orange-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                          >
-                            {instructorMasterpieces.tools.length}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
+                        {aiResources.videos &&
+                          aiResources.videos.length > 0 && (
+                            <TabsTrigger
+                              value="videos"
+                              className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-red-50"
+                            >
+                              <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                                <Play className="h-5 w-5 text-red-600 group-data-[state=active]:text-white" />
+                              </div>
+                              <span className="text-xs font-semibold">
+                                Videos
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-red-100 text-red-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {aiResources.videos.length}
+                              </Badge>
+                            </TabsTrigger>
+                          )}
 
-                      <TabsTrigger
-                        value="websites"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-indigo-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <Globe className="h-5 w-5 text-indigo-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Websites</span>
-                        {instructorMasterpieces.websites.length > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-indigo-100 text-indigo-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        {aiResources.books && aiResources.books.length > 0 && (
+                          <TabsTrigger
+                            value="books"
+                            className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-blue-50"
                           >
-                            {instructorMasterpieces.websites.length}
-                          </Badge>
+                            <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                              <BookOpen className="h-5 w-5 text-blue-600 group-data-[state=active]:text-white" />
+                            </div>
+                            <span className="text-xs font-semibold">Books</span>
+                            <Badge
+                              variant="secondary"
+                              className="text-xs bg-blue-100 text-blue-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                            >
+                              {aiResources.books.length}
+                            </Badge>
+                          </TabsTrigger>
                         )}
-                      </TabsTrigger>
 
-                      <TabsTrigger
-                        value="exercises"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-pink-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <Target className="h-5 w-5 text-pink-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Exercises</span>
-                        {instructorMasterpieces.exercises.length > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-pink-100 text-pink-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        {aiResources.courses &&
+                          aiResources.courses.length > 0 && (
+                            <TabsTrigger
+                              value="courses"
+                              className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-purple-50"
+                            >
+                              <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                                <Video className="h-5 w-5 text-purple-600 group-data-[state=active]:text-white" />
+                              </div>
+                              <span className="text-xs font-semibold">
+                                Courses
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-purple-100 text-purple-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {aiResources.courses.length}
+                              </Badge>
+                            </TabsTrigger>
+                          )}
+
+                        {aiResources.tools && aiResources.tools.length > 0 && (
+                          <TabsTrigger
+                            value="tools"
+                            className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-orange-50"
                           >
-                            {instructorMasterpieces.exercises.length}
-                          </Badge>
+                            <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                              <Wrench className="h-5 w-5 text-orange-600 group-data-[state=active]:text-white" />
+                            </div>
+                            <span className="text-xs font-semibold">Tools</span>
+                            <Badge
+                              variant="secondary"
+                              className="text-xs bg-orange-100 text-orange-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                            >
+                              {aiResources.tools.length}
+                            </Badge>
+                          </TabsTrigger>
                         )}
-                      </TabsTrigger>
-                    </TabsList>
 
-                    <div className="mt-8">
-                      <TabsContent value="articles" className="space-y-6">
-                        {instructorMasterpieces.articles.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructorMasterpieces.articles.map(
-                              (resource, index) => (
+                        {aiResources.websites &&
+                          aiResources.websites.length > 0 && (
+                            <TabsTrigger
+                              value="websites"
+                              className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-indigo-50"
+                            >
+                              <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                                <Globe className="h-5 w-5 text-indigo-600 group-data-[state=active]:text-white" />
+                              </div>
+                              <span className="text-xs font-semibold">
+                                Websites
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-indigo-100 text-indigo-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {aiResources.websites.length}
+                              </Badge>
+                            </TabsTrigger>
+                          )}
+
+                        {aiResources.exercises &&
+                          aiResources.exercises.length > 0 && (
+                            <TabsTrigger
+                              value="exercises"
+                              className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-pink-50"
+                            >
+                              <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                                <Target className="h-5 w-5 text-pink-600 group-data-[state=active]:text-white" />
+                              </div>
+                              <span className="text-xs font-semibold">
+                                Exercises
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-pink-100 text-pink-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {aiResources.exercises.length}
+                              </Badge>
+                            </TabsTrigger>
+                          )}
+                      </TabsList>
+
+                      <div className="mt-8">
+                        {/* Books Content */}
+                        {aiResources.books && aiResources.books.length > 0 && (
+                          <TabsContent key="books" value="books">
+                            <motion.div
+                              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                              variants={containerVariants}
+                              initial="hidden"
+                              animate="visible"
+                            >
+                              {aiResources.books.map((resource, index) => (
                                 <motion.div
-                                  key={`instructor-article-${
-                                    resource.id ||
-                                    resource.url ||
-                                    resource.title ||
-                                    index
-                                  }`}
-                                  variants={itemVariants}
-                                >
-                                  <ResourceCard
-                                    resource={resource}
-                                    type="articles"
-                                    isInstructorChoice={true}
-                                  />
-                                </motion.div>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      <TabsContent value="videos" className="space-y-6">
-                        {instructorMasterpieces.videos.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructorMasterpieces.videos.map(
-                              (resource, index) => (
-                                <motion.div
-                                  key={`instructor-video-${
-                                    resource.id ||
-                                    resource.url ||
-                                    resource.title ||
-                                    index
-                                  }`}
-                                  variants={itemVariants}
-                                >
-                                  <ResourceCard
-                                    resource={resource}
-                                    type="videos"
-                                    isInstructorChoice={true}
-                                  />
-                                </motion.div>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      <TabsContent value="books" className="space-y-6">
-                        {instructorMasterpieces.books.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructorMasterpieces.books.map(
-                              (resource, index) => (
-                                <motion.div
-                                  key={`instructor-book-${
-                                    resource.id ||
-                                    resource.url ||
-                                    resource.title ||
-                                    index
+                                  key={`books-${index}-${
+                                    resource.title || resource.name || index
                                   }`}
                                   variants={itemVariants}
                                 >
                                   <ResourceCard
                                     resource={resource}
                                     type="books"
-                                    isInstructorChoice={true}
+                                    resourceIndex={index}
                                   />
                                 </motion.div>
-                              )
-                            )}
-                          </div>
+                              ))}
+                            </motion.div>
+                          </TabsContent>
                         )}
-                      </TabsContent>
 
-                      <TabsContent value="courses" className="space-y-6">
-                        {instructorMasterpieces.courses.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructorMasterpieces.courses.map(
-                              (resource, index) => (
-                                <motion.div
-                                  key={`instructor-course-${
-                                    resource.id ||
-                                    resource.url ||
-                                    resource.title ||
-                                    index
-                                  }`}
-                                  variants={itemVariants}
-                                >
-                                  <ResourceCard
-                                    resource={resource}
-                                    type="courses"
-                                    isInstructorChoice={true}
-                                  />
-                                </motion.div>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </TabsContent>
+                        {/* Courses Content */}
+                        {aiResources.courses &&
+                          aiResources.courses.length > 0 && (
+                            <TabsContent key="courses" value="courses">
+                              <motion.div
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                              >
+                                {aiResources.courses.map((resource, index) => (
+                                  <motion.div
+                                    key={`courses-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="courses"
+                                      resourceIndex={index}
+                                    />
+                                  </motion.div>
+                                ))}
+                              </motion.div>
+                            </TabsContent>
+                          )}
 
-                      <TabsContent value="tools" className="space-y-6">
-                        {instructorMasterpieces.tools.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructorMasterpieces.tools.map(
-                              (resource, index) => (
+                        {/* Videos Content */}
+                        {aiResources.videos &&
+                          aiResources.videos.length > 0 && (
+                            <TabsContent key="videos" value="videos">
+                              <motion.div
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                              >
+                                {aiResources.videos.map((resource, index) => (
+                                  <motion.div
+                                    key={`videos-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="videos"
+                                      resourceIndex={index}
+                                    />
+                                  </motion.div>
+                                ))}
+                              </motion.div>
+                            </TabsContent>
+                          )}
+
+                        {/* Articles Content */}
+                        {aiResources.articles &&
+                          aiResources.articles.length > 0 && (
+                            <TabsContent key="articles" value="articles">
+                              <motion.div
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                              >
+                                {aiResources.articles.map((resource, index) => (
+                                  <motion.div
+                                    key={`articles-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="articles"
+                                      resourceIndex={index}
+                                    />
+                                  </motion.div>
+                                ))}
+                              </motion.div>
+                            </TabsContent>
+                          )}
+
+                        {/* Tools Content */}
+                        {aiResources.tools && aiResources.tools.length > 0 && (
+                          <TabsContent key="tools" value="tools">
+                            <motion.div
+                              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                              variants={containerVariants}
+                              initial="hidden"
+                              animate="visible"
+                            >
+                              {aiResources.tools.map((resource, index) => (
                                 <motion.div
-                                  key={`instructor-tool-${
-                                    resource.id ||
-                                    resource.url ||
-                                    resource.title ||
-                                    index
+                                  key={`tools-${index}-${
+                                    resource.title || resource.name || index
                                   }`}
                                   variants={itemVariants}
                                 >
                                   <ResourceCard
                                     resource={resource}
                                     type="tools"
-                                    isInstructorChoice={true}
+                                    resourceIndex={index}
                                   />
                                 </motion.div>
-                              )
-                            )}
-                          </div>
+                              ))}
+                            </motion.div>
+                          </TabsContent>
                         )}
-                      </TabsContent>
 
-                      <TabsContent value="websites" className="space-y-6">
-                        {instructorMasterpieces.websites.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructorMasterpieces.websites.map(
-                              (resource, index) => (
-                                <motion.div
-                                  key={`instructor-website-${
-                                    resource.id ||
-                                    resource.url ||
-                                    resource.title ||
-                                    index
-                                  }`}
-                                  variants={itemVariants}
-                                >
-                                  <ResourceCard
-                                    resource={resource}
-                                    type="websites"
-                                    isInstructorChoice={true}
-                                  />
-                                </motion.div>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      <TabsContent value="exercises" className="space-y-6">
-                        {instructorMasterpieces.exercises.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructorMasterpieces.exercises.map(
-                              (resource, index) => (
-                                <motion.div
-                                  key={`instructor-exercise-${
-                                    resource.id ||
-                                    resource.url ||
-                                    resource.title ||
-                                    index
-                                  }`}
-                                  variants={itemVariants}
-                                >
-                                  <ResourceCard
-                                    resource={resource}
-                                    type="exercises"
-                                    isInstructorChoice={true}
-                                  />
-                                </motion.div>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </TabsContent>
-                    </div>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Complete Learning Resources Section - Educator Dashboard Style */}
-        <motion.div
-          key={`complete-learning-resources-${module.id}`}
-          variants={itemVariants}
-        >
-          <div className="relative">
-            {/* Enhanced background blur effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-indigo-600/10 to-blue-600/10 rounded-3xl blur-3xl"></div>
-
-            <Card className="relative border-0 bg-gradient-to-br from-purple-50/90 via-indigo-50/90 to-blue-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
-              {/* Animated background elements */}
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 to-indigo-100/30"></div>
-                <motion.div
-                  className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 rounded-full blur-2xl"
-                  animate={{ rotate: 360, scale: [1, 1.1, 1] }}
-                  transition={{
-                    duration: 15,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "linear",
-                  }}
-                />
-                <motion.div
-                  className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-indigo-400/20 to-blue-400/20 rounded-full blur-2xl"
-                  animate={{ rotate: -360, scale: [1.1, 1, 1.1] }}
-                  transition={{
-                    duration: 20,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "linear",
-                  }}
-                />
-              </div>
-
-              <CardHeader className="relative z-10 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border-b border-purple-200/50 p-8">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <motion.div
-                      className="w-16 h-16 bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl"
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 10,
-                      }}
-                    >
-                      <Sparkles className="h-8 w-8 text-white" />
-                    </motion.div>
-
-                    <div>
-                      <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 bg-clip-text text-transparent mb-2">
-                        Complete Learning Resources
-                      </CardTitle>
-                      <CardDescription className="text-purple-700 text-lg font-medium">
-                        AI-curated collection of comprehensive learning
-                        materials
-                      </CardDescription>
-                    </div>
-                  </div>
-
-                  <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.3, type: "spring" }}
-                  >
-                    <Badge className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
-                      <Brain className="h-4 w-4 mr-2" />
-                      AI Curated
-                    </Badge>
-                  </motion.div>
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10 p-8">
-                <Tabs
-                  defaultValue={
-                    aiResources.articles && aiResources.articles.length > 0
-                      ? "articles"
-                      : aiResources.videos && aiResources.videos.length > 0
-                      ? "videos"
-                      : aiResources.books && aiResources.books.length > 0
-                      ? "books"
-                      : aiResources.courses && aiResources.courses.length > 0
-                      ? "courses"
-                      : aiResources.tools && aiResources.tools.length > 0
-                      ? "tools"
-                      : aiResources.websites && aiResources.websites.length > 0
-                      ? "websites"
-                      : aiResources.exercises &&
-                        aiResources.exercises.length > 0
-                      ? "exercises"
-                      : "articles"
-                  }
-                  className="w-full"
-                >
-                  {/* Enhanced TabsList with Educator Design */}
-                  <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-lg">
-                    {aiResources.articles &&
-                      aiResources.articles.length > 0 && (
-                        <TabsTrigger
-                          value="articles"
-                          className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-green-50"
-                        >
-                          <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                            <FileText className="h-5 w-5 text-green-600 group-data-[state=active]:text-white" />
-                          </div>
-                          <span className="text-xs font-semibold">
-                            Articles
-                          </span>
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-green-100 text-green-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                          >
-                            {aiResources.articles.length}
-                          </Badge>
-                        </TabsTrigger>
-                      )}
-
-                    {aiResources.videos && aiResources.videos.length > 0 && (
-                      <TabsTrigger
-                        value="videos"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-red-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <Play className="h-5 w-5 text-red-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Videos</span>
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-red-100 text-red-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                        >
-                          {aiResources.videos.length}
-                        </Badge>
-                      </TabsTrigger>
-                    )}
-
-                    {aiResources.books && aiResources.books.length > 0 && (
-                      <TabsTrigger
-                        value="books"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-blue-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <BookOpen className="h-5 w-5 text-blue-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Books</span>
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-blue-100 text-blue-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                        >
-                          {aiResources.books.length}
-                        </Badge>
-                      </TabsTrigger>
-                    )}
-
-                    {aiResources.courses && aiResources.courses.length > 0 && (
-                      <TabsTrigger
-                        value="courses"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-purple-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <Video className="h-5 w-5 text-purple-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Courses</span>
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-purple-100 text-purple-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                        >
-                          {aiResources.courses.length}
-                        </Badge>
-                      </TabsTrigger>
-                    )}
-
-                    {aiResources.tools && aiResources.tools.length > 0 && (
-                      <TabsTrigger
-                        value="tools"
-                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-orange-50"
-                      >
-                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                          <Wrench className="h-5 w-5 text-orange-600 group-data-[state=active]:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold">Tools</span>
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-orange-100 text-orange-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                        >
-                          {aiResources.tools.length}
-                        </Badge>
-                      </TabsTrigger>
-                    )}
-
-                    {aiResources.websites &&
-                      aiResources.websites.length > 0 && (
-                        <TabsTrigger
-                          value="websites"
-                          className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-indigo-50"
-                        >
-                          <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                            <Globe className="h-5 w-5 text-indigo-600 group-data-[state=active]:text-white" />
-                          </div>
-                          <span className="text-xs font-semibold">
-                            Websites
-                          </span>
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-indigo-100 text-indigo-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                          >
-                            {aiResources.websites.length}
-                          </Badge>
-                        </TabsTrigger>
-                      )}
-
-                    {aiResources.exercises &&
-                      aiResources.exercises.length > 0 && (
-                        <TabsTrigger
-                          value="exercises"
-                          className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-pink-50"
-                        >
-                          <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
-                            <Target className="h-5 w-5 text-pink-600 group-data-[state=active]:text-white" />
-                          </div>
-                          <span className="text-xs font-semibold">
-                            Exercises
-                          </span>
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-pink-100 text-pink-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
-                          >
-                            {aiResources.exercises.length}
-                          </Badge>
-                        </TabsTrigger>
-                      )}
-                  </TabsList>
-
-                  <div className="mt-8">
-                    {/* Books Content */}
-                    {aiResources.books && aiResources.books.length > 0 && (
-                      <TabsContent key="books" value="books">
-                        <motion.div
-                          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                          variants={containerVariants}
-                          initial="hidden"
-                          animate="visible"
-                        >
-                          {aiResources.books.map((resource, index) => (
-                            <motion.div
-                              key={`books-${index}-${
-                                resource.title || resource.name || index
-                              }`}
-                              variants={itemVariants}
-                            >
-                              <ResourceCard
-                                resource={resource}
-                                type="books"
-                                resourceIndex={index}
-                              />
-                            </motion.div>
-                          ))}
-                        </motion.div>
-                      </TabsContent>
-                    )}
-
-                    {/* Courses Content */}
-                    {aiResources.courses && aiResources.courses.length > 0 && (
-                      <TabsContent key="courses" value="courses">
-                        <motion.div
-                          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                          variants={containerVariants}
-                          initial="hidden"
-                          animate="visible"
-                        >
-                          {aiResources.courses.map((resource, index) => (
-                            <motion.div
-                              key={`courses-${index}-${
-                                resource.title || resource.name || index
-                              }`}
-                              variants={itemVariants}
-                            >
-                              <ResourceCard
-                                resource={resource}
-                                type="courses"
-                                resourceIndex={index}
-                              />
-                            </motion.div>
-                          ))}
-                        </motion.div>
-                      </TabsContent>
-                    )}
-
-                    {/* Videos Content */}
-                    {aiResources.videos && aiResources.videos.length > 0 && (
-                      <TabsContent key="videos" value="videos">
-                        <motion.div
-                          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                          variants={containerVariants}
-                          initial="hidden"
-                          animate="visible"
-                        >
-                          {aiResources.videos.map((resource, index) => (
-                            <motion.div
-                              key={`videos-${index}-${
-                                resource.title || resource.name || index
-                              }`}
-                              variants={itemVariants}
-                            >
-                              <ResourceCard
-                                resource={resource}
-                                type="videos"
-                                resourceIndex={index}
-                              />
-                            </motion.div>
-                          ))}
-                        </motion.div>
-                      </TabsContent>
-                    )}
-
-                    {/* Articles Content */}
-                    {aiResources.articles &&
-                      aiResources.articles.length > 0 && (
-                        <TabsContent key="articles" value="articles">
-                          <motion.div
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                          >
-                            {aiResources.articles.map((resource, index) => (
+                        {/* Websites Content */}
+                        {aiResources.websites &&
+                          aiResources.websites.length > 0 && (
+                            <TabsContent key="websites" value="websites">
                               <motion.div
-                                key={`articles-${index}-${
-                                  resource.title || resource.name || index
-                                }`}
-                                variants={itemVariants}
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
                               >
-                                <ResourceCard
-                                  resource={resource}
-                                  type="articles"
-                                  resourceIndex={index}
-                                />
+                                {aiResources.websites.map((resource, index) => (
+                                  <motion.div
+                                    key={`websites-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="websites"
+                                      resourceIndex={index}
+                                    />
+                                  </motion.div>
+                                ))}
                               </motion.div>
-                            ))}
-                          </motion.div>
-                        </TabsContent>
-                      )}
+                            </TabsContent>
+                          )}
 
-                    {/* Tools Content */}
-                    {aiResources.tools && aiResources.tools.length > 0 && (
-                      <TabsContent key="tools" value="tools">
-                        <motion.div
-                          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                          variants={containerVariants}
-                          initial="hidden"
-                          animate="visible"
-                        >
-                          {aiResources.tools.map((resource, index) => (
-                            <motion.div
-                              key={`tools-${index}-${
-                                resource.title || resource.name || index
-                              }`}
-                              variants={itemVariants}
-                            >
-                              <ResourceCard
-                                resource={resource}
-                                type="tools"
-                                resourceIndex={index}
-                              />
-                            </motion.div>
-                          ))}
-                        </motion.div>
-                      </TabsContent>
-                    )}
-
-                    {/* Websites Content */}
-                    {aiResources.websites &&
-                      aiResources.websites.length > 0 && (
-                        <TabsContent key="websites" value="websites">
-                          <motion.div
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                          >
-                            {aiResources.websites.map((resource, index) => (
+                        {/* Exercises Content */}
+                        {aiResources.exercises &&
+                          aiResources.exercises.length > 0 && (
+                            <TabsContent key="exercises" value="exercises">
                               <motion.div
-                                key={`websites-${index}-${
-                                  resource.title || resource.name || index
-                                }`}
-                                variants={itemVariants}
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
                               >
-                                <ResourceCard
-                                  resource={resource}
-                                  type="websites"
-                                  resourceIndex={index}
-                                />
+                                {aiResources.exercises.map(
+                                  (resource, index) => (
+                                    <motion.div
+                                      key={`exercises-${index}-${
+                                        resource.title || resource.name || index
+                                      }`}
+                                      variants={itemVariants}
+                                    >
+                                      <ResourceCard
+                                        resource={resource}
+                                        type="exercises"
+                                        resourceIndex={index}
+                                      />
+                                    </motion.div>
+                                  )
+                                )}
                               </motion.div>
-                            ))}
-                          </motion.div>
-                        </TabsContent>
-                      )}
-
-                    {/* Exercises Content */}
-                    {aiResources.exercises &&
-                      aiResources.exercises.length > 0 && (
-                        <TabsContent key="exercises" value="exercises">
-                          <motion.div
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                          >
-                            {aiResources.exercises.map((resource, index) => (
-                              <motion.div
-                                key={`exercises-${index}-${
-                                  resource.title || resource.name || index
-                                }`}
-                                variants={itemVariants}
-                              >
-                                <ResourceCard
-                                  resource={resource}
-                                  type="exercises"
-                                  resourceIndex={index}
-                                />
-                              </motion.div>
-                            ))}
-                          </motion.div>
-                        </TabsContent>
-                      )}
-                  </div>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
-
-        {/* Interactive Programming Practice Section */}
-        {module.content && detectVisualizableContent(module.content) && (
-          <motion.div
-            key={`programming-practice-${module.id}`}
-            variants={itemVariants}
-          >
-            <GlassCard className="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 border-emerald-200/50">
-              <CardContent className="p-8">
-                <motion.h3
-                  className="font-bold text-2xl mb-6 flex items-center gap-3 text-emerald-800"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  <motion.div
-                    className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl shadow-lg"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                  >
-                    <Code2 className="h-6 w-6 text-white" />
-                  </motion.div>
-                  Programming Practice
-                  <EnhancedBadge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-1 flex items-center gap-1">
-                    <Cpu className="h-3 w-3" />
-                    Interactive IDE
-                  </EnhancedBadge>
-                </motion.h3>
-
-                {/* Programming Practice Section */}
-                <AnimatePresence mode="wait">
-                  {loadingChallenges ? (
-                    <EnhancedLoader text="Generating programming challenges..." />
-                  ) : programmingChallenges.length > 0 ? (
-                    <motion.div
-                      className="space-y-8"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                    >
-                      {/* Challenge Selection */}
-                      <div>
-                        <h4 className="font-semibold text-lg text-emerald-800 mb-4 flex items-center gap-2">
-                          <Target className="h-5 w-5" />
-                          Choose Your Challenge
-                          <EnhancedBadge className="bg-emerald-100 text-emerald-700">
-                            {programmingChallenges.length} challenges
-                          </EnhancedBadge>
-                        </h4>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {programmingChallenges.map((challenge) => (
-                            <ProgrammingChallengeCard
-                              key={challenge.id}
-                              challenge={challenge}
-                              isActive={
-                                activeProgrammingChallenge?.id === challenge.id
-                              }
-                              onClick={() => selectChallenge(challenge)}
-                              challengeProgress={challengeProgress}
-                            />
-                          ))}
-                        </div>
+                            </TabsContent>
+                          )}
                       </div>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </div>
+            </motion.div>
 
-                      {/* Active Challenge Section */}
-                      {activeProgrammingChallenge && (
+            {/* Interactive Programming Practice Section */}
+            {module.content && detectVisualizableContent(module.content) && (
+              <motion.div
+                key={`programming-practice-${module.id}`}
+                variants={itemVariants}
+              >
+                <GlassCard className="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 border-emerald-200/50">
+                  <CardContent className="p-8">
+                    <motion.h3
+                      className="font-bold text-2xl mb-6 flex items-center gap-3 text-emerald-800"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                    >
+                      <motion.div
+                        className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl shadow-lg"
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                      >
+                        <Code2 className="h-6 w-6 text-white" />
+                      </motion.div>
+                      Programming Practice
+                      <EnhancedBadge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-1 flex items-center gap-1">
+                        <Cpu className="h-3 w-3" />
+                        Interactive IDE
+                      </EnhancedBadge>
+                    </motion.h3>
+
+                    {/* Programming Practice Section */}
+                    <AnimatePresence mode="wait">
+                      {loadingChallenges ? (
+                        <EnhancedLoader text="Generating programming challenges..." />
+                      ) : programmingChallenges.length > 0 ? (
                         <motion.div
-                          className="space-y-6"
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3 }}
+                          className="space-y-8"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
                         >
-                          {/* Challenge content goes here */}
+                          {/* Challenge Selection */}
+                          <div>
+                            <h4 className="font-semibold text-lg text-emerald-800 mb-4 flex items-center gap-2">
+                              <Target className="h-5 w-5" />
+                              Choose Your Challenge
+                              <EnhancedBadge className="bg-emerald-100 text-emerald-700">
+                                {programmingChallenges.length} challenges
+                              </EnhancedBadge>
+                            </h4>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {programmingChallenges.map((challenge) => (
+                                <ProgrammingChallengeCard
+                                  key={challenge.id}
+                                  challenge={challenge}
+                                  isActive={
+                                    activeProgrammingChallenge?.id ===
+                                    challenge.id
+                                  }
+                                  onClick={() => selectChallenge(challenge)}
+                                  challengeProgress={challengeProgress}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Active Challenge Section */}
+                          {activeProgrammingChallenge && (
+                            <motion.div
+                              className="space-y-6"
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              {/* Challenge content goes here */}
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          className="text-center py-12"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <PremiumFeatureButton
+                              feature="programmingChallenges"
+                              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                            >
+                              <Code2 className="h-4 w-4 mr-2" />
+                              Generate Programming Challenges
+                            </PremiumFeatureButton>
+                          </motion.div>
                         </motion.div>
                       )}
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      className="text-center py-12"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
+                    </AnimatePresence>
+                  </CardContent>
+                </GlassCard>
+              </motion.div>
+            )}
+
+            {/* Action Section */}
+            <motion.div
+              key={`action-section-${module.id}`}
+              variants={itemVariants}
+            >
+              <GlassCard className="bg-gradient-to-r from-green-50/80 to-emerald-50/80 border-green-200/50">
+                <CardContent className="p-8">
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    {checkPremiumFeature(user, "quizGeneration") ? (
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button
+                          onClick={() => setShowQuiz(true)}
+                          className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3"
+                        >
+                          <TestTube className="h-5 w-5 mr-2" />
+                          Take Quiz
+                        </Button>
+                      </motion.div>
+                    ) : (
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
                         <PremiumFeatureButton
-                          feature="programmingChallenges"
-                          className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                          feature="moduleCompletion"
+                          className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                         >
-                          <Code2 className="h-4 w-4 mr-2" />
-                          Generate Programming Challenges
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Mark as Complete
                         </PremiumFeatureButton>
                       </motion.div>
+                    )}
+
+                    {!moduleProgress.completed && (
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button
+                          variant="outline"
+                          onClick={handleMarkComplete}
+                          className="border-green-300 text-green-700 hover:bg-green-50 shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3 bg-transparent"
+                        >
+                          <CheckCircle className="h-5 w-5 mr-2" />
+                          Mark as Complete
+                        </Button>
+                      </motion.div>
+                    )}
+
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        variant="outline"
+                        className="border-blue-300 text-blue-700 hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3 bg-transparent"
+                      >
+                        <Share2 className="h-5 w-5 mr-2" />
+                        Share Module
+                      </Button>
                     </motion.div>
-                  )}
-                </AnimatePresence>
-              </CardContent>
-            </GlassCard>
-          </motion.div>
-        )}
-
-        {/* Action Section */}
-        <motion.div key={`action-section-${module.id}`} variants={itemVariants}>
-          <GlassCard className="bg-gradient-to-r from-green-50/80 to-emerald-50/80 border-green-200/50">
-            <CardContent className="p-8">
-              <div className="flex flex-wrap gap-4 justify-center">
-                {checkPremiumFeature(user, "quizGeneration") ? (
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      onClick={() => setShowQuiz(true)}
-                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3"
-                    >
-                      <TestTube className="h-5 w-5 mr-2" />
-                      Take Quiz
-                    </Button>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <PremiumFeatureButton
-                      feature="moduleCompletion"
-                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Mark as Complete
-                    </PremiumFeatureButton>
-                  </motion.div>
-                )}
-
-                {!moduleProgress.completed && (
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      variant="outline"
-                      onClick={handleMarkComplete}
-                      className="border-green-300 text-green-700 hover:bg-green-50 shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3 bg-transparent"
-                    >
-                      <CheckCircle className="h-5 w-5 mr-2" />
-                      Mark as Complete
-                    </Button>
-                  </motion.div>
-                )}
-
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    variant="outline"
-                    className="border-blue-300 text-blue-700 hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3 bg-transparent"
-                  >
-                    <Share2 className="h-5 w-5 mr-2" />
-                    Share Module
-                  </Button>
-                </motion.div>
-              </div>
-            </CardContent>
-          </GlassCard>
-        </motion.div>
+                  </div>
+                </CardContent>
+              </GlassCard>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Edit Resource Modal */}

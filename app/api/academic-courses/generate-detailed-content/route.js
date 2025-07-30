@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
-import { generateModuleSummary } from "@/lib/gemini";
+import { generateAcademicSubsectionSummary } from "@/lib/gemini";
 
 // Function to generate AI-powered multipage academic content
 async function generateAcademicMultipageContent(
@@ -15,21 +15,32 @@ async function generateAcademicMultipageContent(
 Create comprehensive academic content for "${subsectionTitle}" within the context of "${moduleContext}" for ${academicLevel} level ${subject} students.
 
 REQUIREMENTS:
-- Create 8 detailed academic pages with substantial, meaningful content
+- Create 10 detailed academic pages with substantial, meaningful content
 - Focus on theoretical depth, critical analysis, and scholarly approach
 - Include specific examples, case studies, and real-world applications
-- Use proper academic language and structure
+- Use proper academic language and structure with comprehensive mathematical coverage
 - Provide detailed explanations, not generic templates
+- Include comprehensive mathematical equations with proper LaTeX formatting
 
-CONTENT STRUCTURE (8 pages):
+CONTENT STRUCTURE (10 pages):
 1. Introduction & Theoretical Foundation
 2. Core Theory & Principles (Part 1)
 3. Core Theory & Principles (Part 2)
-4. Mathematical Formulations & Models (if applicable)
-5. Practical Applications & Case Studies
-6. Research Methods & Analytical Frameworks
-7. Current Developments & Future Directions
-8. Summary & Academic Integration
+4. Mathematical Formulations & Models
+5. Essential Mathematical Equations & Formulas
+6. Advanced Mathematical Relationships & Derivations
+7. Practical Applications & Case Studies
+8. Research Methods & Analytical Frameworks
+9. Current Developments & Future Directions
+10. Summary & Academic Integration
+
+MATHEMATICAL CONTENT REQUIREMENTS:
+- Pages 4-6 MUST contain extensive mathematical equations using proper LaTeX syntax
+- Include fundamental equations, derived formulas, and advanced mathematical relationships
+- Use proper mathematical notation: $$equation$$ for display math, $inline$ for inline math
+- Include step-by-step derivations where appropriate
+- Provide clear explanations for each mathematical concept
+- Cover both basic and advanced mathematical aspects of the topic
 
 Return ONLY a JSON object with this exact structure:
 {
@@ -40,7 +51,7 @@ Return ONLY a JSON object with this exact structure:
       "content": "Detailed markdown content with proper academic depth...",
       "keyTakeaway": "Specific key insight for this page"
     }
-    // ... continue for all 8 pages
+    // ... continue for all 10 pages
   ]
 }
 
@@ -48,46 +59,115 @@ Generate real, substantive academic content about ${subsectionTitle} - not gener
 `;
 
   try {
-    console.log(`🤖 Generating AI content for: ${subsectionTitle}`);
-    const aiResponse = await generateModuleSummary(academicPrompt);
+    console.log(`🤖 Generating enhanced AI content for: ${subsectionTitle}`);
 
-    // Parse the AI response
+    // Use the enhanced subsection generation function
+    const context = {
+      learnerLevel: academicLevel === "graduate" ? "advanced" : "intermediate",
+      subject: subject,
+      moduleIndex: 1,
+      totalModules: 1,
+    };
+
+    const enhancedContent = await generateAcademicSubsectionSummary(
+      `Topic: ${subsectionTitle}\nContext: ${moduleContext}\nAcademic Level: ${academicLevel}\nSubject: ${subject}\n\nSPECIAL REQUIREMENTS:\n- Include comprehensive mathematical equations and formulas with proper LaTeX formatting\n- Provide detailed mathematical derivations and proofs where applicable\n- Cover both fundamental and advanced mathematical concepts related to this topic\n- Use proper mathematical notation: $$equation$$ for display math, $inline$ for inline math`,
+      context
+    );
+
+    // Transform the enhanced content into the expected format with pages
     let aiContent;
-    try {
-      aiContent = JSON.parse(aiResponse);
-    } catch (parseError) {
-      console.log(
-        "📝 AI response not valid JSON, creating structured content..."
-      );
-
-      // Fallback: create one comprehensive page with AI content
+    if (
+      enhancedContent.detailedSubsections &&
+      enhancedContent.detailedSubsections.length > 0
+    ) {
+      // Use the detailed subsections to create pages
+      aiContent = {
+        pages: enhancedContent.detailedSubsections.flatMap(
+          (subsection, index) => {
+            if (subsection.pages && Array.isArray(subsection.pages)) {
+              return subsection.pages;
+            } else {
+              // Create a single page from subsection data
+              return [
+                {
+                  pageNumber: index + 1,
+                  pageTitle:
+                    subsection.title ||
+                    `${subsectionTitle} - Part ${index + 1}`,
+                  content:
+                    subsection.explanation ||
+                    subsection.summary ||
+                    `Academic content for ${subsection.title}`,
+                  keyTakeaway: subsection.keyPoints
+                    ? subsection.keyPoints.join(". ")
+                    : `Key insights about ${subsection.title}`,
+                },
+              ];
+            }
+          }
+        ),
+        summary: enhancedContent.summary,
+        objectives: enhancedContent.objectives,
+        examples: enhancedContent.examples,
+        resources: enhancedContent.resources,
+        visualizationSuggestions: enhancedContent.visualizationSuggestions,
+        beautifulSummaryElements: enhancedContent.beautifulSummaryElements,
+      };
+    } else {
+      // Fallback: create pages from the summary content
       aiContent = {
         pages: [
           {
             pageNumber: 1,
-            pageTitle: `${subsectionTitle} - Comprehensive Academic Study`,
-            content: aiResponse,
-            keyTakeaway: `Understanding ${subsectionTitle} requires comprehensive academic analysis and critical thinking.`,
+            pageTitle: `${subsectionTitle} - Introduction`,
+            content:
+              enhancedContent.summary ||
+              `Comprehensive study of ${subsectionTitle}`,
+            keyTakeaway:
+              enhancedContent.objectives &&
+              enhancedContent.objectives.length > 0
+                ? enhancedContent.objectives[0]
+                : `Understanding ${subsectionTitle} is essential for academic success.`,
+          },
+          {
+            pageNumber: 2,
+            pageTitle: `${subsectionTitle} - Core Concepts`,
+            content:
+              enhancedContent.examples && enhancedContent.examples.length > 0
+                ? `Key examples and applications:\n\n${enhancedContent.examples.join(
+                    "\n\n"
+                  )}`
+                : `Core academic concepts related to ${subsectionTitle}`,
+            keyTakeaway: `Apply theoretical knowledge through practical examples and real-world scenarios.`,
           },
         ],
+        summary: enhancedContent.summary,
+        objectives: enhancedContent.objectives,
+        examples: enhancedContent.examples,
+        resources: enhancedContent.resources,
+        visualizationSuggestions: enhancedContent.visualizationSuggestions,
+        beautifulSummaryElements: enhancedContent.beautifulSummaryElements,
       };
     }
 
     if (aiContent.pages && Array.isArray(aiContent.pages)) {
-      console.log(`✅ Generated ${aiContent.pages.length} AI-powered pages`);
-      return aiContent.pages;
+      console.log(
+        `✅ Generated ${aiContent.pages.length} enhanced AI-powered pages with additional metadata`
+      );
+      return aiContent;
     } else {
-      throw new Error("Invalid AI response structure");
+      throw new Error("Invalid enhanced AI response structure");
     }
   } catch (aiError) {
-    console.error("❌ AI generation failed, using fallback:", aiError);
+    console.error("❌ Enhanced AI generation failed, using fallback:", aiError);
 
-    // Fallback to a single meaningful page
-    return [
-      {
-        pageNumber: 1,
-        pageTitle: `${subsectionTitle} - Academic Overview`,
-        content: `# ${subsectionTitle} - Academic Study
+    // Fallback to a structured response with enhanced metadata
+    return {
+      pages: [
+        {
+          pageNumber: 1,
+          pageTitle: `${subsectionTitle} - Academic Overview`,
+          content: `# ${subsectionTitle} - Academic Study
 
 ## Introduction
 
@@ -109,9 +189,130 @@ Upon completing this section, students will be able to demonstrate understanding
 ## Further Study
 
 This topic connects to other areas within ${moduleContext} and provides foundation for advanced study in ${subject}.`,
-        keyTakeaway: `${subsectionTitle} requires systematic academic study combining theoretical understanding with practical application.`,
+          keyTakeaway: `${subsectionTitle} requires systematic academic study combining theoretical understanding with practical application.`,
+        },
+        {
+          pageNumber: 2,
+          pageTitle: `${subsectionTitle} - Mathematical Foundations`,
+          content: `# Mathematical Foundations of ${subsectionTitle}
+
+## Fundamental Equations
+
+The mathematical representation of ${subsectionTitle} involves several key equations and relationships that form the foundation of theoretical understanding.
+
+### Basic Mathematical Framework
+
+For ${subsectionTitle}, we consider the fundamental relationship:
+
+$$f(x) = ax + b$$
+
+Where:
+- $a$ represents the coefficient
+- $b$ represents the constant term
+- $x$ represents the variable
+
+### Advanced Mathematical Relationships
+
+More complex relationships in ${subsectionTitle} can be expressed as:
+
+$$\\sum_{i=1}^{n} f(x_i) = \\int_{a}^{b} f(x) dx$$
+
+This integral relationship demonstrates the connection between discrete and continuous mathematical representations.
+
+## Mathematical Analysis
+
+The mathematical framework provides the foundation for understanding the theoretical principles and practical applications of ${subsectionTitle}.`,
+          keyTakeaway: `Mathematical equations provide the quantitative foundation for understanding ${subsectionTitle}.`,
+        },
+        {
+          pageNumber: 3,
+          pageTitle: `${subsectionTitle} - Advanced Mathematical Models`,
+          content: `# Advanced Mathematical Models for ${subsectionTitle}
+
+## Complex Mathematical Relationships
+
+Advanced studies of ${subsectionTitle} require understanding of sophisticated mathematical models and their derivations.
+
+### Differential Equations
+
+The dynamic behavior of systems related to ${subsectionTitle} can be modeled using differential equations:
+
+$$\\frac{dy}{dx} = f(x, y)$$
+
+### Matrix Representations
+
+For multi-dimensional analysis, we use matrix notation:
+
+$$\\mathbf{A} = \\begin{pmatrix}
+a_{11} & a_{12} & \\cdots & a_{1n} \\\\
+a_{21} & a_{22} & \\cdots & a_{2n} \\\\
+\\vdots & \\vdots & \\ddots & \\vdots \\\\
+a_{m1} & a_{m2} & \\cdots & a_{mn}
+\\end{pmatrix}$$
+
+### Statistical Models
+
+For probabilistic analysis in ${subsectionTitle}:
+
+$$P(A|B) = \\frac{P(B|A) \\cdot P(A)}{P(B)}$$
+
+This Bayesian framework is essential for understanding uncertainty and making predictions.
+
+## Mathematical Derivations
+
+Step-by-step derivations help students understand how these mathematical relationships are developed and applied in the context of ${subsectionTitle}.`,
+          keyTakeaway: `Advanced mathematical models enable sophisticated analysis and prediction in ${subsectionTitle}.`,
+        },
+      ],
+      summary: `Comprehensive academic study of ${subsectionTitle} within ${moduleContext}`,
+      objectives: [
+        `Understand the fundamental concepts of ${subsectionTitle}`,
+        `Apply theoretical knowledge in practical contexts`,
+      ],
+      examples: [
+        `Academic applications in ${subject}`,
+        `Real-world relevance of ${subsectionTitle}`,
+      ],
+      resources: {
+        books: [],
+        courses: [],
+        articles: [],
+        videos: [],
+        tools: [],
+        websites: [],
+        exercises: [],
       },
-    ];
+      visualizationSuggestions: {
+        hasFlowcharts: false,
+        hasComparisons: false,
+        hasTimelines: false,
+        hasFormulas: true,
+        hasProcessSteps: false,
+        hasCyclicalProcesses: false,
+        hasHierarchies: false,
+        hasRelationships: true,
+        codeSimulationTopics: [],
+        interactiveElements: [
+          "Mathematical equation solvers",
+          "Formula calculators",
+        ],
+      },
+      beautifulSummaryElements: {
+        keyInsights: [
+          `${subsectionTitle} is fundamental to understanding ${subject}`,
+        ],
+        practicalApplications: [
+          `Academic research in ${subject}`,
+          `Professional applications`,
+        ],
+        whyItMatters: `Understanding ${subsectionTitle} is essential for academic and professional success in ${subject}`,
+        careerRelevance: `Mastery of ${subsectionTitle} enhances career prospects in ${subject} fields`,
+        difficultyLevel:
+          academicLevel === "graduate" ? "Advanced" : "Intermediate",
+        prerequisites: [`Basic understanding of ${subject}`],
+        estimatedStudyTime: "2-3 hours",
+      },
+    };
   }
 }
 
@@ -169,26 +370,20 @@ export async function POST(request) {
     if (singleSubsection && subsectionTitle) {
       console.log(`🎯 Generating individual subsection: ${subsectionTitle}`);
 
-      // Generate multipage content for the single subsection
-      const pages = await generateAcademicMultipageContent(
+      // Generate enhanced multipage content for the single subsection
+      const enhancedContent = await generateAcademicMultipageContent(
         subsectionTitle,
         moduleTitle || "Academic Module",
         academicLevel,
         subject
       );
 
+      // The enhanced content already includes pages, resources, and metadata
+      // Just add the basic academic fields that are expected
       const academicContent = {
         title: subsectionTitle,
-        summary: `Academic study of ${subsectionTitle} within ${
-          moduleTitle || "Academic Module"
-        }`,
-        keyPoints: [
-          `Theoretical foundations of ${subsectionTitle}`,
-          `Academic analysis and critical thinking`,
-          `Practical applications and case studies`,
-          `Research methods and scholarly approaches`,
-        ],
-        pages: pages,
+        ...enhancedContent, // Spread all enhanced content (pages, resources, etc.)
+        // Override/add specific academic fields
         practicalExample: `Academic exploration of ${subsectionTitle} through theoretical analysis and practical application`,
         commonPitfalls: [
           `Oversimplifying complex academic concepts`,
@@ -196,8 +391,11 @@ export async function POST(request) {
           "Failing to consider multiple theoretical perspectives",
         ],
         difficulty:
-          academicLevel === "undergraduate" ? "Intermediate" : "Advanced",
-        estimatedTime: "25-30 minutes",
+          enhancedContent.beautifulSummaryElements?.difficultyLevel ||
+          (academicLevel === "undergraduate" ? "Intermediate" : "Advanced"),
+        estimatedTime:
+          enhancedContent.beautifulSummaryElements?.estimatedStudyTime ||
+          "25-30 minutes",
         hasChildren: false,
         childrenCount: 0,
         academicLevel: academicLevel,
@@ -207,13 +405,17 @@ export async function POST(request) {
       };
 
       console.log(
-        `✅ Generated ${pages.length} pages for individual subsection: ${subsectionTitle}`
+        `✅ Generated ${
+          enhancedContent.pages?.length || 0
+        } pages for individual subsection: ${subsectionTitle}`
       );
 
       return NextResponse.json({
         success: true,
         content: academicContent,
-        message: `Generated ${pages.length} pages of academic content for "${subsectionTitle}"`,
+        message: `Generated ${
+          enhancedContent.pages?.length || 0
+        } pages of enhanced academic content for "${subsectionTitle}"`,
       });
     }
 

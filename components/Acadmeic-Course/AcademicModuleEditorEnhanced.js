@@ -1922,24 +1922,73 @@ export default function AcademicModuleEditorEnhanced({
       }
 
       const result = await response.json();
-      console.log("✅ Individual academic content generated:", result);
+      console.log("✅ Enhanced individual academic content generated:", result);
 
       if (result.success && result.content && result.content.pages) {
-        updateSubsection(subsectionIndex, {
+        // Enhanced update with all the new metadata
+        const enhancedSubsectionData = {
           pages: result.content.pages,
           summary: result.content.summary,
-          difficulty: result.content.difficulty,
-          estimatedTime: result.content.estimatedTime,
+          difficulty:
+            result.content.difficulty ||
+            result.content.beautifulSummaryElements?.difficultyLevel,
+          estimatedTime:
+            result.content.estimatedTime ||
+            result.content.beautifulSummaryElements?.estimatedStudyTime,
           isAcademicContent: true,
           type: "pages",
           isGenerating: false,
-        });
+          // New enhanced fields
+          objectives: result.content.objectives || [],
+          examples: result.content.examples || [],
+          resources: result.content.resources || {
+            books: [],
+            courses: [],
+            articles: [],
+            videos: [],
+            tools: [],
+            websites: [],
+            exercises: [],
+          },
+          visualizationSuggestions: result.content.visualizationSuggestions || {
+            hasFlowcharts: false,
+            hasComparisons: false,
+            hasTimelines: false,
+            hasFormulas: false,
+            hasProcessSteps: false,
+            hasCyclicalProcesses: false,
+            hasHierarchies: false,
+            hasRelationships: false,
+            codeSimulationTopics: [],
+            interactiveElements: [],
+          },
+          beautifulSummaryElements: result.content.beautifulSummaryElements || {
+            keyInsights: [],
+            practicalApplications: [],
+            whyItMatters: "This topic is important for academic understanding.",
+            careerRelevance:
+              "Understanding this topic enhances academic and professional skills.",
+            difficultyLevel: "Intermediate",
+            prerequisites: [],
+            estimatedStudyTime: "2-3 hours",
+          },
+        };
+
+        updateSubsection(subsectionIndex, enhancedSubsectionData);
+
+        // Enhanced success message with more details
+        const pageCount = result.content.pages.length;
+        const resourceCount = Object.values(
+          result.content.resources || {}
+        ).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
 
         toast.success(
-          `✅ Generated ${result.content.pages.length} pages of academic content for "${subsection.title}"`
+          `✅ Generated ${pageCount} pages of enhanced academic content with ${resourceCount} learning resources for "${subsection.title}"`
         );
       } else {
-        throw new Error("Invalid response format from academic content API");
+        throw new Error(
+          "Invalid response format from enhanced academic content API"
+        );
       }
     } catch (error) {
       console.error(
@@ -3580,6 +3629,80 @@ Detailed discussion here..."
                                           </p>
                                         </div>
                                       )}
+
+                                      {/* Enhanced Content Elements */}
+                                      {subsection.beautifulSummaryElements && (
+                                        <div className="mt-4 space-y-3">
+                                          {subsection.beautifulSummaryElements
+                                            .keyInsights &&
+                                            subsection.beautifulSummaryElements
+                                              .keyInsights.length > 0 && (
+                                              <div className="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+                                                <h5 className="font-semibold text-purple-800 mb-2">
+                                                  🧠 Key Insights
+                                                </h5>
+                                                <ul className="text-sm text-purple-700 space-y-1">
+                                                  {subsection.beautifulSummaryElements.keyInsights.map(
+                                                    (insight, idx) => (
+                                                      <li
+                                                        key={idx}
+                                                        className="flex items-start"
+                                                      >
+                                                        <span className="mr-2">
+                                                          •
+                                                        </span>
+                                                        <span>{insight}</span>
+                                                      </li>
+                                                    )
+                                                  )}
+                                                </ul>
+                                              </div>
+                                            )}
+
+                                          {subsection.beautifulSummaryElements
+                                            .practicalApplications &&
+                                            subsection.beautifulSummaryElements
+                                              .practicalApplications.length >
+                                              0 && (
+                                              <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                                                <h5 className="font-semibold text-green-800 mb-2">
+                                                  🎯 Practical Applications
+                                                </h5>
+                                                <ul className="text-sm text-green-700 space-y-1">
+                                                  {subsection.beautifulSummaryElements.practicalApplications.map(
+                                                    (app, idx) => (
+                                                      <li
+                                                        key={idx}
+                                                        className="flex items-start"
+                                                      >
+                                                        <span className="mr-2">
+                                                          •
+                                                        </span>
+                                                        <span>{app}</span>
+                                                      </li>
+                                                    )
+                                                  )}
+                                                </ul>
+                                              </div>
+                                            )}
+
+                                          {subsection.beautifulSummaryElements
+                                            .whyItMatters && (
+                                            <div className="p-3 bg-amber-50 rounded-lg border-l-4 border-amber-400">
+                                              <h5 className="font-semibold text-amber-800 mb-2">
+                                                💡 Why This Matters
+                                              </h5>
+                                              <p className="text-sm text-amber-700">
+                                                {
+                                                  subsection
+                                                    .beautifulSummaryElements
+                                                    .whyItMatters
+                                                }
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   ) : (
                                     <div className="prose prose-sm max-w-none">
@@ -3638,6 +3761,135 @@ Detailed discussion here..."
                                       >
                                         <ChevronRight className="h-3 w-3" />
                                       </Button>
+                                    </div>
+                                  )}
+
+                                  {/* Enhanced Learning Resources */}
+                                  {subsection.resources && (
+                                    <div className="mt-6 space-y-4">
+                                      <h5 className="font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                                        📚 Learning Resources
+                                      </h5>
+
+                                      {/* Books */}
+                                      {subsection.resources.books &&
+                                        subsection.resources.books.length >
+                                          0 && (
+                                          <div className="space-y-2">
+                                            <h6 className="font-medium text-sm text-blue-700 flex items-center">
+                                              📖 Recommended Books
+                                            </h6>
+                                            <div className="grid gap-2">
+                                              {subsection.resources.books
+                                                .slice(0, 3)
+                                                .map((book, idx) => (
+                                                  <div
+                                                    key={idx}
+                                                    className="p-2 bg-blue-50 rounded border-l-2 border-blue-300"
+                                                  >
+                                                    <a
+                                                      href={book.url}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-sm font-medium text-blue-800 hover:text-blue-900 hover:underline"
+                                                    >
+                                                      {book.title}
+                                                    </a>
+                                                    {book.author && (
+                                                      <p className="text-xs text-blue-600">
+                                                        by {book.author}
+                                                      </p>
+                                                    )}
+                                                    {book.description && (
+                                                      <p className="text-xs text-blue-700 mt-1">
+                                                        {book.description}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                      {/* Courses */}
+                                      {subsection.resources.courses &&
+                                        subsection.resources.courses.length >
+                                          0 && (
+                                          <div className="space-y-2">
+                                            <h6 className="font-medium text-sm text-green-700 flex items-center">
+                                              🎓 Online Courses
+                                            </h6>
+                                            <div className="grid gap-2">
+                                              {subsection.resources.courses
+                                                .slice(0, 3)
+                                                .map((course, idx) => (
+                                                  <div
+                                                    key={idx}
+                                                    className="p-2 bg-green-50 rounded border-l-2 border-green-300"
+                                                  >
+                                                    <a
+                                                      href={course.url}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-sm font-medium text-green-800 hover:text-green-900 hover:underline"
+                                                    >
+                                                      {course.title}
+                                                    </a>
+                                                    {course.platform && (
+                                                      <p className="text-xs text-green-600">
+                                                        on {course.platform}
+                                                      </p>
+                                                    )}
+                                                    {course.description && (
+                                                      <p className="text-xs text-green-700 mt-1">
+                                                        {course.description}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                      {/* Videos */}
+                                      {subsection.resources.videos &&
+                                        subsection.resources.videos.length >
+                                          0 && (
+                                          <div className="space-y-2">
+                                            <h6 className="font-medium text-sm text-red-700 flex items-center">
+                                              🎥 Video Resources
+                                            </h6>
+                                            <div className="grid gap-2">
+                                              {subsection.resources.videos
+                                                .slice(0, 3)
+                                                .map((video, idx) => (
+                                                  <div
+                                                    key={idx}
+                                                    className="p-2 bg-red-50 rounded border-l-2 border-red-300"
+                                                  >
+                                                    <a
+                                                      href={video.url}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-sm font-medium text-red-800 hover:text-red-900 hover:underline"
+                                                    >
+                                                      {video.title}
+                                                    </a>
+                                                    {video.creator && (
+                                                      <p className="text-xs text-red-600">
+                                                        by {video.creator}
+                                                      </p>
+                                                    )}
+                                                    {video.description && (
+                                                      <p className="text-xs text-red-700 mt-1">
+                                                        {video.description}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                            </div>
+                                          </div>
+                                        )}
                                     </div>
                                   )}
                                 </>
