@@ -518,7 +518,7 @@ export default function LearnerDashboard() {
       return (
         <div className="p-4 text-center">
           <p>AcademicCourseViewer component not yet implemented</p>
-          <button 
+          <button
             onClick={() => {
               setSelectedAcademicCourse(null);
               setHideHeader(false);
@@ -588,7 +588,7 @@ export default function LearnerDashboard() {
       const isExamGeniusCourse =
         selectedCourse.isExamGenius ||
         selectedCourse.examType ||
-        selectedCourse.subject;
+        selectedCourse.isCompetitiveExam;
 
       return isExamGeniusCourse ? (
         <ExamGeniusCourseViewer
@@ -840,13 +840,13 @@ export default function LearnerDashboard() {
                         (course) =>
                           !course.isExamGenius &&
                           !course.examType &&
-                          !course.subject
+                          !course.isCompetitiveExam
                       );
                       const competitiveExamCourses = enrolledCourses.filter(
                         (course) =>
                           course.isExamGenius ||
                           course.examType ||
-                          course.subject
+                          course.isCompetitiveExam
                       );
 
                       return (
