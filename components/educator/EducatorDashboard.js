@@ -45,7 +45,7 @@ import CourseCreator from "./CourseCreator";
 import { AcademicCourseCreator } from "../Acadmeic-Course";
 import CourseList from "./CourseList";
 import CourseEditor from "./CourseEditor";
-import { AcademicContentEditor, AcademicCourseManager } from "../Acadmeic-Course";
+import { AcademicContentEditor, AcademicCourseManager, CompetitiveCourseCreator, ExamGeniusCourseCreator, CompetitiveCourseManager } from "../Acadmeic-Course";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import PreferencesSettings from "@/components/profile/PreferencesSettings";
 import NotificationsSettings from "@/components/profile/NotificationsSettings";
@@ -724,10 +724,62 @@ export default function EducatorDashboard() {
                 Academic Courses
               </h2>
               <p className="text-slate-600">
-                Create and manage academic courses with assignments and grading
+                Manage all your academic courses with assignments and grading
               </p>
             </div>
+            <AcademicCourseManager />
+          </div>
+        );
+
+      case "create-tech":
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Create Technical Course
+              </h2>
+              <p className="text-slate-600">Create comprehensive technical learning content</p>
+            </div>
+            <CourseCreator onCourseCreated={refreshData} />
+          </div>
+        );
+
+      case "create-academic":
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                Create Academic Course
+              </h2>
+              <p className="text-slate-600">Design academic courses with assignments and grading</p>
+            </div>
             <AcademicCourseCreator onCourseCreated={refreshData} />
+          </div>
+        );
+
+      case "create-test-series":
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-2">
+                Create Test Series
+              </h2>
+              <p className="text-slate-600">Build comprehensive test series for practice</p>
+            </div>
+            <TestSeriesCreator onTestSeriesCreated={refreshData} />
+          </div>
+        );
+
+      case "create-exam-genius":
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
+                Create ExamGenius Course
+              </h2>
+              <p className="text-slate-600">Generate AI-powered competitive exam courses with flashcards and practice questions</p>
+            </div>
+            <ExamGeniusCourseCreator onCourseCreated={refreshData} />
           </div>
         );
 
@@ -796,11 +848,11 @@ export default function EducatorDashboard() {
                 Competitive Exam Courses
               </h2>
               <p className="text-slate-600">
-                Create specialized courses for competitive exams like SSC, UPSC,
+                Manage ExamGenius courses for competitive exams like SSC, UPSC,
                 CAT, Bank PO, and more
               </p>
             </div>
-            <AcademicCourseManager />
+            <CompetitiveCourseManager />
           </div>
         );
 
@@ -1077,6 +1129,38 @@ export default function EducatorDashboard() {
             </div>
           </div>
 
+          {/* Create Course Buttons */}
+          <div className="flex flex-wrap gap-3 mb-6 justify-center">
+            <Button
+              onClick={() => setActiveTab("create-tech")}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Tech Course
+            </Button>
+            <Button
+              onClick={() => setActiveTab("create-academic")}
+              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
+            >
+              <GraduationCap className="h-4 w-4 mr-2" />
+              Create Academic Course
+            </Button>
+            <Button
+              onClick={() => setActiveTab("create-test-series")}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
+            >
+              <TestTube2 className="h-4 w-4 mr-2" />
+              Create Test Series
+            </Button>
+            <Button
+              onClick={() => setActiveTab("create-exam-genius")}
+              className="bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
+            >
+              <Trophy className="h-4 w-4 mr-2" />
+              Create ExamGenius Course
+            </Button>
+          </div>
+
           {/* Enhanced Navigation */}
           <nav className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pb-4 sm:pb-6">
             {[
@@ -1087,7 +1171,6 @@ export default function EducatorDashboard() {
                 label: "Academic Courses",
                 icon: GraduationCap,
               },
-              { id: "create", label: "Create Course", icon: Plus },
               {
                 id: "test-series-manage",
                 label: "Test Series",
