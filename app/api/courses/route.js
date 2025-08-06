@@ -46,8 +46,9 @@ export async function GET(request) {
     const status = searchParams.get("status")
     const educatorId = searchParams.get("educatorId")
     const isExamGenius = searchParams.get("isExamGenius") === "true"
+    const isAcademicCourse = searchParams.get("isAcademicCourse") === "true"
 
-    console.log("Query params:", { status, educatorId, isExamGenius })
+    console.log("Query params:", { status, educatorId, isExamGenius, isAcademicCourse })
 
     const filter = {}
     
@@ -90,6 +91,12 @@ export async function GET(request) {
         { isCompetitiveExam: true }
       ]
       console.log("Added ExamGenius filter")
+    }
+    
+    // Handle Academic Course filtering
+    if (isAcademicCourse) {
+      filter.isAcademicCourse = true
+      console.log("Added Academic Course filter")
     }
 
     // If status is "published" or not specified for learners, ensure we check both status and isPublished fields

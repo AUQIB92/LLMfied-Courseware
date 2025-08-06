@@ -2164,7 +2164,7 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.videos = [
             ...(updatedModule.resources.videos || []),
-            ...data.resources.videos.map((video) => ({
+            ...data.resources.videos.filter(video => video && video.title).map((video) => ({
               title: video.title,
               url: video.url,
               description: video.description,
@@ -2178,7 +2178,7 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.articles = [
             ...(updatedModule.resources.articles || []),
-            ...data.resources.articles.map((article) => ({
+            ...data.resources.articles.filter(article => article && article.title).map((article) => ({
               title: article.title,
               url: article.url,
               description: article.description,
@@ -2192,7 +2192,7 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.books = [
             ...(updatedModule.resources.books || []),
-            ...data.resources.books.map((book) => ({
+            ...data.resources.books.filter(book => book && book.title).map((book) => ({
               title: book.title,
               url: book.url,
               description: book.description,
@@ -2206,7 +2206,7 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.courses = [
             ...(updatedModule.resources.courses || []),
-            ...data.resources.courses.map((course) => ({
+            ...data.resources.courses.filter(course => course && course.title).map((course) => ({
               title: course.title,
               url: course.url,
               description: course.description,
@@ -2220,7 +2220,7 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.tools = [
             ...(updatedModule.resources.tools || []),
-            ...data.resources.tools.map((tool) => ({
+            ...data.resources.tools.filter(tool => tool && tool.title).map((tool) => ({
               title: tool.title,
               url: tool.url,
               description: tool.description,
@@ -2234,7 +2234,7 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.websites = [
             ...(updatedModule.resources.websites || []),
-            ...data.resources.websites.map((website) => ({
+            ...data.resources.websites.filter(website => website && website.title).map((website) => ({
               title: website.title,
               url: website.url,
               description: website.description,
@@ -2251,7 +2251,7 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.websites = [
             ...(updatedModule.resources.websites || []),
-            ...data.resources.githubRepos.map((repo) => ({
+            ...data.resources.githubRepos.filter(repo => repo && repo.title).map((repo) => ({
               title: repo.title,
               url: repo.url,
               description: repo.description,
@@ -2266,7 +2266,7 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.exercises = [
             ...(updatedModule.resources.exercises || []),
-            ...data.resources.exercises.map((exercise) => ({
+            ...data.resources.exercises.filter(exercise => exercise && exercise.title).map((exercise) => ({
               title: exercise.title,
               url: exercise.url,
               description: exercise.description,
@@ -3904,6 +3904,7 @@ Detailed discussion here..."
                                             <div className="grid gap-2">
                                               {subsection.resources.books
                                                 .slice(0, 3)
+                                                .filter(book => book && book.title)
                                                 .map((book, idx) => (
                                                   <div
                                                     key={idx}
@@ -3944,6 +3945,7 @@ Detailed discussion here..."
                                             <div className="grid gap-2">
                                               {subsection.resources.courses
                                                 .slice(0, 3)
+                                                .filter(course => course && course.title)
                                                 .map((course, idx) => (
                                                   <div
                                                     key={idx}
@@ -3984,6 +3986,7 @@ Detailed discussion here..."
                                             <div className="grid gap-2">
                                               {subsection.resources.videos
                                                 .slice(0, 3)
+                                                .filter(video => video && video.title)
                                                 .map((video, idx) => (
                                                   <div
                                                     key={idx}
@@ -4322,7 +4325,7 @@ Detailed discussion here..."
                                   {/* Flashcards Display */}
                                   {subsectionPages.data.flashcards.length > 0 && (
                                     <div className="grid gap-3">
-                                      {subsectionPages.data.flashcards.slice(0, 5).map((card, cardIndex) => (
+                                      {subsectionPages.data.flashcards.slice(0, 5).filter(card => card).map((card, cardIndex) => (
                                         <div
                                           key={card.id || cardIndex}
                                           className="perspective-1000"

@@ -211,21 +211,6 @@ This section covers the fundamental principles and theoretical frameworks that u
 3. **Practical Applications**: Real-world relevance and applications
 4. **Critical Analysis**: Developing analytical skills
 
-    const fallbackPages = [{
-      pageNumber: 1,
-      pageTitle: `${subsectionTitle} - Study Cards`,
-      content: `# ${subsectionTitle} - Academic Flashcards\n\nThis subsection contains 5 study cards covering key concepts in ${subsectionTitle}.`,
-      keyTakeaway: `Master these 5 key concepts to understand ${subsectionTitle}.`,
-      flashcards: fallbackFlashcards,
-      isFlashcardContent: true
-    }];
-
-    console.log(`✅ Generated 5 fallback flashcards for ${subsectionTitle}`);
-    return fallbackPages;
-
-  } catch (aiError) {
-    console.error("❌ Flashcard generation failed:", aiError);
-
 This topic connects to other areas within ${moduleContext} and provides foundation for advanced study in ${subject}.`,
           keyTakeaway: `${subsectionTitle} requires systematic academic study combining theoretical understanding with practical application.`,
         },

@@ -36,9 +36,11 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
   const [deletingId, setDeletingId] = useState(null)
   const { getAuthHeaders } = useAuth()
 
-  // Filter out ExamGenius courses from general course list
+  // Filter to show only technical courses (not ExamGenius, not competitive exam, not academic courses)
   const filteredCourses = courses.filter(course => 
-    !course.isExamGenius && !course.isCompetitiveExam
+    !course.isExamGenius && 
+    !course.isCompetitiveExam && 
+    !course.isAcademicCourse
   )
 
   const handleStatusChange = async (courseId, newStatus) => {
@@ -99,18 +101,48 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
 
     setDeletingId(courseId)
     try {
+      const authHeaders = getAuthHeaders()
+      console.log("Attempting to delete course:", {
+        courseId,
+        hasAuth: !!authHeaders.Authorization,
+        authHeadersKeys: Object.keys(authHeaders)
+      })
+      
       const response = await fetch(`/api/courses/${courseId}`, {
         method: "DELETE",
-        headers: getAuthHeaders(),
+        headers: authHeaders,
+      })
+      
+      console.log("DELETE response received:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        contentType: response.headers.get('content-type')
       })
 
       if (response.ok) {
         alert("Course deleted successfully!")
         onRefresh?.()
       } else {
-        const errorData = await response.json()
-        const errorMessage = errorData.error || errorData.details || 'Unknown error occurred'
-        console.error(`Failed to delete course:`, errorData)
+        let errorData = null
+        let errorMessage = 'Unknown error occurred'
+        
+        try {
+          // Try to parse the response as JSON
+          errorData = await response.json()
+          errorMessage = errorData?.error || errorData?.details || errorData?.message || 'Unknown error occurred'
+        } catch (parseError) {
+          // If response is not JSON, use the status text
+          console.error("Failed to parse error response as JSON:", parseError)
+          errorMessage = response.statusText || `HTTP ${response.status} error`
+        }
+        
+        console.error(`Failed to delete course (${response.status}):`, {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          errorMessage
+        })
         
         // Provide specific error messages based on status code
         if (response.status === 403) {
@@ -119,13 +151,28 @@ export default function CourseList({ courses, onRefresh, onEditCourse }) {
           alert("Course not found. It may have already been deleted.")
         } else if (response.status === 409) {
           alert("Cannot delete course: There may be active enrollments or dependencies.")
+        } else if (response.status === 401) {
+          alert("Authentication failed. Please log in again and try again.")
         } else {
           alert(`Failed to delete course: ${errorMessage}`)
         }
       }
     } catch (error) {
-      console.error("Error deleting course:", error)
-      alert("Network error: Failed to delete course. Please check your connection and try again.")
+      console.error("Network error deleting course:", {
+        error: error.message,
+        stack: error.stack,
+        name: error.name,
+        courseId
+      })
+      
+      // Provide more specific error messages based on error type
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        alert("Network error: Unable to connect to the server. Please check your internet connection and try again.")
+      } else if (error.message.includes('token')) {
+        alert("Authentication error: Please log out and log in again, then try to delete the course.")
+      } else {
+        alert(`Network error: ${error.message}. Please try again or contact support if the problem persists.`)
+      }
     } finally {
       setDeletingId(null)
     }

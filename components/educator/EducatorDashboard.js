@@ -156,9 +156,9 @@ export default function EducatorDashboard() {
       const coursesArray = Array.isArray(data) ? data : [];
       console.log("Total courses fetched:", coursesArray.length);
 
-      // Filter out ExamGenius courses from the general dashboard
+      // Filter to show only technical courses (not ExamGenius, not competitive exam, not academic courses)
       const generalCourses = coursesArray.filter(
-        (course) => !course.isExamGenius && !course.isCompetitiveExam
+        (course) => !course.isExamGenius && !course.isCompetitiveExam && !course.isAcademicCourse
       );
       console.log(
         "General courses (excluding ExamGenius):",
