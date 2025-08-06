@@ -29,6 +29,7 @@ export async function POST(request) {
     // Handle both direct course data and nested course object
     const requestData = body.course || body;
     const {
+      _id,
       title,
       description,
       modules,
@@ -58,62 +59,119 @@ export async function POST(request) {
     console.log(`📚 Saving academic course: ${title} (${subject} - ${academicLevel})`);
 
     await client.connect();
-    const db = client.db("courseware");
+    const db = client.db("llmfied");
     const coursesCollection = db.collection("academicCourses");
 
-    // Prepare course data
-    const courseData = {
-      title: title.trim(),
-      description: description?.trim() || '',
-      subject,
-      academicLevel,
-      semester: semester?.trim() || '',
-      credits: credits || 3,
-      dueDate: dueDate || null,
-      objectives: Array.isArray(objectives) ? objectives.filter(obj => obj?.trim()) : [],
-      prerequisites: Array.isArray(prerequisites) ? prerequisites.filter(req => req?.trim()) : [],
-      modules: Array.isArray(modules) ? modules : [],
-      assessmentCriteria: assessmentCriteria || {
-        assignments: 40,
-        quizzes: 20,
-        midterm: 20,
-        final: 20
-      },
-      allowDiscussions: allowDiscussions !== false,
-      allowGroupWork: allowGroupWork === true,
-      gradingScale: gradingScale || "percentage",
-      status: status || "draft",
-      isAcademicCourse: true,
-      courseType: "academic",
-      educator: {
-        id: user.id,
-        name: user.name,
-        email: user.email
-      },
-      stats: {
-        totalModules: modules?.length || 0,
-        totalAssignments: (modules?.length || 0) * 2,
-        totalQuizzes: modules?.length || 0,
-        estimatedWeeks: (modules?.length || 0) * 2
-      },
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    const isUpdating = !!_id;
+    let result;
+    let courseId;
 
-    // Insert the course
-    const result = await coursesCollection.insertOne(courseData);
-    
-    console.log(`✅ Academic course saved successfully with ID: ${result.insertedId}`);
+    if (isUpdating) {
+      // Update existing course
+      console.log(`📝 Updating existing academic course with ID: ${_id}`);
+      
+      const updateData = {
+        title: title.trim(),
+        description: description?.trim() || '',
+        subject,
+        academicLevel,
+        semester: semester?.trim() || '',
+        credits: credits || 3,
+        dueDate: dueDate || null,
+        objectives: Array.isArray(objectives) ? objectives.filter(obj => obj?.trim()) : [],
+        prerequisites: Array.isArray(prerequisites) ? prerequisites.filter(req => req?.trim()) : [],
+        modules: Array.isArray(modules) ? modules : [],
+        assessmentCriteria: assessmentCriteria || {
+          assignments: 40,
+          quizzes: 20,
+          midterm: 20,
+          final: 20
+        },
+        allowDiscussions: allowDiscussions !== false,
+        allowGroupWork: allowGroupWork === true,
+        gradingScale: gradingScale || "percentage",
+        status: status || "draft",
+        isPublished: status === "published",
+        isAcademicCourse: true,
+        courseType: "academic",
+        stats: {
+          totalModules: modules?.length || 0,
+          totalAssignments: (modules?.length || 0) * 2,
+          totalQuizzes: modules?.length || 0,
+          estimatedWeeks: (modules?.length || 0) * 2
+        },
+        updatedAt: new Date()
+      };
+
+      result = await coursesCollection.updateOne(
+        { _id: new ObjectId(_id) },
+        { $set: updateData }
+      );
+      
+      courseId = _id;
+      
+      if (result.matchedCount === 0) {
+        return NextResponse.json(
+          { error: "Academic course not found" },
+          { status: 404 }
+        );
+      }
+      
+      console.log(`✅ Academic course updated successfully: ${_id}`);
+    } else {
+      // Create new course
+      console.log(`📚 Creating new academic course: ${title}`);
+      
+      const courseData = {
+        title: title.trim(),
+        description: description?.trim() || '',
+        subject,
+        academicLevel,
+        semester: semester?.trim() || '',
+        credits: credits || 3,
+        dueDate: dueDate || null,
+        objectives: Array.isArray(objectives) ? objectives.filter(obj => obj?.trim()) : [],
+        prerequisites: Array.isArray(prerequisites) ? prerequisites.filter(req => req?.trim()) : [],
+        modules: Array.isArray(modules) ? modules : [],
+        assessmentCriteria: assessmentCriteria || {
+          assignments: 40,
+          quizzes: 20,
+          midterm: 20,
+          final: 20
+        },
+        allowDiscussions: allowDiscussions !== false,
+        allowGroupWork: allowGroupWork === true,
+        gradingScale: gradingScale || "percentage",
+        status: status || "draft",
+        isPublished: status === "published",
+        isAcademicCourse: true,
+        courseType: "academic",
+        educatorId: new ObjectId(user.userId),
+        stats: {
+          totalModules: modules?.length || 0,
+          totalAssignments: (modules?.length || 0) * 2,
+          totalQuizzes: modules?.length || 0,
+          estimatedWeeks: (modules?.length || 0) * 2
+        },
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      result = await coursesCollection.insertOne(courseData);
+      courseId = result.insertedId;
+      
+      console.log(`✅ Academic course created successfully with ID: ${courseId}`);
+    }
 
     return NextResponse.json({
       success: true,
-      courseId: result.insertedId,
+      courseId: courseId,
       course: {
-        ...courseData,
-        _id: result.insertedId
+        _id: courseId,
+        title: title.trim(),
+        status: status || "draft"
       },
-      message: `Academic course "${title}" saved successfully`,
-      stats: courseData.stats
+      message: `Academic course "${title}" ${isUpdating ? 'updated' : 'created'} successfully`
     });
 
   } catch (error) {

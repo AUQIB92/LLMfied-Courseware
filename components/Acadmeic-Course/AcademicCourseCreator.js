@@ -1200,30 +1200,49 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
                     </Button>
                   </div>
 
-                  <AcademicModuleEditorEnhanced
-                    module={courseData.modules[selectedModule]}
-                    onUpdate={(updatedModule) => {
-                      const updatedModules = [...courseData.modules];
-                      updatedModules[selectedModule] = updatedModule;
-                      setCourseData({ ...courseData, modules: updatedModules });
-                    }}
-                    academicLevel={courseData.academicLevel}
-                    subject={courseData.subject}
-                    semester={courseData.semester}
-                    course={courseData}
-                    courseId={currentCourseId}
-                    onSaveSuccess={(savedCourse, status) => {
-                      setCourseData(savedCourse);
-                      toast.success(
-                        `Course ${
-                          status === "draft" ? "saved as draft" : "published"
-                        } successfully!`
-                      );
-                      if (status === "published" && onCourseCreated) {
-                        onCourseCreated(savedCourse);
-                      }
-                    }}
-                  />
+                  {courseData.modules[selectedModule] ? (
+                    <AcademicModuleEditorEnhanced
+                      module={courseData.modules[selectedModule]}
+                      onUpdate={(updatedModule) => {
+                        const updatedModules = [...courseData.modules];
+                        updatedModules[selectedModule] = updatedModule;
+                        setCourseData({
+                          ...courseData,
+                          modules: updatedModules,
+                        });
+                      }}
+                      academicLevel={courseData.academicLevel}
+                      subject={courseData.subject}
+                      semester={courseData.semester}
+                      course={courseData}
+                      courseId={currentCourseId}
+                      onSaveSuccess={(savedCourse, status) => {
+                        setCourseData(savedCourse);
+                        toast.success(
+                          `Course ${
+                            status === "draft" ? "saved as draft" : "published"
+                          } successfully!`
+                        );
+                        if (status === "published" && onCourseCreated) {
+                          onCourseCreated(savedCourse);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">
+                        Module not found. Please go back and try again.
+                      </p>
+                      <Button
+                        onClick={() => setSelectedModule(null)}
+                        variant="outline"
+                        className="mt-4"
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Overview
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -1281,7 +1300,16 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
 
                           <div className="flex items-center gap-2">
                             <Button
-                              onClick={() => setSelectedModule(index)}
+                              onClick={() => {
+                                if (
+                                  index >= 0 &&
+                                  index < courseData.modules.length
+                                ) {
+                                  setSelectedModule(index);
+                                } else {
+                                  toast.error("Invalid module index");
+                                }
+                              }}
                               className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                             >
                               <Edit className="h-4 w-4 mr-2" />

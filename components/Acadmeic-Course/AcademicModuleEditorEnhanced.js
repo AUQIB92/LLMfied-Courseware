@@ -122,16 +122,44 @@ function getAcademicSubsectionData(subsection) {
   console.log("🔍 getAcademicSubsectionData called with:", {
     hasPages: !!subsection.pages,
     pagesLength: subsection.pages?.length || 0,
-    hasFlashcards: !!(subsection.pages?.[0]?.flashcards),
+    hasFlashcards: !!subsection.pages?.[0]?.flashcards,
     isFlashcardContent: subsection.pages?.[0]?.isFlashcardContent,
     subsectionKeys: Object.keys(subsection),
   });
 
-  // Academic courses now use FLASHCARDS, not multipage content
+  // Handle both flashcards and multipage content for academic courses
   console.log(
-    "🃏 Processing flashcard academic content for:",
+    "📚 Processing academic content (flashcards or pages) for:",
     subsection.title
   );
+
+  // Check if we have generated multipage content (prioritize multipage for user's request)
+  if (
+    subsection.pages &&
+    Array.isArray(subsection.pages) &&
+    subsection.pages.length > 0 &&
+    !subsection.pages[0].flashcards // If no flashcards, treat as multipage
+  ) {
+    console.log(
+      "✅ Using multipage content for academic subsection:",
+      subsection.pages.length,
+      "pages"
+    );
+    return {
+      type: "pages",
+      data: {
+        pages: subsection.pages.map((page) => ({
+          ...page,
+          title: page.title || page.pageTitle || "Page Content",
+          content: page.content || "Content will be available after generation",
+        })),
+        title: subsection.title || "Academic Subsection",
+        summary: subsection.summary || "Academic multipage content",
+        difficulty: subsection.difficulty || "Intermediate",
+        estimatedTime: subsection.estimatedTime || "15-20 minutes",
+      },
+    };
+  }
 
   // Check if we have generated flashcard content
   if (
@@ -153,7 +181,9 @@ function getAcademicSubsectionData(subsection) {
         ...subsection,
         flashcards: flashcards,
         title: subsection.title || "Academic Subsection",
-        summary: subsection.pages[0].content || "Academic flashcards for study and review",
+        summary:
+          subsection.pages[0].content ||
+          "Academic flashcards for study and review",
         difficulty: "Intermediate",
         estimatedTime: "10-15 minutes",
         // Remove page data since we're using flashcards
@@ -177,38 +207,42 @@ function getAcademicSubsectionData(subsection) {
       {
         id: 1,
         question: `What is ${subsection.title}?`,
-        answer: subsection.pages[0].content?.substring(0, 200) || "Academic concept to be studied",
+        answer:
+          subsection.pages[0].content?.substring(0, 200) ||
+          "Academic concept to be studied",
         category: "definition",
-        difficulty: "basic"
+        difficulty: "basic",
       },
       {
         id: 2,
         question: `Why is ${subsection.title} important?`,
-        answer: subsection.pages[0].keyTakeaway || "Important for academic understanding",
+        answer:
+          subsection.pages[0].keyTakeaway ||
+          "Important for academic understanding",
         category: "concept",
-        difficulty: "intermediate"
+        difficulty: "intermediate",
       },
       {
         id: 3,
         question: `How does ${subsection.title} apply in practice?`,
         answer: "Practical applications will be covered in detailed study",
-        category: "application", 
-        difficulty: "intermediate"
+        category: "application",
+        difficulty: "intermediate",
       },
       {
         id: 4,
         question: `What should students remember about ${subsection.title}?`,
         answer: "Key concepts and principles for academic success",
         category: "concept",
-        difficulty: "intermediate"
+        difficulty: "intermediate",
       },
       {
         id: 5,
         question: `How does ${subsection.title} connect to broader topics?`,
         answer: "Connects theoretical knowledge with practical applications",
         category: "analysis",
-        difficulty: "advanced"
-      }
+        difficulty: "advanced",
+      },
     ];
 
     return {
@@ -228,21 +262,26 @@ function getAcademicSubsectionData(subsection) {
     };
   }
 
-  // Create empty flashcard structure for academic content
-  console.log("📋 Creating empty flashcard structure for academic content");
+  // Create empty multipage structure for academic content (user requested multipage)
+  console.log("📄 Creating empty multipage structure for academic content");
   return {
-    type: "flashcards",
+    type: "pages",
     data: {
+      pages: [
+        {
+          title: "Introduction",
+          pageTitle: "Introduction",
+          content:
+            "Content will be generated for this academic topic. Click 'Generate Enhanced Academic Content' to create detailed multipage content.",
+          keyTakeaway:
+            "This section will contain key learning objectives and important concepts.",
+        },
+      ],
       title: subsection.title || "Academic Subsection",
-      summary: "Generate detailed content to see 5 academic flashcards",
-      flashcards: [],
+      summary:
+        "Generate detailed content to see multipage academic content with comprehensive explanations and examples",
       difficulty: "Intermediate",
-      estimatedTime: "10-15 minutes",
-      // Explicitly remove other content types
-      pages: undefined,
-      conceptFlashCards: undefined,
-      formulaFlashCards: undefined,
-      conceptGroups: undefined,
+      estimatedTime: "15-20 minutes",
     },
   };
 }
@@ -326,6 +365,16 @@ export default function AcademicModuleEditorEnhanced({
   onSaveSuccess,
 }) {
   const { getAuthHeaders, user, apiCall, isTokenValid } = useAuth();
+
+  // Safety check for required props
+  if (!module) {
+    console.error("AcademicModuleEditorEnhanced: module prop is required");
+    return (
+      <div className="p-4 text-center text-red-600">
+        Error: Module data is required
+      </div>
+    );
+  }
 
   // Helper function to safely render content
   const safeContent = (content) => {
@@ -421,7 +470,7 @@ export default function AcademicModuleEditorEnhanced({
   const startEditingPage = (subsectionIndex, pageIndex) => {
     const subsection = localModule.detailedSubsections[subsectionIndex];
     const page = subsection.pages[pageIndex];
-    
+
     setEditingPage({ subsectionIndex, pageIndex });
     setEditingContent(page.content || "");
     setEditingTitle(page.pageTitle || page.title || "");
@@ -433,7 +482,7 @@ export default function AcademicModuleEditorEnhanced({
 
     const { subsectionIndex, pageIndex } = editingPage;
     const updatedModule = { ...localModule };
-    
+
     updatedModule.detailedSubsections[subsectionIndex].pages[pageIndex] = {
       ...updatedModule.detailedSubsections[subsectionIndex].pages[pageIndex],
       content: editingContent,
@@ -448,10 +497,10 @@ export default function AcademicModuleEditorEnhanced({
     setEditingTakeaway("");
     setHasChanges(true);
     setSaveStatus("editing");
-    
+
     // Show success notification
     toast.success("Page content updated successfully!");
-    
+
     // Trigger parent update
     if (onUpdate) {
       onUpdate(updatedModule);
@@ -563,12 +612,12 @@ export default function AcademicModuleEditorEnhanced({
 
   // Resource management
   const [showManualResourceForm, setShowManualResourceForm] = useState(false);
-  const [newResource, setNewResource] = useState({
+  const [newResource, setNewResource] = useState(() => ({
     title: "",
     url: "",
     description: "",
     type: "article",
-  });
+  }));
   const [editingResource, setEditingResource] = useState(null);
   const [editForm, setEditForm] = useState({});
 
@@ -1368,6 +1417,18 @@ export default function AcademicModuleEditorEnhanced({
   };
 
   const addResource = (category, resource) => {
+    // Validate resource before adding
+    if (!resource || typeof resource !== "object") {
+      console.warn("Invalid resource object:", resource);
+      return;
+    }
+
+    // Ensure resource has required properties
+    if (!resource.title && !resource.name) {
+      console.warn("Resource missing title/name:", resource);
+      return;
+    }
+
     const updatedResources = {
       ...localModule.resources,
       [category]: [...(localModule.resources[category] || []), resource],
@@ -1710,9 +1771,9 @@ export default function AcademicModuleEditorEnhanced({
     const { type, index } = editingResource;
     const updatedResources = {
       ...localModule.resources,
-      [type]: localModule.resources[type].map((resource, i) =>
-        i === index ? { ...editForm } : resource
-      ),
+      [type]: localModule.resources[type]
+        .filter((resource) => resource != null)
+        .map((resource, i) => (i === index ? { ...editForm } : resource)),
     };
 
     updateModuleField("resources", updatedResources);
@@ -1726,14 +1787,14 @@ export default function AcademicModuleEditorEnhanced({
 
   // Add manual resource
   const handleAddManualResource = () => {
-    if (!newResource.title || !newResource.type) return;
+    if (!newResource?.title || !newResource?.type) return;
 
     const resourceWithId = {
       ...newResource,
       id: Date.now().toString(),
     };
 
-    addResource(newResource.type + "s", resourceWithId);
+    addResource(newResource?.type + "s", resourceWithId);
     setNewResource({
       title: "",
       url: "",
@@ -2164,13 +2225,15 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.videos = [
             ...(updatedModule.resources.videos || []),
-            ...data.resources.videos.filter(video => video && video.title).map((video) => ({
-              title: video.title,
-              url: video.url,
-              description: video.description,
-              creator: video.author || video.creator,
-              isAIGenerated: true,
-            })),
+            ...(data.resources.videos || [])
+              .filter((video) => video && video.title)
+              .map((video) => ({
+                title: video.title,
+                url: video.url,
+                description: video.description,
+                creator: video.author || video.creator,
+                isAIGenerated: true,
+              })),
           ];
         }
 
@@ -2178,13 +2241,15 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.articles = [
             ...(updatedModule.resources.articles || []),
-            ...data.resources.articles.filter(article => article && article.title).map((article) => ({
-              title: article.title,
-              url: article.url,
-              description: article.description,
-              author: article.author || article.creator,
-              isAIGenerated: true,
-            })),
+            ...(data.resources.articles || [])
+              .filter((article) => article && article.title)
+              .map((article) => ({
+                title: article.title,
+                url: article.url,
+                description: article.description,
+                author: article.author || article.creator,
+                isAIGenerated: true,
+              })),
           ];
         }
 
@@ -2192,13 +2257,15 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.books = [
             ...(updatedModule.resources.books || []),
-            ...data.resources.books.filter(book => book && book.title).map((book) => ({
-              title: book.title,
-              url: book.url,
-              description: book.description,
-              author: book.author || book.creator,
-              isAIGenerated: true,
-            })),
+            ...(data.resources.books || [])
+              .filter((book) => book && book.title)
+              .map((book) => ({
+                title: book.title,
+                url: book.url,
+                description: book.description,
+                author: book.author || book.creator,
+                isAIGenerated: true,
+              })),
           ];
         }
 
@@ -2206,13 +2273,15 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.courses = [
             ...(updatedModule.resources.courses || []),
-            ...data.resources.courses.filter(course => course && course.title).map((course) => ({
-              title: course.title,
-              url: course.url,
-              description: course.description,
-              platform: course.platform || course.author || course.creator,
-              isAIGenerated: true,
-            })),
+            ...(data.resources.courses || [])
+              .filter((course) => course && course.title)
+              .map((course) => ({
+                title: course.title,
+                url: course.url,
+                description: course.description,
+                platform: course.platform || course.author || course.creator,
+                isAIGenerated: true,
+              })),
           ];
         }
 
@@ -2220,13 +2289,15 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.tools = [
             ...(updatedModule.resources.tools || []),
-            ...data.resources.tools.filter(tool => tool && tool.title).map((tool) => ({
-              title: tool.title,
-              url: tool.url,
-              description: tool.description,
-              creator: tool.creator || tool.author,
-              isAIGenerated: true,
-            })),
+            ...(data.resources.tools || [])
+              .filter((tool) => tool && tool.title)
+              .map((tool) => ({
+                title: tool.title,
+                url: tool.url,
+                description: tool.description,
+                creator: tool.creator || tool.author,
+                isAIGenerated: true,
+              })),
           ];
         }
 
@@ -2234,13 +2305,15 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.websites = [
             ...(updatedModule.resources.websites || []),
-            ...data.resources.websites.filter(website => website && website.title).map((website) => ({
-              title: website.title,
-              url: website.url,
-              description: website.description,
-              creator: website.creator || website.author,
-              isAIGenerated: true,
-            })),
+            ...(data.resources.websites || [])
+              .filter((website) => website && website.title)
+              .map((website) => ({
+                title: website.title,
+                url: website.url,
+                description: website.description,
+                creator: website.creator || website.author,
+                isAIGenerated: true,
+              })),
           ];
         }
 
@@ -2251,14 +2324,16 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.websites = [
             ...(updatedModule.resources.websites || []),
-            ...data.resources.githubRepos.filter(repo => repo && repo.title).map((repo) => ({
-              title: repo.title,
-              url: repo.url,
-              description: repo.description,
-              creator: repo.creator || repo.author,
-              isAIGenerated: true,
-              isGithub: true,
-            })),
+            ...(data.resources.githubRepos || [])
+              .filter((repo) => repo && repo.title)
+              .map((repo) => ({
+                title: repo.title,
+                url: repo.url,
+                description: repo.description,
+                creator: repo.creator || repo.author,
+                isAIGenerated: true,
+                isGithub: true,
+              })),
           ];
         }
 
@@ -2266,13 +2341,15 @@ export default function AcademicModuleEditorEnhanced({
           updatedModule.resources = updatedModule.resources || {};
           updatedModule.resources.exercises = [
             ...(updatedModule.resources.exercises || []),
-            ...data.resources.exercises.filter(exercise => exercise && exercise.title).map((exercise) => ({
-              title: exercise.title,
-              url: exercise.url,
-              description: exercise.description,
-              creator: exercise.creator || exercise.author,
-              isAIGenerated: true,
-            })),
+            ...(data.resources.exercises || [])
+              .filter((exercise) => exercise && exercise.title)
+              .map((exercise) => ({
+                title: exercise.title,
+                url: exercise.url,
+                description: exercise.description,
+                creator: exercise.creator || exercise.author,
+                isAIGenerated: true,
+              })),
           ];
         }
 
@@ -2297,6 +2374,16 @@ export default function AcademicModuleEditorEnhanced({
     type,
     isInstructorContent = false,
   }) => {
+    // Debug logging to identify problematic resources
+    console.log(`ResourceSection Debug - ${type}:`, {
+      resourcesCount: resources?.length,
+      resources: resources,
+      hasNullResources: resources?.some((r) => r === null || r === undefined),
+      hasInvalidResources: resources?.some((r) => r && typeof r !== "object"),
+      hasResourcesWithoutTitle: resources?.some(
+        (r) => r && typeof r === "object" && !r.title && !r.name
+      ),
+    });
     if (!resources || resources.length === 0) return null;
 
     const getTypeGradient = () => {
@@ -2368,132 +2455,149 @@ export default function AcademicModuleEditorEnhanced({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {resources.map((resource, index) => {
-              const isEditing =
-                editingResource?.type === type &&
-                editingResource?.index === index;
+            {resources
+              .filter((resource) => {
+                // More robust filtering
+                if (resource == null || resource === undefined) return false;
+                if (typeof resource !== "object") return false;
+                if (!resource.title && !resource.name) return false;
+                return true;
+              })
+              .map((resource, index) => {
+                // Additional safety check
+                if (!resource || typeof resource !== "object") {
+                  console.warn(
+                    "Invalid resource object after filter:",
+                    resource
+                  );
+                  return null;
+                }
 
-              return (
-                <div
-                  key={resource.id || index}
-                  className="group/item bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-4 hover:bg-white/80 hover:shadow-md transition-all duration-300 hover:scale-[1.01]"
-                >
-                  {isEditing ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-bold text-gray-900">
-                          Edit Resource
-                        </h4>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={saveResourceEdit}
-                            className="bg-green-500 hover:bg-green-600 text-white"
-                          >
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={cancelEditingResource}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
+                const isEditing =
+                  editingResource?.type === type &&
+                  editingResource?.index === index;
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-700">
-                            Title
-                          </Label>
-                          <Input
-                            value={editForm.title || editForm.name || ""}
-                            onChange={(e) =>
-                              updateEditForm("title", e.target.value)
-                            }
-                            className="mt-1"
-                            placeholder="Resource title"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium text-gray-700">
-                            URL
-                          </Label>
-                          <Input
-                            value={editForm.url || ""}
-                            onChange={(e) =>
-                              updateEditForm("url", e.target.value)
-                            }
-                            className="mt-1"
-                            placeholder="https://..."
-                          />
-                        </div>
-                        <div className="col-span-full">
-                          <Label className="text-sm font-medium text-gray-700">
-                            Description
-                          </Label>
-                          <Textarea
-                            value={editForm.description || ""}
-                            onChange={(e) =>
-                              updateEditForm("description", e.target.value)
-                            }
-                            className="mt-1"
-                            placeholder="Resource description"
-                            rows={3}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-bold text-gray-900 mb-1">
-                            {resource.title ||
-                              resource.name ||
-                              "Untitled Resource"}
+                return (
+                  <div
+                    key={resource.id || index}
+                    className="group/item bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-4 hover:bg-white/80 hover:shadow-md transition-all duration-300 hover:scale-[1.01]"
+                  >
+                    {isEditing ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-bold text-gray-900">
+                            Edit Resource
                           </h4>
-                          {resource.description && (
-                            <p className="text-sm text-gray-600 mb-2">
-                              {resource.description}
-                            </p>
-                          )}
-                          {resource.url && (
-                            <a
-                              href={resource.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1"
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={saveResourceEdit}
+                              className="bg-green-500 hover:bg-green-600 text-white"
                             >
-                              <ExternalLink className="h-3 w-3" />
-                              Visit Resource
-                            </a>
-                          )}
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditingResource}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEditingResource(type, index)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeResource(type, index)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">
+                              Title
+                            </Label>
+                            <Input
+                              value={editForm.title || editForm.name || ""}
+                              onChange={(e) =>
+                                updateEditForm("title", e.target.value)
+                              }
+                              className="mt-1"
+                              placeholder="Resource title"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">
+                              URL
+                            </Label>
+                            <Input
+                              value={editForm.url || ""}
+                              onChange={(e) =>
+                                updateEditForm("url", e.target.value)
+                              }
+                              className="mt-1"
+                              placeholder="https://..."
+                            />
+                          </div>
+                          <div className="col-span-full">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Description
+                            </Label>
+                            <Textarea
+                              value={editForm.description || ""}
+                              onChange={(e) =>
+                                updateEditForm("description", e.target.value)
+                              }
+                              className="mt-1"
+                              placeholder="Resource description"
+                              rows={3}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-gray-900 mb-1">
+                              {resource?.title ||
+                                resource?.name ||
+                                "Untitled Resource"}
+                            </h4>
+                            {resource?.description && (
+                              <p className="text-sm text-gray-600 mb-2">
+                                {resource.description}
+                              </p>
+                            )}
+                            {resource?.url && (
+                              <a
+                                href={resource.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Visit Resource
+                              </a>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditingResource(type, index)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removeResource(type, index)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </CardContent>
       </Card>
@@ -3173,6 +3277,18 @@ Detailed discussion here..."
                       : subsectionPages.data || [];
                   const currentPageData = pages[currentSubsectionPage];
 
+                  // Ensure currentPageData is valid
+                  if (!currentPageData) {
+                    console.warn(
+                      "Current page data is undefined for subsection:",
+                      {
+                        currentSubsectionPage,
+                        totalPages: pages.length,
+                        subsectionPages,
+                      }
+                    );
+                  }
+
                   return (
                     <Card
                       key={globalIndex}
@@ -3725,10 +3841,13 @@ Detailed discussion here..."
                                 Array.isArray(subsection.pages) ? (
                                 // Legacy pages structure display
                                 <>
-                                  {currentPageData ? (
+                                  {currentPageData &&
+                                  typeof currentPageData === "object" ? (
                                     <div className="prose prose-sm max-w-none">
                                       <h4 className="font-semibold text-md mb-2">
-                                        {currentPageData.title}
+                                        {currentPageData.title ||
+                                          currentPageData.pageTitle ||
+                                          "Page Content"}
                                       </h4>
                                       <UniversalContentRenderer
                                         content={
@@ -3739,9 +3858,9 @@ Detailed discussion here..."
                                                 currentPageData.content
                                               )
                                         }
-                                        renderingMode="math-optimized"
                                         className="page-content"
-                                        enableTelemetry={false}
+                                        enableAnalytics={false}
+                                        accessibilityLabel="Academic page content with mathematical expressions"
                                       />
                                       {currentPageData.keyTakeaway && (
                                         <div className="mt-3 p-2 bg-blue-50 rounded-lg">
@@ -3829,62 +3948,65 @@ Detailed discussion here..."
                                   ) : (
                                     <div className="prose prose-sm max-w-none">
                                       <h4 className="font-semibold text-md mb-2">
-                                        {subsectionPages.data[0].title ||
+                                        {subsectionPages.data?.[0]?.title ||
+                                          subsectionPages.data?.[0]
+                                            ?.pageTitle ||
                                           "Content"}
                                       </h4>
                                       <MathMarkdownRenderer
                                         content={
-                                          subsectionPages.data[0].content ||
+                                          subsectionPages.data?.[0]?.content ||
                                           "No content available"
                                         }
                                       />
                                     </div>
                                   )}
-                                  {subsectionPages.data.length > 1 && (
-                                    <div className="flex items-center justify-end gap-2 mt-4">
-                                      <span className="text-xs text-gray-500">
-                                        Page {currentSubsectionPage + 1} of{" "}
-                                        {subsectionPages.data.length}
-                                      </span>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setCurrentExplanationPageForSubsection(
-                                            globalIndex,
-                                            Math.max(
-                                              0,
-                                              currentSubsectionPage - 1
-                                            )
-                                          );
-                                        }}
-                                        disabled={currentSubsectionPage === 0}
-                                      >
-                                        <ChevronLeft className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setCurrentExplanationPageForSubsection(
-                                            globalIndex,
-                                            Math.min(
-                                              subsectionPages.data.length - 1,
-                                              currentSubsectionPage + 1
-                                            )
-                                          );
-                                        }}
-                                        disabled={
-                                          currentSubsectionPage >=
-                                          subsectionPages.data.length - 1
-                                        }
-                                      >
-                                        <ChevronRight className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  )}
+                                  {Array.isArray(subsectionPages.data) &&
+                                    subsectionPages.data.length > 1 && (
+                                      <div className="flex items-center justify-end gap-2 mt-4">
+                                        <span className="text-xs text-gray-500">
+                                          Page {currentSubsectionPage + 1} of{" "}
+                                          {subsectionPages.data.length}
+                                        </span>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setCurrentExplanationPageForSubsection(
+                                              globalIndex,
+                                              Math.max(
+                                                0,
+                                                currentSubsectionPage - 1
+                                              )
+                                            );
+                                          }}
+                                          disabled={currentSubsectionPage === 0}
+                                        >
+                                          <ChevronLeft className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setCurrentExplanationPageForSubsection(
+                                              globalIndex,
+                                              Math.min(
+                                                subsectionPages.data.length - 1,
+                                                currentSubsectionPage + 1
+                                              )
+                                            );
+                                          }}
+                                          disabled={
+                                            currentSubsectionPage >=
+                                            subsectionPages.data.length - 1
+                                          }
+                                        >
+                                          <ChevronRight className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    )}
 
                                   {/* Enhanced Learning Resources */}
                                   {subsection.resources && (
@@ -3894,7 +4016,10 @@ Detailed discussion here..."
                                       </h5>
 
                                       {/* Books */}
-                                      {subsection.resources.books &&
+                                      {subsection.resources?.books &&
+                                        Array.isArray(
+                                          subsection.resources.books
+                                        ) &&
                                         subsection.resources.books.length >
                                           0 && (
                                           <div className="space-y-2">
@@ -3904,7 +4029,9 @@ Detailed discussion here..."
                                             <div className="grid gap-2">
                                               {subsection.resources.books
                                                 .slice(0, 3)
-                                                .filter(book => book && book.title)
+                                                .filter(
+                                                  (book) => book && book.title
+                                                )
                                                 .map((book, idx) => (
                                                   <div
                                                     key={idx}
@@ -3935,7 +4062,10 @@ Detailed discussion here..."
                                         )}
 
                                       {/* Courses */}
-                                      {subsection.resources.courses &&
+                                      {subsection.resources?.courses &&
+                                        Array.isArray(
+                                          subsection.resources.courses
+                                        ) &&
                                         subsection.resources.courses.length >
                                           0 && (
                                           <div className="space-y-2">
@@ -3945,7 +4075,10 @@ Detailed discussion here..."
                                             <div className="grid gap-2">
                                               {subsection.resources.courses
                                                 .slice(0, 3)
-                                                .filter(course => course && course.title)
+                                                .filter(
+                                                  (course) =>
+                                                    course && course.title
+                                                )
                                                 .map((course, idx) => (
                                                   <div
                                                     key={idx}
@@ -3976,7 +4109,10 @@ Detailed discussion here..."
                                         )}
 
                                       {/* Videos */}
-                                      {subsection.resources.videos &&
+                                      {subsection.resources?.videos &&
+                                        Array.isArray(
+                                          subsection.resources.videos
+                                        ) &&
                                         subsection.resources.videos.length >
                                           0 && (
                                           <div className="space-y-2">
@@ -3986,7 +4122,10 @@ Detailed discussion here..."
                                             <div className="grid gap-2">
                                               {subsection.resources.videos
                                                 .slice(0, 3)
-                                                .filter(video => video && video.title)
+                                                .filter(
+                                                  (video) =>
+                                                    video && video.title
+                                                )
                                                 .map((video, idx) => (
                                                   <div
                                                     key={idx}
@@ -4137,7 +4276,6 @@ Detailed discussion here..."
                                                           content={
                                                             card.question
                                                           }
-                                                          renderingMode="math-optimized"
                                                           className="text-center"
                                                           enableTelemetry={
                                                             false
@@ -4155,7 +4293,6 @@ Detailed discussion here..."
                                                       <div className="text-gray-800 text-sm font-medium leading-snug">
                                                         <UniversalContentRenderer
                                                           content={card.answer}
-                                                          renderingMode="math-optimized"
                                                           className="text-center"
                                                           enableTelemetry={
                                                             false
@@ -4217,7 +4354,6 @@ Detailed discussion here..."
                                                           content={
                                                             card.question
                                                           }
-                                                          renderingMode="math-optimized"
                                                           className="text-center"
                                                           enableTelemetry={
                                                             false
@@ -4235,7 +4371,6 @@ Detailed discussion here..."
                                                       <div className="text-gray-800 text-sm font-medium leading-snug">
                                                         <UniversalContentRenderer
                                                           content={card.answer}
-                                                          renderingMode="math-optimized"
                                                           className="text-center"
                                                           enableTelemetry={
                                                             false
@@ -4289,7 +4424,9 @@ Detailed discussion here..."
                                 </div>
                               ) : subsectionPages.type === "flashcards" &&
                                 subsectionPages.data.flashcards &&
-                                Array.isArray(subsectionPages.data.flashcards) ? (
+                                Array.isArray(
+                                  subsectionPages.data.flashcards
+                                ) ? (
                                 // Academic flashcard content display (exactly 5 cards)
                                 <div className="space-y-4">
                                   <div className="prose prose-sm max-w-none">
@@ -4303,18 +4440,22 @@ Detailed discussion here..."
                                   </div>
 
                                   {/* Show message when no cards exist yet */}
-                                  {subsectionPages.data.flashcards.length === 0 && (
+                                  {subsectionPages.data.flashcards.length ===
+                                    0 && (
                                     <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-dashed border-gray-300 text-center">
                                       <div className="flex items-center justify-center mb-3">
                                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                                          <span className="text-white text-lg">🃏</span>
+                                          <span className="text-white text-lg">
+                                            🃏
+                                          </span>
                                         </div>
                                       </div>
                                       <h5 className="font-semibold text-gray-700 mb-2">
                                         No Flashcards Generated Yet
                                       </h5>
                                       <p className="text-gray-600 text-sm mb-3">
-                                        Generate content for this subsection to see 5 academic flashcards.
+                                        Generate content for this subsection to
+                                        see 5 academic flashcards.
                                       </p>
                                       <div className="text-xs text-gray-500">
                                         Expected: 5 Academic Study Cards
@@ -4323,52 +4464,67 @@ Detailed discussion here..."
                                   )}
 
                                   {/* Flashcards Display */}
-                                  {subsectionPages.data.flashcards.length > 0 && (
+                                  {subsectionPages.data.flashcards.length >
+                                    0 && (
                                     <div className="grid gap-3">
-                                      {subsectionPages.data.flashcards.slice(0, 5).filter(card => card).map((card, cardIndex) => (
-                                        <div
-                                          key={card.id || cardIndex}
-                                          className="perspective-1000"
-                                        >
-                                          <div className="group relative w-full h-32 transform-style-preserve-3d transition-transform duration-500 hover:rotate-y-180">
-                                            {/* Front of card */}
-                                            <div className="absolute inset-0 w-full h-full backface-hidden rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
-                                              <div className="text-center">
-                                                <div className="text-xs text-blue-600 mb-1">
-                                                  Q{cardIndex + 1} • {card.category || 'concept'} • {card.difficulty || 'intermediate'}
+                                      {subsectionPages.data.flashcards
+                                        .slice(0, 5)
+                                        .filter((card) => card)
+                                        .map((card, cardIndex) => (
+                                          <div
+                                            key={card.id || cardIndex}
+                                            className="perspective-1000"
+                                          >
+                                            <div className="group relative w-full h-32 transform-style-preserve-3d transition-transform duration-500 hover:rotate-y-180">
+                                              {/* Front of card */}
+                                              <div className="absolute inset-0 w-full h-full backface-hidden rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+                                                <div className="text-center">
+                                                  <div className="text-xs text-blue-600 mb-1">
+                                                    Q{cardIndex + 1} •{" "}
+                                                    {card.category || "concept"}{" "}
+                                                    •{" "}
+                                                    {card.difficulty ||
+                                                      "intermediate"}
+                                                  </div>
+                                                  <p className="text-sm font-medium text-blue-900 leading-relaxed">
+                                                    {card.question}
+                                                  </p>
                                                 </div>
-                                                <p className="text-sm font-medium text-blue-900 leading-relaxed">
-                                                  {card.question}
-                                                </p>
                                               </div>
-                                            </div>
-                                            {/* Back of card */}
-                                            <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
-                                              <div className="text-center">
-                                                <div className="text-xs text-green-600 mb-1">
-                                                  Answer
+                                              {/* Back of card */}
+                                              <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
+                                                <div className="text-center">
+                                                  <div className="text-xs text-green-600 mb-1">
+                                                    Answer
+                                                  </div>
+                                                  <p className="text-sm text-green-900 leading-relaxed">
+                                                    {card.answer}
+                                                  </p>
                                                 </div>
-                                                <p className="text-sm text-green-900 leading-relaxed">
-                                                  {card.answer}
-                                                </p>
                                               </div>
                                             </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        ))}
                                     </div>
                                   )}
 
                                   {/* Metadata */}
                                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
                                     <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                      🃏 {subsectionPages.data.flashcards?.length || 0} Study Cards
+                                      🃏{" "}
+                                      {subsectionPages.data.flashcards
+                                        ?.length || 0}{" "}
+                                      Study Cards
                                     </span>
                                     <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                      📊 {subsectionPages.data.difficulty || "Intermediate"}
+                                      📊{" "}
+                                      {subsectionPages.data.difficulty ||
+                                        "Intermediate"}
                                     </span>
                                     <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                      ⏱️ {subsectionPages.data.estimatedTime || "10-15 min"}
+                                      ⏱️{" "}
+                                      {subsectionPages.data.estimatedTime ||
+                                        "10-15 min"}
                                     </span>
                                   </div>
                                 </div>
@@ -4391,7 +4547,10 @@ Detailed discussion here..."
                                             variant="outline"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              startEditingPage(globalIndex, currentSubsectionPage);
+                                              startEditingPage(
+                                                globalIndex,
+                                                currentSubsectionPage
+                                              );
                                             }}
                                             className="text-xs"
                                           >
@@ -4409,77 +4568,113 @@ Detailed discussion here..."
                                           </Badge>
                                         </div>
                                       </div>
-                                      
-                                      {editingPage && 
-                                       editingPage.subsectionIndex === globalIndex && 
-                                       editingPage.pageIndex === currentSubsectionPage ? (
+
+                                      {editingPage &&
+                                      editingPage.subsectionIndex ===
+                                        globalIndex &&
+                                      editingPage.pageIndex ===
+                                        currentSubsectionPage ? (
                                         // Edit mode
                                         <div className="space-y-4 border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
                                           <div className="flex items-center justify-between">
-                                            <h5 className="font-medium text-blue-800">Editing Page Content</h5>
+                                            <h5 className="font-medium text-blue-800">
+                                              Editing Page Content
+                                            </h5>
                                             <div className="flex gap-2">
-                                              <Button size="sm" onClick={savePageEdit}>
+                                              <Button
+                                                size="sm"
+                                                onClick={savePageEdit}
+                                              >
                                                 <CheckCircle className="h-3 w-3 mr-1" />
                                                 Save
                                               </Button>
-                                              <Button size="sm" variant="outline" onClick={cancelPageEdit}>
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={cancelPageEdit}
+                                              >
                                                 <X className="h-3 w-3 mr-1" />
                                                 Cancel
                                               </Button>
                                             </div>
                                           </div>
-                                          
+
                                           <div className="space-y-3">
                                             <div>
-                                              <Label htmlFor="edit-page-title" className="text-sm font-medium">
+                                              <Label
+                                                htmlFor="edit-page-title"
+                                                className="text-sm font-medium"
+                                              >
                                                 Page Title
                                               </Label>
                                               <Input
                                                 id="edit-page-title"
                                                 value={editingTitle}
-                                                onChange={(e) => setEditingTitle(e.target.value)}
+                                                onChange={(e) =>
+                                                  setEditingTitle(
+                                                    e.target.value
+                                                  )
+                                                }
                                                 className="mt-1"
                                                 placeholder="Enter page title"
                                               />
                                             </div>
-                                            
+
                                             <div>
-                                              <Label htmlFor="edit-page-content" className="text-sm font-medium">
+                                              <Label
+                                                htmlFor="edit-page-content"
+                                                className="text-sm font-medium"
+                                              >
                                                 Content (Markdown supported)
                                               </Label>
                                               <Textarea
                                                 id="edit-page-content"
                                                 value={editingContent}
-                                                onChange={(e) => setEditingContent(e.target.value)}
+                                                onChange={(e) =>
+                                                  setEditingContent(
+                                                    e.target.value
+                                                  )
+                                                }
                                                 rows={15}
                                                 className="mt-1 font-mono text-sm"
                                                 placeholder="Enter page content using Markdown formatting..."
                                               />
                                             </div>
-                                            
+
                                             <div>
-                                              <Label htmlFor="edit-page-takeaway" className="text-sm font-medium">
+                                              <Label
+                                                htmlFor="edit-page-takeaway"
+                                                className="text-sm font-medium"
+                                              >
                                                 Key Takeaway
                                               </Label>
                                               <Input
                                                 id="edit-page-takeaway"
                                                 value={editingTakeaway}
-                                                onChange={(e) => setEditingTakeaway(e.target.value)}
+                                                onChange={(e) =>
+                                                  setEditingTakeaway(
+                                                    e.target.value
+                                                  )
+                                                }
                                                 className="mt-1"
                                                 placeholder="Enter key takeaway for this page"
                                               />
                                             </div>
                                           </div>
-                                          
+
                                           {/* Preview */}
                                           <div className="border-t pt-3">
-                                            <Label className="text-sm font-medium mb-2 block">Preview:</Label>
+                                            <Label className="text-sm font-medium mb-2 block">
+                                              Preview:
+                                            </Label>
                                             <div className="bg-white rounded border p-3 max-h-40 overflow-y-auto">
                                               <UniversalContentRenderer
-                                                content={editingContent || "No content to preview"}
-                                                renderingMode="math-optimized"
+                                                content={
+                                                  editingContent ||
+                                                  "No content to preview"
+                                                }
                                                 className="text-sm"
-                                                enableTelemetry={false}
+                                                enableAnalytics={false}
                                               />
                                             </div>
                                           </div>
@@ -4496,9 +4691,8 @@ Detailed discussion here..."
                                                     currentPageData.content
                                                   )
                                             }
-                                            renderingMode="math-optimized"
                                             className="page-content"
-                                            enableTelemetry={false}
+                                            enableAnalytics={false}
                                           />
                                           {currentPageData.keyTakeaway && (
                                             <div className="mt-3 p-2 bg-blue-50 rounded-lg">
@@ -4910,46 +5104,76 @@ Detailed discussion here..."
             {/* Resource Categories */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {Object.entries(resourceCategories).map(
-                ([category, { icon: Icon, label, color }]) => (
-                  <div key={category}>
-                    {localModule.resources?.[category]?.length > 0 ? (
-                      <ResourceSection
-                        title={label}
-                        icon={Icon}
-                        resources={localModule.resources[category]}
-                        type={category}
-                      />
-                    ) : (
-                      <Card className="border-dashed border-2 border-gray-200 hover:border-gray-300 transition-colors">
-                        <CardContent className="text-center py-8">
-                          <Icon
-                            className={`h-12 w-12 text-gray-300 mx-auto mb-4`}
-                          />
-                          <h3 className="text-lg font-medium text-gray-500 mb-2">
-                            No {label} Added Yet
-                          </h3>
-                          <div className="text-gray-400 mb-4">
-                            Add your first {label.toLowerCase()} resource
-                          </div>
-                          <Button
-                            onClick={() => {
-                              setNewResource((prev) => ({
-                                ...prev,
-                                type: category.slice(0, -1),
-                              }));
-                              setShowManualResourceForm(true);
-                            }}
-                            variant="outline"
-                            className={`border-${color}-300 text-${color}-700 hover:bg-${color}-50`}
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add First {label.slice(0, -1)}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                )
+                ([category, categoryData]) => {
+                  // Safety check for resourceCategories entries
+                  if (
+                    !category ||
+                    !categoryData ||
+                    typeof categoryData !== "object"
+                  ) {
+                    console.warn("Invalid resourceCategories entry:", {
+                      category,
+                      categoryData,
+                    });
+                    return null;
+                  }
+
+                  const { icon: Icon, label, color } = categoryData;
+
+                  if (!Icon || !label || !color) {
+                    console.warn(
+                      "Invalid resourceCategories entry properties:",
+                      {
+                        category,
+                        Icon,
+                        label,
+                        color,
+                      }
+                    );
+                    return null;
+                  }
+
+                  return (
+                    <div key={category}>
+                      {localModule.resources?.[category]?.length > 0 ? (
+                        <ResourceSection
+                          title={label}
+                          icon={Icon}
+                          resources={localModule.resources[category]}
+                          type={category}
+                        />
+                      ) : (
+                        <Card className="border-dashed border-2 border-gray-200 hover:border-gray-300 transition-colors">
+                          <CardContent className="text-center py-8">
+                            <Icon
+                              className={`h-12 w-12 text-gray-300 mx-auto mb-4`}
+                            />
+                            <h3 className="text-lg font-medium text-gray-500 mb-2">
+                              No {label} Added Yet
+                            </h3>
+                            <div className="text-gray-400 mb-4">
+                              Add your first {label.toLowerCase()} resource
+                            </div>
+                            <Button
+                              onClick={() => {
+                                setNewResource((prev) => ({
+                                  ...prev,
+                                  type: category.slice(0, -1),
+                                }));
+                                setShowManualResourceForm(true);
+                              }}
+                              variant="outline"
+                              className={`border-${color}-300 text-${color}-700 hover:bg-${color}-50`}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add First {label.slice(0, -1)}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  );
+                }
               )}
             </div>
 
@@ -4996,7 +5220,7 @@ Detailed discussion here..."
             </Card>
 
             {/* Manual Resource Form */}
-            {showManualResourceForm && (
+            {showManualResourceForm && newResource && (
               <Card className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-2 border-amber-200 shadow-xl">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-3 text-xl text-amber-800">
@@ -5010,7 +5234,7 @@ Detailed discussion here..."
                       Resource Type
                     </Label>
                     <Select
-                      value={newResource.type}
+                      value={newResource?.type || "article"}
                       onValueChange={(value) =>
                         setNewResource((prev) => ({ ...prev, type: value }))
                       }
@@ -5070,7 +5294,7 @@ Detailed discussion here..."
                       Title
                     </Label>
                     <Input
-                      value={newResource.title}
+                      value={newResource?.title || ""}
                       onChange={(e) =>
                         setNewResource((prev) => ({
                           ...prev,
@@ -5087,7 +5311,7 @@ Detailed discussion here..."
                       URL (optional)
                     </Label>
                     <Input
-                      value={newResource.url}
+                      value={newResource?.url || ""}
                       onChange={(e) =>
                         setNewResource((prev) => ({
                           ...prev,
@@ -5104,7 +5328,7 @@ Detailed discussion here..."
                       Description
                     </Label>
                     <Textarea
-                      value={newResource.description}
+                      value={newResource?.description || ""}
                       onChange={(e) =>
                         setNewResource((prev) => ({
                           ...prev,
@@ -5120,7 +5344,7 @@ Detailed discussion here..."
                   <div className="flex items-center gap-4">
                     <Button
                       onClick={handleAddManualResource}
-                      disabled={!newResource.title || !newResource.type}
+                      disabled={!newResource?.title || !newResource?.type}
                       className="bg-amber-500 hover:bg-amber-600 text-white"
                     >
                       <Plus className="h-4 w-4 mr-2" />

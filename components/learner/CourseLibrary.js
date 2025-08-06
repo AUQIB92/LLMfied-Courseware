@@ -1,17 +1,23 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer"
-import { 
-  Search, 
-  BookOpen, 
-  Clock, 
-  Users, 
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer";
+import {
+  Search,
+  BookOpen,
+  Clock,
+  Users,
   Star,
   Play,
   Award,
@@ -39,260 +45,353 @@ import {
   Globe,
   Code,
   Palette,
-  Trophy
-} from "lucide-react"
-import enrollmentCache from "@/lib/enrollmentCache"
+  Trophy,
+} from "lucide-react";
+import enrollmentCache from "@/lib/enrollmentCache";
 
 export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedLevel, setSelectedLevel] = useState("all")
-  const [showCompetitiveOnly, setShowCompetitiveOnly] = useState(false)
-  const [courses, setCourses] = useState([])
-  const [enrollments, setEnrollments] = useState({})
-  const [enrollmentLoading, setEnrollmentLoading] = useState({})
-  const [enrollmentAttempts, setEnrollmentAttempts] = useState(new Set()) // Track enrollment attempts
-  const [instructors, setInstructors] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [uiUpdateTrigger, setUiUpdateTrigger] = useState(0) // Force UI updates
-  const [viewingExamGeniusCourse, setViewingExamGeniusCourse] = useState(null)
-  const { getAuthHeaders, user } = useAuth()
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedLevel, setSelectedLevel] = useState("all");
+  const [showCompetitiveOnly, setShowCompetitiveOnly] = useState(false);
+  const [showAcademicCourses, setShowAcademicCourses] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [academicCourses, setAcademicCourses] = useState([]);
+  const [enrollments, setEnrollments] = useState({});
+  const [academicEnrollments, setAcademicEnrollments] = useState({});
+  const [enrollmentLoading, setEnrollmentLoading] = useState({});
+  const [enrollmentAttempts, setEnrollmentAttempts] = useState(new Set()); // Track enrollment attempts
+  const [instructors, setInstructors] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [uiUpdateTrigger, setUiUpdateTrigger] = useState(0); // Force UI updates
+  const [viewingExamGeniusCourse, setViewingExamGeniusCourse] = useState(null);
+  const { getAuthHeaders, user } = useAuth();
 
   // Fetch all published courses and enrollment status on component mount
   useEffect(() => {
-    fetchCourses()
-    initializeEnrollments()
-  }, [showCompetitiveOnly])
+    fetchCourses();
+    fetchAcademicCourses();
+    initializeEnrollments();
+    initializeAcademicEnrollments();
+  }, [showCompetitiveOnly, showAcademicCourses]);
 
   // Fetch instructor details when courses change
   useEffect(() => {
     if (courses.length > 0) {
-      fetchInstructorDetails()
+      fetchInstructorDetails();
     }
-  }, [courses])
+  }, [courses]);
 
   // Subscribe to enrollment cache updates
   useEffect(() => {
     const unsubscribe = enrollmentCache.subscribe((event, data) => {
-      console.log(`📡 CourseLibrary received enrollment event:`, event, data)
-      
+      console.log(`📡 CourseLibrary received enrollment event:`, event, data);
+
       switch (event) {
-        case 'enrollment_updated':
-          console.log(`🔄 Updating enrollment state for course ${data.courseId}:`, data.isEnrolled ? 'ENROLLED' : 'NOT ENROLLED')
-          setEnrollments(prev => {
+        case "enrollment_updated":
+          console.log(
+            `🔄 Updating enrollment state for course ${data.courseId}:`,
+            data.isEnrolled ? "ENROLLED" : "NOT ENROLLED"
+          );
+          setEnrollments((prev) => {
             const newState = {
-            ...prev,
-            [data.courseId]: data.isEnrolled ? data.enrollment : null
-            }
-            console.log(`📋 New enrollment state:`, newState)
-            return newState
-          })
-          
+              ...prev,
+              [data.courseId]: data.isEnrolled ? data.enrollment : null,
+            };
+            console.log(`📋 New enrollment state:`, newState);
+            return newState;
+          });
+
           // Force UI update to reflect enrollment changes
-          setUiUpdateTrigger(prev => prev + 1)
-          
+          setUiUpdateTrigger((prev) => prev + 1);
+
           // Notify parent component
           if (onEnrollmentChange) {
-            onEnrollmentChange(data.courseId, data.isEnrolled)
+            onEnrollmentChange(data.courseId, data.isEnrolled);
           }
-          break
-          
-        case 'enrollment_error':
-          console.error(`❌ Enrollment error for course ${data.courseId}:`, data.error)
-          
+          break;
+
+        case "enrollment_error":
+          console.error(
+            `❌ Enrollment error for course ${data.courseId}:`,
+            data.error
+          );
+
           // Clear loading state for the failed course
-          setEnrollmentLoading(prev => ({
+          setEnrollmentLoading((prev) => ({
             ...prev,
-            [data.courseId]: false
-          }))
-          
+            [data.courseId]: false,
+          }));
+
           // Clear enrollment attempt tracking
-          setEnrollmentAttempts(prev => {
-            const newSet = new Set(prev)
-            newSet.delete(data.courseId)
-            return newSet
-          })
-          
+          setEnrollmentAttempts((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(data.courseId);
+            return newSet;
+          });
+
           // Force UI re-render to update button states
-          setUiUpdateTrigger(prev => prev + 1)
-          
+          setUiUpdateTrigger((prev) => prev + 1);
+
           // The enrollment cache already shows the error notification,
           // so we don't need to show another one here
-          break
-          
-        case 'enrollments_synced':
-          // Refresh enrollment data after bulk sync
-          initializeEnrollments()
-          break
-      }
-    })
+          break;
 
-    return unsubscribe
-  }, [onEnrollmentChange])
+        case "enrollments_synced":
+          // Refresh enrollment data after bulk sync
+          initializeEnrollments();
+          break;
+      }
+    });
+
+    return unsubscribe;
+  }, [onEnrollmentChange]);
 
   const fetchInstructorDetails = async () => {
-    const instructorIds = [...new Set(courses.map(course => course.educatorId).filter(Boolean))]
-    
-    if (instructorIds.length === 0) return
-    
-    console.log('Fetching instructor details for IDs:', instructorIds)
-    
+    const instructorIds = [
+      ...new Set(courses.map((course) => course.educatorId).filter(Boolean)),
+    ];
+
+    if (instructorIds.length === 0) return;
+
+    console.log("Fetching instructor details for IDs:", instructorIds);
+
     const instructorPromises = instructorIds.map(async (educatorId) => {
       try {
-        const response = await fetch(`/api/users/${educatorId}`)
+        const response = await fetch(`/api/users/${educatorId}`);
         if (response.ok) {
-          const data = await response.json()
-          return { id: educatorId, data: data.user }
+          const data = await response.json();
+          return { id: educatorId, data: data.user };
         } else {
-          console.warn(`Failed to fetch instructor ${educatorId}`)
-          return { id: educatorId, data: null }
+          console.warn(`Failed to fetch instructor ${educatorId}`);
+          return { id: educatorId, data: null };
         }
       } catch (error) {
-        console.warn(`Error fetching instructor ${educatorId}:`, error)
-        return { id: educatorId, data: null }
+        console.warn(`Error fetching instructor ${educatorId}:`, error);
+        return { id: educatorId, data: null };
       }
-    })
+    });
 
     try {
-      const instructorResults = await Promise.all(instructorPromises)
-      const instructorMap = {}
-      
+      const instructorResults = await Promise.all(instructorPromises);
+      const instructorMap = {};
+
       instructorResults.forEach(({ id, data }) => {
-        instructorMap[id] = data
-      })
-      
-      setInstructors(instructorMap)
-      console.log('Instructor data loaded:', instructorMap)
+        instructorMap[id] = data;
+      });
+
+      setInstructors(instructorMap);
+      console.log("Instructor data loaded:", instructorMap);
     } catch (error) {
-      console.error('Error fetching instructor details:', error)
+      console.error("Error fetching instructor details:", error);
     }
-  }
+  };
 
   const getInstructorInfo = (course) => {
-    const instructorData = instructors[course.educatorId]
-    
+    const instructorData = instructors[course.educatorId];
+
     if (instructorData) {
       return {
-        name: instructorData.name || 'Unknown Instructor',
+        name: instructorData.name || "Unknown Instructor",
         avatar: instructorData.avatar || null,
-        title: instructorData.title || '',
-        organization: instructorData.organization || ''
-      }
+        title: instructorData.title || "",
+        organization: instructorData.organization || "",
+      };
     }
-    
+
     // Fallback to placeholder while loading or if instructor not found
     return {
-      name: 'Loading...',
+      name: "Loading...",
       avatar: null,
-      title: '',
-      organization: ''
-    }
-  }
+      title: "",
+      organization: "",
+    };
+  };
 
   const fetchCourses = async () => {
     try {
-      setError(null) // Clear previous errors
-      console.log('Fetching courses from API...')
-      
+      setError(null); // Clear previous errors
+      console.log("Fetching courses from API...");
+
       // Add isExamGenius parameter to include ExamGenius courses
-      const url = showCompetitiveOnly 
-        ? '/api/courses?status=published&isExamGenius=true'
-        : '/api/courses?status=published'
-        
+      const url = showCompetitiveOnly
+        ? "/api/courses?status=published&isExamGenius=true"
+        : "/api/courses?status=published";
+
       const response = await fetch(url, {
         headers: getAuthHeaders(),
-      })
-      
-      console.log('Response status:', response.status)
-      
+      });
+
+      console.log("Response status:", response.status);
+
       if (response.ok) {
-        const data = await response.json()
-        console.log('API response data:', data)
-        
+        const data = await response.json();
+        console.log("API response data:", data);
+
         // Handle different response formats
         if (Array.isArray(data)) {
-          setCourses(data)
-          console.log(`Set ${data.length} courses`)
+          setCourses(data);
+          console.log(`Set ${data.length} courses`);
         } else if (data && Array.isArray(data.courses)) {
-          setCourses(data.courses)
-          console.log(`Set ${data.courses.length} courses from data.courses`)
+          setCourses(data.courses);
+          console.log(`Set ${data.courses.length} courses from data.courses`);
         } else if (data && data.data && Array.isArray(data.data)) {
-          setCourses(data.data)
-          console.log(`Set ${data.data.length} courses from data.data`)
+          setCourses(data.data);
+          console.log(`Set ${data.data.length} courses from data.data`);
         } else {
-          console.warn('Unexpected response format:', data)
-          setCourses([])
-          setError('Unexpected response format from API')
+          console.warn("Unexpected response format:", data);
+          setCourses([]);
+          setError("Unexpected response format from API");
         }
       } else {
-        const errorText = await response.text()
-        const errorMessage = `API Error: ${response.status} - ${errorText}`
-        console.error(errorMessage)
-        setError(errorMessage)
-        setCourses([])
+        const errorText = await response.text();
+        const errorMessage = `API Error: ${response.status} - ${errorText}`;
+        console.error(errorMessage);
+        setError(errorMessage);
+        setCourses([]);
       }
     } catch (error) {
-      const errorMessage = `Network error: ${error.message}`
-      console.error('Network error while fetching courses:', error)
-      setError(errorMessage)
-      setCourses([])
+      const errorMessage = `Network error: ${error.message}`;
+      console.error("Network error while fetching courses:", error);
+      setError(errorMessage);
+      setCourses([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const fetchAcademicCourses = async () => {
+    try {
+      console.log("🎓 Fetching academic courses...");
+
+      const response = await fetch("/api/academic-courses?status=published", {
+        headers: getAuthHeaders(),
+      });
+
+      console.log("Academic courses response status:", response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Academic courses API response data:", data);
+
+        if (Array.isArray(data)) {
+          setAcademicCourses(data);
+          console.log(`Set ${data.length} academic courses`);
+        } else {
+          console.warn("Unexpected academic courses response format:", data);
+          setAcademicCourses([]);
+        }
+      } else {
+        console.error("Failed to fetch academic courses:", response.status);
+        setAcademicCourses([]);
+      }
+    } catch (error) {
+      console.error("Error fetching academic courses:", error);
+      setAcademicCourses([]);
+    }
+  };
+
+  const initializeAcademicEnrollments = async () => {
+    try {
+      console.log("🎓 Initializing academic course enrollments...");
+
+      const response = await fetch("/api/academic-enrollment", {
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        const enrollments = await response.json();
+        console.log("✅ Academic enrollments fetched:", enrollments);
+
+        const enrollmentObj = {};
+        enrollments.forEach((enrollment) => {
+          enrollmentObj[enrollment.courseId] = enrollment;
+        });
+
+        setAcademicEnrollments(enrollmentObj);
+        console.log("📋 Academic enrollments mapped:", enrollmentObj);
+      } else {
+        console.warn(
+          "⚠️ Failed to fetch academic enrollments:",
+          response.status
+        );
+        setAcademicEnrollments({});
+      }
+    } catch (error) {
+      console.error("❌ Failed to initialize academic enrollments:", error);
+      setAcademicEnrollments({});
+    }
+  };
 
   const initializeEnrollments = async () => {
     try {
-      console.log('🚀 Initializing enrollments using cache system (force refresh from DB)')
-      
+      console.log(
+        "🚀 Initializing enrollments using cache system (force refresh from DB)"
+      );
+
       // Force refresh from database to ensure we have the latest enrollment data
-      console.log('🔄 Initializing enrollments from cache...')
-      const { enrollments: enrollmentMap, cached, stale, error } = await enrollmentCache.getAllEnrollments(true)
-      
+      console.log("🔄 Initializing enrollments from cache...");
+      const {
+        enrollments: enrollmentMap,
+        cached,
+        stale,
+        error,
+      } = await enrollmentCache.getAllEnrollments(true);
+
       // Convert Map to object for state
-      const enrollmentObj = {}
+      const enrollmentObj = {};
       enrollmentMap.forEach((enrollment, courseId) => {
-        enrollmentObj[courseId] = enrollment
-      })
-      
-      console.log('✅ Enrollments initialized:', {
+        enrollmentObj[courseId] = enrollment;
+      });
+
+      console.log("✅ Enrollments initialized:", {
         count: Object.keys(enrollmentObj).length,
         cached,
         stale,
-        error
-      })
-      
+        error,
+      });
+
       if (error) {
-        console.warn('⚠️ Enrollment cache had errors but returned data:', error)
+        console.warn(
+          "⚠️ Enrollment cache had errors but returned data:",
+          error
+        );
         // Show a non-blocking notification to user
         if (window.showToast) {
-          window.showToast('Warning: Some enrollment data may be outdated', 'warning')
+          window.showToast(
+            "Warning: Some enrollment data may be outdated",
+            "warning"
+          );
         }
       }
-      
-      setEnrollments(enrollmentObj)
+
+      setEnrollments(enrollmentObj);
     } catch (error) {
-      console.error('❌ Failed to initialize enrollments:', error)
-      setEnrollments({})
-      
+      console.error("❌ Failed to initialize enrollments:", error);
+      setEnrollments({});
+
       // Show user-friendly error message
       if (window.showToast) {
-        window.showToast('Unable to load your enrollments. Please try refreshing the page.', 'error')
+        window.showToast(
+          "Unable to load your enrollments. Please try refreshing the page.",
+          "error"
+        );
       }
     }
-  }
+  };
 
   const handleEnrollment = async (courseId) => {
-    console.log('🎯 Starting enrollment for course:', courseId)
-    
+    console.log("🎯 Starting enrollment for course:", courseId);
+
     // Prevent double-enrollment by checking current state first
     if (isEnrolled(courseId)) {
-      console.log('🚨 Already enrolled in this course, no action needed')
-      
+      console.log("🚨 Already enrolled in this course, no action needed");
+
       // Show notification that user is already enrolled
-      const notification = document.createElement('div')
-      notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+      const notification = document.createElement("div");
+      notification.className =
+        "fixed top-8 right-8 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
       notification.innerHTML = `
         <div class="flex items-center gap-3">
           <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -302,52 +401,53 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
           </div>
           <span class="font-semibold">Already enrolled in this course!</span>
         </div>
-      `
-      document.body.appendChild(notification)
-      
-      setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+      `;
+      document.body.appendChild(notification);
+
+      setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
       setTimeout(() => {
-        notification.style.transform = 'translateX(100%)'
+        notification.style.transform = "translateX(100%)";
         setTimeout(() => {
           if (document.body.contains(notification)) {
-            document.body.removeChild(notification)
+            document.body.removeChild(notification);
           }
-        }, 500)
-      }, 3000)
-      
-      return
+        }, 500);
+      }, 3000);
+
+      return;
     }
-    
+
     // Prevent multiple simultaneous enrollment attempts
     if (isEnrollmentInProgress(courseId)) {
-      console.log('🔄 Enrollment already in progress for this course')
-      return
+      console.log("🔄 Enrollment already in progress for this course");
+      return;
     }
-    
+
     // Mark enrollment attempt as started - this immediately prevents duplicate attempts
-    setEnrollmentAttempts(prev => new Set([...prev, courseId]))
-    setEnrollmentLoading(prev => ({ ...prev, [courseId]: true }))
-    
+    setEnrollmentAttempts((prev) => new Set([...prev, courseId]));
+    setEnrollmentLoading((prev) => ({ ...prev, [courseId]: true }));
+
     try {
-      console.log('📡 Making enrollment API request...')
-      const response = await fetch('/api/enrollment', {
-        method: 'POST',
+      console.log("📡 Making enrollment API request...");
+      const response = await fetch("/api/enrollment", {
+        method: "POST",
         headers: {
           ...getAuthHeaders(),
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ courseId }),
-      })
+      });
 
-      const data = await response.json()
-      
+      const data = await response.json();
+
       if (response.status === 409) {
         // Server detected duplicate enrollment
-        console.log('🚨 Server prevented duplicate enrollment')
-        
+        console.log("🚨 Server prevented duplicate enrollment");
+
         // Show "already enrolled" notification
-        const notification = document.createElement('div')
-        notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        const notification = document.createElement("div");
+        notification.className =
+          "fixed top-8 right-8 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
         notification.innerHTML = `
           <div class="flex items-center gap-3">
             <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -357,49 +457,50 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
             </div>
             <span class="font-semibold">Already enrolled in this course!</span>
           </div>
-        `
-        document.body.appendChild(notification)
-        
-        setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
         setTimeout(() => {
-          notification.style.transform = 'translateX(100%)'
+          notification.style.transform = "translateX(100%)";
           setTimeout(() => {
             if (document.body.contains(notification)) {
-              document.body.removeChild(notification)
+              document.body.removeChild(notification);
             }
-          }, 500)
-        }, 3000)
-        
+          }, 500);
+        }, 3000);
+
         // Force refresh enrollment state from server
-        await enrollmentCache.getEnrollmentStatus(courseId, true)
-        setUiUpdateTrigger(prev => prev + 1)
-        
-        return
+        await enrollmentCache.getEnrollmentStatus(courseId, true);
+        setUiUpdateTrigger((prev) => prev + 1);
+
+        return;
       }
 
       if (response.ok) {
-        console.log('✅ Enrollment successful:', data)
-        
+        console.log("✅ Enrollment successful:", data);
+
         // Update local state immediately
-        setEnrollments(prev => ({
+        setEnrollments((prev) => ({
           ...prev,
-          [courseId]: data.enrollment
-        }))
-        
+          [courseId]: data.enrollment,
+        }));
+
         // Update cache
-        await enrollmentCache.updateEnrollment(courseId, true, data.enrollment)
-        
+        await enrollmentCache.updateEnrollment(courseId, true, data.enrollment);
+
         // Force UI update
-        setUiUpdateTrigger(prev => prev + 1)
-        
+        setUiUpdateTrigger((prev) => prev + 1);
+
         // Notify parent component of enrollment change
         if (onEnrollmentChange) {
-          onEnrollmentChange(courseId, true)
+          onEnrollmentChange(courseId, true);
         }
-        
+
         // Show success notification
-        const notification = document.createElement('div')
-        notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        const notification = document.createElement("div");
+        notification.className =
+          "fixed top-8 right-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
         notification.innerHTML = `
           <div class="flex items-center gap-3">
             <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -409,25 +510,25 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
             </div>
             <span class="font-semibold">Successfully enrolled!</span>
           </div>
-        `
-        document.body.appendChild(notification)
-        
-        setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
         setTimeout(() => {
-          notification.style.transform = 'translateX(100%)'
+          notification.style.transform = "translateX(100%)";
           setTimeout(() => {
             if (document.body.contains(notification)) {
-              document.body.removeChild(notification)
+              document.body.removeChild(notification);
             }
-          }, 500)
-        }, 2500)
-        
+          }, 500);
+        }, 2500);
       } else {
-        console.error('❌ Enrollment failed:', data)
-        
+        console.error("❌ Enrollment failed:", data);
+
         // Show error notification
-        const notification = document.createElement('div')
-        notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+        const notification = document.createElement("div");
+        notification.className =
+          "fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
         notification.innerHTML = `
           <div class="flex items-center gap-3">
             <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -435,28 +536,30 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
               </svg>
             </div>
-            <span class="font-semibold">Enrollment failed: ${data.error || 'Unknown error'}</span>
+            <span class="font-semibold">Enrollment failed: ${
+              data.error || "Unknown error"
+            }</span>
           </div>
-        `
-        document.body.appendChild(notification)
-        
-        setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
         setTimeout(() => {
-          notification.style.transform = 'translateX(100%)'
-        setTimeout(() => {
+          notification.style.transform = "translateX(100%)";
+          setTimeout(() => {
             if (document.body.contains(notification)) {
-              document.body.removeChild(notification)
+              document.body.removeChild(notification);
             }
-          }, 500)
-        }, 4000)
+          }, 500);
+        }, 4000);
       }
-      
     } catch (error) {
-      console.error('🔥 Enrollment error:', error)
-      
+      console.error("🔥 Enrollment error:", error);
+
       // Show network error notification
-      const notification = document.createElement('div')
-      notification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+      const notification = document.createElement("div");
+      notification.className =
+        "fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
       notification.innerHTML = `
         <div class="flex items-center gap-3">
           <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -466,48 +569,170 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
           </div>
           <span class="font-semibold">Network error. Please try again.</span>
         </div>
-      `
-      document.body.appendChild(notification)
-      
-      setTimeout(() => notification.style.transform = 'translateX(0)', 100)
+      `;
+      document.body.appendChild(notification);
+
+      setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
       setTimeout(() => {
-        notification.style.transform = 'translateX(100%)'
+        notification.style.transform = "translateX(100%)";
         setTimeout(() => {
           if (document.body.contains(notification)) {
-            document.body.removeChild(notification)
+            document.body.removeChild(notification);
           }
-        }, 500)
-             }, 4000)
-       
+        }, 500);
+      }, 4000);
     } finally {
-      setEnrollmentLoading(prev => ({ ...prev, [courseId]: false }))
+      setEnrollmentLoading((prev) => ({ ...prev, [courseId]: false }));
       // Clear enrollment attempt tracking
-      setEnrollmentAttempts(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(courseId)
-        return newSet
-      })
+      setEnrollmentAttempts((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(courseId);
+        return newSet;
+      });
     }
-  }
+  };
+
+  const handleAcademicEnrollment = async (courseId) => {
+    console.log("🎓 Starting academic course enrollment for course:", courseId);
+
+    if (academicEnrollments[courseId]) {
+      console.log("🚨 Already enrolled in this academic course");
+      return;
+    }
+
+    if (enrollmentLoading[courseId]) {
+      console.log("🔄 Academic enrollment already in progress");
+      return;
+    }
+
+    setEnrollmentLoading((prev) => ({ ...prev, [courseId]: true }));
+
+    try {
+      console.log("📡 Sending academic course enrollment request...");
+      const response = await fetch("/api/academic-enrollment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ courseId }),
+      });
+
+      console.log(
+        "📡 Academic course enrollment response:",
+        response.status,
+        response.statusText
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ Academic course enrollment successful:", data);
+
+        // Update academic enrollments state
+        setAcademicEnrollments((prev) => ({
+          ...prev,
+          [courseId]: data,
+        }));
+
+        // Notify parent component
+        if (onEnrollmentChange) {
+          onEnrollmentChange(courseId, true);
+        }
+
+        // Show success notification
+        const notification = document.createElement("div");
+        notification.className =
+          "fixed top-8 right-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
+        notification.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <span class="font-semibold">Enrolled in academic course successfully! 🎓</span>
+          </div>
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
+        setTimeout(() => {
+          notification.style.transform = "translateX(100%)";
+          setTimeout(() => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification);
+            }
+          }, 500);
+        }, 2500);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(
+          "❌ Academic course enrollment failed:",
+          response.status,
+          errorData
+        );
+
+        // Show error notification
+        const notification = document.createElement("div");
+        notification.className =
+          "fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
+        notification.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <span class="font-semibold">Academic enrollment failed: ${
+              errorData.error || "Unknown error"
+            }</span>
+          </div>
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
+        setTimeout(() => {
+          notification.style.transform = "translateX(100%)";
+          setTimeout(() => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification);
+            }
+          }, 500);
+        }, 4000);
+      }
+    } catch (error) {
+      console.error("💥 Academic enrollment error:", error);
+    } finally {
+      setEnrollmentLoading((prev) => ({ ...prev, [courseId]: false }));
+    }
+  };
 
   const handleUnenrollment = async (courseId) => {
-    if (!confirm('Are you sure you want to unenroll from this course? You will lose access to all course materials.')) {
-      return
+    if (
+      !confirm(
+        "Are you sure you want to unenroll from this course? You will lose access to all course materials."
+      )
+    ) {
+      return;
     }
 
-    console.log('🗑️ Starting unenrollment for course using cache system:', courseId)
-    setEnrollmentLoading(prev => ({ ...prev, [courseId]: true }))
-    
+    console.log(
+      "🗑️ Starting unenrollment for course using cache system:",
+      courseId
+    );
+    setEnrollmentLoading((prev) => ({ ...prev, [courseId]: true }));
+
     try {
       // Use enrollment cache for optimistic updates
-      await enrollmentCache.updateEnrollment(courseId, false)
-      
+      await enrollmentCache.updateEnrollment(courseId, false);
+
       // The cache will handle the server sync and notify subscribers
       // UI will update automatically via the subscription
-      
+
       // Show unenrollment notification
-      const warningNotification = document.createElement('div')
-      warningNotification.className = 'fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500'
+      const warningNotification = document.createElement("div");
+      warningNotification.className =
+        "fixed top-8 right-8 bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500";
       warningNotification.innerHTML = `
         <div class="flex items-center gap-3">
           <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -517,105 +742,135 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
           </div>
           <span class="font-semibold">Successfully unenrolled from course</span>
         </div>
-      `
-      document.body.appendChild(warningNotification)
-      
+      `;
+      document.body.appendChild(warningNotification);
+
       setTimeout(() => {
-        warningNotification.style.transform = 'translateX(0)'
-      }, 100)
-      
+        warningNotification.style.transform = "translateX(0)";
+      }, 100);
+
       setTimeout(() => {
-        warningNotification.style.transform = 'translateX(100%)'
+        warningNotification.style.transform = "translateX(100%)";
         setTimeout(() => {
           if (document.body.contains(warningNotification)) {
-            document.body.removeChild(warningNotification)
+            document.body.removeChild(warningNotification);
           }
-        }, 500)
-      }, 3000)
-      
+        }, 500);
+      }, 3000);
+
       // Refresh courses to get updated enrollment count
-      console.log('🔄 Refreshing courses list after unenrollment')
-      fetchCourses()
-      
+      console.log("🔄 Refreshing courses list after unenrollment");
+      fetchCourses();
     } catch (error) {
-      console.error('🔥 Unenrollment error:', error)
-      alert('Failed to unenroll from course')
+      console.error("🔥 Unenrollment error:", error);
+      alert("Failed to unenroll from course");
     } finally {
-      setEnrollmentLoading(prev => ({ ...prev, [courseId]: false }))
+      setEnrollmentLoading((prev) => ({ ...prev, [courseId]: false }));
     }
-  }
+  };
 
   const isEnrolled = (courseId) => {
-    const enrolled = !!enrollments[courseId]
-    return enrolled
-  }
+    const enrolled = !!enrollments[courseId];
+    return enrolled;
+  };
 
   const isLoading = (courseId) => {
-    return !!enrollmentLoading[courseId]
-  }
+    return !!enrollmentLoading[courseId];
+  };
 
   const isEnrollmentInProgress = (courseId) => {
-    return enrollmentAttempts.has(courseId) || isLoading(courseId)
-  }
+    return enrollmentAttempts.has(courseId) || isLoading(courseId);
+  };
 
   // Enhanced filtering - separate ExamGenius courses from general courses
   const generalCourses = courses.filter((course) => {
     const matchesSearch =
       course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesCategory = selectedCategory === "all" || course.category === selectedCategory
-    const matchesLevel = selectedLevel === "all" || course.level === selectedLevel
-    
+      course.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory =
+      selectedCategory === "all" || course.category === selectedCategory;
+    const matchesLevel =
+      selectedLevel === "all" || course.level === selectedLevel;
+
     // When not in competitive mode, show only regular courses
-    return matchesSearch && matchesCategory && matchesLevel && 
-           !course.isExamGenius && !course.isCompetitiveExam
-  })
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesLevel &&
+      !course.isExamGenius &&
+      !course.isCompetitiveExam
+    );
+  });
 
   const examGeniusCourses = courses.filter((course) => {
     const matchesSearch =
       course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    // When in competitive mode, show only ExamGenius/competitive courses
-    return matchesSearch && (course.isExamGenius || course.isCompetitiveExam)
-  })
+      course.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const filteredCourses = showCompetitiveOnly ? examGeniusCourses : generalCourses
+    // When in competitive mode, show only ExamGenius/competitive courses
+    return matchesSearch && (course.isExamGenius || course.isCompetitiveExam);
+  });
+
+  // Filter academic courses
+  const filteredAcademicCourses = academicCourses.filter((course) => {
+    const matchesSearch =
+      course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.academicLevel?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesSearch;
+  });
+
+  const filteredCourses = showCompetitiveOnly
+    ? examGeniusCourses
+    : generalCourses;
 
   // Get unique categories and levels for filters
-  const categories = ["all", ...new Set(courses.map(course => course.category).filter(Boolean))]
-  const levels = ["all", "beginner", "intermediate", "advanced"]
+  const categories = [
+    "all",
+    ...new Set(courses.map((course) => course.category).filter(Boolean)),
+  ];
+  const levels = ["all", "beginner", "intermediate", "advanced"];
 
   const getCategoryColor = (category) => {
     const colors = {
-      "Programming": "bg-blue-100 text-blue-700 border-blue-200",
-      "Design": "bg-purple-100 text-purple-700 border-purple-200",
-      "Business": "bg-green-100 text-green-700 border-green-200",
-      "Marketing": "bg-orange-100 text-orange-700 border-orange-200",
+      Programming: "bg-blue-100 text-blue-700 border-blue-200",
+      Design: "bg-purple-100 text-purple-700 border-purple-200",
+      Business: "bg-green-100 text-green-700 border-green-200",
+      Marketing: "bg-orange-100 text-orange-700 border-orange-200",
       "Data Science": "bg-indigo-100 text-indigo-700 border-indigo-200",
-      "General": "bg-slate-100 text-slate-700 border-slate-200"
-    }
-    return colors[category] || colors["General"]
-  }
+      General: "bg-slate-100 text-slate-700 border-slate-200",
+    };
+    return colors[category] || colors["General"];
+  };
 
   const getLevelColor = (level) => {
     switch (level?.toLowerCase()) {
-      case 'beginner': return 'bg-emerald-100 text-emerald-700 border-emerald-200'
-      case 'intermediate': return 'bg-amber-100 text-amber-700 border-amber-200'
-      case 'advanced': return 'bg-red-100 text-red-700 border-red-200'
-      default: return 'bg-blue-100 text-blue-700 border-blue-200'
+      case "beginner":
+        return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case "intermediate":
+        return "bg-amber-100 text-amber-700 border-amber-200";
+      case "advanced":
+        return "bg-red-100 text-red-700 border-red-200";
+      default:
+        return "bg-blue-100 text-blue-700 border-blue-200";
     }
-  }
+  };
 
   const getLevelIcon = (level) => {
     switch (level?.toLowerCase()) {
-      case 'beginner': return Target
-      case 'intermediate': return TrendingUp
-      case 'advanced': return Zap
-      default: return Sparkles
+      case "beginner":
+        return Target;
+      case "intermediate":
+        return TrendingUp;
+      case "advanced":
+        return Zap;
+      default:
+        return Sparkles;
     }
-  }
+  };
 
   // Provide default values for missing course data
   const getDefaultData = (course) => {
@@ -624,12 +879,14 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
       students: course.enrollmentCount || 0,
       rating: course.rating || 0,
       instructor: course.instructor || "Course Instructor",
-      thumbnail: course.thumbnail || "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=400"
-    }
-  }
+      thumbnail:
+        course.thumbnail ||
+        "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=400",
+    };
+  };
 
   // Use only real courses from the API
-  const coursesArray = filteredCourses
+  const coursesArray = filteredCourses;
 
   // If viewing an ExamGenius course, render the special viewer
   if (viewingExamGeniusCourse) {
@@ -638,10 +895,10 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
         course={viewingExamGeniusCourse}
         onBack={() => setViewingExamGeniusCourse(null)}
         onProgress={(progress) => {
-          console.log('📊 ExamGenius course progress:', progress)
+          console.log("📊 ExamGenius course progress:", progress);
         }}
       />
-    )
+    );
   }
 
   return (
@@ -670,9 +927,9 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                 onClick={() => setSelectedCategory(category)}
                 size="sm"
                 className={`capitalize ${
-                  selectedCategory === category 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-slate-600 hover:bg-slate-50'
+                  selectedCategory === category
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 {category}
@@ -689,9 +946,9 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                 onClick={() => setSelectedLevel(level)}
                 size="sm"
                 className={`capitalize ${
-                  selectedLevel === level 
-                    ? 'bg-emerald-600 text-white' 
-                    : 'text-slate-600 hover:bg-slate-50'
+                  selectedLevel === level
+                    ? "bg-emerald-600 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 {level}
@@ -707,12 +964,27 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
               size="sm"
               className={`${
                 showCompetitiveOnly
-                  ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white' 
-                  : 'text-slate-600 hover:bg-slate-50'
+                  ? "bg-gradient-to-r from-orange-500 to-red-600 text-white"
+                  : "text-slate-600 hover:bg-slate-50"
               }`}
             >
               <Trophy className="h-3 w-3 mr-1" />
               Competitive Exams
+            </Button>
+
+            {/* Academic Courses Filter */}
+            <Button
+              variant={showAcademicCourses ? "default" : "outline"}
+              onClick={() => setShowAcademicCourses(!showAcademicCourses)}
+              size="sm"
+              className={`${
+                showAcademicCourses
+                  ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              <GraduationCap className="h-3 w-3 mr-1" />
+              Academic Courses ({filteredAcademicCourses.length})
             </Button>
           </div>
         </div>
@@ -730,7 +1002,9 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                   <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">
                     ExamGenius Courses
                   </h2>
-                  <p className="text-gray-600">Competitive exam-focused courses with AI-powered learning</p>
+                  <p className="text-gray-600">
+                    Competitive exam-focused courses with AI-powered learning
+                  </p>
                 </div>
                 <div className="flex items-center gap-2 ml-auto">
                   <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white">
@@ -743,14 +1017,15 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                   </Badge>
                 </div>
               </div>
-              
+
               {/* ExamGenius Info Banner */}
               <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4">
                 <div className="flex items-center gap-3 text-orange-800">
                   <Trophy className="h-5 w-5" />
                   <div>
                     <p className="text-sm font-medium">
-                      Specialized courses designed for competitive exams with speed-solving techniques, shortcuts, and exam strategies
+                      Specialized courses designed for competitive exams with
+                      speed-solving techniques, shortcuts, and exam strategies
                     </p>
                     <div className="flex items-center gap-4 mt-2 text-xs">
                       <span className="flex items-center gap-1">
@@ -774,39 +1049,41 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
             {/* ExamGenius Course Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {examGeniusCourses.map((course, index) => {
-                const courseData = getDefaultData(course)
-                const LevelIcon = getLevelIcon(course.level)
-                const instructorInfo = getInstructorInfo(course)
-                
+                const courseData = getDefaultData(course);
+                const LevelIcon = getLevelIcon(course.level);
+                const instructorInfo = getInstructorInfo(course);
+
                 return (
-                  <Card 
-                    key={`exam-genius-${course._id}-${uiUpdateTrigger}-${isEnrolled(course._id)}`} 
+                  <Card
+                    key={`exam-genius-${
+                      course._id
+                    }-${uiUpdateTrigger}-${isEnrolled(course._id)}`}
                     className="group border-2 border-orange-200 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-gradient-to-br from-white via-orange-50/30 to-red-50/30 backdrop-blur-sm overflow-hidden transform hover:scale-[1.02]"
                   >
                     {/* ExamGenius Course Header with Special Gradient */}
                     <div className="relative h-56 bg-gradient-to-br from-orange-500 via-red-600 to-pink-600 overflow-hidden">
                       <div className="absolute inset-0 bg-black/20"></div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                      
+
                       {/* Course Image */}
-                      <img 
-                        src={courseData.thumbnail} 
+                      <img
+                        src={courseData.thumbnail}
                         alt={course.title}
                         className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                       />
-                      
+
                       {/* ExamGenius Badge */}
                       <div className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-red-600 text-white px-3 py-2 rounded-xl font-bold text-sm shadow-lg">
                         <Trophy className="h-4 w-4 inline mr-1" />
                         ExamGenius
                       </div>
-                      
+
                       {/* Instructor Info */}
                       <div className="absolute top-4 right-4 flex items-center gap-2 p-3 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-white/30">
                         <div className="relative">
                           {instructorInfo.avatar ? (
-                            <img 
-                              src={instructorInfo.avatar} 
+                            <img
+                              src={instructorInfo.avatar}
                               alt={instructorInfo.name}
                               className="w-8 h-8 rounded-full object-cover shadow-lg border-2 border-white/50"
                             />
@@ -819,7 +1096,9 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-600 font-medium">{instructorInfo.name}</p>
+                          <p className="text-xs text-slate-600 font-medium">
+                            {instructorInfo.name}
+                          </p>
                         </div>
                       </div>
 
@@ -828,7 +1107,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                         <div className="flex items-center gap-2 mb-3">
                           <Badge className="bg-gradient-to-r from-orange-600 to-red-700 text-white border-none">
                             <LevelIcon className="h-3 w-3 mr-1" />
-                            {course.level || 'Intermediate'}
+                            {course.level || "Intermediate"}
                           </Badge>
                           <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
                             {course.examType}
@@ -845,7 +1124,8 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                         {course.title}
                       </CardTitle>
                       <CardDescription className="text-slate-600 line-clamp-3 text-base leading-relaxed">
-                        {course.description || "Competitive exam focused course with speed-solving techniques"}
+                        {course.description ||
+                          "Competitive exam focused course with speed-solving techniques"}
                       </CardDescription>
                     </CardHeader>
 
@@ -856,22 +1136,34 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                           <div className="flex items-center justify-center mb-2">
                             <Target className="h-5 w-5 text-orange-500" />
                           </div>
-                          <p className="text-xs text-orange-600 font-medium mb-1">Exam Type</p>
-                          <p className="text-sm font-bold text-slate-800">{course.examType || 'JEE'}</p>
+                          <p className="text-xs text-orange-600 font-medium mb-1">
+                            Exam Type
+                          </p>
+                          <p className="text-sm font-bold text-slate-800">
+                            {course.examType || "JEE"}
+                          </p>
                         </div>
                         <div className="text-center p-3 bg-red-50 rounded-xl group-hover:bg-red-100 transition-colors duration-300">
                           <div className="flex items-center justify-center mb-2">
                             <Brain className="h-5 w-5 text-red-500" />
                           </div>
-                          <p className="text-xs text-red-600 font-medium mb-1">Subject</p>
-                          <p className="text-sm font-bold text-slate-800">{course.subject || 'Mathematics'}</p>
+                          <p className="text-xs text-red-600 font-medium mb-1">
+                            Subject
+                          </p>
+                          <p className="text-sm font-bold text-slate-800">
+                            {course.subject || "Mathematics"}
+                          </p>
                         </div>
                         <div className="text-center p-3 bg-pink-50 rounded-xl group-hover:bg-pink-100 transition-colors duration-300">
                           <div className="flex items-center justify-center mb-2">
                             <Star className="h-5 w-5 text-pink-500 fill-current" />
                           </div>
-                          <p className="text-xs text-pink-600 font-medium mb-1">Rating</p>
-                          <p className="text-sm font-bold text-slate-800">{course.rating || '4.8'}</p>
+                          <p className="text-xs text-pink-600 font-medium mb-1">
+                            Rating
+                          </p>
+                          <p className="text-sm font-bold text-slate-800">
+                            {course.rating || "4.8"}
+                          </p>
                         </div>
                       </div>
 
@@ -882,7 +1174,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                             <Trophy className="h-3 w-3 mr-1" />
                             Competitive Exam Course
                           </Badge>
-                          
+
                           {isEnrolled(course._id) && (
                             <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -894,49 +1186,55 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                         <div className="flex gap-2">
                           {isEnrolled(course._id) ? (
                             <>
-                              <Button 
+                              <Button
                                 className="flex-1 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                                 onClick={(e) => {
-                                  e.stopPropagation()
-                                  console.log('📖 Opening enrolled ExamGenius course:', course.title)
-                                  const instructorInfo = getInstructorInfo(course)
+                                  e.stopPropagation();
+                                  console.log(
+                                    "📖 Opening enrolled ExamGenius course:",
+                                    course.title
+                                  );
+                                  const instructorInfo =
+                                    getInstructorInfo(course);
                                   setViewingExamGeniusCourse({
-                                    ...course, 
+                                    ...course,
                                     ...courseData,
                                     instructorName: instructorInfo.name,
                                     instructorAvatar: instructorInfo.avatar,
                                     isEnrolled: true,
                                     isExamGenius: true,
-                                    enrolledAt: enrollments[course._id]?.enrolledAt || new Date().toISOString()
-                                  })
+                                    enrolledAt:
+                                      enrollments[course._id]?.enrolledAt ||
+                                      new Date().toISOString(),
+                                  });
                                 }}
                               >
                                 <Play className="h-4 w-4 mr-2" />
                                 Continue Exam Prep
                               </Button>
-                              <Button 
+                              <Button
                                 variant="outline"
                                 size="sm"
                                 className="border-red-200 text-red-600 hover:bg-red-50"
                                 onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleUnenrollment(course._id)
+                                  e.stopPropagation();
+                                  handleUnenrollment(course._id);
                                 }}
                                 disabled={isEnrollmentInProgress(course._id)}
                               >
                                 {isEnrollmentInProgress(course._id) ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
-                                  'Unenroll'
+                                  "Unenroll"
                                 )}
                               </Button>
                             </>
                           ) : (
-                            <Button 
+                            <Button
                               className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105"
                               onClick={(e) => {
-                                e.stopPropagation()
-                                handleEnrollment(course._id)
+                                e.stopPropagation();
+                                handleEnrollment(course._id);
                               }}
                               disabled={isEnrollmentInProgress(course._id)}
                             >
@@ -958,7 +1256,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                       </div>
                     </CardContent>
                   </Card>
-                )
+                );
               })}
             </div>
           </div>
@@ -968,10 +1266,156 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
         {!showCompetitiveOnly && generalCourses.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-800">General Courses</h2>
+              <h2 className="text-2xl font-bold text-slate-800">
+                General Courses
+              </h2>
               <Badge variant="outline" className="text-slate-600">
-                {generalCourses.length} course{generalCourses.length !== 1 ? 's' : ''}
+                {generalCourses.length} course
+                {generalCourses.length !== 1 ? "s" : ""}
               </Badge>
+            </div>
+          </div>
+        )}
+
+        {/* Academic Courses Section */}
+        {filteredAcademicCourses.length > 0 && (
+          <div className="mb-12">
+            {/* Academic Courses Header */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg">
+                    <GraduationCap className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      Academic Courses
+                    </h2>
+                    <p className="text-slate-600 text-sm">
+                      University-level academic content
+                    </p>
+                  </div>
+                </div>
+                <Badge
+                  variant="outline"
+                  className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 text-blue-700"
+                >
+                  {filteredAcademicCourses.length} course
+                  {filteredAcademicCourses.length !== 1 ? "s" : ""}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Academic Course Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredAcademicCourses.map((course) => {
+                const isEnrolled = academicEnrollments[course._id];
+                const academicLevelConfig = {
+                  undergraduate: {
+                    name: "Undergraduate",
+                    color: "blue",
+                    icon: "🎓",
+                  },
+                  graduate: { name: "Graduate", color: "purple", icon: "📚" },
+                  postgraduate: {
+                    name: "Postgraduate",
+                    color: "indigo",
+                    icon: "🔬",
+                  },
+                  doctorate: { name: "Doctorate", color: "violet", icon: "⚕️" },
+                };
+                const levelConfig =
+                  academicLevelConfig[course.academicLevel] ||
+                  academicLevelConfig.undergraduate;
+
+                return (
+                  <Card
+                    key={course._id}
+                    className="hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden"
+                  >
+                    <div
+                      className={`h-4 bg-gradient-to-r from-${levelConfig.color}-500 to-${levelConfig.color}-600`}
+                    ></div>
+
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-10 h-10 rounded-lg bg-gradient-to-r from-${levelConfig.color}-500 to-${levelConfig.color}-600 flex items-center justify-center text-white text-lg`}
+                          >
+                            {levelConfig.icon}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 line-clamp-1">
+                              {course.title}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {levelConfig.name}
+                              </Badge>
+                              <Badge variant="secondary" className="text-xs">
+                                {course.subject}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-slate-600 text-sm mb-4 line-clamp-2">
+                        {course.description ||
+                          "Comprehensive academic course content"}
+                      </p>
+
+                      <div className="flex items-center gap-4 text-xs text-slate-500 mb-4">
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-3 w-3" />
+                          <span>{course.modules?.length || 0} modules</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{course.credits || 3} credits</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          <span>{course.enrollmentCount || 0}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        {isEnrolled ? (
+                          <Button
+                            onClick={() =>
+                              onCourseSelect && onCourseSelect(course)
+                            }
+                            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Continue Learning
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => handleAcademicEnrollment(course._id)}
+                            disabled={enrollmentLoading[course._id]}
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                          >
+                            {enrollmentLoading[course._id] ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Enrolling...
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="h-4 w-4 mr-2" />
+                                Enroll Now
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         )}
@@ -979,33 +1423,35 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
         {/* Course Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {coursesArray.map((course, index) => {
-            const courseData = getDefaultData(course)
-            const LevelIcon = getLevelIcon(course.level)
-            const instructorInfo = getInstructorInfo(course)
-            
+            const courseData = getDefaultData(course);
+            const LevelIcon = getLevelIcon(course.level);
+            const instructorInfo = getInstructorInfo(course);
+
             return (
-              <Card 
-                key={`${course._id}-${uiUpdateTrigger}-${isEnrolled(course._id)}`} 
+              <Card
+                key={`${course._id}-${uiUpdateTrigger}-${isEnrolled(
+                  course._id
+                )}`}
                 className="group border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/95 backdrop-blur-sm overflow-hidden transform hover:scale-[1.02]"
               >
                 {/* Course Header with Gradient */}
                 <div className="relative h-56 bg-gradient-to-br from-blue-500 via-purple-600 to-emerald-500 overflow-hidden">
                   <div className="absolute inset-0 bg-black/20"></div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                  
+
                   {/* Course Image */}
-                  <img 
-                    src={courseData.thumbnail} 
+                  <img
+                    src={courseData.thumbnail}
                     alt={course.title}
                     className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                   />
-                  
+
                   {/* Instructor Info - Top Left Corner */}
                   <div className="absolute top-4 left-4 flex items-center gap-3 p-3 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-white/30 group-hover:bg-white transition-all duration-300">
                     <div className="relative">
                       {instructorInfo.avatar ? (
-                        <img 
-                          src={instructorInfo.avatar} 
+                        <img
+                          src={instructorInfo.avatar}
                           alt={instructorInfo.name}
                           className="w-10 h-10 rounded-full object-cover shadow-lg border-2 border-white/50"
                         />
@@ -1022,13 +1468,15 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                       </div>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-slate-600 font-medium mb-0.5">Instructor</p>
+                      <p className="text-xs text-slate-600 font-medium mb-0.5">
+                        Instructor
+                      </p>
                       <p className="text-sm font-bold text-slate-800 truncate max-w-[120px]">
                         {instructorInfo.name}
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Floating Elements - Top Right */}
                   <div className="absolute top-4 right-4 flex gap-2">
                     <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
@@ -1042,9 +1490,13 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                   {/* Course Info Overlay */}
                   <div className="absolute bottom-4 left-4 right-4 text-white">
                     <div className="flex items-center gap-2 mb-3">
-                      <Badge className={`${getLevelColor(course.level || 'beginner')} backdrop-blur-sm`}>
+                      <Badge
+                        className={`${getLevelColor(
+                          course.level || "beginner"
+                        )} backdrop-blur-sm`}
+                      >
                         <LevelIcon className="h-3 w-3 mr-1" />
-                        {course.level || 'Beginner'}
+                        {course.level || "Beginner"}
                       </Badge>
                       <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
                         {course.modules?.length || 8} modules
@@ -1082,22 +1534,34 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                       <div className="flex items-center justify-center mb-2">
                         <Clock className="h-5 w-5 text-slate-500 group-hover:text-blue-500 transition-colors duration-300" />
                       </div>
-                      <p className="text-xs text-slate-500 font-medium mb-1">Duration</p>
-                      <p className="text-sm font-bold text-slate-800">{courseData.duration}h</p>
+                      <p className="text-xs text-slate-500 font-medium mb-1">
+                        Duration
+                      </p>
+                      <p className="text-sm font-bold text-slate-800">
+                        {courseData.duration}h
+                      </p>
                     </div>
                     <div className="text-center p-3 bg-slate-50 rounded-xl group-hover:bg-purple-50 transition-colors duration-300">
                       <div className="flex items-center justify-center mb-2">
                         <Users className="h-5 w-5 text-slate-500 group-hover:text-purple-500 transition-colors duration-300" />
                       </div>
-                      <p className="text-xs text-slate-500 font-medium mb-1">Enrolled</p>
-                      <p className="text-sm font-bold text-slate-800">{course.enrollmentCount || 0}</p>
+                      <p className="text-xs text-slate-500 font-medium mb-1">
+                        Enrolled
+                      </p>
+                      <p className="text-sm font-bold text-slate-800">
+                        {course.enrollmentCount || 0}
+                      </p>
                     </div>
                     <div className="text-center p-3 bg-slate-50 rounded-xl group-hover:bg-emerald-50 transition-colors duration-300">
                       <div className="flex items-center justify-center mb-2">
                         <Star className="h-5 w-5 text-yellow-500 fill-current" />
                       </div>
-                      <p className="text-xs text-slate-500 font-medium mb-1">Rating</p>
-                      <p className="text-sm font-bold text-slate-800">{course.rating || courseData.rating || 'N/A'}</p>
+                      <p className="text-xs text-slate-500 font-medium mb-1">
+                        Rating
+                      </p>
+                      <p className="text-sm font-bold text-slate-800">
+                        {course.rating || courseData.rating || "N/A"}
+                      </p>
                     </div>
                   </div>
 
@@ -1105,7 +1569,11 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Badge className={getCategoryColor(course.category || "General")}>
+                        <Badge
+                          className={getCategoryColor(
+                            course.category || "General"
+                          )}
+                        >
                           <BookOpen className="h-3 w-3 mr-1" />
                           {course.category || "General"}
                         </Badge>
@@ -1116,7 +1584,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                           </Badge>
                         )}
                       </div>
-                      
+
                       {/* Enrollment Status Badge */}
                       {isEnrolled(course._id) && (
                         <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
@@ -1130,48 +1598,53 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                     <div className="flex gap-2">
                       {isEnrolled(course._id) ? (
                         <>
-                          <Button 
+                          <Button
                             className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              console.log('📖 Opening enrolled course from Continue Learning button:', course.title)
-                              const instructorInfo = getInstructorInfo(course)
+                              e.stopPropagation();
+                              console.log(
+                                "📖 Opening enrolled course from Continue Learning button:",
+                                course.title
+                              );
+                              const instructorInfo = getInstructorInfo(course);
                               onCourseSelect({
-                                ...course, 
+                                ...course,
                                 ...courseData,
                                 instructorName: instructorInfo.name,
                                 instructorAvatar: instructorInfo.avatar,
                                 isEnrolled: true,
-                                enrolledAt: enrollments[course._id]?.enrolledAt || new Date().toISOString()
-                              })
+                                enrolledAt:
+                                  enrollments[course._id]?.enrolledAt ||
+                                  new Date().toISOString(),
+                              });
                             }}
                           >
                             <Play className="h-4 w-4 mr-2" />
                             Continue Learning
                           </Button>
-                          <Button 
+                          <Button
                             variant="outline"
                             size="sm"
                             className="border-red-200 text-red-600 hover:bg-red-50"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              handleUnenrollment(course._id)
+                              e.stopPropagation();
+                              handleUnenrollment(course._id);
                             }}
                             disabled={isEnrollmentInProgress(course._id)}
                           >
                             {isEnrollmentInProgress(course._id) ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              'Unenroll'
+                              "Unenroll"
                             )}
                           </Button>
                         </>
                       ) : (
-                        <Button 
+                        <Button
                           className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105"
                           onClick={(e) => {
-                            e.stopPropagation()
-                            handleEnrollment(course._id)
+                            e.stopPropagation();
+                            handleEnrollment(course._id);
                           }}
                           disabled={isEnrollmentInProgress(course._id)}
                         >
@@ -1193,7 +1666,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                   </div>
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </div>
 
@@ -1206,27 +1679,29 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
               </div>
               <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 via-orange-400/20 to-yellow-400/20 blur-3xl"></div>
             </div>
-            
-            <h3 className="text-3xl font-bold text-slate-800 mb-4">Unable to Load Courses</h3>
+
+            <h3 className="text-3xl font-bold text-slate-800 mb-4">
+              Unable to Load Courses
+            </h3>
             <p className="text-xl text-slate-600 mb-4 max-w-md mx-auto">
               We're having trouble connecting to our course database.
             </p>
             <p className="text-sm text-slate-500 mb-8 max-w-lg mx-auto font-mono bg-slate-100 p-3 rounded-lg">
               {error}
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
+              <Button
                 onClick={() => {
-                  setLoading(true)
-                  fetchCourses()
+                  setLoading(true);
+                  fetchCourses();
                 }}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Try Again
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 className="border-2 border-slate-200 hover:bg-slate-50 px-8 py-3 rounded-2xl font-semibold"
                 onClick={() => window.location.reload()}
@@ -1248,8 +1723,8 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
               )}
             </div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              {showCompetitiveOnly 
-                ? "No Exam Genius courses found" 
+              {showCompetitiveOnly
+                ? "No Exam Genius courses found"
                 : "No courses found"}
             </h3>
             <p className="text-gray-600 mb-6">
@@ -1257,14 +1732,14 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                 ? "We couldn't find any Exam Genius courses matching your criteria. Try adjusting your search or check back later for new courses."
                 : "We couldn't find any courses matching your criteria. Try adjusting your search or filters."}
             </p>
-            <Button 
+            <Button
               onClick={() => {
-                setSearchTerm("")
-                setSelectedCategory("all")
-                setSelectedLevel("all")
+                setSearchTerm("");
+                setSelectedCategory("all");
+                setSelectedLevel("all");
                 if (showCompetitiveOnly) {
                   // Force refresh ExamGenius courses
-                  fetchCourses()
+                  fetchCourses();
                 }
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -1285,11 +1760,15 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                 <BookOpen className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-            <h3 className="text-xl font-semibold text-slate-800 mb-2">Loading Courses</h3>
-            <p className="text-slate-600">Discovering learning opportunities for you...</p>
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">
+              Loading Courses
+            </h3>
+            <p className="text-slate-600">
+              Discovering learning opportunities for you...
+            </p>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

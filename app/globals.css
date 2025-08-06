@@ -5,6 +5,30 @@
 /* Import KaTeX styles for math rendering */
 @import url("https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css");
 
+/* Enhanced KaTeX base styling */
+.katex {
+  font-family: KaTeX_Main, "Times New Roman", serif !important;
+  font-size: 1.1em;
+  will-change: contents;
+  contain: style;
+}
+
+/* Math error styling */
+.katex-error {
+  color: #dc2626 !important;
+  background-color: #fee2e2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 4px !important;
+  padding: 0.25em 0.5em !important;
+  font-size: 0.875em !important;
+  display: inline-block !important;
+}
+
+/* Math content accessibility */
+.katex[role="math"] {
+  speak: spell-out;
+}
+
 /* Enhanced Math Rendering Styles - Maximum Separation */
 .katex-display {
   margin: 2em 0 !important;
@@ -17,13 +41,6 @@
   border: 1px solid rgba(59, 130, 246, 0.1);
 }
 
-.katex {
-  font-size: 1.2em;
-  display: block !important;
-  margin: 1em auto !important;
-  text-align: center;
-  padding: 0.5em;
-}
 
 /* Fix arrow symbol rendering in LaTeX */
 .katex .mrel {
@@ -70,8 +87,18 @@
   margin: 0 0.1666666667em !important;
 }
 
-/* Force ALL math to be block display for maximum clarity */
+/* Inline math styling - keep inline with text */
 .katex:not(.katex-display) {
+  display: inline-block;
+  margin: 0 0.2em;
+  padding: 0.1em 0.3em;
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+/* Display math styling - block element */
+.katex.katex-display {
   display: block !important;
   margin: 1.5em auto !important;
   text-align: center !important;
@@ -107,17 +134,28 @@
 }
 
 .math-inline {
-  display: block !important;
-  margin: 1.5em auto;
-  text-align: center;
+  display: inline-block;
+  margin: 0 0.3em;
+  padding: 0.2em 0.4em;
   background: rgba(245, 158, 11, 0.05);
-  padding: 0.8em;
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid rgba(245, 158, 11, 0.1);
+  vertical-align: middle;
 }
 
-/* Better spacing for quiz content with math */
-.quiz-content .katex {
+/* Better spacing for quiz content with math - inline math */
+.quiz-content .katex:not(.katex-display) {
+  display: inline-block;
+  margin: 0 0.3em;
+  padding: 0.2em 0.4em;
+  background: rgba(139, 92, 246, 0.08);
+  border-radius: 6px;
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  vertical-align: middle;
+}
+
+/* Better spacing for quiz content with math - display math */
+.quiz-content .katex.katex-display {
   margin: 1.5em auto !important;
   display: block !important;
   text-align: center !important;
