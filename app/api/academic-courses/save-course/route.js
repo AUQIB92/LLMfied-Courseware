@@ -60,7 +60,7 @@ export async function POST(request) {
 
     await client.connect();
     const db = client.db("llmfied");
-    const coursesCollection = db.collection("academicCourses");
+    const coursesCollection = db.collection("courses");
 
     const isUpdating = !!_id;
     let result;

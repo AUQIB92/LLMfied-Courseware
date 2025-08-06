@@ -11,8 +11,9 @@ export async function GET(request, { params }) {
     const db = client.db("llmfied")
 
     // Get academic course basic info
-    const course = await db.collection("academicCourses").findOne({
+    const course = await db.collection("courses").findOne({
       _id: new ObjectId(resolvedParams.id),
+      $or: [{ courseType: "academic" }, { isAcademicCourse: true }]
     })
 
     if (!course) {
@@ -25,7 +26,7 @@ export async function GET(request, { params }) {
     }).sort({ createdAt: -1 }).toArray()
 
     // Get enrollments count
-    const enrollmentCount = await db.collection("academicEnrollments").countDocuments({
+    const enrollmentCount = await db.collection("enrollments").countDocuments({
       courseId: new ObjectId(resolvedParams.id)
     })
 
@@ -68,9 +69,10 @@ export async function PUT(request, { params }) {
     const db = client.db("llmfied")
 
     // Check if course exists and belongs to educator
-    const existingCourse = await db.collection("academicCourses").findOne({
+    const existingCourse = await db.collection("courses").findOne({
       _id: new ObjectId(resolvedParams.id),
-      educatorId: new ObjectId(user.userId)
+      educatorId: new ObjectId(user.userId),
+      $or: [{ courseType: "academic" }, { isAcademicCourse: true }]
     })
 
     if (!existingCourse) {
@@ -91,7 +93,7 @@ export async function PUT(request, { params }) {
     delete updateDoc.createdAt
 
     // Update course
-    const result = await db.collection("academicCourses").updateOne(
+    const result = await db.collection("courses").updateOne(
       { _id: new ObjectId(resolvedParams.id) },
       { $set: updateDoc }
     )
@@ -101,7 +103,7 @@ export async function PUT(request, { params }) {
     }
 
     // Get updated course
-    const updatedCourse = await db.collection("academicCourses").findOne({
+    const updatedCourse = await db.collection("courses").findOne({
       _id: new ObjectId(resolvedParams.id)
     })
 
@@ -129,9 +131,10 @@ export async function DELETE(request, { params }) {
     const db = client.db("llmfied")
 
     // Check if course exists and belongs to educator
-    const existingCourse = await db.collection("academicCourses").findOne({
+    const existingCourse = await db.collection("courses").findOne({
       _id: new ObjectId(resolvedParams.id),
-      educatorId: new ObjectId(user.userId)
+      educatorId: new ObjectId(user.userId),
+      $or: [{ courseType: "academic" }, { isAcademicCourse: true }]
     })
 
     if (!existingCourse) {
@@ -151,7 +154,7 @@ export async function DELETE(request, { params }) {
         courseId: new ObjectId(resolvedParams.id)
       }),
       // Delete enrollments
-      db.collection("academicEnrollments").deleteMany({
+      db.collection("enrollments").deleteMany({
         courseId: new ObjectId(resolvedParams.id)
       }),
       // Delete discussions
@@ -161,7 +164,7 @@ export async function DELETE(request, { params }) {
     ])
 
     // Delete the course
-    const result = await db.collection("academicCourses").deleteOne({
+    const result = await db.collection("courses").deleteOne({
       _id: new ObjectId(resolvedParams.id)
     })
 

@@ -37,10 +37,8 @@ export async function GET(request) {
 
     console.log("Query params:", { status, educatorId, subject, academicLevel })
 
-    const filter = { courseType: "academic" }
-    
-    if (status) {
-      filter.status = status
+    const filter = { 
+      $or: [{ courseType: "academic" }, { isAcademicCourse: true }]
     }
     
     if (educatorId) {
@@ -64,21 +62,22 @@ export async function GET(request) {
 
     // Handle published status
     if (status === "published") {
-      filter.$or = [
-        { status: "published" },
-        { isPublished: true }
+      filter.$and = [
+        { $or: [{ courseType: "academic" }, { isAcademicCourse: true }] },
+        { $or: [{ status: "published" }, { isPublished: true }] }
       ];
-      delete filter.status;
+    } else if (status) {
+      filter.status = status
     }
 
     console.log("Final filter object:", filter)
 
-    const collection = db.collection("academicCourses")
+    const collection = db.collection("courses")
     const courses = await collection.find(filter).sort({ createdAt: -1 }).toArray()
     
     // Add enrollment counts and assignment counts
     if (courses.length > 0) {
-      const enrollmentCollection = db.collection("academicEnrollments")
+      const enrollmentCollection = db.collection("enrollments")
       const assignmentCollection = db.collection("assignments")
       const courseIds = courses.map(course => course._id)
       
@@ -196,7 +195,7 @@ export async function POST(request) {
       )
     }
 
-    const course = await db.collection("academicCourses").insertOne(courseDocument)
+    const course = await db.collection("courses").insertOne(courseDocument)
 
     console.log("Academic course created successfully:", course.insertedId)
     

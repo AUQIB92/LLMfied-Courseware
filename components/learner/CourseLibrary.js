@@ -71,7 +71,6 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   // Fetch all published courses and enrollment status on component mount
   useEffect(() => {
     fetchCourses();
-    fetchAcademicCourses();
     initializeEnrollments();
     initializeAcademicEnrollments();
   }, [showCompetitiveOnly, showAcademicCourses]);
@@ -261,36 +260,6 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
     }
   };
 
-  const fetchAcademicCourses = async () => {
-    try {
-      console.log("🎓 Fetching academic courses...");
-
-      const response = await fetch("/api/academic-courses?status=published", {
-        headers: getAuthHeaders(),
-      });
-
-      console.log("Academic courses response status:", response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Academic courses API response data:", data);
-
-        if (Array.isArray(data)) {
-          setAcademicCourses(data);
-          console.log(`Set ${data.length} academic courses`);
-        } else {
-          console.warn("Unexpected academic courses response format:", data);
-          setAcademicCourses([]);
-        }
-      } else {
-        console.error("Failed to fetch academic courses:", response.status);
-        setAcademicCourses([]);
-      }
-    } catch (error) {
-      console.error("Error fetching academic courses:", error);
-      setAcademicCourses([]);
-    }
-  };
 
   const initializeAcademicEnrollments = async () => {
     try {
@@ -813,7 +782,12 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   });
 
   // Filter academic courses
-  const filteredAcademicCourses = academicCourses.filter((course) => {
+  const filteredAcademicCourses = courses.filter((course) => {
+    // Only include academic courses
+    if (!course.isAcademicCourse && course.courseType !== "academic") {
+      return false;
+    }
+    
     const matchesSearch =
       course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||

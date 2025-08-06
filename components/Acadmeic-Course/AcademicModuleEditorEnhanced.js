@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -383,6 +383,25 @@ export default function AcademicModuleEditorEnhanced({
     return JSON.stringify(content);
   };
 
+  // Helper function to ensure proper page structure
+  const ensurePageStructure = (subsection, pageIndex) => {
+    if (!subsection.pages) {
+      subsection.pages = [];
+    }
+    
+    if (!subsection.pages[pageIndex]) {
+      subsection.pages[pageIndex] = {
+        content: subsection.explanation || subsection.content || subsection.generatedMarkdown || "",
+        pageTitle: subsection.title || "Academic Content",
+        title: subsection.title || "Academic Content",
+        keyTakeaway: subsection.keyTakeaway || "",
+        pageNumber: pageIndex + 1
+      };
+    }
+    
+    return subsection.pages[pageIndex];
+  };
+
   // Initialize local module state for editing
   const [localModule, setLocalModule] = useState(() => {
     const initialState = {
@@ -427,6 +446,52 @@ export default function AcademicModuleEditorEnhanced({
   const [editingContent, setEditingContent] = useState("");
   const [editingTitle, setEditingTitle] = useState("");
   const [editingTakeaway, setEditingTakeaway] = useState("");
+  
+  // Use ref to persist editing state across re-renders
+  const editingStateRef = useRef(null);
+
+  // Debug render cycles and editing state
+  console.log("🔄 AcademicModuleEditorEnhanced render", {
+    moduleTitle: module.title,
+    timestamp: new Date().toISOString(),
+    editingPage,
+    hasDetailedSubsections: !!localModule.detailedSubsections?.length,
+    detailedSubsectionsCount: localModule.detailedSubsections?.length || 0
+  });
+
+  // Debug subsection structure when editing
+  if (editingPage) {
+    const subsection = localModule.detailedSubsections[editingPage.subsectionIndex];
+    console.log("🔍 Current subsection structure:", {
+      subsectionTitle: subsection?.title,
+      hasPages: !!subsection?.pages,
+      pagesLength: subsection?.pages?.length || 0,
+      pageData: subsection?.pages?.[editingPage.pageIndex],
+      allFields: Object.keys(subsection || {})
+    });
+  }
+
+  // Ensure editing state is always in sync
+  useEffect(() => {
+    if (editingPage) {
+      editingStateRef.current = editingPage;
+    } else {
+      editingStateRef.current = null;
+    }
+  }, [editingPage]);
+
+  // Monitor editing content changes
+  useEffect(() => {
+    if (editingPage) {
+      console.log("📝 Editing content changed:", {
+        editingPage,
+        contentLength: editingContent.length,
+        titleLength: editingTitle.length,
+        takeawayLength: editingTakeaway.length,
+        contentPreview: editingContent.substring(0, 100)
+      });
+    }
+  }, [editingContent, editingTitle, editingTakeaway, editingPage]);
 
   // Sync local module state when module prop changes (important for Academic courses)
   useEffect(() => {
@@ -435,7 +500,17 @@ export default function AcademicModuleEditorEnhanced({
       hasContent: !!module.content,
       hasDetailedSubsections: !!module.detailedSubsections?.length,
       isAcademicCourse: module.isAcademicCourse,
+      editingPageState: editingPage,
     });
+
+    // IMPORTANT: Skip module updates if we're currently editing to prevent losing edit state
+    if (editingPage || editingStateRef.current) {
+      console.log("⚠️ Skipping module update - currently editing page", {
+        editingPage,
+        editingRef: editingStateRef.current
+      });
+      return;
+    }
 
     setLocalModule((prev) => ({
       ...module,
@@ -468,29 +543,196 @@ export default function AcademicModuleEditorEnhanced({
 
   // Page editing functions
   const startEditingPage = (subsectionIndex, pageIndex) => {
+    console.log("🖊️ Starting page edit:", { subsectionIndex, pageIndex });
+    
+    // Ensure we have a valid subsection
+    if (!localModule.detailedSubsections || !localModule.detailedSubsections[subsectionIndex]) {
+      console.error("❌ Invalid subsection index:", subsectionIndex);
+      toast.error("Invalid subsection selected");
+      return;
+    }
+    
     const subsection = localModule.detailedSubsections[subsectionIndex];
-    const page = subsection.pages[pageIndex];
+    
+    // Get the processed subsection data to understand the structure
+    const subsectionPages = getAcademicSubsectionData(subsection);
+    console.log("🔍 Subsection pages structure:", {
+      type: subsectionPages.type,
+      hasData: !!subsectionPages.data,
+      hasPages: !!subsectionPages.data?.pages,
+      pagesLength: subsectionPages.data?.pages?.length || 0,
+      directPagesLength: subsection.pages?.length || 0
+    });
+    
+    // Ensure pages array exists
+    if (!subsection.pages) {
+      subsection.pages = [];
+    }
+    
+    // Handle basic subsections that might not have proper pages structure
+    let page = null;
+    
+    // First, try to get the page from the processed data structure
+    let availablePages = [];
+    if (subsectionPages.type === "pages" && subsectionPages.data?.pages) {
+      availablePages = subsectionPages.data.pages;
+    } else if (subsection.pages && Array.isArray(subsection.pages)) {
+      availablePages = subsection.pages;
+    }
+    
+    if (availablePages[pageIndex]) {
+      page = availablePages[pageIndex];
+      console.log("📄 Found existing page from processed data:", {
+        pageTitle: page.pageTitle || page.title,
+        contentLength: page.content?.length || 0,
+        pageNumber: page.pageNumber,
+        source: subsectionPages.type === "pages" ? "processed" : "direct"
+      });
+    } else {
+      // Create a basic page structure from subsection data
+      let content = "";
+      
+      // Try to find content in various possible fields
+      if (subsection.explanation) {
+        content = subsection.explanation;
+      } else if (subsection.content) {
+        content = subsection.content;
+      } else if (subsection.generatedMarkdown) {
+        content = subsection.generatedMarkdown;
+      } else if (subsection.markdown) {
+        content = subsection.markdown;
+      } else if (subsection.text) {
+        content = subsection.text;
+      } else if (subsection.description) {
+        content = subsection.description;
+      }
+      
+      console.log("🔍 Content retrieval:", {
+        subsectionTitle: subsection.title,
+        hasPages: !!subsection.pages,
+        pagesLength: subsection.pages?.length || 0,
+        hasExplanation: !!subsection.explanation,
+        hasContent: !!subsection.content,
+        hasGeneratedMarkdown: !!subsection.generatedMarkdown,
+        hasMarkdown: !!subsection.markdown,
+        hasText: !!subsection.text,
+        hasDescription: !!subsection.description,
+        finalContentLength: content.length,
+        contentPreview: content.substring(0, 100)
+      });
+      
+      page = {
+        content: content,
+        pageTitle: subsection.title || "Academic Content",
+        title: subsection.title || "Academic Content",
+        keyTakeaway: subsection.keyTakeaway || "",
+        pageNumber: pageIndex + 1
+      };
+      
+      // Ensure pages array exists
+      if (!subsection.pages) {
+        subsection.pages = [];
+      }
+      
+      // Ensure the page exists in the array
+      if (pageIndex >= subsection.pages.length) {
+        // Fill any gaps with empty pages
+        while (subsection.pages.length <= pageIndex) {
+          subsection.pages.push({
+            content: "",
+            pageTitle: `Page ${subsection.pages.length + 1}`,
+            title: `Page ${subsection.pages.length + 1}`,
+            keyTakeaway: "",
+            pageNumber: subsection.pages.length + 1
+          });
+        }
+      }
+      subsection.pages[pageIndex] = page;
+    }
 
-    setEditingPage({ subsectionIndex, pageIndex });
+    console.log("📄 Page data:", {
+      hasPage: !!page,
+      hasPages: !!subsection.pages,
+      pagesLength: subsection.pages?.length || 0,
+      pageTitle: page?.pageTitle || page?.title,
+      contentLength: page?.content?.length || 0,
+      subsectionFields: Object.keys(subsection),
+      pageIndex,
+      actualPage: page,
+      subsectionContent: {
+        explanation: subsection.explanation?.substring(0, 100),
+        content: subsection.content?.substring(0, 100),
+        generatedMarkdown: subsection.generatedMarkdown?.substring(0, 100),
+        markdown: subsection.markdown?.substring(0, 100)
+      }
+    });
+
+    const editingData = { subsectionIndex, pageIndex };
+    
+    // Set editing state immediately
+    setEditingPage(editingData);
     setEditingContent(page.content || "");
     setEditingTitle(page.pageTitle || page.title || "");
     setEditingTakeaway(page.keyTakeaway || "");
+    
+    console.log("✅ Edit state set successfully", { 
+      stateSet: editingData, 
+      contentLength: page.content?.length || 0,
+      title: page.pageTitle || page.title,
+      contentPreview: page.content?.substring(0, 100)
+    });
   };
 
   const savePageEdit = () => {
-    if (!editingPage) return;
+    if (!editingPage) {
+      console.error("❌ No editing page state found");
+      toast.error("No page is currently being edited");
+      return;
+    }
 
     const { subsectionIndex, pageIndex } = editingPage;
+    console.log("💾 Saving page edit:", { subsectionIndex, pageIndex, contentLength: editingContent.length });
+    
     const updatedModule = { ...localModule };
+    const subsection = updatedModule.detailedSubsections[subsectionIndex];
 
-    updatedModule.detailedSubsections[subsectionIndex].pages[pageIndex] = {
-      ...updatedModule.detailedSubsections[subsectionIndex].pages[pageIndex],
+    // Ensure pages array exists
+    if (!subsection.pages) {
+      subsection.pages = [];
+    }
+
+    // Ensure the specific page exists
+    if (!subsection.pages[pageIndex]) {
+      subsection.pages[pageIndex] = {
+        content: "",
+        pageTitle: subsection.title || "Academic Content",
+        title: subsection.title || "Academic Content",
+        keyTakeaway: "",
+        pageNumber: pageIndex + 1
+      };
+    }
+
+    // Update the page
+    subsection.pages[pageIndex] = {
+      ...subsection.pages[pageIndex],
       content: editingContent,
       pageTitle: editingTitle,
       keyTakeaway: editingTakeaway,
+      pageNumber: pageIndex + 1
     };
 
+    console.log("📝 Updated page data:", {
+      pageTitle: subsection.pages[pageIndex].pageTitle,
+      contentLength: subsection.pages[pageIndex].content.length,
+      hasTakeaway: !!subsection.pages[pageIndex].keyTakeaway
+    });
+
     setLocalModule(updatedModule);
+    
+    // Show success notification
+    toast.success("Page content updated successfully!");
+
+    // Clear editing state
     setEditingPage(null);
     setEditingContent("");
     setEditingTitle("");
@@ -498,16 +740,14 @@ export default function AcademicModuleEditorEnhanced({
     setHasChanges(true);
     setSaveStatus("editing");
 
-    // Show success notification
-    toast.success("Page content updated successfully!");
-
-    // Trigger parent update
-    if (onUpdate) {
-      onUpdate(updatedModule);
-    }
+    // Trigger parent update immediately
+      if (onUpdate) {
+        onUpdate(updatedModule);
+      }
   };
 
   const cancelPageEdit = () => {
+    console.log("❌ Canceling page edit");
     setEditingPage(null);
     setEditingContent("");
     setEditingTitle("");
@@ -752,12 +992,21 @@ export default function AcademicModuleEditorEnhanced({
   };
 
   const debouncedParentUpdate = (updatedModule) => {
+    // Skip updates while editing to prevent interference
+    if (editingPage || editingStateRef.current) {
+      console.log("⚠️ Skipping debounced update - currently editing page", {
+        editingPage,
+        editingRef: editingStateRef.current
+      });
+      return;
+    }
+
     if (updateTimeout) {
       clearTimeout(updateTimeout);
     }
 
     const newTimeout = setTimeout(() => {
-      if (onUpdate) {
+      if (onUpdate && !editingPage) {
         setSaveStatus("saving");
         console.log("🔄 Debounced parent update with module changes");
         onUpdate(updatedModule);
@@ -1399,6 +1648,15 @@ export default function AcademicModuleEditorEnhanced({
 
   // Update subsection - handle both explanation and content fields
   const updateSubsection = (index, updates) => {
+    // Skip updates while editing to prevent interference
+    if (editingPage || editingStateRef.current) {
+      console.log("⚠️ Skipping subsection update - currently editing page", {
+        editingPage,
+        editingRef: editingStateRef.current
+      });
+      return;
+    }
+
     const updatedSubsections = detailedSubsections.map((sub, i) =>
       i === index ? { ...sub, ...updates } : sub
     );
@@ -3271,11 +3529,28 @@ Detailed discussion here..."
                     getCurrentExplanationPage(globalIndex);
 
                   // Handle academic multipage structure
-                  const pages =
-                    subsectionPages.type === "pages"
-                      ? subsectionPages.data?.pages || []
-                      : subsectionPages.data || [];
+                  let pages = [];
+                  if (subsectionPages.type === "pages") {
+                    pages = subsectionPages.data?.pages || [];
+                  } else if (subsectionPages.data) {
+                    pages = subsectionPages.data;
+                  } else {
+                    // Fallback: try to get pages directly from subsection
+                    pages = subsection.pages || [];
+                  }
+                  
                   const currentPageData = pages[currentSubsectionPage];
+                  
+                  console.log("📄 Page retrieval debug:", {
+                    subsectionTitle: subsection.title,
+                    subsectionPagesType: subsectionPages.type,
+                    hasDataPages: !!subsectionPages.data?.pages,
+                    dataPagesLength: subsectionPages.data?.pages?.length || 0,
+                    directPagesLength: subsection.pages?.length || 0,
+                    currentSubsectionPage,
+                    hasCurrentPageData: !!currentPageData,
+                    currentPageContentLength: currentPageData?.content?.length || 0
+                  });
 
                   // Ensure currentPageData is valid
                   if (!currentPageData) {
@@ -3393,7 +3668,7 @@ Detailed discussion here..."
                                           <Label className="font-semibold text-blue-700">
                                             Edit Concept Cards
                                           </Label>
-                                          {subsection.conceptFlashCards.map(
+                                          {subsection.conceptFlashCards.filter(card => card).map(
                                             (card, cardIndex) => (
                                               <Card
                                                 key={`edit-concept-${cardIndex}`}
@@ -3533,7 +3808,7 @@ Detailed discussion here..."
                                           <Label className="font-semibold text-green-700">
                                             Edit Formula Cards
                                           </Label>
-                                          {subsection.formulaFlashCards.map(
+                                          {subsection.formulaFlashCards.filter(card => card).map(
                                             (card, cardIndex) => (
                                               <Card
                                                 key={`edit-formula-${cardIndex}`}
@@ -3686,7 +3961,7 @@ Detailed discussion here..."
                                     <Label className="font-semibold">
                                       📚 Concept Groups
                                     </Label>
-                                    {subsection.conceptGroups.map(
+                                    {subsection.conceptGroups.filter(group => group).map(
                                       (group, groupIndex) => (
                                         <Card
                                           key={groupIndex}
@@ -4259,6 +4534,7 @@ Detailed discussion here..."
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                           {subsectionPages.data.conceptFlashCards
                                             .slice(0, 4)
+                                            .filter(card => card)
                                             .map((card, idx) => (
                                               <div
                                                 key={idx}
@@ -4337,6 +4613,7 @@ Detailed discussion here..."
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                           {subsectionPages.data.formulaFlashCards
                                             .slice(0, 4)
+                                            .filter(card => card)
                                             .map((card, idx) => (
                                               <div
                                                 key={idx}
@@ -4569,11 +4846,11 @@ Detailed discussion here..."
                                         </div>
                                       </div>
 
-                                      {editingPage &&
+                                      {(editingPage &&
                                       editingPage.subsectionIndex ===
                                         globalIndex &&
                                       editingPage.pageIndex ===
-                                        currentSubsectionPage ? (
+                                        currentSubsectionPage) ? (
                                         // Edit mode
                                         <div className="space-y-4 border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
                                           <div className="flex items-center justify-between">
@@ -4609,6 +4886,7 @@ Detailed discussion here..."
                                               </Label>
                                               <Input
                                                 id="edit-page-title"
+                                                key={`edit-title-${editingPage?.subsectionIndex}-${editingPage?.pageIndex}`}
                                                 value={editingTitle}
                                                 onChange={(e) =>
                                                   setEditingTitle(
@@ -4629,6 +4907,7 @@ Detailed discussion here..."
                                               </Label>
                                               <Textarea
                                                 id="edit-page-content"
+                                                key={`edit-content-${editingPage?.subsectionIndex}-${editingPage?.pageIndex}`}
                                                 value={editingContent}
                                                 onChange={(e) =>
                                                   setEditingContent(
@@ -4650,6 +4929,7 @@ Detailed discussion here..."
                                               </Label>
                                               <Input
                                                 id="edit-page-takeaway"
+                                                key={`edit-takeaway-${editingPage?.subsectionIndex}-${editingPage?.pageIndex}`}
                                                 value={editingTakeaway}
                                                 onChange={(e) =>
                                                   setEditingTakeaway(
@@ -4707,17 +4987,144 @@ Detailed discussion here..."
                                     </div>
                                   ) : (
                                     <div className="prose prose-sm max-w-none">
-                                      <h4 className="font-semibold text-md mb-2">
-                                        {pages[0]?.pageTitle ||
-                                          pages[0]?.title ||
-                                          "Academic Content"}
-                                      </h4>
-                                      <MathMarkdownRenderer
-                                        content={
-                                          pages[0]?.content ||
-                                          "No content available"
-                                        }
-                                      />
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-semibold text-md">
+                                          {pages[0]?.pageTitle ||
+                                            pages[0]?.title ||
+                                            "Academic Content"}
+                                        </h4>
+                                        <div className="flex items-center gap-2">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              alert(`Edit button clicked! Subsection: ${globalIndex}, Page: 0`);
+                                              console.log("🔴 EDIT BUTTON CLICKED", { globalIndex, pageIndex: 0 });
+                                              startEditingPage(
+                                                globalIndex,
+                                                0
+                                              );
+                                            }}
+                                            className="text-xs"
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            Edit Page
+                                          </Button>
+                                        </div>
+                                      </div>
+
+                                      {(editingPage &&
+                                      editingPage.subsectionIndex ===
+                                        globalIndex &&
+                                      editingPage.pageIndex === 0) ? (
+                                        // Edit mode
+                                        <div className="space-y-4 border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
+                                          <div className="flex items-center justify-between">
+                                            <h5 className="font-medium text-blue-800">
+                                              Editing Page Content
+                                            </h5>
+                                            <div className="flex gap-2">
+                                              <Button
+                                                size="sm"
+                                                onClick={savePageEdit}
+                                              >
+                                                Save
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={cancelPageEdit}
+                                              >
+                                                Cancel
+                                              </Button>
+                                            </div>
+                                          </div>
+
+                                          <div className="space-y-4">
+                                            <div>
+                                              <Label
+                                                htmlFor="edit-page-title"
+                                                className="text-sm font-medium"
+                                              >
+                                                Page Title
+                                              </Label>
+                                              <Input
+                                                id="edit-page-title"
+                                                value={editingTitle}
+                                                onChange={(e) =>
+                                                  setEditingTitle(e.target.value)
+                                                }
+                                                className="mt-1"
+                                                placeholder="Enter page title"
+                                              />
+                                            </div>
+
+                                            <div>
+                                              <Label
+                                                htmlFor="edit-page-content"
+                                                className="text-sm font-medium"
+                                              >
+                                                Content (Markdown supported)
+                                              </Label>
+                                              <Textarea
+                                                id="edit-page-content"
+                                                value={editingContent}
+                                                onChange={(e) =>
+                                                  setEditingContent(
+                                                    e.target.value
+                                                  )
+                                                }
+                                                rows={15}
+                                                className="mt-1 font-mono text-sm"
+                                                placeholder="Enter page content using Markdown..."
+                                              />
+                                            </div>
+
+                                            <div>
+                                              <Label
+                                                htmlFor="edit-page-takeaway"
+                                                className="text-sm font-medium"
+                                              >
+                                                Key Takeaway
+                                              </Label>
+                                              <Input
+                                                id="edit-page-takeaway"
+                                                value={editingTakeaway}
+                                                onChange={(e) =>
+                                                  setEditingTakeaway(
+                                                    e.target.value
+                                                  )
+                                                }
+                                                className="mt-1"
+                                                placeholder="Enter key takeaway"
+                                              />
+                                            </div>
+
+                                            <Label className="text-sm font-medium">
+                                              Preview:
+                                            </Label>
+                                            <div className="bg-white rounded border p-3 max-h-40 overflow-y-auto">
+                                              <UniversalContentRenderer
+                                                content={
+                                                  editingContent ||
+                                                  "No content to preview"
+                                                }
+                                                className="text-sm"
+                                                enableAnalytics={false}
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        // View mode
+                                        <MathMarkdownRenderer
+                                          content={
+                                            pages[0]?.content ||
+                                            "No content available"
+                                          }
+                                        />
+                                      )}
                                     </div>
                                   )}
                                   {pages.length > 1 && (

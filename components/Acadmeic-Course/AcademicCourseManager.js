@@ -158,8 +158,8 @@ export default function AcademicCourseManager() {
         console.log(`🔬 Debug found ${debugData.count} Academic Course courses in database:`, debugData);
       }
       
-      // Now fetch courses through the regular API with explicit Academic Course filter
-      const response = await fetch(`/api/courses?educatorId=${user.id}&isAcademicCourse=true`, {
+      // Fetch academic courses from the dedicated academic courses API
+      const response = await fetch(`/api/academic-courses?educatorId=${user.id}`, {
         headers: getAuthHeaders(),
       })
 
@@ -240,7 +240,7 @@ export default function AcademicCourseManager() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`/api/stats?type=examgenius&isAcademicCourse=true`, {
+      const response = await fetch(`/api/stats?type=academic`, {
         headers: getAuthHeaders(),
       })
 
