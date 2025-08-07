@@ -441,57 +441,189 @@ export default function AcademicModuleEditorEnhanced({
   // Debounced parent update to prevent constant saving while editing
   const [updateTimeout, setUpdateTimeout] = useState(null);
 
-  // Page editing state
-  const [editingPage, setEditingPage] = useState(null); // { subsectionIndex, pageIndex }
-  const [editingContent, setEditingContent] = useState("");
-  const [editingTitle, setEditingTitle] = useState("");
-  const [editingTakeaway, setEditingTakeaway] = useState("");
-  
-  // Use ref to persist editing state across re-renders
-  const editingStateRef = useRef(null);
-
-  // Debug render cycles and editing state
-  console.log("🔄 AcademicModuleEditorEnhanced render", {
-    moduleTitle: module.title,
-    timestamp: new Date().toISOString(),
-    editingPage,
-    hasDetailedSubsections: !!localModule.detailedSubsections?.length,
-    detailedSubsectionsCount: localModule.detailedSubsections?.length || 0
+  // Modal-based editing state - completely isolated from other state management
+  const [editModal, setEditModal] = useState({
+    isOpen: false,
+    subsectionIndex: null,
+    pageIndex: null,
+    content: "",
+    title: "",
+    takeaway: ""
   });
 
-  // Debug subsection structure when editing
-  if (editingPage) {
-    const subsection = localModule.detailedSubsections[editingPage.subsectionIndex];
-    console.log("🔍 Current subsection structure:", {
-      subsectionTitle: subsection?.title,
+  // Backup modal state using ref to prevent re-render interference
+  const modalStateRef = useRef({
+    isOpen: false,
+    subsectionIndex: null,
+    pageIndex: null,
+    content: "",
+    title: "",
+    takeaway: ""
+  });
+
+  // Test modal no longer needed - using real edit modal
+
+  // Modal editing functions - completely separate from complex state management
+  const openEditModal = (subsectionIndex, pageIndex) => {
+    console.log("🔴 Opening edit modal START", { subsectionIndex, pageIndex, currentModalState: editModal });
+    
+    // Use localStorage as backup to prevent timing issues
+    const modalKey = `editModal_${Date.now()}`;
+    localStorage.setItem('currentEditModal', modalKey);
+    
+    const subsection = localModule.detailedSubsections[subsectionIndex];
+    console.log("🔍 Subsection data:", {
+      title: subsection?.title,
       hasPages: !!subsection?.pages,
-      pagesLength: subsection?.pages?.length || 0,
-      pageData: subsection?.pages?.[editingPage.pageIndex],
-      allFields: Object.keys(subsection || {})
+      pagesCount: subsection?.pages?.length || 0,
+      hasExplanation: !!subsection?.explanation,
+      hasContent: !!subsection?.content,
+      hasGeneratedMarkdown: !!subsection?.generatedMarkdown
     });
-  }
-
-  // Ensure editing state is always in sync
-  useEffect(() => {
-    if (editingPage) {
-      editingStateRef.current = editingPage;
+    
+    let page = null;
+    
+    // Get content from various possible sources
+    if (subsection.pages && subsection.pages[pageIndex]) {
+      page = subsection.pages[pageIndex];
+      console.log("📄 Using existing page data");
     } else {
-      editingStateRef.current = null;
+      // Create from basic subsection data
+      page = {
+        content: subsection.explanation || subsection.content || subsection.generatedMarkdown || "",
+        pageTitle: subsection.title || "Academic Content",
+        keyTakeaway: subsection.keyTakeaway || ""
+      };
+      console.log("📄 Created page from subsection data");
     }
-  }, [editingPage]);
 
-  // Monitor editing content changes
-  useEffect(() => {
-    if (editingPage) {
-      console.log("📝 Editing content changed:", {
-        editingPage,
-        contentLength: editingContent.length,
-        titleLength: editingTitle.length,
-        takeawayLength: editingTakeaway.length,
-        contentPreview: editingContent.substring(0, 100)
+    console.log("📝 Page content preview:", {
+      contentLength: page.content?.length || 0,
+      titleLength: page.pageTitle?.length || 0,
+      hasContent: !!page.content
+    });
+
+    const newModalState = {
+      isOpen: true,
+      subsectionIndex,
+      pageIndex,
+      content: page.content || "",
+      title: page.pageTitle || page.title || "",
+      takeaway: page.keyTakeaway || ""
+    };
+
+    console.log("🚀 Setting modal state:", newModalState);
+    
+    // Update state, ref, and localStorage for maximum persistence  
+    modalStateRef.current = newModalState;
+    localStorage.setItem('editModalState', JSON.stringify(newModalState));
+    setEditModal(newModalState);
+    
+    // Check if state was set correctly after various delays
+    setTimeout(() => {
+      console.log("⏰ Modal state after 50ms:", {
+        stateValue: editModal,
+        refValue: modalStateRef.current
       });
+    }, 50);
+    
+    setTimeout(() => {
+      console.log("⏰ Modal state after 100ms:", {
+        stateValue: editModal,
+        refValue: modalStateRef.current
+      });
+    }, 100);
+    
+    setTimeout(() => {
+      console.log("⏰ Modal state after 500ms:", {
+        stateValue: editModal,
+        refValue: modalStateRef.current
+      });
+    }, 500);
+  };
+
+  const closeEditModal = () => {
+    console.log("🔴 Closing edit modal");
+    
+    // Clear all modal state storage
+    modalStateRef.current = { isOpen: false };
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('editModalState');
+      localStorage.removeItem('currentEditModal');
     }
-  }, [editingContent, editingTitle, editingTakeaway, editingPage]);
+    
+    setEditModal({
+      isOpen: false,
+      subsectionIndex: null,
+      pageIndex: null,
+      content: "",
+      title: "",
+      takeaway: ""
+    });
+  };
+
+  // Track modal state changes with detailed debugging
+  useEffect(() => {
+    console.log("📊 Modal state changed:", {
+      isOpen: editModal.isOpen,
+      hasContent: !!editModal.content,
+      timestamp: new Date().toISOString(),
+      fullModalState: editModal,
+      refState: modalStateRef.current
+    });
+    
+    if (!editModal.isOpen && modalStateRef.current?.isOpen) {
+      console.warn("🚨 Modal state mismatch! State says closed but ref says open");
+    }
+  }, [editModal.isOpen, editModal]);
+
+  // Additional tracking for any state changes that might affect the modal
+  useEffect(() => {
+    console.log("🔄 Component re-rendered, modal state:", {
+      editModalOpen: editModal.isOpen,
+      refModalOpen: modalStateRef.current?.isOpen,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  const saveEditModal = () => {
+    const { subsectionIndex, pageIndex, content, title, takeaway } = editModal;
+    const updatedModule = { ...localModule };
+    const subsection = updatedModule.detailedSubsections[subsectionIndex];
+
+    // Ensure pages array exists
+    if (!subsection.pages) {
+      subsection.pages = [];
+    }
+
+    // Ensure the specific page exists
+    if (!subsection.pages[pageIndex]) {
+      subsection.pages[pageIndex] = {
+        content: "",
+        pageTitle: subsection.title || "Academic Content",
+        keyTakeaway: ""
+      };
+    }
+
+    // Update the page
+    subsection.pages[pageIndex] = {
+      ...subsection.pages[pageIndex],
+      content: content,
+      pageTitle: title,
+      keyTakeaway: takeaway,
+    };
+
+    setLocalModule(updatedModule);
+    closeEditModal();
+    alert("Content saved successfully!");
+  };
+
+  // Old editing useEffect hooks - DISABLED
+  /*
+  useEffect(() => {
+    // Old editing state sync - no longer needed with modal approach
+  }, []);
+  */
 
   // Sync local module state when module prop changes (important for Academic courses)
   useEffect(() => {
@@ -500,15 +632,11 @@ export default function AcademicModuleEditorEnhanced({
       hasContent: !!module.content,
       hasDetailedSubsections: !!module.detailedSubsections?.length,
       isAcademicCourse: module.isAcademicCourse,
-      editingPageState: editingPage,
     });
 
-    // IMPORTANT: Skip module updates if we're currently editing to prevent losing edit state
-    if (editingPage || editingStateRef.current) {
-      console.log("⚠️ Skipping module update - currently editing page", {
-        editingPage,
-        editingRef: editingStateRef.current
-      });
+    // Skip module updates if modal is open
+    if (editModal.isOpen) {
+      console.log("⚠️ Skipping module update - modal is open");
       return;
     }
 
@@ -530,7 +658,7 @@ export default function AcademicModuleEditorEnhanced({
 
     // Reset changes flag when module prop changes
     setHasChanges(false);
-  }, [module, course?.isAcademicCourse, course?.courseType, academicLevel]);
+  }, [module, course?.isAcademicCourse, course?.courseType, academicLevel, editModal.isOpen]);
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -541,9 +669,15 @@ export default function AcademicModuleEditorEnhanced({
     };
   }, [updateTimeout]);
 
-  // Page editing functions
+  // Define a clear error function to catch any remaining calls
   const startEditingPage = (subsectionIndex, pageIndex) => {
-    console.log("🖊️ Starting page edit:", { subsectionIndex, pageIndex });
+    console.error("❌ startEditingPage called - this function is disabled!");
+    console.error("Please use openEditModal instead:", { subsectionIndex, pageIndex });
+    return;
+  };
+
+  // OLD CODE - COMMENTED OUT
+  /*
     
     // Ensure we have a valid subsection
     if (!localModule.detailedSubsections || !localModule.detailedSubsections[subsectionIndex]) {
@@ -682,7 +816,10 @@ export default function AcademicModuleEditorEnhanced({
       contentPreview: page.content?.substring(0, 100)
     });
   };
+  */
 
+  // OLD EDITING FUNCTIONS - DISABLED DUE TO UNDEFINED VARIABLES
+  /*
   const savePageEdit = () => {
     if (!editingPage) {
       console.error("❌ No editing page state found");
@@ -753,6 +890,7 @@ export default function AcademicModuleEditorEnhanced({
     setEditingTitle("");
     setEditingTakeaway("");
   };
+  */
 
   const [toast] = useState(() => ({
     success: (message) => console.log("✅", message),
@@ -993,11 +1131,8 @@ export default function AcademicModuleEditorEnhanced({
 
   const debouncedParentUpdate = (updatedModule) => {
     // Skip updates while editing to prevent interference
-    if (editingPage || editingStateRef.current) {
-      console.log("⚠️ Skipping debounced update - currently editing page", {
-        editingPage,
-        editingRef: editingStateRef.current
-      });
+    if (editModal.isOpen) {
+      console.log("⚠️ Skipping debounced update - modal is open");
       return;
     }
 
@@ -1006,7 +1141,7 @@ export default function AcademicModuleEditorEnhanced({
     }
 
     const newTimeout = setTimeout(() => {
-      if (onUpdate && !editingPage) {
+      if (onUpdate && !editModal.isOpen) {
         setSaveStatus("saving");
         console.log("🔄 Debounced parent update with module changes");
         onUpdate(updatedModule);
@@ -1649,11 +1784,8 @@ export default function AcademicModuleEditorEnhanced({
   // Update subsection - handle both explanation and content fields
   const updateSubsection = (index, updates) => {
     // Skip updates while editing to prevent interference
-    if (editingPage || editingStateRef.current) {
-      console.log("⚠️ Skipping subsection update - currently editing page", {
-        editingPage,
-        editingRef: editingStateRef.current
-      });
+    if (editModal.isOpen) {
+      console.log("⚠️ Skipping subsection update - modal is open");
       return;
     }
 
@@ -4824,10 +4956,8 @@ Detailed discussion here..."
                                             variant="outline"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              startEditingPage(
-                                                globalIndex,
-                                                currentSubsectionPage
-                                              );
+                                              console.log("🔴 Multi-page edit button clicked");
+                                              openEditModal(globalIndex, currentSubsectionPage);
                                             }}
                                             className="text-xs"
                                           >
@@ -4846,11 +4976,8 @@ Detailed discussion here..."
                                         </div>
                                       </div>
 
-                                      {(editingPage &&
-                                      editingPage.subsectionIndex ===
-                                        globalIndex &&
-                                      editingPage.pageIndex ===
-                                        currentSubsectionPage) ? (
+                                      {false ? (
+                                        // OLD INLINE EDITING - DISABLED
                                         // Edit mode
                                         <div className="space-y-4 border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
                                           <div className="flex items-center justify-between">
@@ -4999,12 +5126,8 @@ Detailed discussion here..."
                                             variant="outline"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              alert(`Edit button clicked! Subsection: ${globalIndex}, Page: 0`);
-                                              console.log("🔴 EDIT BUTTON CLICKED", { globalIndex, pageIndex: 0 });
-                                              startEditingPage(
-                                                globalIndex,
-                                                0
-                                              );
+                                              console.log("🔴 Single-page edit button clicked");
+                                              openEditModal(globalIndex, 0);
                                             }}
                                             className="text-xs"
                                           >
@@ -5014,10 +5137,8 @@ Detailed discussion here..."
                                         </div>
                                       </div>
 
-                                      {(editingPage &&
-                                      editingPage.subsectionIndex ===
-                                        globalIndex &&
-                                      editingPage.pageIndex === 0) ? (
+                                      {false ? (
+                                        // OLD SINGLE-PAGE INLINE EDITING - DISABLED
                                         // Edit mode
                                         <div className="space-y-4 border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
                                           <div className="flex items-center justify-between">
@@ -5771,6 +5892,92 @@ Detailed discussion here..."
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Modal */}
+      {(editModal.isOpen || modalStateRef.current?.isOpen || 
+        (typeof window !== 'undefined' && localStorage.getItem('editModalState'))) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Edit Page Content</h3>
+              <Button variant="ghost" onClick={closeEditModal}>
+                ✕
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Page Title</Label>
+                <Input
+                  value={editModal.title || modalStateRef.current?.title || ""}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setEditModal(prev => ({ ...prev, title: newValue }));
+                    if (modalStateRef.current) {
+                      modalStateRef.current.title = newValue;
+                    }
+                  }}
+                  placeholder="Enter page title"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">Content (Markdown supported)</Label>
+                <Textarea
+                  value={editModal.content || modalStateRef.current?.content || ""}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setEditModal(prev => ({ ...prev, content: newValue }));
+                    if (modalStateRef.current) {
+                      modalStateRef.current.content = newValue;
+                    }
+                  }}
+                  placeholder="Enter page content using Markdown..."
+                  rows={15}
+                  className="mt-1 font-mono text-sm"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">Key Takeaway</Label>
+                <Input
+                  value={editModal.takeaway || modalStateRef.current?.takeaway || ""}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setEditModal(prev => ({ ...prev, takeaway: newValue }));
+                    if (modalStateRef.current) {
+                      modalStateRef.current.takeaway = newValue;
+                    }
+                  }}
+                  placeholder="Enter key takeaway"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Preview:</Label>
+                <div className="bg-gray-50 rounded border p-3 max-h-60 overflow-y-auto">
+                  <UniversalContentRenderer
+                    content={editModal.content || modalStateRef.current?.content || "No content to preview"}
+                    className="text-sm"
+                    enableAnalytics={false}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={closeEditModal}>
+                  Cancel
+                </Button>
+                <Button onClick={saveEditModal} className="bg-blue-600 hover:bg-blue-700">
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

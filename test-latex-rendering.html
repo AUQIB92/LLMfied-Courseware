@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX Rendering Test - State of the Art</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"></script>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; margin: 40px; line-height: 1.6; }
+        .test-section { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .test-title { color: #2563eb; font-weight: bold; margin-bottom: 15px; }
+        .katex { font-size: 1.1em; }
+        .katex-display { margin: 1.5em 0; }
+        .status { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .pass { background: #dcfce7; color: #166534; }
+        .fail { background: #fecaca; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <h1>🔬 LaTeX Rendering Test Suite</h1>
+    <p>Testing state-of-the-art LaTeX symbol rendering across browsers</p>
+
+    <div class="test-section">
+        <div class="test-title">1. Basic Mathematical Operations</div>
+        <p>Addition: $a + b = c$</p>
+        <p>Subtraction: $x - y = z$</p>
+        <p>Multiplication: $p \times q = r$</p>
+        <p>Division: $\frac{m}{n} = k$</p>
+        <p>Powers: $x^2 + y^2 = z^2$</p>
+        <p>Subscripts: $a_1, a_2, \ldots, a_n$</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">2. Advanced Functions & Calculus</div>
+        <p>Trigonometric: $\sin(x), \cos(x), \tan(x)$</p>
+        <p>Logarithmic: $\log(x), \ln(x), \log_2(x)$</p>
+        <p>Derivatives: $\frac{d}{dx}f(x), \frac{\partial}{\partial x}f(x,y)$</p>
+        <p>Integrals: $\int_a^b f(x)dx, \oint_C \vec{F} \cdot d\vec{r}$</p>
+        <p>Limits: $\lim_{x \to \infty} f(x) = L$</p>
+        <p>Summations: $\sum_{i=1}^n a_i, \prod_{j=1}^m b_j$</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">3. Greek Letters & Symbols</div>
+        <p>Lowercase: $\alpha, \beta, \gamma, \delta, \epsilon, \theta, \lambda, \mu, \pi, \sigma, \phi, \omega$</p>
+        <p>Uppercase: $\Alpha, \Beta, \Gamma, \Delta, \Theta, \Lambda, \Pi, \Sigma, \Phi, \Omega$</p>
+        <p>Special: $\infty, \partial, \nabla, \pm, \mp, \times, \div, \neq, \leq, \geq$</p>
+        <p>Arrows: $\to, \rightarrow, \Rightarrow, \leftrightarrow, \Leftrightarrow$</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">4. Complex Mathematical Expressions</div>
+        <p>Quadratic Formula: $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</p>
+        <p>Euler's Identity: $$e^{i\pi} + 1 = 0$$</p>
+        <p>Maxwell's Equations: $$\nabla \times \vec{E} = -\frac{\partial \vec{B}}{\partial t}$$</p>
+        <p>Schrödinger Equation: $$i\hbar\frac{\partial}{\partial t}|\psi\rangle = \hat{H}|\psi\rangle$$</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">5. Matrices & Vectors</div>
+        <p>Matrix: $$\begin{pmatrix} a & b \\ c & d \end{pmatrix}$$</p>
+        <p>Determinant: $$\begin{vmatrix} a & b \\ c & d \end{vmatrix} = ad - bc$$</p>
+        <p>Vector: $$\vec{v} = \begin{bmatrix} x \\ y \\ z \end{bmatrix}$$</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">6. Engineering & Physics Formulas</div>
+        <p>Ohm's Law: $$V = IR$$</p>
+        <p>Power: $$P = \frac{V^2}{R} = I^2R$$</p>
+        <p>Capacitor Energy: $$E = \frac{1}{2}CV^2$$</p>
+        <p>Wave Equation: $$\frac{\partial^2 u}{\partial t^2} = c^2 \frac{\partial^2 u}{\partial x^2}$$</p>
+        <p>Einstein Mass-Energy: $$E = mc^2$$</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">7. Complex Fractions & Nested Expressions</div>
+        <p>Complex Fraction: $$\frac{1 + \frac{2}{3}}{\frac{4}{5} - \frac{6}{7}}$$</p>
+        <p>Nested Radicals: $$\sqrt{x + \sqrt{y + \sqrt{z}}}$$</p>
+        <p>Continued Fraction: $$x = a_0 + \cfrac{1}{a_1 + \cfrac{1}{a_2 + \cfrac{1}{a_3 + \cdots}}}$$</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">8. Set Theory & Logic</div>
+        <p>Sets: $A \cup B, A \cap B, A \setminus B, A \subseteq B$</p>
+        <p>Logic: $\land, \lor, \neg, \Rightarrow, \Leftrightarrow, \forall, \exists$</p>
+        <p>Number Sets: $\mathbb{N}, \mathbb{Z}, \mathbb{Q}, \mathbb{R}, \mathbb{C}$</p>
+    </div>
+
+    <div id="test-results"></div>
+
+    <script>
+        // Auto-render LaTeX
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '\\(', right: '\\)', display: false}
+                ],
+                throwOnError: false,
+                strict: false,
+                trust: false
+            });
+            
+            // Run tests
+            setTimeout(runRenderingTests, 1000);
+        });
+
+        function runRenderingTests() {
+            const tests = [
+                { name: 'Basic Math Rendering', selector: '.test-section:nth-child(2) .katex' },
+                { name: 'Advanced Functions', selector: '.test-section:nth-child(3) .katex' },
+                { name: 'Greek Letters', selector: '.test-section:nth-child(4) .katex' },
+                { name: 'Complex Expressions', selector: '.test-section:nth-child(5) .katex-display' },
+                { name: 'Matrices', selector: '.test-section:nth-child(6) .katex-display' },
+                { name: 'Engineering Formulas', selector: '.test-section:nth-child(7) .katex' },
+                { name: 'Complex Fractions', selector: '.test-section:nth-child(8) .katex-display' },
+                { name: 'Set Theory', selector: '.test-section:nth-child(9) .katex' }
+            ];
+
+            let results = '<h2>🧪 Test Results</h2><ul>';
+            let totalTests = 0;
+            let passedTests = 0;
+
+            tests.forEach(test => {
+                const elements = document.querySelectorAll(test.selector);
+                const passed = elements.length > 0;
+                const status = passed ? 'PASS' : 'FAIL';
+                const statusClass = passed ? 'pass' : 'fail';
+                
+                results += `<li><strong>${test.name}:</strong> <span class="status ${statusClass}">${status}</span> (${elements.length} elements rendered)</li>`;
+                
+                totalTests++;
+                if (passed) passedTests++;
+            });
+
+            const overallStatus = passedTests === totalTests ? 'ALL TESTS PASSED ✅' : `${passedTests}/${totalTests} TESTS PASSED ⚠️`;
+            results += '</ul>';
+            results += `<p><strong>Overall Status:</strong> <span class="status ${passedTests === totalTests ? 'pass' : 'fail'}">${overallStatus}</span></p>`;
+
+            // Browser compatibility info
+            results += '<h3>🌐 Browser Compatibility</h3>';
+            results += `<p><strong>User Agent:</strong> ${navigator.userAgent}</p>`;
+            results += `<p><strong>KaTeX Version:</strong> ${katex?.version || 'Unknown'}</p>`;
+
+            document.getElementById('test-results').innerHTML = results;
+        }
+    </script>
+</body>
+</html>

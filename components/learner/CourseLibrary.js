@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import ExamGeniusCourseViewer from "./ExamGeniusCourseViewer";
+import AcademicCourseViewer from "@/components/Acadmeic-Course/AcademicCourseViewer";
 import {
   Search,
   BookOpen,
@@ -66,11 +67,13 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   const [error, setError] = useState(null);
   const [uiUpdateTrigger, setUiUpdateTrigger] = useState(0); // Force UI updates
   const [viewingExamGeniusCourse, setViewingExamGeniusCourse] = useState(null);
+  const [viewingAcademicCourse, setViewingAcademicCourse] = useState(null);
   const { getAuthHeaders, user } = useAuth();
 
   // Fetch all published courses and enrollment status on component mount
   useEffect(() => {
     fetchCourses();
+    fetchAcademicCourses(); // Always fetch academic courses
     initializeEnrollments();
     initializeAcademicEnrollments();
   }, [showCompetitiveOnly, showAcademicCourses]);
@@ -213,10 +216,14 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
       setError(null); // Clear previous errors
       console.log("Fetching courses from API...");
 
-      // Add isExamGenius parameter to include ExamGenius courses
-      const url = showCompetitiveOnly
-        ? "/api/courses?status=published&isExamGenius=true"
-        : "/api/courses?status=published";
+      // Build URL with appropriate parameters
+      let url = "/api/courses?status=published";
+      
+      if (showCompetitiveOnly) {
+        url += "&isExamGenius=true";
+      }
+      
+      console.log("Fetching courses from URL:", url);
 
       const response = await fetch(url, {
         headers: getAuthHeaders(),
@@ -260,6 +267,43 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
     }
   };
 
+  const fetchAcademicCourses = async () => {
+    try {
+      console.log("Fetching academic courses from API...");
+
+      const url = "/api/courses?status=published&isAcademicCourse=true";
+      console.log("Fetching academic courses from URL:", url);
+
+      const response = await fetch(url, {
+        headers: getAuthHeaders(),
+      });
+
+      console.log("Academic courses response status:", response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Academic courses API response data:", data);
+
+        // Handle different response formats
+        let academicCoursesData = [];
+        if (Array.isArray(data)) {
+          academicCoursesData = data;
+        } else if (data && Array.isArray(data.courses)) {
+          academicCoursesData = data.courses;
+        } else if (data && data.data && Array.isArray(data.data)) {
+          academicCoursesData = data.data;
+        }
+
+        setAcademicCourses(academicCoursesData);
+        console.log(`Set ${academicCoursesData.length} academic courses`);
+      } else {
+        const errorText = await response.text();
+        console.error(`Academic courses API Error: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      console.error("Network error while fetching academic courses:", error);
+    }
+  };
 
   const initializeAcademicEnrollments = async () => {
     try {
@@ -782,12 +826,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
   });
 
   // Filter academic courses
-  const filteredAcademicCourses = courses.filter((course) => {
-    // Only include academic courses
-    if (!course.isAcademicCourse && course.courseType !== "academic") {
-      return false;
-    }
-    
+  const filteredAcademicCourses = academicCourses.filter((course) => {
     const matchesSearch =
       course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -871,6 +910,17 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
         onProgress={(progress) => {
           console.log("📊 ExamGenius course progress:", progress);
         }}
+      />
+    );
+  }
+
+  // If viewing an Academic course, render the academic viewer
+  if (viewingAcademicCourse) {
+    return (
+      <AcademicCourseViewer
+        course={typeof viewingAcademicCourse === 'object' ? viewingAcademicCourse : null}
+        courseId={typeof viewingAcademicCourse === 'string' ? viewingAcademicCourse : viewingAcademicCourse?._id}
+        onBack={() => setViewingAcademicCourse(null)}
       />
     );
   }
@@ -1358,9 +1408,14 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
                       <div className="pt-2">
                         {isEnrolled ? (
                           <Button
-                            onClick={() =>
-                              onCourseSelect && onCourseSelect(course)
-                            }
+                            onClick={() => {
+                              console.log("📖 Opening enrolled academic course:", course.title);
+                              setViewingAcademicCourse({
+                                ...course,
+                                isEnrolled: true,
+                                enrolledAt: academicEnrollments[course._id]?.enrolledAt || new Date().toISOString(),
+                              });
+                            }}
                             className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
                           >
                             <Play className="h-4 w-4 mr-2" />

@@ -49,14 +49,18 @@ export async function POST(request) {
       courseType
     } = requestData;
 
-    if (!title?.trim() || !subject || !academicLevel) {
+    if (!title?.trim()) {
       return NextResponse.json(
-        { error: "Title, subject, and academic level are required" },
+        { error: "Title is required" },
         { status: 400 }
       );
     }
+    
+    // For academic courses, set default values if missing
+    const courseSubject = subject || "General";
+    const courseAcademicLevel = academicLevel || "Undergraduate";
 
-    console.log(`📚 Saving academic course: ${title} (${subject} - ${academicLevel})`);
+    console.log(`📚 Saving academic course: ${title} (${courseSubject} - ${courseAcademicLevel})`);
 
     await client.connect();
     const db = client.db("llmfied");
@@ -73,8 +77,8 @@ export async function POST(request) {
       const updateData = {
         title: title.trim(),
         description: description?.trim() || '',
-        subject,
-        academicLevel,
+        subject: courseSubject,
+        academicLevel: courseAcademicLevel,
         semester: semester?.trim() || '',
         credits: credits || 3,
         dueDate: dueDate || null,
@@ -125,8 +129,8 @@ export async function POST(request) {
       const courseData = {
         title: title.trim(),
         description: description?.trim() || '',
-        subject,
-        academicLevel,
+        subject: courseSubject,
+        academicLevel: courseAcademicLevel,
         semester: semester?.trim() || '',
         credits: credits || 3,
         dueDate: dueDate || null,

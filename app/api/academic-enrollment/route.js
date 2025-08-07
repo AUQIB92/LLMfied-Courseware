@@ -46,7 +46,7 @@ export async function GET(request) {
       const studentIds = [...new Set(enrollments.map(enrollment => enrollment.studentId))]
       
       const [courses, students] = await Promise.all([
-        db.collection("academicCourses").find({
+        db.collection("courses").find({
           _id: { $in: courseIds }
         }).toArray(),
         db.collection("users").find({
@@ -85,15 +85,22 @@ export async function GET(request) {
 // POST /api/academic-enrollment - Enroll in academic course
 export async function POST(request) {
   try {
+    console.log("🎓 Academic enrollment request received");
+    
     const user = await verifyToken(request)
+    console.log("✅ User verified:", { userId: user.userId, role: user.role });
+    
     if (user.role !== "learner") {
+      console.log("❌ Unauthorized: User role is not learner");
       return NextResponse.json({ error: "Unauthorized - Only learners can enroll" }, { status: 403 })
     }
 
     const requestBody = await request.json()
     const { courseId } = requestBody
+    console.log("📝 Request body:", { courseId });
 
     if (!courseId) {
+      console.log("❌ Missing courseId");
       return NextResponse.json({ 
         error: "Missing required field: courseId" 
       }, { status: 400 })
@@ -102,31 +109,43 @@ export async function POST(request) {
     const client = await clientPromise
     const db = client.db("llmfied")
 
+    console.log("🔍 Looking for course with ID:", courseId);
+    
     // Check if course exists and is published
-    const course = await db.collection("academicCourses").findOne({
+    const course = await db.collection("courses").findOne({
       _id: new ObjectId(courseId),
-      status: "published"
+      status: "published",
+      $or: [
+        { isAcademicCourse: true },
+        { courseType: "academic" }
+      ]
     })
 
+    console.log("📚 Course found:", course ? { id: course._id, title: course.title, status: course.status, isAcademicCourse: course.isAcademicCourse, courseType: course.courseType } : null);
+
     if (!course) {
+      console.log("❌ Course not found or not available");
       return NextResponse.json({ 
         error: "Course not found or not available for enrollment" 
       }, { status: 404 })
     }
 
     // Check if already enrolled
+    console.log("🔍 Checking for existing enrollment...");
     const existingEnrollment = await db.collection("academicEnrollments").findOne({
       studentId: new ObjectId(user.userId),
       courseId: new ObjectId(courseId)
     })
 
     if (existingEnrollment) {
+      console.log("⚠️ Already enrolled in this course");
       return NextResponse.json({ 
         error: "Already enrolled in this course" 
       }, { status: 400 })
     }
 
     // Create enrollment
+    console.log("📝 Creating new enrollment...");
     const enrollmentDocument = {
       studentId: new ObjectId(user.userId),
       courseId: new ObjectId(courseId),
@@ -142,7 +161,7 @@ export async function POST(request) {
 
     const enrollment = await db.collection("academicEnrollments").insertOne(enrollmentDocument)
 
-    console.log("Academic enrollment created successfully:", enrollment.insertedId)
+    console.log("✅ Academic enrollment created successfully:", enrollment.insertedId)
     
     return NextResponse.json({ 
       id: enrollment.insertedId,
@@ -151,10 +170,27 @@ export async function POST(request) {
     })
 
   } catch (error) {
-    console.error("Error creating academic enrollment:", error)
+    console.error("❌ Error creating academic enrollment:", error)
+    
+    // Handle specific auth errors
+    if (error.message.includes("No authorization header") || error.message.includes("No token provided")) {
+      return NextResponse.json({ 
+        error: "Authentication required",
+        details: error.message
+      }, { status: 401 })
+    }
+    
+    if (error.message.includes("Invalid token") || error.message.includes("Token has expired")) {
+      return NextResponse.json({ 
+        error: "Invalid or expired token",
+        details: error.message
+      }, { status: 401 })
+    }
+    
     return NextResponse.json({ 
       error: "Failed to create academic enrollment",
-      details: error.message
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 })
   }
 }

@@ -80,6 +80,7 @@ export default function LearnerDashboard() {
   const [selectedAcademicCourse, setSelectedAcademicCourse] = useState(null);
   const [selectedTestSeries, setSelectedTestSeries] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [enrolledAcademicCourses, setEnrolledAcademicCourses] = useState([]);
   const [enrolledTestSeries, setEnrolledTestSeries] = useState([]);
   const [enrollmentDataLoaded, setEnrollmentDataLoaded] = useState(false); // Track if enrollment data is loaded
   const [showProfileSettings, setShowProfileSettings] = useState(false);
@@ -110,6 +111,7 @@ export default function LearnerDashboard() {
 
   useEffect(() => {
     fetchEnrolledCourses();
+    fetchEnrolledAcademicCourses();
     fetchStats();
   }, []);
 
@@ -117,6 +119,7 @@ export default function LearnerDashboard() {
   useEffect(() => {
     if (enrollmentUpdated > 0) {
       fetchEnrolledCourses();
+      fetchEnrolledAcademicCourses();
     }
   }, [enrollmentUpdated]);
 
@@ -159,10 +162,12 @@ export default function LearnerDashboard() {
         case "enrollment_updated":
           // Refresh enrolled courses when enrollment changes
           fetchEnrolledCourses();
+          fetchEnrolledAcademicCourses();
           break;
         case "enrollments_synced":
           // Refresh when bulk sync completes
           fetchEnrolledCourses();
+          fetchEnrolledAcademicCourses();
           break;
       }
     });
@@ -313,6 +318,32 @@ export default function LearnerDashboard() {
       // Always mark as loaded, even if there are no courses
       setEnrollmentDataLoaded(true);
       console.log("📊 Enrollment data loading completed");
+    }
+  };
+
+  const fetchEnrolledAcademicCourses = async () => {
+    try {
+      console.log("🚀 Fetching enrolled academic courses using API...");
+      
+      const response = await apiCall("/api/academic-enrollment", {
+        method: "GET",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("📚 Academic enrollment response:", data);
+        
+        const academicCoursesArray = Array.isArray(data?.enrollments) ? data.enrollments : [];
+        console.log("✅ Setting enrolled academic courses:", academicCoursesArray?.length || 0, "courses");
+        setEnrolledAcademicCourses(academicCoursesArray || []);
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to fetch academic enrollments:", errorText);
+        setEnrolledAcademicCourses([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch enrolled academic courses:", error);
+      setEnrolledAcademicCourses([]);
     }
   };
 
@@ -519,6 +550,7 @@ export default function LearnerDashboard() {
     if (selectedAcademicCourse) {
       return (
         <AcademicCourseViewer
+          course={selectedAcademicCourse}
           courseId={selectedAcademicCourse._id}
           onBack={() => {
             setSelectedAcademicCourse(null);
@@ -818,8 +850,8 @@ export default function LearnerDashboard() {
                         </div>
                       ))}
                     </div>
-                  ) : Array.isArray(enrolledCourses) &&
-                    enrolledCourses.length > 0 ? (
+                  ) : (Array.isArray(enrolledCourses) && enrolledCourses.length > 0) || 
+                      (Array.isArray(enrolledAcademicCourses) && enrolledAcademicCourses.length > 0) ? (
                     (() => {
                       // Categorize courses
                       const technicalCourses = enrolledCourses.filter(
@@ -1074,9 +1106,111 @@ export default function LearnerDashboard() {
                             </div>
                           )}
 
-                          {/* If no courses in either category */}
+                          {/* Academic Courses Section */}
+                          {enrolledAcademicCourses.length > 0 && (
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-purple-500/10 rounded-xl">
+                                  <GraduationCap className="h-5 w-5 text-purple-600" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800">
+                                  Academic Courses
+                                </h3>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-purple-50 text-purple-700 border-purple-200"
+                                >
+                                  {enrolledAcademicCourses.length} course
+                                  {enrolledAcademicCourses.length > 1 ? "s" : ""}
+                                </Badge>
+                              </div>
+                              <div className="space-y-4">
+                                {enrolledAcademicCourses.map((course, index) => {
+                                  const progress = Math.random() * 100;
+                                  const timeLeft = Math.floor(Math.random() * 120) + 30;
+
+                                  return (
+                                    <div
+                                      key={course._id}
+                                      className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-purple-300 bg-gradient-to-r from-white to-purple-50/50 touch-manipulation"
+                                    >
+                                      <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between relative z-10 gap-4">
+                                        <div className="flex-1 space-y-3 sm:space-y-4 w-full">
+                                          <div className="flex items-start gap-3 sm:gap-4">
+                                            <div className="p-2 sm:p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl sm:rounded-2xl shadow-lg shrink-0">
+                                              <GraduationCap className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <h4 className="font-bold text-base sm:text-lg text-slate-800 group-hover:text-purple-600 transition-colors duration-300 line-clamp-2">
+                                                {course.title}
+                                              </h4>
+                                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+                                                <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                  <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                  {course.modules?.length || 0} modules
+                                                </span>
+                                                <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                  <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                  ~{timeLeft} min left
+                                                </span>
+                                                <Badge
+                                                  variant="outline"
+                                                  className="bg-green-50 text-green-700 border-green-200 text-xs self-start"
+                                                >
+                                                  {Math.floor(progress)}% complete
+                                                </Badge>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <div className="space-y-2">
+                                            <div className="flex items-center justify-between text-sm">
+                                              <span className="text-slate-600 font-medium">
+                                                Progress
+                                              </span>
+                                              <span className="text-slate-800 font-semibold">
+                                                {Math.floor(progress)}%
+                                              </span>
+                                            </div>
+                                            <Progress
+                                              value={progress}
+                                              className="h-3 bg-slate-100"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <Button
+                                          onClick={() => {
+                                            console.log(
+                                              "📖 Opening academic course:",
+                                              course.title
+                                            );
+                                            setSelectedAcademicCourse({
+                                              ...course,
+                                              isEnrolled: true,
+                                              enrolledAt: course.enrolledAt || new Date().toISOString(),
+                                            });
+                                            setHideHeader(true);
+                                          }}
+                                          className="flex-1 sm:flex-none bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 sm:w-auto w-full sm:min-w-[140px]"
+                                        >
+                                          <Play className="h-4 w-4 mr-2" />
+                                          Continue Learning
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* If no courses in any category */}
                           {technicalCourses.length === 0 &&
-                            competitiveExamCourses.length === 0 && (
+                            competitiveExamCourses.length === 0 &&
+                            enrolledAcademicCourses.length === 0 && (
                               <div className="text-center py-12">
                                 <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                   <BookOpen className="h-12 w-12 text-blue-500" />
