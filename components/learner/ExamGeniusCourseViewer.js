@@ -365,11 +365,11 @@ const InlineFlashcard = ({ card, cardIndex, onFullscreen }) => {
                     ✓
                   </div>
                   <div className="w-8 sm:w-12 h-px bg-gradient-to-r from-transparent via-slate-500 to-transparent mx-auto mb-2 sm:mb-4"></div>
-                  <div className="text-sm sm:text-base lg:text-lg text-slate-100 leading-relaxed font-medium">
+                  <div className="text-sm sm:text-base lg:text-lg text-neutral-100 leading-relaxed font-medium">
                     <ContentDisplay
                       content={card.answer}
                       renderingMode="math-optimized"
-                      className="text-slate-100 flashcard-answer text-center"
+                      className="text-neutral-100 flashcard-answer text-center"
                       inline={true}
                       enableTelemetry={false}
                     />
@@ -380,7 +380,7 @@ const InlineFlashcard = ({ card, cardIndex, onFullscreen }) => {
               <div className="text-center mt-2 sm:mt-4">
                 <div className="inline-flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-4 sm:py-2 bg-slate-800/70 rounded-full border border-slate-600 shadow-sm">
                   <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full"></div>
-                  <p className="text-slate-300 text-xs sm:text-sm font-medium">
+                  <p className="text-neutral-300 text-xs sm:text-sm font-medium">
                     Tap to expand
                   </p>
                 </div>
@@ -1483,7 +1483,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                   {resource.title || resource.name}
                 </CardTitle>
                 {resource.creator && (
-                  <p className="text-slate-600 text-sm font-medium">
+                  <p className="text-neutral-600 text-sm font-medium">
                     by {resource.creator}
                   </p>
                 )}
@@ -1518,7 +1518,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
           <CardContent className="pt-0 space-y-4 relative z-10">
             {resource.description && (
               <div className="p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/40 group-hover:bg-white/80 transition-all duration-300">
-                <div className="text-slate-700 text-sm leading-relaxed line-clamp-3">
+                <div className="text-neutral-700 text-sm leading-relaxed line-clamp-3">
                   <ContentDisplay
                     content={resource.description}
                     renderingMode="math-optimized"
@@ -1530,7 +1530,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
             <div className="space-y-3">
               {resource.difficulty && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-600">
+                  <span className="text-sm font-semibold text-neutral-600">
                     Difficulty:
                   </span>
                   <Badge
@@ -1933,11 +1933,11 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                       </div>
                       <div className="space-y-4 sm:space-y-6">
                         <div className="w-16 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent mx-auto"></div>
-                        <div className="text-xl text-slate-800 leading-relaxed font-medium px-8">
+                        <div className="text-xl text-neutral-800 leading-relaxed font-medium px-8">
                           <ContentDisplay
                             content={fullscreenCard.answer}
                             renderingMode="math-optimized"
-                            className="text-slate-800 flashcard-answer text-xl"
+                            className="text-neutral-800 flashcard-answer text-xl"
                             inline={true}
                             enableTelemetry={false}
                           />
@@ -1948,7 +1948,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                     <div className="text-center">
                       <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-50 rounded-full border border-slate-200">
                         <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
-                        <p className="text-slate-600 text-lg font-medium">
+                        <p className="text-neutral-600 text-lg font-medium">
                           Click to flip back
                         </p>
                       </div>
@@ -2124,12 +2124,12 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                 variant="ghost"
                 size="sm"
                 onClick={closeFlashcards}
-                className="text-slate-600 hover:bg-slate-100 rounded-full ml-2"
+                className="text-neutral-600 hover:bg-slate-100 rounded-full ml-2"
               >
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <p className="text-slate-600 font-medium">
+            <p className="text-neutral-600 font-medium">
               Master your subjects with elegant learning
             </p>
           </div>
@@ -2139,11 +2139,11 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
-                <span className="text-slate-700 font-semibold">
+                <span className="text-neutral-700 font-semibold">
                   Learning Progress
                 </span>
               </div>
-              <span className="text-slate-600 font-medium">
+              <span className="text-neutral-600 font-medium">
                 {studiedCards.size} of {currentFlashcardSet.length} mastered
               </span>
             </div>
@@ -2250,11 +2250,11 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                     </div>
                     <div className="space-y-4">
                       <div className="w-12 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent mx-auto"></div>
-                      <div className="text-base text-slate-800 leading-relaxed font-medium px-4">
+                      <div className="text-base text-neutral-800 leading-relaxed font-medium px-4">
                         <ContentDisplay
                           content={card.back}
                           renderingMode="math-optimized"
-                          className="text-slate-800 flashcard-answer"
+                          className="text-neutral-800 flashcard-answer"
                           inline={true}
                           enableTelemetry={false}
                         />
@@ -2265,7 +2265,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                   <div className="text-center">
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-full border border-slate-200">
                       <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
-                      <p className="text-slate-600 text-sm font-medium">
+                      <p className="text-neutral-600 text-sm font-medium">
                         Tap to flip back
                       </p>
                     </div>
@@ -2289,7 +2289,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
             <div className="flex items-center gap-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-slate-800">
+                <div className="text-2xl font-bold text-neutral-800">
                   {activeFlashcardIndex + 1}
                 </div>
                 <div className="text-sm text-slate-500 font-medium">
@@ -2456,7 +2456,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                 ? "bg-green-500 text-white"
                                 : currentModule === index
                                 ? "bg-white/20 text-white"
-                                : "bg-gray-200 text-gray-600"
+                                : "bg-gray-200 text-neutral-600"
                             }`}
                           >
                             {completedModules.has(index) ? (
@@ -2555,7 +2555,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                   <TabsContent value="content" className="p-6">
                     <div className="space-y-6">
                       <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-xl">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">
+                        <h3 className="text-lg font-bold text-neutral-800 mb-4">
                           Module Overview
                         </h3>
                         <div className="prose max-w-none">
@@ -2679,7 +2679,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                               );
                             } else {
                               return (
-                                <div className="text-gray-500 italic p-4 bg-white/50 rounded-lg border">
+                                <div className="text-neutral-500 italic p-4 bg-white/50 rounded-lg border">
                                   <p>📚 Module content is being processed...</p>
                                   <p className="text-sm mt-2">
                                     Check the "Subsections" tab for detailed
@@ -2713,7 +2713,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                         currentModuleData?.summary !==
                           currentModuleData?.content && (
                           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-neutral-800 mb-4 flex items-center gap-2">
                               <BookOpen className="h-5 w-5 text-blue-600" />
                               Summary
                             </h3>
@@ -2742,7 +2742,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
                         return objectives && objectives.length > 0 ? (
                           <div className="bg-blue-50 p-6 rounded-xl">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-neutral-800 mb-4 flex items-center gap-2">
                               <Target className="h-5 w-5 text-blue-600" />
                               Learning Objectives
                             </h3>
@@ -2755,7 +2755,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                   <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-0.5">
                                     {index + 1}
                                   </div>
-                                  <div className="text-gray-700 flex-1">
+                                  <div className="text-neutral-700 flex-1">
                                     <ContentDisplay
                                       content={objective}
                                       renderingMode="math-optimized"
@@ -2784,7 +2784,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
                         return examples && examples.length > 0 ? (
                           <div className="bg-green-50 p-6 rounded-xl">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-neutral-800 mb-4 flex items-center gap-2">
                               <Lightbulb className="h-5 w-5 text-green-600" />
                               Key Examples
                             </h3>
@@ -2799,7 +2799,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                       Example {index + 1}
                                     </Badge>
                                     <div className="flex-1">
-                                      <div className="text-gray-700">
+                                      <div className="text-neutral-700">
                                         <ContentDisplay
                                           content={example}
                                           renderingMode="math-optimized"
@@ -2817,7 +2817,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
 
                       {/* Debug info for developers */}
                       {process.env.NODE_ENV === "development" && (
-                        <div className="bg-gray-50 p-4 rounded-lg border text-xs text-gray-600">
+                        <div className="bg-gray-50 p-4 rounded-lg border text-xs text-neutral-600">
                           <h4 className="font-semibold mb-2">Debug Info:</h4>
                           <p>Content sources available:</p>
                           <ul className="list-disc list-inside space-y-1">
@@ -2869,7 +2869,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                         {subsections.length === 0 ? (
                           <div className="text-center py-12">
                             <Brain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-500 mb-4">
+                            <p className="text-neutral-500 mb-4">
                               No flashcards available yet
                             </p>
                             <p className="text-sm text-gray-400">
@@ -3016,10 +3016,10 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                   <TabsContent value="quiz" className="p-6">
                     <div className="space-y-6">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                        <h2 className="text-2xl font-bold text-neutral-800 mb-4">
                           Practice Quizzes
                         </h2>
-                        <p className="text-gray-600 mb-8">
+                        <p className="text-neutral-600 mb-8">
                           Test your understanding with quizzes based on the
                           current module content
                         </p>
@@ -3072,7 +3072,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                   <Target className="h-5 w-5 text-purple-600" />
                                   {subsection.title}
                                 </CardTitle>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-neutral-600">
                                   {subsection.summary ||
                                     `Practice questions for ${subsection.title}`}
                                 </p>
@@ -3164,7 +3164,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                       ) : (
                         <div className="text-center py-12">
                           <Brain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                          <p className="text-gray-500 mb-4">
+                          <p className="text-neutral-500 mb-4">
                             No quizzes available yet
                           </p>
                           <p className="text-sm text-gray-400">
@@ -3186,10 +3186,10 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                               <Sparkles className="h-8 w-8 text-purple-600" />
                             </div>
                             <div>
-                              <h2 className="text-3xl font-bold text-slate-800">
+                              <h2 className="text-3xl font-bold text-neutral-800">
                                 Learning Resources
                               </h2>
-                              <p className="text-slate-600 mt-1">
+                              <p className="text-neutral-600 mt-1">
                                 Comprehensive collection of exam preparation
                                 materials
                               </p>
@@ -3240,7 +3240,7 @@ export default function ExamGeniusCourseViewer({ course, onBack, onProgress }) {
                                   <Icon
                                     className={`h-7 w-7 mx-auto mb-3 ${styles.text} group-hover:text-opacity-80 transition-colors`}
                                   />
-                                  <p className="font-semibold text-slate-800 text-sm">
+                                  <p className="font-semibold text-neutral-800 text-sm">
                                     {label}
                                   </p>
                                   <div
@@ -3450,7 +3450,7 @@ function QuizInterface({ quizData, onComplete, difficulty }) {
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
-        <p className="text-xl font-semibold text-gray-800">
+        <p className="text-xl font-semibold text-neutral-800">
           Evaluating your answers...
         </p>
       </div>
@@ -3482,7 +3482,12 @@ function QuizInterface({ quizData, onComplete, difficulty }) {
           />
         </div>
         <div className="space-y-2">
-          {currentQ?.options.map((option, index) => (
+          {(Array.isArray(currentQ?.options) 
+            ? currentQ?.options 
+            : (typeof currentQ?.options === 'object' && currentQ?.options !== null) 
+              ? Object.keys(currentQ?.options).sort().map(key => currentQ?.options[key]) 
+              : []
+          ).map((option, index) => (
             <Button
               key={index}
               variant={

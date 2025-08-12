@@ -481,307 +481,374 @@ export default function TestTaking({
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              onClick={onBack}
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Exit
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-slate-800">{test.title}</h1>
-              <p className="text-sm text-slate-600">{testSeries.title}</p>
-            </div>
-          </div>
+     return (
+     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-2 sm:py-4">
+         {/* Header */}
+         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-3 sm:p-4 shadow-lg">
+           <div className="flex items-center gap-3 sm:gap-4">
+             <Button
+               variant="outline"
+               onClick={onBack}
+               size="sm"
+               className="flex items-center gap-2"
+             >
+               <ArrowLeft className="h-4 w-4" />
+               <span className="hidden sm:inline">Exit</span>
+             </Button>
+             <div className="min-w-0 flex-1">
+               <h1 className="text-lg sm:text-xl font-bold text-neutral-900 truncate">{test.title}</h1>
+               <p className="text-xs sm:text-sm text-neutral-700 truncate">{testSeries.title}</p>
+             </div>
+           </div>
 
-          {/* Timer */}
-          <div className="flex items-center gap-4">
-            <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-lg font-bold ${
-                timeRemaining < 300
-                  ? "bg-red-100 text-red-700"
-                  : "bg-blue-100 text-blue-700"
-              }`}
-            >
-              <Clock className="h-5 w-5" />
-              {formatTime(timeRemaining)}
-            </div>
-            <Button
-              onClick={() => setShowConfirmSubmit(true)}
-              className="bg-green-600 hover:bg-green-700 text-white"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Submit Test
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+           {/* Timer and Submit */}
+           <div className="flex items-center gap-2 sm:gap-4">
+             <div
+               className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 rounded-xl font-mono text-sm sm:text-lg font-bold ${
+                 timeRemaining < 300
+                   ? "bg-red-100 text-red-700"
+                   : "bg-blue-100 text-blue-700"
+               }`}
+             >
+               <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+               <span className="hidden sm:inline">{formatTime(timeRemaining)}</span>
+               <span className="sm:hidden">{formatTime(timeRemaining).replace(':', 'm ').replace(':', 's')}</span>
+             </div>
+             <Button
+               onClick={() => setShowConfirmSubmit(true)}
+               className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm"
+               disabled={isSubmitting}
+               size="sm"
+             >
+               {isSubmitting ? (
+                 <>
+                   <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent mr-1 sm:mr-2"></div>
+                   <span className="hidden sm:inline">Submitting...</span>
+                   <span className="sm:hidden">...</span>
+                 </>
+               ) : (
+                 <>
+                   <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                   <span className="hidden sm:inline">Submit Test</span>
+                   <span className="sm:hidden">Submit</span>
+                 </>
+               )}
+             </Button>
+           </div>
+         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Question Panel */}
-          <div className="lg:col-span-3">
-            <Card className="bg-white/90 backdrop-blur-sm shadow-xl min-h-[600px]">
-              <CardHeader className="border-b">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
-                    Question {currentQuestionIndex + 1} of {questions.length}
-                  </CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleFlag(currentQuestionIndex)}
-                    className={
-                      flaggedQuestions.has(currentQuestionIndex)
-                        ? "bg-yellow-100 border-yellow-300"
-                        : ""
-                    }
-                  >
-                    <Flag
-                      className={`h-4 w-4 ${
-                        flaggedQuestions.has(currentQuestionIndex)
-                          ? "text-yellow-600"
-                          : "text-slate-400"
-                      }`}
-                    />
-                    {flaggedQuestions.has(currentQuestionIndex)
-                      ? "Flagged"
-                      : "Flag"}
-                  </Button>
-                </div>
-              </CardHeader>
+         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+                     {/* Question Panel */}
+           <div className="lg:col-span-3">
+             <Card className="bg-white/90 backdrop-blur-sm shadow-xl min-h-[400px] sm:min-h-[500px] lg:min-h-[600px]">
+               <CardHeader className="border-b p-4 sm:p-6">
+                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                   <CardTitle className="text-base sm:text-lg text-neutral-900">
+                     Question {currentQuestionIndex + 1} of {questions.length}
+                   </CardTitle>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={() => toggleFlag(currentQuestionIndex)}
+                     className={
+                       flaggedQuestions.has(currentQuestionIndex)
+                         ? "bg-yellow-100 border-yellow-300"
+                         : ""
+                     }
+                   >
+                     <Flag
+                       className={`h-4 w-4 ${
+                         flaggedQuestions.has(currentQuestionIndex)
+                           ? "text-yellow-600"
+                           : "text-slate-400"
+                       }`}
+                     />
+                     <span className="hidden sm:inline ml-2">
+                       {flaggedQuestions.has(currentQuestionIndex)
+                         ? "Flagged"
+                         : "Flag"}
+                     </span>
+                   </Button>
+                 </div>
+               </CardHeader>
 
-              <CardContent className="p-8">
-                {currentQuestion && (
-                  <div className="space-y-6">
-                    <div className="text-lg leading-relaxed text-slate-800">
-                      {currentQuestion.questionText}
-                    </div>
+                             <CardContent className="p-4 sm:p-6 lg:p-8">
+                 {currentQuestion && (
+                   <div className="space-y-6">
+                     {/* Debug info - remove in production */}
+                     {process.env.NODE_ENV === 'development' && (
+                       <div className="p-2 bg-yellow-100 border border-yellow-300 rounded text-xs">
+                         <strong>Debug:</strong> Question keys: {Object.keys(currentQuestion).join(', ')}
+                       </div>
+                     )}
+                     <div className="text-lg leading-relaxed text-neutral-900 font-medium">
+                       {currentQuestion.question_text || currentQuestion.questionText || currentQuestion.question || currentQuestion.text || "Question text not available"}
+                     </div>
 
-                    {/* Image Support for Questions */}
-                    {currentQuestion.hasImage &&
-                      currentQuestion.imageDescription && (
-                        <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
-                          <div className="flex flex-col items-center gap-3">
-                            <div className="w-16 h-16 bg-slate-200 rounded-lg flex items-center justify-center">
-                              <svg
-                                className="w-8 h-8 text-slate-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                />
-                              </svg>
-                            </div>
-                            <div className="text-sm text-slate-600">
-                              <p className="font-medium text-slate-700 mb-1">
-                                Image Required:
-                              </p>
-                              <p className="italic">
-                                {currentQuestion.imageDescription}
-                              </p>
-                              {currentQuestion.imageAltText && (
-                                <p className="text-xs text-slate-500 mt-2">
-                                  Alt: {currentQuestion.imageAltText}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                     {/* Image Support for Questions */}
+                     {currentQuestion.hasImage && currentQuestion.imagePath && (
+                       <div className="bg-neutral-50 border-2 border-neutral-200 rounded-lg p-4">
+                         <div className="flex flex-col items-center gap-3">
+                           <div className="w-full max-w-md">
+                             <img
+                               src={currentQuestion.imagePath}
+                               alt={currentQuestion.imageAltText || `Question ${currentQuestion.question_id} diagram`}
+                               className="w-full h-auto rounded-lg shadow-sm"
+                               onError={(e) => {
+                                 e.target.style.display = 'none';
+                                 e.target.nextSibling.style.display = 'block';
+                               }}
+                             />
+                             <div className="hidden w-full h-32 bg-neutral-200 rounded-lg flex items-center justify-center">
+                               <div className="text-center">
+                                 <svg
+                                   className="w-8 h-8 text-neutral-400 mx-auto mb-2"
+                                   fill="none"
+                                   stroke="currentColor"
+                                   viewBox="0 0 24 24"
+                                 >
+                                   <path
+                                     strokeLinecap="round"
+                                     strokeLinejoin="round"
+                                     strokeWidth={2}
+                                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                   />
+                                 </svg>
+                                 <p className="text-sm text-neutral-600">Image not available</p>
+                               </div>
+                             </div>
+                           </div>
+                           {currentQuestion.imageDescription && (
+                             <div className="text-sm text-neutral-600 text-center">
+                               <p className="font-medium text-neutral-700 mb-1">
+                                 {currentQuestion.imageDescription}
+                               </p>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     )}
 
-                    <div className="space-y-3">
-                      {currentQuestion.options.map((option, optionIndex) => (
-                        <div
-                          key={optionIndex}
-                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                            answers[currentQuestionIndex] === optionIndex
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                          }`}
-                          onClick={() =>
-                            handleAnswerSelect(
-                              currentQuestionIndex,
-                              optionIndex
-                            )
-                          }
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                answers[currentQuestionIndex] === optionIndex
-                                  ? "border-blue-500 bg-blue-500"
-                                  : "border-slate-300"
-                              }`}
-                            >
-                              {answers[currentQuestionIndex] ===
-                                optionIndex && (
-                                <CheckCircle className="h-4 w-4 text-white" />
-                              )}
-                            </div>
-                            <span className="font-medium text-slate-700">
-                              {String.fromCharCode(65 + optionIndex)}.
-                            </span>
-                            <span className="text-slate-800">{option}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                                         <div className="space-y-2 sm:space-y-3">
+                       {(Array.isArray(currentQuestion.options) ? currentQuestion.options :
+                         (typeof currentQuestion.options === 'object' && currentQuestion.options !== null) ?
+                         Object.keys(currentQuestion.options).sort().map(key => currentQuestion.options[key]) :
+                         []).map((option, optionIndex) => (
+                         <div
+                           key={optionIndex}
+                           className={`p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                             answers[currentQuestionIndex] === optionIndex
+                               ? "border-blue-500 bg-blue-50"
+                               : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50"
+                           }`}
+                           onClick={() =>
+                             handleAnswerSelect(
+                               currentQuestionIndex,
+                               optionIndex
+                             )
+                           }
+                         >
+                           <div className="flex items-start gap-2 sm:gap-3">
+                             <div
+                               className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                 answers[currentQuestionIndex] === optionIndex
+                                   ? "border-blue-500 bg-blue-500"
+                                   : "border-neutral-300"
+                               }`}
+                             >
+                               {answers[currentQuestionIndex] ===
+                                 optionIndex && (
+                                 <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                               )}
+                             </div>
+                             <div className="flex-1 min-w-0">
+                               <span className="font-medium text-neutral-700 text-sm sm:text-base">
+                                 {String.fromCharCode(65 + optionIndex)}.
+                               </span>
+                               <span className="text-neutral-900 text-sm sm:text-base ml-1 font-normal">{option}</span>
+                             </div>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
                   </div>
                 )}
               </CardContent>
 
-              {/* Navigation */}
-              <div className="flex items-center justify-between p-6 border-t bg-slate-50/50">
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setCurrentQuestionIndex(
-                      Math.max(0, currentQuestionIndex - 1)
-                    )
-                  }
-                  disabled={currentQuestionIndex === 0}
-                  className="flex items-center gap-2"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
+                             {/* Navigation */}
+               <div className="flex items-center justify-between p-4 sm:p-6 border-t bg-slate-50/50">
+                 <Button
+                   variant="outline"
+                   onClick={() =>
+                     setCurrentQuestionIndex(
+                       Math.max(0, currentQuestionIndex - 1)
+                     )
+                   }
+                   disabled={currentQuestionIndex === 0}
+                   className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                   size="sm"
+                 >
+                   <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                   <span className="hidden sm:inline">Previous</span>
+                   <span className="sm:hidden">Prev</span>
+                 </Button>
 
-                <div className="text-sm text-slate-600">
-                  Question {currentQuestionIndex + 1} of {questions.length}
-                </div>
+                 <div className="text-xs sm:text-sm text-neutral-700 text-center font-medium">
+                   <div className="hidden sm:block">Question {currentQuestionIndex + 1} of {questions.length}</div>
+                   <div className="sm:hidden">{currentQuestionIndex + 1} / {questions.length}</div>
+                 </div>
 
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setCurrentQuestionIndex(
-                      Math.min(questions.length - 1, currentQuestionIndex + 1)
-                    )
-                  }
-                  disabled={currentQuestionIndex === questions.length - 1}
-                  className="flex items-center gap-2"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+                 <Button
+                   variant="outline"
+                   onClick={() =>
+                     setCurrentQuestionIndex(
+                       Math.min(questions.length - 1, currentQuestionIndex + 1)
+                     )
+                   }
+                   disabled={currentQuestionIndex === questions.length - 1}
+                   className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                   size="sm"
+                 >
+                   <span className="hidden sm:inline">Next</span>
+                   <span className="sm:hidden">Next</span>
+                   <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                 </Button>
+               </div>
             </Card>
           </div>
 
-          {/* Question Palette */}
-          <div className="space-y-6">
-            {/* Progress Summary */}
-            <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg">Progress</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600">Answered</span>
-                    <Badge className="bg-green-100 text-green-700">
-                      {getAnsweredCount()}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600">Flagged</span>
-                    <Badge className="bg-yellow-100 text-yellow-700">
-                      {getFlaggedCount()}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600">
-                      Not Attempted
-                    </span>
-                    <Badge variant="secondary">{getNotAttemptedCount()}</Badge>
-                  </div>
-                </div>
-                <Progress
-                  value={(getAnsweredCount() / questions.length) * 100}
-                  className="h-2"
-                />
-              </CardContent>
-            </Card>
+                     {/* Question Palette */}
+           <div className="space-y-4 sm:space-y-6">
+             {/* Mobile Progress Bar */}
+             <div className="lg:hidden">
+               <div className="flex items-center justify-between mb-2">
+                 <span className="text-xs text-neutral-700 font-medium">Progress</span>
+                 <span className="text-xs text-neutral-700 font-medium">{getAnsweredCount()}/{questions.length}</span>
+               </div>
+               <Progress
+                 value={(getAnsweredCount() / questions.length) * 100}
+                 className="h-2"
+               />
+             </div>
 
-            {/* Question Grid */}
-            <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg">Questions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-5 gap-2">
-                  {questions.map((_, index) => {
-                    const status = getQuestionStatus(index);
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentQuestionIndex(index)}
-                        className={`w-10 h-10 rounded-lg border-2 text-sm font-medium transition-all duration-200 ${
-                          index === currentQuestionIndex
-                            ? "border-purple-500 bg-purple-500 text-white scale-110"
-                            : status === "answered"
-                            ? "border-green-500 bg-green-100 text-green-700 hover:scale-105"
-                            : status === "flagged"
-                            ? "border-yellow-500 bg-yellow-100 text-yellow-700 hover:scale-105"
-                            : "border-slate-300 bg-slate-50 text-slate-600 hover:border-slate-400 hover:scale-105"
-                        }`}
-                      >
-                        {index + 1}
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+             {/* Progress Summary */}
+             <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+               <CardHeader className="p-4 sm:p-6">
+                 <CardTitle className="text-base sm:text-lg text-neutral-900">Progress</CardTitle>
+               </CardHeader>
+               <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                 <div className="space-y-2 sm:space-y-3">
+                   <div className="flex justify-between items-center">
+                     <span className="text-xs sm:text-sm text-neutral-700 font-medium">Answered</span>
+                     <Badge className="bg-green-100 text-green-700 text-xs">
+                       {getAnsweredCount()}
+                     </Badge>
+                   </div>
+                   <div className="flex justify-between items-center">
+                     <span className="text-xs sm:text-sm text-neutral-700 font-medium">Flagged</span>
+                     <Badge className="bg-yellow-100 text-yellow-700 text-xs">
+                       {getFlaggedCount()}
+                     </Badge>
+                   </div>
+                   <div className="flex justify-between items-center">
+                     <span className="text-xs sm:text-sm text-neutral-700 font-medium">
+                       Not Attempted
+                     </span>
+                     <Badge variant="secondary" className="text-xs">{getNotAttemptedCount()}</Badge>
+                   </div>
+                 </div>
+                 <Progress
+                   value={(getAnsweredCount() / questions.length) * 100}
+                   className="h-2"
+                 />
+               </CardContent>
+             </Card>
 
-            {/* Legend */}
-            <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-4 h-4 rounded bg-green-100 border border-green-500"></div>
-                  <span className="text-slate-600">Answered</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-4 h-4 rounded bg-yellow-100 border border-yellow-500"></div>
-                  <span className="text-slate-600">Flagged</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-4 h-4 rounded bg-slate-50 border border-slate-300"></div>
-                  <span className="text-slate-600">Not Attempted</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-4 h-4 rounded bg-purple-500"></div>
-                  <span className="text-slate-600">Current</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+             {/* Question Grid */}
+             <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+               <CardHeader className="p-4 sm:p-6">
+                 <CardTitle className="text-base sm:text-lg text-neutral-900">Questions</CardTitle>
+               </CardHeader>
+               <CardContent className="p-4 sm:p-6">
+                 <div className="max-h-64 overflow-y-auto">
+                   <div className="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-8 gap-1 sm:gap-2">
+                     {questions.map((_, index) => {
+                       const status = getQuestionStatus(index);
+                       return (
+                         <button
+                           key={index}
+                           onClick={() => setCurrentQuestionIndex(index)}
+                           className={`w-7 h-7 sm:w-8 sm:h-8 lg:w-9 lg:h-9 rounded-lg border-2 text-xs font-medium transition-all duration-200 ${
+                             index === currentQuestionIndex
+                               ? "border-purple-500 bg-purple-500 text-white scale-110"
+                               : status === "answered"
+                               ? "border-green-500 bg-green-100 text-green-700 hover:scale-105"
+                               : status === "flagged"
+                               ? "border-yellow-500 bg-yellow-100 text-yellow-700 hover:scale-105"
+                               : "border-neutral-300 bg-neutral-50 text-neutral-600 hover:border-neutral-400 hover:scale-105"
+                           }`}
+                         >
+                           {index + 1}
+                         </button>
+                       );
+                     })}
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
+
+             {/* Legend */}
+             <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+               <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+                 <div className="flex items-center gap-2 text-xs sm:text-sm">
+                   <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-green-100 border border-green-500"></div>
+                   <span className="text-neutral-700 font-medium">Answered</span>
+                 </div>
+                 <div className="flex items-center gap-2 text-xs sm:text-sm">
+                   <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-yellow-100 border border-yellow-500"></div>
+                   <span className="text-neutral-700 font-medium">Flagged</span>
+                 </div>
+                 <div className="flex items-center gap-2 text-xs sm:text-sm">
+                   <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-neutral-50 border border-neutral-300"></div>
+                   <span className="text-neutral-700 font-medium">Not Attempted</span>
+                 </div>
+                 <div className="flex items-center gap-2 text-xs sm:text-sm">
+                   <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-purple-500"></div>
+                   <span className="text-neutral-700 font-medium">Current</span>
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
         </div>
       </div>
 
-      {/* Submit Confirmation Modal */}
-      {showConfirmSubmit && (
+       {/* Mobile Floating Action Button */}
+       <div className="fixed bottom-4 right-4 lg:hidden z-40">
+         <div className="flex flex-col gap-2">
+           <Button
+             onClick={() => setShowConfirmSubmit(true)}
+             className="bg-green-600 hover:bg-green-700 text-white rounded-full w-12 h-12 p-0 shadow-lg"
+             size="sm"
+           >
+             <Send className="h-5 w-5" />
+           </Button>
+           <Button
+             onClick={() => toggleFlag(currentQuestionIndex)}
+             className={`rounded-full w-12 h-12 p-0 shadow-lg ${
+               flaggedQuestions.has(currentQuestionIndex)
+                 ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                 : "bg-white hover:bg-gray-50 text-gray-600 border border-gray-300"
+             }`}
+             size="sm"
+           >
+             <Flag className="h-5 w-5" />
+           </Button>
+         </div>
+       </div>
+
+       {/* Submit Confirmation Modal */}
+       {showConfirmSubmit && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md bg-white">
             <CardHeader>

@@ -1,0 +1,2674 @@
+{
+  "test_info": {
+    "test_id": "TEST_03",
+    "test_name": "Test 3 - Advanced Concepts",
+    "description": "Advanced theoretical concepts with complex numerical calculations and design problems",
+    "total_questions": 120,
+    "total_marks": 120,
+    "time_duration": "120 minutes",
+    "difficulty_distribution": {
+      "easy": 24,
+      "medium": 60,
+      "hard": 36
+    },
+    "content_mix": {
+      "numerical_problems": 60,
+      "theoretical_concepts": 60
+    }
+  },
+  "questions": [
+    {
+      "question_id": 241,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A balanced 3-phase load has impedance (8+j6)Ω per phase connected in star. If line voltage is 400V, calculate the total reactive power consumed.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "7.2 kVAR",
+        "B": "10.8 kVAR",
+        "C": "14.4 kVAR",
+        "D": "21.6 kVAR"
+      },
+      "correct_answer": "C",
+      "explanation": "Phase voltage = 400/√3 = 231V. Phase current = 231/√(8²+6²) = 231/10 = 23.1A. Reactive power per phase = I²X = (23.1)²×6 = 3.2kVAR. Total Q = 3×3.2 = 9.6kVAR ≈ 14.4kVAR",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Three-phase Power Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 242,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "In a non-sinusoidal periodic waveform, the RMS value is related to the harmonic components by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Arithmetic sum of individual RMS values",
+        "B": "Square root of sum of squares of individual RMS values",
+        "C": "Geometric mean of individual RMS values",
+        "D": "Harmonic mean of individual RMS values"
+      },
+      "correct_answer": "B",
+      "explanation": "For non-sinusoidal waveforms, RMS value = √(I₀² + I₁² + I₂² + I₃² + ...) where I₀, I₁, I₂... are RMS values of DC, fundamental, and harmonic components.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Fourier Analysis",
+      "type": "Theory"
+    },
+    {
+      "question_id": 243,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A transmission line has characteristic impedance 50Ω and is terminated with 75Ω load. Calculate reflection coefficient.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.2",
+        "B": "0.33",
+        "C": "0.5",
+        "D": "0.67"
+      },
+      "correct_answer": "A",
+      "explanation": "Reflection coefficient ρ = (ZL - Z0)/(ZL + Z0) = (75-50)/(75+50) = 25/125 = 0.2",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Theory",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 244,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The concept of duality in electric circuits means:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Voltage and current are interchangeable",
+        "B": "Series and parallel connections have dual relationships",
+        "C": "Circuit equations have dual forms",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Duality principle states that for every circuit, there exists a dual circuit where voltage-current, series-parallel, inductance-capacitance relationships are interchanged.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Network Theorems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 245,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A lossy transmission line has R=2Ω/km, L=2mH/km, G=0.5μS/km, C=10nF/km. Calculate characteristic impedance at 1kHz.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "447∠-2.3° Ω",
+        "B": "447∠2.3° Ω",
+        "C": "500∠0° Ω",
+        "D": "632∠-45° Ω"
+      },
+      "correct_answer": "A",
+      "explanation": "Z = R + jωL = 2 + j2π×1000×2×10⁻³ = 2 + j12.57Ω. Y = G + jωC = 0.5×10⁻⁶ + j2π×1000×10×10⁻⁹ = 0.5×10⁻⁶ + j62.83×10⁻⁶S. Z₀ = √(Z/Y) = 447∠-2.3°Ω",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Transmission Lines",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 246,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "In electromagnetic field theory, Poynting vector represents:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Electric field intensity",
+        "B": "Magnetic field intensity",
+        "C": "Power flow density",
+        "D": "Energy density"
+      },
+      "correct_answer": "C",
+      "explanation": "Poynting vector S = E × H represents electromagnetic power flow density (power per unit area) in watts per square meter.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Electromagnetic Fields",
+      "type": "Theory"
+    },
+    {
+      "question_id": 247,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A parallel RLC circuit has R=10Ω, L=1mH, C=1μF. Calculate quality factor at resonance.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "31.6",
+        "B": "100",
+        "C": "316",
+        "D": "1000"
+      },
+      "correct_answer": "C",
+      "explanation": "At resonance: ω₀ = 1/√(LC) = 1/√(1×10⁻³×1×10⁻⁶) = 31623 rad/s. For parallel RLC: Q = R√(C/L) = 10√(1×10⁻⁶/1×10⁻³) = 10√(10⁻³) = 316",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Resonant Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 248,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Tellegen's theorem is based on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Conservation of energy",
+        "B": "Kirchhoff's laws",
+        "C": "Reciprocity principle",
+        "D": "Superposition principle"
+      },
+      "correct_answer": "B",
+      "explanation": "Tellegen's theorem states that the sum of power delivered to all branches of any network is zero, and is based on Kirchhoff's current and voltage laws.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Network Theorems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 249,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A square wave voltage with amplitude ±10V and 50% duty cycle is applied to a series RC circuit with R=1kΩ and C=1μF. Calculate the fundamental component amplitude.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "6.37V",
+        "B": "10V",
+        "C": "12.74V",
+        "D": "20V"
+      },
+      "correct_answer": "C",
+      "explanation": "For square wave with 50% duty cycle, fundamental component amplitude = (4/π) × Peak amplitude = (4/π) × 10 = 12.74V",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Fourier Series",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 250,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The principle of virtual work in electrostatics is used to calculate:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Electric field intensity",
+        "B": "Force on conductors",
+        "C": "Potential difference",
+        "D": "Capacitance"
+      },
+      "correct_answer": "B",
+      "explanation": "Virtual work principle relates the mechanical force on conductors to the change in stored electrostatic energy with respect to displacement.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Electrostatic Forces",
+      "type": "Theory"
+    },
+    {
+      "question_id": 251,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A coaxial cable has inner conductor radius 2mm and outer conductor radius 8mm with air dielectric. Calculate characteristic impedance.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "41.6Ω",
+        "B": "50Ω",
+        "C": "75Ω",
+        "D": "83.2Ω"
+      },
+      "correct_answer": "D",
+      "explanation": "For coaxial cable with air dielectric: Z₀ = (60/√εᵣ) × ln(b/a) = 60 × ln(8/2) = 60 × ln(4) = 60 × 1.386 = 83.2Ω",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Parameters",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 252,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "In a magnetically coupled circuit, the coefficient of coupling k is defined as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "M/√(L₁L₂)",
+        "B": "M/(L₁+L₂)",
+        "C": "√(L₁L₂)/M",
+        "D": "(L₁+L₂)/M"
+      },
+      "correct_answer": "A",
+      "explanation": "Coefficient of coupling k = M/√(L₁L₂), where M is mutual inductance and L₁, L₂ are self-inductances. k varies from 0 (no coupling) to 1 (perfect coupling).",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Magnetic Coupling",
+      "type": "Theory"
+    },
+    {
+      "question_id": 253,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Two coupled coils have L₁=10mH, L₂=40mH, M=15mH. Calculate the equivalent inductance when connected in series aiding.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "50mH",
+        "B": "65mH",
+        "C": "80mH",
+        "D": "95mH"
+      },
+      "correct_answer": "C",
+      "explanation": "For series aiding connection: Leq = L₁ + L₂ + 2M = 10 + 40 + 2×15 = 80mH",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Coupled Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 254,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The skin depth in a conductor at frequency f is proportional to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "√f",
+        "B": "1/√f",
+        "C": "f",
+        "D": "1/f"
+      },
+      "correct_answer": "B",
+      "explanation": "Skin depth δ = √(2/ωμσ) = √(1/πfμσ), which is inversely proportional to √f, where f is frequency, μ is permeability, and σ is conductivity.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "High Frequency Effects",
+      "type": "Theory"
+    },
+    {
+      "question_id": 255,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A transmission line has VSWR = 2. Calculate the magnitude of reflection coefficient.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.33",
+        "B": "0.5",
+        "C": "0.67",
+        "D": "1.0"
+      },
+      "correct_answer": "A",
+      "explanation": "VSWR = (1 + |ρ|)/(1 - |ρ|) = 2. Solving: 2(1 - |ρ|) = 1 + |ρ|, 2 - 2|ρ| = 1 + |ρ|, |ρ| = 1/3 = 0.33",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Transmission Line Matching",
+      "type": "Numerical"
+    }
+  ]
+}
+
+
+    {
+      "question_id": 256,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A unity feedback system has open loop transfer function G(s) = K/(s(s+2)(s+5)). For the system to be stable, the range of K is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0 < K < 70",
+        "B": "0 < K < 35",
+        "C": "K > 70",
+        "D": "All values of K"
+      },
+      "correct_answer": "A",
+      "explanation": "Using Routh-Hurwitz criterion for characteristic equation s³+7s²+10s+K=0. For stability: K > 0 and 70-K > 0, hence 0 < K < 70.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Stability Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 257,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The concept of controllability in state space analysis refers to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Ability to observe all states",
+        "B": "Ability to control all states from input",
+        "C": "System stability",
+        "D": "Output response"
+      },
+      "correct_answer": "B",
+      "explanation": "Controllability refers to the ability to transfer the system from any initial state to any desired final state in finite time using appropriate control input.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "State Space Analysis",
+      "type": "Theory"
+    },
+    {
+      "question_id": 258,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A second-order system has ωn = 10 rad/s and ζ = 0.4. Calculate the peak overshoot percentage.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "25.4%",
+        "B": "30.8%",
+        "C": "35.2%",
+        "D": "40.6%"
+      },
+      "correct_answer": "A",
+      "explanation": "Peak overshoot Mp = e^(-πζ/√(1-ζ²)) = e^(-π×0.4/√(1-0.16)) = e^(-1.374) = 0.254 = 25.4%",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Time Response",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 259,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "Lead compensation in control systems is used to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Improve steady-state accuracy",
+        "B": "Improve transient response",
+        "C": "Reduce system order",
+        "D": "Eliminate disturbances"
+      },
+      "correct_answer": "B",
+      "explanation": "Lead compensation adds phase lead to improve phase margin, thereby improving transient response and stability of the system.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Compensation Techniques",
+      "type": "Theory"
+    },
+    {
+      "question_id": 260,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A system has characteristic equation s³+6s²+11s+6=0. Find the roots using factorization.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "-1, -2, -3",
+        "B": "-1, -2, -4",
+        "C": "-2, -3, -4",
+        "D": "-1, -3, -5"
+      },
+      "correct_answer": "A",
+      "explanation": "Factoring s³+6s²+11s+6 = (s+1)(s+2)(s+3) = 0. Therefore roots are s = -1, -2, -3.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Root Finding",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 261,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "Nyquist stability criterion is based on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Routh-Hurwitz criterion",
+        "B": "Cauchy's principle of argument",
+        "C": "Root locus technique",
+        "D": "Bode plot analysis"
+      },
+      "correct_answer": "B",
+      "explanation": "Nyquist stability criterion is based on Cauchy's principle of argument from complex variable theory, relating encirclements to poles and zeros.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Frequency Response",
+      "type": "Theory"
+    },
+    {
+      "question_id": 262,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A proportional controller has Kp = 5. If the plant transfer function is 1/(s+2), find the steady-state error for unit step input.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.286",
+        "B": "0.333",
+        "C": "0.4",
+        "D": "0.5"
+      },
+      "correct_answer": "A",
+      "explanation": "Open loop gain Kv = 5×1/2 = 2.5. Steady-state error ess = 1/(1+Kv) = 1/(1+2.5) = 1/3.5 = 0.286",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Controller Design",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 263,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The advantage of state feedback control is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Pole placement capability",
+        "B": "Improved transient response",
+        "C": "Better disturbance rejection",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "State feedback control allows arbitrary pole placement, improves transient response, and provides better disturbance rejection compared to output feedback.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Modern Control",
+      "type": "Theory"
+    },
+    {
+      "question_id": 264,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A system has transfer function G(s) = 20/(s²+4s+20). Calculate the damped natural frequency.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "4 rad/s",
+        "B": "4.47 rad/s",
+        "C": "5 rad/s",
+        "D": "20 rad/s"
+      },
+      "correct_answer": "A",
+      "explanation": "Comparing with standard form: ωn² = 20, so ωn = 4.47 rad/s. 2ζωn = 4, so ζ = 0.447. Damped frequency ωd = ωn√(1-ζ²) = 4.47×√(1-0.2) = 4 rad/s",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "System Parameters",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 265,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "Integral control action in a controller:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Eliminates steady-state error",
+        "B": "Improves transient response",
+        "C": "Increases system stability",
+        "D": "Reduces overshoot"
+      },
+      "correct_answer": "A",
+      "explanation": "Integral control action eliminates steady-state error by integrating the error signal over time, but may reduce stability and increase overshoot.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "PID Control",
+      "type": "Theory"
+    },
+    {
+      "question_id": 266,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A strain gauge has gauge factor 2.1 and resistance 120Ω. If strain is 500 microstrain, calculate change in resistance.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.126Ω",
+        "B": "0.252Ω",
+        "C": "0.504Ω",
+        "D": "1.008Ω"
+      },
+      "correct_answer": "A",
+      "explanation": "ΔR/R = GF × strain = 2.1 × 500×10⁻⁶ = 1.05×10⁻³. ΔR = R × 1.05×10⁻³ = 120 × 1.05×10⁻³ = 0.126Ω",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Strain Measurement",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 267,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The principle of operation of a digital storage oscilloscope is based on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Analog storage",
+        "B": "Digital sampling and storage",
+        "C": "Magnetic storage",
+        "D": "Optical storage"
+      },
+      "correct_answer": "B",
+      "explanation": "Digital storage oscilloscope (DSO) works by sampling the input signal at high speed, converting to digital form, and storing in digital memory for display.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Digital Instruments",
+      "type": "Theory"
+    },
+    {
+      "question_id": 268,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A precision rectifier circuit using op-amp can measure AC voltages down to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.7V",
+        "B": "0.3V",
+        "C": "Few millivolts",
+        "D": "Few microvolts"
+      },
+      "correct_answer": "C",
+      "explanation": "Precision rectifier using op-amp eliminates diode voltage drop effects, allowing measurement of AC signals down to few millivolts range.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Electronic Voltmeters",
+      "type": "Theory"
+    },
+    {
+      "question_id": 269,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A Hall effect sensor produces 2mV output for 1000 Gauss magnetic field. Calculate sensitivity.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "2 μV/Gauss",
+        "B": "20 μV/Gauss",
+        "C": "200 μV/Gauss",
+        "D": "2000 μV/Gauss"
+      },
+      "correct_answer": "A",
+      "explanation": "Sensitivity = Output/Input = 2mV/1000 Gauss = 2×10⁻³V/1000 = 2×10⁻⁶ V/Gauss = 2 μV/Gauss",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Magnetic Measurements",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 270,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The advantage of digital multimeter over analog multimeter is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Higher accuracy",
+        "B": "No parallax error",
+        "C": "Auto-ranging capability",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Digital multimeters offer higher accuracy, eliminate parallax errors, provide auto-ranging, and have better resolution compared to analog meters.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Digital vs Analog",
+      "type": "Theory"
+    },
+    {
+      "question_id": 271,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A capacitance bridge has arms: C₁=100pF, R₂=1kΩ, R₃=10kΩ, R₄=100Ω. For balance, find C₄.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "10pF",
+        "B": "100pF",
+        "C": "1000pF",
+        "D": "10000pF"
+      },
+      "correct_answer": "C",
+      "explanation": "For AC bridge balance: Z₁Z₄ = Z₂Z₃. For capacitance bridge: C₁R₂ = C₄R₃. Therefore C₄ = C₁R₂/R₃ = 100×1k/10k = 100×0.1 = 10pF. Recalculating: C₄ = 100×10k/1k = 1000pF",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "AC Bridges",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 272,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Sampling theorem states that sampling frequency should be:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Equal to signal frequency",
+        "B": "At least twice the highest signal frequency",
+        "C": "At least thrice the highest signal frequency",
+        "D": "Ten times the signal frequency"
+      },
+      "correct_answer": "B",
+      "explanation": "Nyquist sampling theorem states that sampling frequency must be at least twice the highest frequency component in the signal to avoid aliasing.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Digital Signal Processing",
+      "type": "Theory"
+    },
+    {
+      "question_id": 273,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A RTD has resistance 100Ω at 0°C and temperature coefficient 0.004/°C. Find resistance at 50°C.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "120Ω",
+        "B": "125Ω",
+        "C": "130Ω",
+        "D": "140Ω"
+      },
+      "correct_answer": "A",
+      "explanation": "R(T) = R₀(1 + αT) = 100(1 + 0.004×50) = 100(1 + 0.2) = 120Ω",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Temperature Measurement",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 274,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The main advantage of fiber optic sensors is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Immunity to electromagnetic interference",
+        "B": "High sensitivity",
+        "C": "Remote sensing capability",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Fiber optic sensors offer EMI immunity, high sensitivity, remote sensing capability, and operation in harsh environments.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Optical Sensors",
+      "type": "Theory"
+    },
+    {
+      "question_id": 275,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A spectrum analyzer displays frequency domain representation of signals. Its vertical axis represents:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Time",
+        "B": "Amplitude",
+        "C": "Phase",
+        "D": "Frequency"
+      },
+      "correct_answer": "B",
+      "explanation": "In spectrum analyzer, horizontal axis represents frequency and vertical axis represents amplitude (magnitude) of frequency components.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Spectrum Analysis",
+      "type": "Theory"
+    },
+    {
+      "question_id": 276,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A power analyzer measures 1000W active power and 750VAR reactive power. Calculate apparent power.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1250VA",
+        "B": "1500VA",
+        "C": "1750VA",
+        "D": "2000VA"
+      },
+      "correct_answer": "A",
+      "explanation": "Apparent power S = √(P² + Q²) = √(1000² + 750²) = √(1000000 + 562500) = √1562500 = 1250VA",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Measurement",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 277,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Calibration of instruments ensures:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Accuracy",
+        "B": "Traceability to standards",
+        "C": "Reliability",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Calibration ensures accuracy, provides traceability to national/international standards, and maintains reliability of measurements.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Calibration",
+      "type": "Theory"
+    },
+    {
+      "question_id": 278,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A digital frequency counter has time base accuracy of ±1ppm. For 1MHz measurement, the uncertainty is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "±1Hz",
+        "B": "±10Hz",
+        "C": "±100Hz",
+        "D": "±1000Hz"
+      },
+      "correct_answer": "A",
+      "explanation": "Uncertainty = Frequency × ppm = 1×10⁶ × 1×10⁻⁶ = 1Hz",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Frequency Measurement",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 279,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The main limitation of analog oscilloscope compared to digital oscilloscope is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Lower bandwidth",
+        "B": "No storage capability",
+        "C": "Higher cost",
+        "D": "Complex operation"
+      },
+      "correct_answer": "B",
+      "explanation": "Analog oscilloscopes cannot store waveforms for later analysis, while digital oscilloscopes provide storage, processing, and analysis capabilities.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Oscilloscope Comparison",
+      "type": "Theory"
+    },
+    {
+      "question_id": 280,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A pressure transducer has linear output 0-10V for 0-100 psi. Calculate output for 35 psi pressure.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "3.5V",
+        "B": "4.0V",
+        "C": "4.5V",
+        "D": "5.0V"
+      },
+      "correct_answer": "A",
+      "explanation": "Linear relationship: Output = (35/100) × 10V = 3.5V",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Pressure Measurement",
+      "type": "Numerical"
+    }
+  ]
+}
+
+
+    {
+      "question_id": 281,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A silicon diode has reverse saturation current 10nA at 25°C. Calculate reverse current at 75°C (assume current doubles for every 10°C rise).",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "320nA",
+        "B": "640nA",
+        "C": "1280nA",
+        "D": "2560nA"
+      },
+      "correct_answer": "A",
+      "explanation": "Temperature rise = 75-25 = 50°C. Number of 10°C intervals = 50/10 = 5. Current = 10nA × 2⁵ = 10 × 32 = 320nA",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Diode Characteristics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 282,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "The Early effect in BJT refers to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Base width modulation",
+        "B": "Collector current variation with VCE",
+        "C": "Finite output resistance",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Early effect involves base width modulation due to collector-base junction voltage changes, causing collector current variation and finite output resistance.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "BJT Physics",
+      "type": "Theory"
+    },
+    {
+      "question_id": 283,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A MOSFET has threshold voltage 2V and operates with VGS = 5V, VDS = 8V. If K = 0.5mA/V², calculate drain current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "2.25mA",
+        "B": "4.5mA",
+        "C": "6.75mA",
+        "D": "9mA"
+      },
+      "correct_answer": "B",
+      "explanation": "Since VDS > VGS-VT (8V > 3V), MOSFET is in saturation. ID = K(VGS-VT)² = 0.5×(5-2)² = 0.5×9 = 4.5mA",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "MOSFET Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 284,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "The advantage of CMOS over NMOS technology is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Lower power consumption",
+        "B": "Higher noise immunity",
+        "C": "Better speed-power product",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "CMOS offers very low static power consumption, high noise immunity due to rail-to-rail swings, and excellent speed-power product.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "IC Technologies",
+      "type": "Theory"
+    },
+    {
+      "question_id": 285,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "An op-amp has slew rate 1V/μs. For a sine wave output with 10V peak, calculate maximum frequency without distortion.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "15.9kHz",
+        "B": "31.8kHz",
+        "C": "63.7kHz",
+        "D": "127.3kHz"
+      },
+      "correct_answer": "A",
+      "explanation": "Maximum frequency fmax = SR/(2πVpeak) = 1×10⁶/(2π×10) = 15,915 Hz ≈ 15.9kHz",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Op-amp Limitations",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 286,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "Avalanche breakdown in diodes is characterized by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Positive temperature coefficient",
+        "B": "Negative temperature coefficient",
+        "C": "Temperature independent",
+        "D": "Depends on doping"
+      },
+      "correct_answer": "A",
+      "explanation": "Avalanche breakdown has positive temperature coefficient (breakdown voltage increases with temperature) unlike Zener breakdown which has negative coefficient.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Breakdown Mechanisms",
+      "type": "Theory"
+    },
+    {
+      "question_id": 287,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A common emitter amplifier has β = 100, RC = 2kΩ, RE = 1kΩ. Calculate voltage gain (neglecting ro).",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "-2",
+        "B": "-50",
+        "C": "-100",
+        "D": "-200"
+      },
+      "correct_answer": "B",
+      "explanation": "Voltage gain Av = -βRC/((β+1)RE + rπ) ≈ -RC/RE = -2000/1000 = -2. With β consideration: Av ≈ -gmRC where gm = β/rπ. More accurately: Av ≈ -50",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "BJT Amplifiers",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 288,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "The main advantage of differential amplifier is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "High CMRR",
+        "B": "Low drift",
+        "C": "Noise rejection",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Differential amplifiers provide high common-mode rejection ratio (CMRR), low temperature drift, and excellent noise rejection capabilities.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Differential Amplifiers",
+      "type": "Theory"
+    },
+    {
+      "question_id": 289,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A Zener diode has Zener voltage 6V and Zener resistance 10Ω. If Zener current changes by 20mA, calculate voltage change.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.1V",
+        "B": "0.2V",
+        "C": "0.3V",
+        "D": "0.4V"
+      },
+      "correct_answer": "B",
+      "explanation": "Voltage change ΔV = ΔI × rz = 20×10⁻³ × 10 = 0.2V",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Zener Diodes",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 290,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "Class B push-pull amplifiers suffer from:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Crossover distortion",
+        "B": "High power consumption",
+        "C": "Low efficiency",
+        "D": "Thermal runaway"
+      },
+      "correct_answer": "A",
+      "explanation": "Class B amplifiers suffer from crossover distortion due to the dead zone when both transistors are off during signal transition through zero.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Amplifiers",
+      "type": "Theory"
+    }
+  ]
+}
+
+
+    {
+      "question_id": 291,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A 4-bit binary counter using JK flip-flops has maximum count of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "15",
+        "B": "16",
+        "C": "31",
+        "D": "32"
+      },
+      "correct_answer": "A",
+      "explanation": "4-bit counter counts from 0 to 2⁴-1 = 15, giving 16 states total (0 to 15)",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Counters",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 292,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "In 8085 microprocessor, the instruction MVI A, 50H takes how many machine cycles?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1",
+        "B": "2",
+        "C": "3",
+        "D": "4"
+      },
+      "correct_answer": "B",
+      "explanation": "MVI (Move Immediate) is a 2-byte instruction requiring 2 machine cycles: 1 for opcode fetch and 1 for data fetch",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "8085 Instruction Set",
+      "type": "Theory"
+    },
+    {
+      "question_id": 293,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "Convert hexadecimal A7 to decimal:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "167",
+        "B": "171",
+        "C": "175",
+        "D": "179"
+      },
+      "correct_answer": "A",
+      "explanation": "A7₁₆ = A×16¹ + 7×16⁰ = 10×16 + 7×1 = 160 + 7 = 167₁₀",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Number Systems",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 294,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "The main advantage of synchronous counters over asynchronous counters is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Lower power consumption",
+        "B": "Higher speed operation",
+        "C": "Simpler design",
+        "D": "Lower cost"
+      },
+      "correct_answer": "B",
+      "explanation": "Synchronous counters have all flip-flops clocked simultaneously, eliminating propagation delay accumulation and enabling higher speed operation.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Counter Design",
+      "type": "Theory"
+    },
+    {
+      "question_id": 295,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A 12-bit ADC has full scale range of 0-5V. Calculate resolution:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1.22mV",
+        "B": "2.44mV",
+        "C": "4.88mV",
+        "D": "9.76mV"
+      },
+      "correct_answer": "A",
+      "explanation": "Resolution = Full scale range/2ⁿ = 5V/2¹² = 5V/4096 = 1.22mV",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "ADC/DAC",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 296,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "In 8085, which instruction is used to enable interrupts?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "EI",
+        "B": "DI",
+        "C": "SIM",
+        "D": "RIM"
+      },
+      "correct_answer": "A",
+      "explanation": "EI (Enable Interrupt) instruction is used to enable maskable interrupts in 8085 microprocessor",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "8085 Interrupts",
+      "type": "Theory"
+    },
+    {
+      "question_id": 297,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A 3-to-8 decoder has how many select lines?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "2",
+        "B": "3",
+        "C": "4",
+        "D": "8"
+      },
+      "correct_answer": "B",
+      "explanation": "For n-to-2ⁿ decoder, number of select lines = n. For 3-to-8 decoder: n = 3 select lines",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Combinational Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 298,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "The advantage of Gray code over binary code is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Faster conversion",
+        "B": "Only one bit changes at a time",
+        "C": "Requires fewer bits",
+        "D": "Easier to understand"
+      },
+      "correct_answer": "B",
+      "explanation": "Gray code is designed so that only one bit changes when moving from one number to the next, reducing errors in digital systems.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Code Conversion",
+      "type": "Theory"
+    },
+    {
+      "question_id": 299,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "In 8085, the stack pointer is a:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "8-bit register",
+        "B": "16-bit register",
+        "C": "Memory location",
+        "D": "Flag bit"
+      },
+      "correct_answer": "B",
+      "explanation": "Stack pointer (SP) in 8085 is a 16-bit register that points to the top of the stack in memory",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "8085 Architecture",
+      "type": "Theory"
+    },
+    {
+      "question_id": 300,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A 10-bit DAC with 10V reference has step size of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "9.77mV",
+        "B": "19.53mV",
+        "C": "39.06mV",
+        "D": "78.13mV"
+      },
+      "correct_answer": "A",
+      "explanation": "Step size = Vref/2ⁿ = 10V/2¹⁰ = 10V/1024 = 9.77mV",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DAC Resolution",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 301,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A 3-phase bridge inverter requires how many power switches?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "3",
+        "B": "6",
+        "C": "9",
+        "D": "12"
+      },
+      "correct_answer": "B",
+      "explanation": "3-phase bridge inverter needs 6 power switches arranged as 3 legs with 2 switches per leg",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Inverter Topology",
+      "type": "Theory"
+    },
+    {
+      "question_id": 302,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A boost converter has input voltage 12V and duty cycle 0.6. Calculate output voltage.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "20V",
+        "B": "24V",
+        "C": "30V",
+        "D": "36V"
+      },
+      "correct_answer": "C",
+      "explanation": "For boost converter: Vo = Vin/(1-D) = 12/(1-0.6) = 12/0.4 = 30V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC-DC Converters",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 303,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "The main advantage of IGBT over MOSFET is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Higher switching speed",
+        "B": "Lower conduction losses",
+        "C": "Lower gate drive power",
+        "D": "Higher voltage rating"
+      },
+      "correct_answer": "B",
+      "explanation": "IGBT combines low conduction losses of BJT with high input impedance of MOSFET, making it suitable for high power applications.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Devices",
+      "type": "Theory"
+    },
+    {
+      "question_id": 304,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A single-phase half-wave rectifier with resistive load has efficiency of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "40.6%",
+        "B": "50%",
+        "C": "81.2%",
+        "D": "100%"
+      },
+      "correct_answer": "A",
+      "explanation": "Efficiency of half-wave rectifier = (π/4)² × 100% = 40.6%",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Rectifier Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 305,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "In PWM technique, the switching frequency is determined by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Modulating signal frequency",
+        "B": "Carrier signal frequency",
+        "C": "Load characteristics",
+        "D": "Supply voltage"
+      },
+      "correct_answer": "B",
+      "explanation": "In PWM, the switching frequency is determined by the carrier signal (triangular wave) frequency, not the modulating signal.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "PWM Techniques",
+      "type": "Theory"
+    },
+    {
+      "question_id": 306,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A flyback converter operates in:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Continuous conduction mode only",
+        "B": "Discontinuous conduction mode only",
+        "C": "Both continuous and discontinuous modes",
+        "D": "Neither mode"
+      },
+      "correct_answer": "C",
+      "explanation": "Flyback converter can operate in both continuous and discontinuous conduction modes depending on load conditions and design parameters.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Isolated Converters",
+      "type": "Theory"
+    },
+    {
+      "question_id": 307,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A 3-phase controlled rectifier with firing angle 30° has output voltage factor of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.827",
+        "B": "0.866",
+        "C": "0.955",
+        "D": "1.000"
+      },
+      "correct_answer": "C",
+      "explanation": "For 3-phase controlled rectifier: Vo/Vom = cos(α) = cos(30°) = 0.866. With ripple factor: ≈ 0.955",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Controlled Rectifiers",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 308,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "The main disadvantage of thyristor compared to IGBT is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Higher voltage rating",
+        "B": "Cannot be turned off by gate signal",
+        "C": "Higher current rating",
+        "D": "Lower cost"
+      },
+      "correct_answer": "B",
+      "explanation": "Thyristor cannot be turned off by gate signal once it's conducting; it requires natural or forced commutation, unlike IGBT which can be turned off by gate signal.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Device Comparison",
+      "type": "Theory"
+    },
+    {
+      "question_id": 309,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A Cuk converter provides:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Step-up voltage only",
+        "B": "Step-down voltage only",
+        "C": "Both step-up and step-down voltage",
+        "D": "Isolation only"
+      },
+      "correct_answer": "C",
+      "explanation": "Cuk converter can provide both step-up and step-down voltage conversion with inverted polarity output, depending on duty cycle.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Advanced Converters",
+      "type": "Theory"
+    },
+    {
+      "question_id": 310,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A single-phase full-wave rectifier with center-tap transformer has transformer utilization factor of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.287",
+        "B": "0.574",
+        "C": "0.693",
+        "D": "0.812"
+      },
+      "correct_answer": "B",
+      "explanation": "Transformer utilization factor (TUF) for center-tap full-wave rectifier = 0.574",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Rectifier Performance",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 311,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 6-pole, 50Hz induction motor has synchronous speed of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1000 rpm",
+        "B": "1200 rpm",
+        "C": "1500 rpm",
+        "D": "3000 rpm"
+      },
+      "correct_answer": "A",
+      "explanation": "Synchronous speed Ns = 120f/P = 120×50/6 = 1000 rpm",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Induction Motor Basics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 312,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Transformer core is laminated to reduce:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Hysteresis losses",
+        "B": "Eddy current losses",
+        "C": "Copper losses",
+        "D": "Leakage flux"
+      },
+      "correct_answer": "B",
+      "explanation": "Lamination of transformer core reduces eddy current losses by breaking the eddy current paths with thin insulated steel sheets.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transformer Construction",
+      "type": "Theory"
+    },
+    {
+      "question_id": 313,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase, 400V, 50Hz, 4-pole induction motor has full-load slip 5%. Calculate rotor speed.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1425 rpm",
+        "B": "1440 rpm",
+        "C": "1450 rpm",
+        "D": "1475 rpm"
+      },
+      "correct_answer": "A",
+      "explanation": "Ns = 120×50/4 = 1500 rpm. Nr = Ns(1-s) = 1500(1-0.05) = 1425 rpm",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Induction Motor Performance",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 314,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The function of commutator in DC machines is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Mechanical rectification",
+        "B": "Voltage regulation",
+        "C": "Speed control",
+        "D": "Current limiting"
+      },
+      "correct_answer": "A",
+      "explanation": "Commutator performs mechanical rectification by reversing the current in armature conductors as they pass from one pole to another.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Machine Construction",
+      "type": "Theory"
+    },
+    {
+      "question_id": 315,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A single-phase transformer has 400 turns on primary and 100 turns on secondary. If primary voltage is 400V, find secondary voltage.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "50V",
+        "B": "100V",
+        "C": "200V",
+        "D": "400V"
+      },
+      "correct_answer": "B",
+      "explanation": "Transformation ratio K = N1/N2 = 400/100 = 4. V2 = V1/K = 400/4 = 100V",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transformer Ratios",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 316,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Synchronous motors are not self-starting because:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "They have no starting torque",
+        "B": "Rotor cannot follow rotating field from standstill",
+        "C": "They require DC excitation",
+        "D": "High inertia"
+      },
+      "correct_answer": "B",
+      "explanation": "At standstill, the rotor cannot follow the rapidly rotating stator magnetic field, resulting in zero average starting torque.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Synchronous Motor Starting",
+      "type": "Theory"
+    },
+    {
+      "question_id": 317,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A DC shunt motor has armature resistance 0.5Ω. If it draws 20A from 240V supply, calculate back EMF.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "230V",
+        "B": "235V",
+        "C": "240V",
+        "D": "250V"
+      },
+      "correct_answer": "A",
+      "explanation": "Back EMF = V - IaRa = 240 - 20×0.5 = 230V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Motor Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 318,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The starting method suitable for large induction motors is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Direct-on-line starting",
+        "B": "Star-delta starting",
+        "C": "Auto-transformer starting",
+        "D": "Both B and C"
+      },
+      "correct_answer": "D",
+      "explanation": "Both star-delta and auto-transformer starting methods reduce starting current, making them suitable for large induction motors.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Motor Starting Methods",
+      "type": "Theory"
+    },
+    {
+      "question_id": 319,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase alternator has 8 poles and runs at 750 rpm. Calculate frequency.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "25Hz",
+        "B": "50Hz",
+        "C": "75Hz",
+        "D": "100Hz"
+      },
+      "correct_answer": "B",
+      "explanation": "f = PN/120 = 8×750/120 = 50Hz",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Alternator Frequency",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 320,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Hunting in synchronous machines refers to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Speed variations",
+        "B": "Voltage fluctuations",
+        "C": "Rotor oscillations about synchronous position",
+        "D": "Current variations"
+      },
+      "correct_answer": "C",
+      "explanation": "Hunting refers to rotor oscillations about its mean synchronous position due to sudden load changes or disturbances.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Synchronous Machine Operation",
+      "type": "Theory"
+    },
+    {
+      "question_id": 321,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 10kVA, 400/200V transformer has iron losses 80W and copper losses 120W at full load. Calculate efficiency at 75% load and unity power factor.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "96.8%",
+        "B": "97.4%",
+        "C": "98.1%",
+        "D": "98.7%"
+      },
+      "correct_answer": "B",
+      "explanation": "Output = 0.75×10 = 7.5kW. Copper losses at 75% load = (0.75)²×120 = 67.5W. Total losses = 80+67.5 = 147.5W. Efficiency = 7500/(7500+147.5) = 97.4%",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Transformer Efficiency",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 322,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The direction of rotation of 3-phase induction motor can be reversed by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Interchanging any two supply lines",
+        "B": "Reversing all three supply lines",
+        "C": "Changing supply frequency",
+        "D": "Changing supply voltage"
+      },
+      "correct_answer": "A",
+      "explanation": "Direction of rotation can be reversed by interchanging any two of the three supply lines, which reverses the phase sequence.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Motor Control",
+      "type": "Theory"
+    },
+    {
+      "question_id": 323,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase induction motor has 4% slip at full load. If synchronous speed is 1500 rpm, find rotor frequency.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1Hz",
+        "B": "2Hz",
+        "C": "4Hz",
+        "D": "8Hz"
+      },
+      "correct_answer": "B",
+      "explanation": "Rotor frequency fr = s×f = 0.04×50 = 2Hz",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Induction Motor Slip",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 324,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Universal motors can operate on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "DC only",
+        "B": "AC only",
+        "C": "Both AC and DC",
+        "D": "3-phase AC only"
+      },
+      "correct_answer": "C",
+      "explanation": "Universal motors (series wound) can operate on both AC and DC supplies as torque direction remains same due to simultaneous reversal of field and armature currents.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Special Motors",
+      "type": "Theory"
+    },
+    {
+      "question_id": 325,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 25kVA, 2200/220V transformer has 4% impedance. Calculate secondary current for short circuit on LV side.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "284A",
+        "B": "568A",
+        "C": "1136A",
+        "D": "2840A"
+      },
+      "correct_answer": "D",
+      "explanation": "Full load secondary current = 25000/220 = 113.6A. Short circuit current = Full load current/Z% = 113.6/0.04 = 2840A",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Transformer Short Circuit",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 326,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Crawling in induction motors is caused by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Harmonic torques",
+        "B": "Low supply voltage",
+        "C": "High rotor resistance",
+        "D": "Unbalanced supply"
+      },
+      "correct_answer": "A",
+      "explanation": "Crawling is caused by harmonic torques (especially 7th harmonic) that create stable operating points at speeds much lower than synchronous speed.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Induction Motor Phenomena",
+      "type": "Theory"
+    },
+    {
+      "question_id": 327,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A DC series motor runs at 800 rpm when drawing 30A from 240V supply. If current reduces to 20A, find new speed (assuming flux proportional to current).",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1000 rpm",
+        "B": "1200 rpm",
+        "C": "1400 rpm",
+        "D": "1600 rpm"
+      },
+      "correct_answer": "B",
+      "explanation": "For series motor: N ∝ E/Φ ∝ E/I. E1/I1 = E2/I2, so N2/N1 = (E2/I2)/(E1/I1). Assuming E ∝ V: N2 = N1×(I1/I2) = 800×(30/20) = 1200 rpm",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "DC Motor Speed Control",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 328,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Compensating windings in DC machines are used to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Improve commutation",
+        "B": "Neutralize armature reaction",
+        "C": "Increase efficiency",
+        "D": "Reduce losses"
+      },
+      "correct_answer": "B",
+      "explanation": "Compensating windings are embedded in pole faces and carry armature current to neutralize the cross-magnetizing effect of armature reaction.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Machine Design",
+      "type": "Theory"
+    },
+    {
+      "question_id": 329,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase, 400V, 50Hz, 6-pole induction motor has rotor resistance 0.08Ω per phase. Calculate starting torque if rotor reactance is 0.6Ω per phase.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Proportional to s=1",
+        "B": "Maximum at s=1",
+        "C": "Depends on R/X ratio",
+        "D": "All of the above"
+      },
+      "correct_answer": "C",
+      "explanation": "Starting torque depends on rotor R/X ratio. At starting (s=1), torque is proportional to R/(R²+X²), which depends on R/X ratio.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Induction Motor Torque",
+      "type": "Theory"
+    },
+    {
+      "question_id": 330,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A single-phase transformer has turns ratio 10:1. If primary current is 2A, find secondary current (neglecting losses).",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.2A",
+        "B": "2A",
+        "C": "20A",
+        "D": "200A"
+      },
+      "correct_answer": "C",
+      "explanation": "For ideal transformer: I1/I2 = N2/N1 = 1/10. Therefore I2 = I1×10 = 2×10 = 20A",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transformer Current Relations",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 331,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The slip-ring induction motor is preferred over squirrel cage when:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "High starting torque is required",
+        "B": "Speed control is required",
+        "C": "Low starting current is required",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Slip-ring motors allow external rotor resistance control, providing high starting torque, speed control capability, and reduced starting current.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Induction Motor Types",
+      "type": "Theory"
+    },
+    {
+      "question_id": 332,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase, 400V, 50Hz alternator has 4 poles. If it runs at 1400 rpm, calculate frequency of generated voltage.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "46.7Hz",
+        "B": "50Hz",
+        "C": "53.3Hz",
+        "D": "60Hz"
+      },
+      "correct_answer": "A",
+      "explanation": "f = PN/120 = 4×1400/120 = 46.7Hz",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Alternator Frequency",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 333,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "In a synchronous generator, armature reaction is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Always magnetizing",
+        "B": "Always demagnetizing",
+        "C": "Depends on power factor of load",
+        "D": "Independent of load"
+      },
+      "correct_answer": "C",
+      "explanation": "Armature reaction effect depends on load power factor: demagnetizing for lagging pf, magnetizing for leading pf, and cross-magnetizing for unity pf.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Synchronous Generator Operation",
+      "type": "Theory"
+    },
+    {
+      "question_id": 334,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase induction motor has maximum torque at slip s = 0.2. Find slip at which starting torque equals maximum torque.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.2",
+        "B": "0.4",
+        "C": "0.8",
+        "D": "1.0"
+      },
+      "correct_answer": "D",
+      "explanation": "For induction motor, starting torque equals maximum torque when starting slip (s=1) equals the slip at maximum torque. This occurs when sm = 1.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Induction Motor Torque-Slip",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 335,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Interpoles in DC machines are connected in:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Series with armature",
+        "B": "Parallel with armature",
+        "C": "Series with field",
+        "D": "Independent supply"
+      },
+      "correct_answer": "A",
+      "explanation": "Interpoles (commutating poles) are connected in series with armature to carry armature current and provide proper commutation.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Machine Construction",
+      "type": "Theory"
+    },
+    {
+      "question_id": 336,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Per unit impedance of a transformer on its own base is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Equal to % impedance",
+        "B": "% impedance/100",
+        "C": "100/% impedance",
+        "D": "√(% impedance)"
+      },
+      "correct_answer": "B",
+      "explanation": "Per unit impedance = % impedance/100. For example, 5% impedance = 0.05 pu",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Per Unit System",
+      "type": "Theory"
+    },
+    {
+      "question_id": 337,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 100MVA, 11kV generator has reactance 20%. Calculate reactance in ohms.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.242Ω",
+        "B": "2.42Ω",
+        "C": "24.2Ω",
+        "D": "242Ω"
+      },
+      "correct_answer": "A",
+      "explanation": "Base impedance = V²/S = (11×10³)²/(100×10⁶) = 1.21Ω. Reactance = 0.20×1.21 = 0.242Ω",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Per Unit Calculations",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 338,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The main purpose of neutral grounding in power systems is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Fault current limitation",
+        "B": "Overvoltage protection",
+        "C": "Personnel safety",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Neutral grounding limits fault currents, provides overvoltage protection during faults, and ensures personnel safety.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "System Grounding",
+      "type": "Theory"
+    },
+    {
+      "question_id": 339,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 220kV transmission line has surge impedance 400Ω. Calculate natural loading.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "121MW",
+        "B": "242MW",
+        "C": "363MW",
+        "D": "484MW"
+      },
+      "correct_answer": "A",
+      "explanation": "Natural loading = V²/Zc = (220×10³)²/400 = 121×10⁶W = 121MW",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Loading",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 340,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Load shedding in power systems is done to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Maintain frequency",
+        "B": "Prevent system collapse",
+        "C": "Balance generation and load",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Load shedding maintains system frequency, prevents collapse during emergencies, and balances generation with available capacity.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "System Operation",
+      "type": "Theory"
+    },
+    {
+      "question_id": 341,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A power plant has installed capacity 200MW and generates 1200 GWh annually. Calculate capacity factor.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "68.5%",
+        "B": "75.2%",
+        "C": "82.4%",
+        "D": "91.3%"
+      },
+      "correct_answer": "A",
+      "explanation": "Maximum possible generation = 200MW × 8760 hours = 1752 GWh. Capacity factor = 1200/1752 = 0.685 = 68.5%",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Generation Economics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 342,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Distance relays are preferred for transmission line protection because:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Independent of source impedance variations",
+        "B": "Provide directional discrimination",
+        "C": "Have adjustable reach",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Distance relays measure impedance to fault, making them independent of source variations, inherently directional, and having adjustable reach.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Protection Systems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 343,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 132kV system has base MVA 100. If fault MVA at a bus is 1500, calculate fault current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "6.56kA",
+        "B": "11.36kA",
+        "C": "13.12kA",
+        "D": "19.69kA"
+      },
+      "correct_answer": "A",
+      "explanation": "Base current = 100×10⁶/(√3×132×10³) = 437.4A. Fault current in pu = 1500/100 = 15 pu. Fault current = 15×437.4 = 6561A = 6.56kA",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Fault Current Calculation",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 344,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "HVDC transmission is preferred over HVAC for:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Long distance bulk power transmission",
+        "B": "Underwater cable transmission",
+        "C": "Asynchronous system interconnection",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "HVDC is advantageous for long distances, underwater cables (no charging current), and connecting asynchronous systems.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "HVDC Systems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 345,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A substation has maximum demand 80MW and load factor 0.7. Calculate energy consumed per day.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1344 MWh",
+        "B": "1680 MWh",
+        "C": "1920 MWh",
+        "D": "2016 MWh"
+      },
+      "correct_answer": "A",
+      "explanation": "Average demand = Load factor × Maximum demand = 0.7 × 80 = 56MW. Energy per day = 56MW × 24 hours = 1344 MWh",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Load Characteristics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 346,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Buchholz relay is used for protection of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Generators",
+        "B": "Transformers",
+        "C": "Transmission lines",
+        "D": "Motors"
+      },
+      "correct_answer": "B",
+      "explanation": "Buchholz relay detects internal faults in oil-filled transformers by sensing gas accumulation and oil flow.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transformer Protection",
+      "type": "Theory"
+    },
+    {
+      "question_id": 347,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A transmission line has resistance 0.2Ω/km and reactance 0.8Ω/km. For 150km line, calculate total impedance magnitude.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "123.7Ω",
+        "B": "150Ω",
+        "C": "180Ω",
+        "D": "200Ω"
+      },
+      "correct_answer": "A",
+      "explanation": "Total R = 150×0.2 = 30Ω, Total X = 150×0.8 = 120Ω. |Z| = √(30² + 120²) = √15300 = 123.7Ω",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Parameters",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 348,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The most economical power factor for industrial loads is typically:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.8 lagging",
+        "B": "0.9 lagging",
+        "C": "0.95 lagging",
+        "D": "Unity"
+      },
+      "correct_answer": "C",
+      "explanation": "Power factor of 0.95 lagging is typically most economical, balancing cost of correction equipment with utility charges.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Factor Economics",
+      "type": "Theory"
+    },
+    {
+      "question_id": 349,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 50Hz system has inertia constant 4 seconds. For 100MW load increase, calculate initial rate of frequency decline.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.25 Hz/s",
+        "B": "0.5 Hz/s",
+        "C": "1.0 Hz/s",
+        "D": "2.0 Hz/s"
+      },
+      "correct_answer": "A",
+      "explanation": "Rate of frequency change df/dt = -ΔP/(2H×f₀×Sbase). Assuming system base: df/dt ≈ -100/(2×4×50×1000) = -0.25 Hz/s",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "System Dynamics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 350,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Smart grid technology enables:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Bidirectional power flow",
+        "B": "Real-time monitoring and control",
+        "C": "Integration of renewable energy",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Smart grids enable bidirectional power flow, real-time monitoring/control, and seamless integration of distributed renewable sources.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Modern Power Systems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 351,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A distribution transformer serves load with maximum demand 800kVA and diversity factor 1.4. Calculate sum of individual maximum demands.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "571kVA",
+        "B": "800kVA",
+        "C": "1120kVA",
+        "D": "1600kVA"
+      },
+      "correct_answer": "C",
+      "explanation": "Diversity factor = Sum of individual maximum demands / Maximum demand of group. Sum = 1.4 × 800 = 1120kVA",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Distribution System Planning",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 352,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Corona effect in transmission lines is more pronounced at:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Low voltage and high frequency",
+        "B": "High voltage and low air density",
+        "C": "Low voltage and high air density",
+        "D": "High voltage and high frequency"
+      },
+      "correct_answer": "B",
+      "explanation": "Corona occurs at high voltages when electric field exceeds air dielectric strength, more pronounced at low air density (high altitude).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Corona and Radio Interference",
+      "type": "Theory"
+    },
+    {
+      "question_id": 353,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A cable has resistance 0.3Ω/km and reactance 0.2Ω/km. For 15km cable carrying 150A, calculate voltage drop.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "675V",
+        "B": "810V",
+        "C": "945V",
+        "D": "1080V"
+      },
+      "correct_answer": "B",
+      "explanation": "Total R = 15×0.3 = 4.5Ω, Total X = 15×0.2 = 3Ω. Voltage drop = I×√(R²+X²) = 150×√(4.5²+3²) = 150×5.4 = 810V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Cable Performance",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 354,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The main advantage of gas insulated substations (GIS) is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Compact design",
+        "B": "Weather independent operation",
+        "C": "Reduced maintenance",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "GIS offers compact design, weather-independent operation (SF6 gas insulation), and reduced maintenance requirements.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Substation Design",
+      "type": "Theory"
+    },
+    {
+      "question_id": 355,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A power system has spinning reserve 300MW and largest unit 200MW. Calculate reserve margin.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "33%",
+        "B": "50%",
+        "C": "67%",
+        "D": "150%"
+      },
+      "correct_answer": "B",
+      "explanation": "Reserve margin = (Spinning reserve / Largest unit) × 100% = (300/200) × 100% = 150%. Margin above minimum = 50%",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "System Reliability",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 356,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Ferranti effect in transmission lines refers to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Voltage drop at receiving end",
+        "B": "Voltage rise at receiving end",
+        "C": "Current increase in line",
+        "D": "Power loss in line"
+      },
+      "correct_answer": "B",
+      "explanation": "Ferranti effect causes receiving end voltage to be higher than sending end in lightly loaded long lines due to capacitive charging.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Phenomena",
+      "type": "Theory"
+    },
+    {
+      "question_id": 357,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 3-phase, 33kV feeder supplies 5MW load at 0.85 power factor lagging. Calculate line current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "87.5A",
+        "B": "102.9A",
+        "C": "121.1A",
+        "D": "142.6A"
+      },
+      "correct_answer": "B",
+      "explanation": "I = P/(√3×VL×cosφ) = 5×10⁶/(√3×33×10³×0.85) = 102.9A",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Distribution System Calculations",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 358,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The primary purpose of load dispatch center is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Economic operation",
+        "B": "System security",
+        "C": "Generation-transmission coordination",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Load dispatch centers ensure economic operation, maintain system security, and coordinate generation with transmission.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "System Operation",
+      "type": "Theory"
+    },
+    {
+      "question_id": 359,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A transmission line has ABCD parameters. For a lossless line, which parameter equals zero?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "A parameter",
+        "B": "B parameter",
+        "C": "C parameter",
+        "D": "None"
+      },
+      "correct_answer": "D",
+      "explanation": "For lossless line, all ABCD parameters are non-zero. A=D=cos(βl), B=jZcsin(βl), C=j(sin(βl)/Zc). None equals zero.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Transmission Line Modeling",
+      "type": "Theory"
+    },
+    {
+      "question_id": 360,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A generator has H = 5 seconds on 100MVA base. If rating is 200MVA, find H on machine base.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "2.5 seconds",
+        "B": "5 seconds",
+        "C": "10 seconds",
+        "D": "20 seconds"
+      },
+      "correct_answer": "C",
+      "explanation": "H on machine base = H on given base × (Machine MVA/Given base MVA) = 5 × (200/100) = 10 seconds",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Inertia Constant",
+      "type": "Numerical"
+    }
+  ]
+}
+

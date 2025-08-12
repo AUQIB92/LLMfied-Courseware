@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Rendering Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .katex {
+            font-size: 1.1em;
+            line-height: 1.2;
+        }
+        
+        .katex-display {
+            margin: 1rem 0;
+            text-align: center;
+        }
+        
+        .katex-error {
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Math Rendering Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Inline Math</h2>
+        <p>Here is an inline equation: \(E = mc^2\) and another one: \(\frac{a + b}{c + d}\).</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Display Math</h2>
+        <p>Here is a display equation:</p>
+        \[
+        \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+        \]
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Complex Math</h2>
+        <p>Inline: \(\sum_{i=1}^{n} x_i = \frac{\sum_{i=1}^{n} x_i}{n}\)</p>
+        <p>Display:</p>
+        \[
+        \frac{\partial f}{\partial x} = \lim_{h \to 0} \frac{f(x + h) - f(x)}{h}
+        \]
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: Greek Letters and Symbols</h2>
+        <p>Inline: \(\alpha + \beta = \gamma\) and \(\theta \in [0, 2\pi]\)</p>
+        <p>Display:</p>
+        \[
+        \nabla \cdot \vec{E} = \frac{\rho}{\epsilon_0}
+        \]
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script>
+        // Function to render math with KaTeX
+        function renderMathWithKatex(html) {
+            const render = (tex, displayMode) => {
+                try {
+                    return katex.renderToString(tex, {
+                        displayMode,
+                        throwOnError: false,
+                        strict: false,
+                        output: 'html',
+                        trust: true
+                    });
+                } catch (e) {
+                    console.warn('KaTeX rendering error:', e.message, 'for tex:', tex);
+                    return `<span class="katex-error" title="Math rendering error: ${e.message}">${tex}</span>`;
+                }
+            };
+
+            let out = html;
+            
+            // Replace display math: \[...\]
+            out = out.replace(/\\\[([\s\S]+?)\\\]/g, (_, tex) => {
+                return render(tex, true);
+            });
+            
+            // Replace inline math: \(...\)
+            out = out.replace(/\\\(([\s\S]+?)\\\)/g, (_, tex) => {
+                return render(tex, false);
+            });
+            
+            return out;
+        }
+
+        // Render all math on the page
+        document.addEventListener('DOMContentLoaded', function() {
+            const body = document.body;
+            const processed = renderMathWithKatex(body.innerHTML);
+            body.innerHTML = processed;
+        });
+    </script>
+</body>
+</html>

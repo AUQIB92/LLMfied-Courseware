@@ -1,0 +1,62 @@
+{
+  "test_series": {
+    "title": "JKSSB Junior Engineer (Electrical) - Complete Test Series",
+    "description": "5 Full-length tests with 120 MCQ questions each based on official syllabus",
+    "total_tests": 5,
+    "questions_per_test": 120,
+    "total_marks": 120,
+    "time_duration": "2 hours",
+    "modules": [
+      {
+        "module_id": 1,
+        "name": "Electric Circuits and Fields",
+        "marks": 15,
+        "questions": 15
+      },
+      {
+        "module_id": 2,
+        "name": "Control Systems",
+        "marks": 10,
+        "questions": 10
+      },
+      {
+        "module_id": 3,
+        "name": "Electrical and Electronic Measurements",
+        "marks": 15,
+        "questions": 15
+      },
+      {
+        "module_id": 4,
+        "name": "Electronic Devices and Circuits",
+        "marks": 10,
+        "questions": 10
+      },
+      {
+        "module_id": 5,
+        "name": "Digital Electronics and Microprocessor",
+        "marks": 10,
+        "questions": 10
+      },
+      {
+        "module_id": 6,
+        "name": "Power Electronics and Drives",
+        "marks": 10,
+        "questions": 10
+      },
+      {
+        "module_id": 7,
+        "name": "Electrical Machines",
+        "marks": 25,
+        "questions": 25
+      },
+      {
+        "module_id": 8,
+        "name": "Power Systems",
+        "marks": 25,
+        "questions": 25
+      }
+    ],
+    "tests": []
+  }
+}
+

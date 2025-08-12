@@ -3,6 +3,63 @@ import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
 import { generateAcademicSubsectionSummary } from "@/lib/gemini";
 
+// Minimal markdown → HTML converter that preserves LaTeX delimiters
+function basicMarkdownToHtml(markdown = "") {
+  if (typeof markdown !== "string") return "";
+  const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // fenced code blocks
+  let html = markdown.replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${escape(code)}</code></pre>`);
+  // headings
+  html = html.replace(/^######\s*(.*)$/gm, '<h6>$1</h6>');
+  html = html.replace(/^#####\s*(.*)$/gm, '<h5>$1</h5>');
+  html = html.replace(/^####\s*(.*)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^###\s*(.*)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^##\s*(.*)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^#\s*(.*)$/gm, '<h1>$1</h1>');
+  // emphasis/code
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // lists
+  html = html.replace(/^(\s*[-*+]\s+.*(?:\n\s*[-*+]\s+.*)*)/gm, (m) => {
+    const items = m.split(/\n/).map((l) => l.replace(/^\s*[-*+]\s+/, "")).join('</li><li>');
+    return `<ul><li>${items}</li></ul>`;
+  });
+  // paragraphs
+  html = html
+    .split(/\n{2,}/)
+    .map((b) => {
+      const t = b.trim();
+      if (!t) return "";
+      if (/^<h\d|^<ul|^<pre|^<table|^<blockquote/.test(t)) return t;
+      return `<p>${t.replace(/\n/g, '<br/>')}</p>`;
+    })
+    .join("\n");
+  return html;
+}
+
+function ensureHtmlOnPages(pages) {
+  const arr = Array.isArray(pages) ? pages : [];
+  return arr.map((p) => {
+    // If the page already has HTML content, use it directly
+    if (typeof p?.html === 'string' && p.html.trim() !== '') {
+      return { 
+        pageTitle: p?.pageTitle || p?.title || 'Page', 
+        html: p.html,
+        math: p?.math || [] // Include math field if present
+      };
+    }
+    
+    // Otherwise, convert from markdown content
+    const html = basicMarkdownToHtml(typeof p?.content === 'string' ? p.content : '');
+    return { 
+      pageTitle: p?.pageTitle || p?.title || 'Page', 
+      html,
+      math: p?.math || []
+    };
+  });
+}
+
 // Function to generate AI-powered multipage academic content
 async function generateAcademicMultipageContent(
   subsectionTitle,
@@ -99,11 +156,11 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
     };
 
     const enhancedContent = await generateAcademicSubsectionSummary(
-      `Topic: ${subsectionTitle}\nContext: ${moduleContext}\nAcademic Level: ${academicLevel}\nSubject: ${subject}\n\nSPECIAL REQUIREMENTS:\n- Include comprehensive mathematical equations and formulas with proper LaTeX formatting\n- Provide detailed mathematical derivations and proofs where applicable\n- Cover both fundamental and advanced mathematical concepts related to this topic\n- Use proper mathematical notation: $$equation$$ for display math, $inline$ for inline math`,
+      `Topic: ${subsectionTitle}\nContext: ${moduleContext}\nAcademic Level: ${academicLevel}\nSubject: ${subject}\n\nSPECIAL REQUIREMENTS:\n- Return content directly in HTML format with proper LaTeX math handling\n- Wrap all math in \\( ... \\) for inline or \\[ ... \\] for display\n- Escape backslashes twice (\\\\ for each \\) in JSON output\n- Include comprehensive mathematical equations and formulas with proper LaTeX formatting\n- Provide detailed mathematical derivations and proofs where applicable\n- Cover both fundamental and advanced mathematical concepts related to this topic\n- Use only semantic HTML tags (h2/h3/p/ul/ol/li/table/thead/tbody/tr/th/td/pre/code/blockquote)\n- Return JSON with separate "html" and "math" fields for each page`,
       context
     );
 
-    // Transform the enhanced content into the expected format with pages
+    // Transform the enhanced content into the expected format with pages only
     let aiContent;
     if (
       enhancedContent.detailedSubsections &&
@@ -114,7 +171,7 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
         pages: enhancedContent.detailedSubsections.flatMap(
           (subsection, index) => {
             if (subsection.pages && Array.isArray(subsection.pages)) {
-              return subsection.pages;
+              return ensureHtmlOnPages(subsection.pages);
             } else {
               // Create a single page from subsection data
               return [
@@ -135,17 +192,11 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
             }
           }
         ),
-        summary: enhancedContent.summary,
-        objectives: enhancedContent.objectives,
-        examples: enhancedContent.examples,
-        resources: enhancedContent.resources,
-        visualizationSuggestions: enhancedContent.visualizationSuggestions,
-        beautifulSummaryElements: enhancedContent.beautifulSummaryElements,
       };
     } else {
       // Fallback: create pages from the summary content
       aiContent = {
-        pages: [
+        pages: ensureHtmlOnPages([
           {
             pageNumber: 1,
             pageTitle: `${subsectionTitle} - Introduction`,
@@ -169,13 +220,7 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
                 : `Core academic concepts related to ${subsectionTitle}`,
             keyTakeaway: `Apply theoretical knowledge through practical examples and real-world scenarios.`,
           },
-        ],
-        summary: enhancedContent.summary,
-        objectives: enhancedContent.objectives,
-        examples: enhancedContent.examples,
-        resources: enhancedContent.resources,
-        visualizationSuggestions: enhancedContent.visualizationSuggestions,
-        beautifulSummaryElements: enhancedContent.beautifulSummaryElements,
+        ]),
       };
     }
 
@@ -401,30 +446,32 @@ export async function POST(request) {
         subject
       );
 
-      // The enhanced content already includes pages, resources, and metadata
-      // Just add the basic academic fields that are expected
+      // Debug: log any returned HTML snippets for verification
+      try {
+        const pagesForLog = Array.isArray(enhancedContent?.pages?.pages)
+          ? enhancedContent.pages.pages
+          : enhancedContent?.pages;
+        if (Array.isArray(pagesForLog)) {
+          pagesForLog.forEach((p, idx) => {
+            if (p?.html) {
+              console.log(
+                `[HTML TEST][API] Single subsection page ${idx + 1} HTML:`,
+                typeof p.html === 'string' ? p.html.slice(0, 400) : p.html
+              );
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('[HTML TEST][API] Failed to log single subsection HTML:', e);
+      }
+
+      // Return minimal payload: title + pages (HTML ensured)
+      const pagesNorm = Array.isArray(enhancedContent?.pages?.pages)
+        ? enhancedContent.pages.pages
+        : enhancedContent?.pages || [];
       const academicContent = {
         title: subsectionTitle,
-        ...enhancedContent, // Spread all enhanced content (pages, resources, etc.)
-        // Override/add specific academic fields
-        practicalExample: `Academic exploration of ${subsectionTitle} through theoretical analysis and practical application`,
-        commonPitfalls: [
-          `Oversimplifying complex academic concepts`,
-          "Confusing correlation with causation in analysis",
-          "Failing to consider multiple theoretical perspectives",
-        ],
-        difficulty:
-          enhancedContent.beautifulSummaryElements?.difficultyLevel ||
-          (academicLevel === "undergraduate" ? "Intermediate" : "Advanced"),
-        estimatedTime:
-          enhancedContent.beautifulSummaryElements?.estimatedStudyTime ||
-          "25-30 minutes",
-        hasChildren: false,
-        childrenCount: 0,
-        academicLevel: academicLevel,
-        subject: subject,
-        isAcademicContent: true,
-        type: "pages",
+        pages: ensureHtmlOnPages(pagesNorm),
       };
 
       console.log(
@@ -496,35 +543,31 @@ export async function POST(request) {
         subject
       );
 
+      // Debug: log any HTML snippets for verification
+      try {
+        const pagesForLog = Array.isArray(pages?.pages) ? pages.pages : pages;
+        if (Array.isArray(pagesForLog)) {
+          pagesForLog.forEach((p, pIdx) => {
+            if (p?.html) {
+              console.log(
+                `[HTML TEST][API] Subsection '${subsection.title}' page ${pIdx + 1} HTML:`,
+                typeof p.html === 'string' ? p.html.slice(0, 400) : p.html
+              );
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('[HTML TEST][API] Failed to log bulk subsection HTML:', e);
+      }
+
       const detailedSubsection = {
         title: subsection.title,
-        summary: `Academic study of ${subsection.title} within ${module.title}`,
-        keyPoints: [
-          `Theoretical foundations of ${subsection.title}`,
-          `Academic analysis and critical thinking`,
-          `Practical applications and case studies`,
-          `Research methods and scholarly approaches`,
-        ],
-        pages: pages,
-        practicalExample: `Academic exploration of ${subsection.title} through theoretical analysis and practical application`,
-        commonPitfalls: [
-          `Oversimplifying complex academic concepts`,
-          "Confusing correlation with causation in analysis",
-          "Failing to consider multiple theoretical perspectives",
-        ],
-        difficulty:
-          academicLevel === "undergraduate" ? "Intermediate" : "Advanced",
-        estimatedTime: "25-30 minutes",
-        hasChildren: false,
-        childrenCount: 0,
-        academicLevel: academicLevel,
-        subject: subject,
-        isAcademicContent: true,
+        pages: ensureHtmlOnPages(Array.isArray(pages?.pages) ? pages.pages : pages),
       };
 
       detailedSubsections.push(detailedSubsection);
       console.log(
-        `✅ Generated ${pages.length} pages for: ${subsection.title}`
+        `✅ Generated ${(Array.isArray(pages.pages) ? pages.pages : pages).length} pages for: ${subsection.title}`
       );
     }
 

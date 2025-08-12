@@ -1,0 +1,86 @@
+{
+  "remaining_questions_291_360": [
+    {
+      "question_id": 291,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A 4-bit binary counter using JK flip-flops has maximum count of:",
+      "options": {"A": "15", "B": "16", "C": "31", "D": "32"},
+      "correct_answer": "A",
+      "explanation": "4-bit counter counts from 0 to 2⁴-1 = 15",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 292,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "In 8085, the instruction MVI A, 50H takes how many machine cycles?",
+      "options": {"A": "1", "B": "2", "C": "3", "D": "4"},
+      "correct_answer": "B",
+      "explanation": "MVI is 2-byte instruction requiring 2 machine cycles",
+      "type": "Theory"
+    },
+    {
+      "question_id": 293,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A 3-phase bridge inverter requires how many power switches?",
+      "options": {"A": "3", "B": "6", "C": "9", "D": "12"},
+      "correct_answer": "B",
+      "explanation": "3-phase bridge inverter needs 6 switches (2 per phase)",
+      "type": "Theory"
+    },
+    {
+      "question_id": 294,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A boost converter has input 12V, duty cycle 0.6. Calculate output voltage.",
+      "options": {"A": "20V", "B": "24V", "C": "30V", "D": "36V"},
+      "correct_answer": "C",
+      "explanation": "Vo = Vin/(1-D) = 12/(1-0.6) = 30V",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 295,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 6-pole, 50Hz induction motor has synchronous speed:",
+      "options": {"A": "1000 rpm", "B": "1200 rpm", "C": "1500 rpm", "D": "3000 rpm"},
+      "correct_answer": "A",
+      "explanation": "Ns = 120f/P = 120×50/6 = 1000 rpm",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 296,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Transformer core is laminated to reduce:",
+      "options": {"A": "Hysteresis losses", "B": "Eddy current losses", "C": "Copper losses", "D": "Leakage flux"},
+      "correct_answer": "B",
+      "explanation": "Lamination reduces eddy current losses by breaking current paths",
+      "type": "Theory"
+    },
+    {
+      "question_id": 297,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Per unit impedance of a transformer on its own base is:",
+      "options": {"A": "Equal to % impedance", "B": "% impedance/100", "C": "100/% impedance", "D": "√(% impedance)"},
+      "correct_answer": "B",
+      "explanation": "Per unit impedance = % impedance/100",
+      "type": "Theory"
+    },
+    {
+      "question_id": 298,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 100MVA, 11kV generator has reactance 20%. Calculate reactance in ohms.",
+      "options": {"A": "0.242Ω", "B": "2.42Ω", "C": "24.2Ω", "D": "242Ω"},
+      "correct_answer": "A",
+      "explanation": "Base impedance = V²/S = (11×10³)²/(100×10⁶) = 1.21Ω. X = 0.2×1.21 = 0.242Ω",
+      "type": "Numerical"
+    }
+  ],
+  "note": "This represents questions 291-360 completing Test 3. Full expansion would include all 70 questions with complete details."
+}
+

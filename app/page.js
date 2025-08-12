@@ -250,8 +250,8 @@ export default function Home() {
             <div className="absolute inset-0 rounded-full border-4 border-blue-200 border-opacity-50"></div>
             <div className="absolute inset-0 rounded-full border-4 border-t-blue-600 animate-spin"></div>
           </div>
-          <h3 className="text-xl font-semibold text-slate-800 mb-2">Loading...</h3>
-          <p className="text-slate-600">Please wait while we load your dashboard</p>
+          <h3 className="text-xl font-semibold text-neutral-800 mb-2">Loading...</h3>
+          <p className="text-neutral-600">Please wait while we load your dashboard</p>
         </div>
       </div>
     )
@@ -330,7 +330,7 @@ export default function Home() {
                 <nav className="flex items-center space-x-1 lg:space-x-2">
                   <Button 
                     variant="ghost" 
-                    className="relative text-slate-600 hover:text-blue-600 font-semibold px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-blue-50/60 transition-all duration-500 group overflow-hidden text-sm lg:text-base"
+                    className="relative text-neutral-600 hover:text-blue-600 font-semibold px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-blue-50/60 transition-all duration-500 group overflow-hidden text-sm lg:text-base"
                     onClick={() => scrollToSection('features')}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
@@ -344,7 +344,7 @@ export default function Home() {
                   
                   <Button 
                     variant="ghost" 
-                    className="relative text-slate-600 hover:text-purple-600 font-semibold px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-purple-50/60 transition-all duration-500 group overflow-hidden text-sm lg:text-base"
+                    className="relative text-neutral-600 hover:text-purple-600 font-semibold px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-purple-50/60 transition-all duration-500 group overflow-hidden text-sm lg:text-base"
                     onClick={() => scrollToSection('about')}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
@@ -358,7 +358,7 @@ export default function Home() {
 
                   <Button 
                     variant="ghost" 
-                    className="relative text-slate-600 hover:text-emerald-600 font-semibold px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-emerald-50/60 transition-all duration-500 group overflow-hidden text-sm lg:text-base"
+                    className="relative text-neutral-600 hover:text-emerald-600 font-semibold px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-emerald-50/60 transition-all duration-500 group overflow-hidden text-sm lg:text-base"
                     onClick={() => setShowDemo(true)}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
@@ -420,7 +420,7 @@ export default function Home() {
               <div className="flex flex-col space-y-2 sm:space-y-3">
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start text-slate-600 hover:text-blue-600 font-medium py-3 px-3 rounded-xl text-sm sm:text-base"
+                  className="w-full justify-start text-neutral-600 hover:text-blue-600 font-medium py-3 px-3 rounded-xl text-sm sm:text-base"
                   onClick={() => scrollToSection('features')}
                 >
                   <Sparkles className="w-4 h-4 mr-3 shrink-0" />
@@ -428,7 +428,7 @@ export default function Home() {
                 </Button>
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start text-slate-600 hover:text-purple-600 font-medium py-3 px-3 rounded-xl text-sm sm:text-base"
+                  className="w-full justify-start text-neutral-600 hover:text-purple-600 font-medium py-3 px-3 rounded-xl text-sm sm:text-base"
                   onClick={() => scrollToSection('about')}
                 >
                   <BookOpen className="w-4 h-4 mr-3 shrink-0" />
@@ -436,7 +436,7 @@ export default function Home() {
                 </Button>
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start text-slate-600 hover:text-emerald-600 font-medium py-3 px-3 rounded-xl text-sm sm:text-base"
+                  className="w-full justify-start text-neutral-600 hover:text-emerald-600 font-medium py-3 px-3 rounded-xl text-sm sm:text-base"
                   onClick={() => setShowDemo(true)}
                 >
                   <Play className="w-4 h-4 mr-3 shrink-0" />
@@ -507,7 +507,7 @@ export default function Home() {
             <div className="flex justify-center mb-8 sm:mb-12 lg:mb-16">
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
-                <Badge className="relative bg-white/90 backdrop-blur-sm text-slate-800 border border-white/50 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 text-xs sm:text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <Badge className="relative bg-white/90 backdrop-blur-sm text-neutral-800 border border-white/50 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 text-xs sm:text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
                   <div className="flex items-center space-x-2 sm:space-x-3">
                     <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                     <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600" />
@@ -523,20 +523,20 @@ export default function Home() {
                         
             {/* Main Headline */}
             <div className="mb-8 sm:mb-12 lg:mb-16">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-black text-slate-900 tracking-tight">
-                <span className="block mb-3 sm:mb-4 lg:mb-6 leading-none">Transform</span>
-                <span className="block relative leading-[1.2] mb-8 sm:mb-12 lg:mb-16 font-black bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x">
-                  <span className="inline-block align-baseline">Learning Forever</span>
-                </span>
-                <span className="block text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-600 leading-snug">
-                  with AI-Powered Education
-                </span>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-black text-neutral-900 tracking-tight">
+                LLMfied
               </h1>
+              <span className="block text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-neutral-600 leading-snug">
+                AI-Powered Learning Platform
+              </span>
+              <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-neutral-600 max-w-4xl mx-auto leading-relaxed font-medium px-4 sm:px-0">
+                Transform your learning experience with personalized AI-driven courses, interactive quizzes, and comprehensive study materials.
+              </p>
             </div>
             
             {/* Subtitle */}
             <div className="mb-12 sm:mb-16">
-              <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-slate-600 max-w-4xl mx-auto leading-relaxed font-medium px-4 sm:px-0">
+              <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-neutral-600 max-w-4xl mx-auto leading-relaxed font-medium px-4 sm:px-0">
                 Revolutionize your educational journey with cutting-edge artificial intelligence. 
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 font-bold">
                   {" "}Whether you're an educator or learner
@@ -573,7 +573,7 @@ export default function Home() {
                 size="lg"
                 variant="outline"
                 onClick={() => setShowDemo(true)}
-                className="w-full sm:w-auto border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl font-bold rounded-xl sm:rounded-2xl transition-all duration-300 group backdrop-blur-sm bg-white/50 hover:bg-white/80 shadow-lg hover:shadow-xl"
+                className="w-full sm:w-auto border-2 border-slate-300 text-neutral-700 hover:bg-slate-50 hover:border-slate-400 px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl font-bold rounded-xl sm:rounded-2xl transition-all duration-300 group backdrop-blur-sm bg-white/50 hover:bg-white/80 shadow-lg hover:shadow-xl"
               >
                 <Play className="mr-3 sm:mr-4 w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300 text-blue-600" />
                 Watch Demo
@@ -581,7 +581,7 @@ export default function Home() {
             </div>
             
             {/* Enhanced Social Proof */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 text-slate-600 max-w-4xl mx-auto px-4 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 text-neutral-600 max-w-4xl mx-auto px-4 sm:px-0">
               <div className="flex flex-col items-center group">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex -space-x-2">
@@ -593,8 +593,8 @@ export default function Home() {
                   </div>
                   <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
-                <span className="text-lg font-bold text-slate-800 mb-1">10,000+ Active Learners</span>
-                <span className="text-sm text-slate-500">Growing daily</span>
+                <span className="text-lg font-bold text-neutral-800 mb-1">10,000+ Active Learners</span>
+                <span className="text-sm text-neutral-500">Growing daily</span>
               </div>
               
               <div className="flex flex-col items-center group">
@@ -604,8 +604,8 @@ export default function Home() {
                   </div>
                   <div className="text-2xl font-black text-green-600">✓</div>
                 </div>
-                <span className="text-lg font-bold text-slate-800 mb-1">Free to Start</span>
-                <span className="text-sm text-slate-500">No credit card required</span>
+                <span className="text-lg font-bold text-neutral-800 mb-1">Free to Start</span>
+                <span className="text-sm text-neutral-500">No credit card required</span>
               </div>
               
               <div className="flex flex-col items-center group">
@@ -615,8 +615,8 @@ export default function Home() {
                   </div>
                   <div className="text-2xl font-black text-blue-600">⚡</div>
                 </div>
-                <span className="text-lg font-bold text-slate-800 mb-1">Instant Access</span>
-                <span className="text-sm text-slate-500">Start learning immediately</span>
+                <span className="text-lg font-bold text-neutral-800 mb-1">Instant Access</span>
+                <span className="text-sm text-neutral-500">Start learning immediately</span>
               </div>
             </div>
           </div>
@@ -678,13 +678,13 @@ export default function Home() {
             </Badge>
             </div>
             
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black text-slate-900 mb-6 sm:mb-8 leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black text-neutral-900 mb-6 sm:mb-8 leading-tight">
               <span className="block mb-2 sm:mb-4">Why Choose</span>
               <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x">
                 LLMfied?
               </span>
             </h2>
-            <p className="text-lg sm:text-xl lg:text-2xl text-slate-600 max-w-4xl mx-auto leading-relaxed font-medium px-4 sm:px-0">
+            <p className="text-lg sm:text-xl lg:text-2xl text-neutral-600 max-w-4xl mx-auto leading-relaxed font-medium px-4 sm:px-0">
               Experience the future of education with our 
               <span className="font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> comprehensive AI-powered platform</span>
             </p>
@@ -807,10 +807,10 @@ export default function Home() {
                         
                         {/* Enhanced Typography */}
                         <div className="flex-1 space-y-6">
-                          <h3 className="text-2xl lg:text-3xl font-bold text-slate-800 group-hover:bg-gradient-to-r group-hover:from-slate-800 group-hover:to-slate-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300 leading-tight">
+                          <h3 className="text-2xl lg:text-3xl font-bold text-neutral-800 group-hover:bg-gradient-to-r group-hover:from-slate-800 group-hover:to-slate-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300 leading-tight">
                             {feature.title}
                           </h3>
-                          <p className="text-slate-600 group-hover:text-slate-700 leading-relaxed text-lg transition-all duration-300">
+                          <p className="text-neutral-600 group-hover:text-neutral-700 leading-relaxed text-lg transition-all duration-300">
                             {feature.description}
                           </p>
                         </div>
@@ -875,8 +875,8 @@ export default function Home() {
               <Star className="w-4 h-4 mr-2 fill-current" />
               Success Stories
             </Badge>
-            <h2 className="text-4xl lg:text-6xl font-bold text-slate-900 mb-8">What Our Users Say</h2>
-            <p className="text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            <h2 className="text-4xl lg:text-6xl font-bold text-neutral-900 mb-8">What Our Users Say</h2>
+            <p className="text-xl lg:text-2xl text-neutral-600 max-w-3xl mx-auto leading-relaxed">
               Join thousands of satisfied learners and educators who have transformed their educational experience
             </p>
           </div>
@@ -917,11 +917,11 @@ export default function Home() {
                             Verified User
                           </Badge>
                         </div>
-                        <p className="text-xl text-slate-700 italic mb-8 leading-relaxed font-medium">"{testimonial.content}"</p>
+                        <p className="text-xl text-neutral-700 italic mb-8 leading-relaxed font-medium">"{testimonial.content}"</p>
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="font-bold text-slate-900 text-xl mb-1">{testimonial.name}</h4>
-                            <p className="text-slate-600 font-medium">{testimonial.role}</p>
+                            <h4 className="font-bold text-neutral-900 text-xl mb-1">{testimonial.name}</h4>
+                            <p className="text-neutral-600 font-medium">{testimonial.role}</p>
                           </div>
                           <div>
                             <Badge variant="outline" className="bg-white/80 border-gray-300 px-3 py-1">
@@ -965,7 +965,7 @@ export default function Home() {
                 <Rocket className="w-3 h-3 mr-1" />
                 For Educators
               </Badge>
-              <h3 className="text-3xl font-bold text-slate-900 mb-6">Empower Your Teaching with AI</h3>
+              <h3 className="text-3xl font-bold text-neutral-900 mb-6">Empower Your Teaching with AI</h3>
               <div className="space-y-4">
                 {[
                   "Create engaging, personalized curricula in minutes",
@@ -977,7 +977,7 @@ export default function Home() {
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <CheckCircle className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-slate-700 group-hover:text-slate-900 transition-colors duration-300">{benefit}</span>
+                    <span className="text-neutral-700 group-hover:text-neutral-900 transition-colors duration-300">{benefit}</span>
                   </div>
                 ))}
               </div>
@@ -1066,7 +1066,7 @@ export default function Home() {
                 <Lightbulb className="w-3 h-3 mr-1" />
                 For Learners
               </Badge>
-              <h3 className="text-3xl font-bold text-slate-900 mb-6">Accelerate Your Learning Journey</h3>
+              <h3 className="text-3xl font-bold text-neutral-900 mb-6">Accelerate Your Learning Journey</h3>
               <div className="space-y-4">
                 {[
                   "Personalized learning paths tailored to your goals",
@@ -1078,7 +1078,7 @@ export default function Home() {
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <CheckCircle className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-slate-700 group-hover:text-slate-900 transition-colors duration-300">{benefit}</span>
+                    <span className="text-neutral-700 group-hover:text-neutral-900 transition-colors duration-300">{benefit}</span>
                   </div>
                 ))}
               </div>
@@ -1142,13 +1142,13 @@ export default function Home() {
                 </Badge>
               </div>
               
-              <h2 className="text-5xl lg:text-6xl font-black text-slate-900 mb-8 leading-tight">
+              <h2 className="text-5xl lg:text-6xl font-black text-neutral-900 mb-8 leading-tight">
                 <span className="block mb-4">Join the Educator</span>
                 <span className="block bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent animate-gradient-x">
                   Waiting List
                 </span>
               </h2>
-              <p className="text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
+              <p className="text-xl lg:text-2xl text-neutral-600 max-w-3xl mx-auto leading-relaxed font-medium">
                 Be among the first educators to access our revolutionary AI-powered teaching tools. 
                 <span className="font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent"> Get priority access, exclusive features, and special educator pricing.</span>
               </p>
@@ -1186,8 +1186,8 @@ export default function Home() {
                         <div className={`w-16 h-16 mx-auto bg-gradient-to-br ${benefit.color} rounded-2xl flex items-center justify-center shadow-lg mb-4 transform group-hover:rotate-6 transition-transform duration-300`}>
                           <Icon className="w-8 h-8 text-white" />
                         </div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-2">{benefit.title}</h3>
-                        <p className="text-slate-600 text-sm leading-relaxed">{benefit.description}</p>
+                        <h3 className="text-lg font-bold text-neutral-800 mb-2">{benefit.title}</h3>
+                        <p className="text-neutral-600 text-sm leading-relaxed">{benefit.description}</p>
                       </div>
                     )
                   })}
@@ -1215,7 +1215,7 @@ export default function Home() {
                 <div className="mt-12 pt-8 border-t border-slate-200 flex justify-center">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-emerald-600 mb-1">500+</div>
-                    <div className="text-sm text-slate-600">Educators already registered</div>
+                    <div className="text-sm text-neutral-600">Educators already registered</div>
                   </div>
                 </div>
               </div>
@@ -1242,8 +1242,8 @@ export default function Home() {
                   <div className={`w-16 h-16 mx-auto bg-gradient-to-br ${stat.color} rounded-2xl flex items-center justify-center shadow-lg mb-4 transform hover:rotate-6 transition-transform duration-300`}>
                     <Icon className="w-8 h-8 text-white" />
                   </div>
-                  <h4 className="text-3xl font-bold text-slate-800 mb-2">{stat.value}</h4>
-                  <p className="text-slate-600">{stat.label}</p>
+                  <h4 className="text-3xl font-bold text-neutral-800 mb-2">{stat.value}</h4>
+                  <p className="text-neutral-600">{stat.label}</p>
                 </div>
               );
             })}
@@ -1296,13 +1296,13 @@ export default function Home() {
                 </Badge>
               </div>
               
-              <h2 className="text-5xl lg:text-6xl font-black text-slate-900 mb-8 leading-tight">
+              <h2 className="text-5xl lg:text-6xl font-black text-neutral-900 mb-8 leading-tight">
                 <span className="block mb-4">Help Us</span>
                 <span className="block bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent animate-gradient-x">
                   Improve
                 </span>
               </h2>
-              <p className="text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
+              <p className="text-xl lg:text-2xl text-neutral-600 max-w-3xl mx-auto leading-relaxed font-medium">
                 We're constantly evolving to better serve educators and learners. 
                 <span className="font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent"> Share your thoughts and help shape the future of AI-powered education.</span>
               </p>
@@ -1318,8 +1318,8 @@ export default function Home() {
                     <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg mb-6 transform group-hover:rotate-6 transition-transform duration-300">
                       <MessageCircle className="w-10 h-10 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-slate-800 mb-4">General Feedback</h3>
-                    <p className="text-slate-600 mb-8 leading-relaxed">
+                    <h3 className="text-2xl font-bold text-neutral-800 mb-4">General Feedback</h3>
+                    <p className="text-neutral-600 mb-8 leading-relaxed">
                       Share your thoughts, suggestions, or experiences with our platform. Every insight helps us improve.
                     </p>
                     <Button
@@ -1341,8 +1341,8 @@ export default function Home() {
                     <div className="w-20 h-20 mx-auto bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-6 transform group-hover:rotate-6 transition-transform duration-300">
                       <Lightbulb className="w-10 h-10 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-slate-800 mb-4">Feature Ideas</h3>
-                    <p className="text-slate-600 mb-8 leading-relaxed">
+                    <h3 className="text-2xl font-bold text-neutral-800 mb-4">Feature Ideas</h3>
+                    <p className="text-neutral-600 mb-8 leading-relaxed">
                       Have an idea for a new feature? We'd love to hear what would make your experience even better.
                     </p>
                     <Button
@@ -1365,9 +1365,9 @@ export default function Home() {
               <div className="relative inline-block">
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 rounded-2xl blur-lg opacity-30"></div>
                 <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl">
-                  <p className="text-slate-600 mb-4 font-medium">
+                  <p className="text-neutral-600 mb-4 font-medium">
                     Quick feedback? Just want to say hi? 
-                    <span className="block text-sm text-slate-500 mt-1">We read every single message ❤️</span>
+                    <span className="block text-sm text-neutral-500 mt-1">We read every single message ❤️</span>
                   </p>
                   <Button
                     onClick={() => {
@@ -1664,15 +1664,15 @@ export default function Home() {
                 </Badge>
               </div>
               
-              <h2 className="text-3xl lg:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+              <h2 className="text-3xl lg:text-5xl font-bold text-neutral-900 mb-6 leading-tight">
                 <span className="bg-gradient-to-r from-slate-800 via-blue-700 to-purple-700 bg-clip-text text-transparent">
                   Transparency & Accountability
                 </span>
               </h2>
-              <p className="text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg lg:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed">
                 At LLMfied Courseware, we are committed to enhancing the learning experience through 
-                <span className="font-semibold text-slate-800"> AI-driven personalization</span> and 
-                <span className="font-semibold text-slate-800"> seamless course creation</span>. 
+                <span className="font-semibold text-neutral-800"> AI-driven personalization</span> and 
+                <span className="font-semibold text-neutral-800"> seamless course creation</span>. 
                 Please note the following important information:
               </p>
             </div>
@@ -1688,15 +1688,15 @@ export default function Home() {
                       <BookOpen className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Content Ownership</h3>
+                      <h3 className="text-xl font-bold text-neutral-900 mb-2">Content Ownership</h3>
                       <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
                     </div>
                   </div>
-                  <p className="text-slate-700 leading-relaxed mb-4">
+                  <p className="text-neutral-700 leading-relaxed mb-4">
                     All external resources (including but not limited to videos, articles, tutorials, and reference materials) used or recommended within our platform remain the 
                     <span className="font-semibold text-blue-700"> intellectual property of their respective creators</span> and copyright holders.
                   </p>
-                  <p className="text-slate-600 text-sm font-medium">
+                  <p className="text-neutral-600 text-sm font-medium">
                     LLMfied makes no claim of ownership or authorship over such third-party content.
                   </p>
                 </div>
@@ -1711,16 +1711,16 @@ export default function Home() {
                       <GraduationCap className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Educational Intent</h3>
+                      <h3 className="text-xl font-bold text-neutral-900 mb-2">Educational Intent</h3>
                       <div className="w-16 h-1 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full"></div>
                     </div>
                   </div>
-                  <p className="text-slate-700 leading-relaxed mb-4">
+                  <p className="text-neutral-700 leading-relaxed mb-4">
                     Any use of external links, resources, or media is strictly for 
                     <span className="font-semibold text-emerald-700"> educational and informational purposes only</span>, 
                     aimed at enriching the learning journey of students and educators alike.
                   </p>
-                  <p className="text-slate-600 text-sm font-medium">
+                  <p className="text-neutral-600 text-sm font-medium">
                     Our mission is to democratize access to quality education worldwide.
                   </p>
                 </div>
@@ -1735,15 +1735,15 @@ export default function Home() {
                       <AlertCircle className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">No Affiliation or Endorsement</h3>
+                      <h3 className="text-xl font-bold text-neutral-900 mb-2">No Affiliation or Endorsement</h3>
                       <div className="w-16 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
                     </div>
                   </div>
-                  <p className="text-slate-700 leading-relaxed mb-4">
+                  <p className="text-neutral-700 leading-relaxed mb-4">
                     Unless explicitly stated, LLMfied is 
                     <span className="font-semibold text-purple-700"> not affiliated, sponsored, or endorsed</span> by any third-party resource providers featured on the platform.
                   </p>
-                  <p className="text-slate-600 text-sm font-medium">
+                  <p className="text-neutral-600 text-sm font-medium">
                     All partnerships and affiliations are clearly disclosed when applicable.
                   </p>
                 </div>
@@ -1758,16 +1758,16 @@ export default function Home() {
                       <Users className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">User-Generated Content</h3>
+                      <h3 className="text-xl font-bold text-neutral-900 mb-2">User-Generated Content</h3>
                       <div className="w-16 h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"></div>
                     </div>
                   </div>
-                  <p className="text-slate-700 leading-relaxed mb-4">
+                  <p className="text-neutral-700 leading-relaxed mb-4">
                     Courses created and published by educators on LLMfied represent their own 
                     <span className="font-semibold text-amber-700"> expertise, views, and materials</span>. 
                     While we strive for quality and accuracy, LLMfied is not liable for individual course content.
                   </p>
-                  <p className="text-slate-600 text-sm font-medium">
+                  <p className="text-neutral-600 text-sm font-medium">
                     We maintain quality standards through community feedback and moderation.
                   </p>
                 </div>
@@ -1783,8 +1783,8 @@ export default function Home() {
                     <Scale className="w-8 h-8 text-white" />
                   </div>
                 </div>
-                <h4 className="text-lg font-bold text-slate-900 mb-3">Commitment to Transparency</h4>
-                <p className="text-slate-700 leading-relaxed max-w-2xl mx-auto mb-6">
+                <h4 className="text-lg font-bold text-neutral-900 mb-3">Commitment to Transparency</h4>
+                <p className="text-neutral-700 leading-relaxed max-w-2xl mx-auto mb-6">
                   We believe in building trust through transparency. If you have any questions about our policies, 
                   content attribution, or platform guidelines, please don't hesitate to reach out to our team.
                 </p>
@@ -1807,7 +1807,7 @@ export default function Home() {
 
             {/* Legal Footer */}
             <div className="mt-12 text-center">
-              <p className="text-slate-500 text-sm leading-relaxed">
+              <p className="text-neutral-500 text-sm leading-relaxed">
                 This disclaimer was last updated on <span className="font-semibold">{new Date().toLocaleDateString()}</span>. 
                 For questions or concerns, please contact our legal team at 
                 <a href="mailto:legal@llmfied.com" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-300 ml-1">
@@ -1879,14 +1879,14 @@ export default function Home() {
                   </span>
                 </div>
               </div>
-              <p className="text-slate-600 mb-6 leading-relaxed">Transforming education with AI-powered learning experiences that adapt to each student's needs.</p>
+              <p className="text-neutral-600 mb-6 leading-relaxed">Transforming education with AI-powered learning experiences that adapt to each student's needs.</p>
               
               {/* Enhanced Social Links */}
               <div className="flex space-x-4">
                 {/* X (Twitter) */}
                 <a href="https://x.com/LLMfied" target="_blank" rel="noopener noreferrer" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-slate-400/60" title="Follow us on X">
                   <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 to-slate-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <svg className="w-5 h-5 text-neutral-600 group-hover:text-neutral-800 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
                   </svg>
                 </a>
@@ -1894,7 +1894,7 @@ export default function Home() {
                 {/*  In */}
                 <a href="https://www.linkedin.com/in/dr-auqib-hamid-lone-45996067/" target="_blank" rel="noopener noreferrer" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-blue-300/60" title="Connect on LinkedIn">
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <svg className="w-5 h-5 text-neutral-600 group-hover:text-blue-600 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
                   </svg>
                 </a>
@@ -1902,7 +1902,7 @@ export default function Home() {
                 {/* YouTube Channel */}
                 <a href="https://youtube.com/@LLMfied" target="_blank" rel="noopener noreferrer" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-red-300/60" title="Subscribe to @LLMfied">
                   <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-red-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="w-5 h-5 text-slate-600 group-hover:text-red-600 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <svg className="w-5 h-5 text-neutral-600 group-hover:text-red-600 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path>
                   </svg>
                 </a>
@@ -1910,7 +1910,7 @@ export default function Home() {
                 {/* GitHub */}
                 <a href="https://github.com/auqib92" target="_blank" rel="noopener noreferrer" className="group relative p-3 bg-white/70 hover:bg-white/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/60 hover:border-slate-400/60" title="Star us on GitHub">
                   <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 to-slate-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd"></path></svg>
+                  <svg className="w-5 h-5 text-neutral-600 group-hover:text-neutral-800 transition-colors duration-300 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd"></path></svg>
                 </a>
               </div>
             </div>
@@ -1921,23 +1921,23 @@ export default function Home() {
               <div className="relative bg-white/40 backdrop-blur-sm rounded-2xl p-6 border border-white/60">
                 <h3 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">Platform</h3>
                 <ul className="space-y-3">
-                  <li><button onClick={() => scrollToSection('features')} className="group flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => scrollToSection('features')} className="group flex items-center gap-2 text-neutral-600 hover:text-blue-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Features
                   </button></li>
-                  <li><button onClick={() => { setAuthMode('signup'); setShowAuth(true); }} className="group flex items-center gap-2 text-slate-600 hover:text-purple-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => { setAuthMode('signup'); setShowAuth(true); }} className="group flex items-center gap-2 text-neutral-600 hover:text-purple-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Pricing
                   </button></li>
-                  <li><button onClick={() => scrollToSection('about')} className="group flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => scrollToSection('about')} className="group flex items-center gap-2 text-neutral-600 hover:text-emerald-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-emerald-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     For Educators
                   </button></li>
-                  <li><button onClick={() => scrollToSection('about')} className="group flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => scrollToSection('about')} className="group flex items-center gap-2 text-neutral-600 hover:text-blue-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     For Learners
                   </button></li>
-                  <li><button onClick={() => { setAuthMode('signup'); setShowAuth(true); }} className="group flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => { setAuthMode('signup'); setShowAuth(true); }} className="group flex items-center gap-2 text-neutral-600 hover:text-indigo-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Enterprise
                   </button></li>
@@ -1950,23 +1950,23 @@ export default function Home() {
               <div className="relative bg-white/40 backdrop-blur-sm rounded-2xl p-6 border border-white/60">
                 <h3 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">Resources</h3>
                 <ul className="space-y-3">
-                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-slate-600 hover:text-purple-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-neutral-600 hover:text-purple-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Documentation
                   </button></li>
-                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-slate-600 hover:text-pink-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-neutral-600 hover:text-pink-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-pink-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Blog
                   </button></li>
-                  <li><button onClick={() => { setAuthMode('signup'); setShowAuth(true); }} className="group flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => { setAuthMode('signup'); setShowAuth(true); }} className="group flex items-center gap-2 text-neutral-600 hover:text-blue-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Community
                   </button></li>
-                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-neutral-600 hover:text-emerald-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-emerald-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Case Studies
                   </button></li>
-                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-neutral-600 hover:text-indigo-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Help Center
                   </button></li>
@@ -1979,23 +1979,23 @@ export default function Home() {
               <div className="relative bg-white/40 backdrop-blur-sm rounded-2xl p-6 border border-white/60">
                 <h3 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-4">Company</h3>
                 <ul className="space-y-3">
-                  <li><button onClick={() => scrollToSection('about')} className="group flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => scrollToSection('about')} className="group flex items-center gap-2 text-neutral-600 hover:text-emerald-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-emerald-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     About Us
                   </button></li>
-                  <li><button onClick={() => { setAuthMode('signup'); setShowAuth(true); }} className="group flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => { setAuthMode('signup'); setShowAuth(true); }} className="group flex items-center gap-2 text-neutral-600 hover:text-blue-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Careers
                   </button></li>
-                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-slate-600 hover:text-purple-600 transition-all duration-300 font-medium">
+                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-neutral-600 hover:text-purple-600 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Contact
                   </button></li>
-                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-slate-600 hover:text-slate-700 transition-all duration-300 font-medium">
+                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-neutral-600 hover:text-neutral-700 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-slate-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Privacy Policy
                   </button></li>
-                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-slate-600 hover:text-slate-700 transition-all duration-300 font-medium">
+                  <li><button onClick={() => setShowDemo(true)} className="group flex items-center gap-2 text-neutral-600 hover:text-neutral-700 transition-all duration-300 font-medium">
                     <div className="w-2 h-2 bg-slate-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     Terms of Service
                   </button></li>
@@ -2037,7 +2037,7 @@ export default function Home() {
                     <div className="relative">
                       <div className="flex items-center gap-1.5 mb-1">
                         <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs font-medium text-slate-600 uppercase tracking-wider">Total Views</span>
+                        <span className="text-xs font-medium text-neutral-600 uppercase tracking-wider">Total Views</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         {pageViews.loading ? (
@@ -2058,7 +2058,7 @@ export default function Home() {
                     <div className="relative">
                       <div className="flex items-center gap-1.5 mb-1">
                         <div className="w-1.5 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs font-medium text-slate-600 uppercase tracking-wider">Today</span>
+                        <span className="text-xs font-medium text-neutral-600 uppercase tracking-wider">Today</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         {pageViews.loading ? (
@@ -2079,7 +2079,7 @@ export default function Home() {
                     <div className="relative">
                       <div className="flex items-center gap-1.5 mb-1">
                         <div className="w-1.5 h-1.5 bg-gradient-to-r from-orange-500 to-red-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs font-medium text-slate-600 uppercase tracking-wider">This Week</span>
+                        <span className="text-xs font-medium text-neutral-600 uppercase tracking-wider">This Week</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         {pageViews.loading ? (
@@ -2110,14 +2110,14 @@ export default function Home() {
             <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl"></div>
             <div className="relative bg-white/50 backdrop-blur-sm rounded-2xl p-6 border border-white/60">
               <div className="flex flex-col md:flex-row justify-between items-center">
-                <p className="text-slate-600 font-medium">
+                <p className="text-neutral-600 font-medium">
                   &copy; 2025{" "}
                   <span className="bg-gradient-to-r from-slate-900 via-blue-700 to-purple-700 bg-clip-text text-transparent font-bold">
                     LLMfied
                   </span>
                   . All rights reserved.
                 </p>
-                <div className="flex items-center mt-4 md:mt-0 text-slate-600">
+                <div className="flex items-center mt-4 md:mt-0 text-neutral-600">
                   <Heart className="w-4 h-4 text-red-500 mr-2 animate-pulse" />
                   <p className="font-medium">Made with love for the future of education</p>
             </div>
@@ -2191,7 +2191,7 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-2xl translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                     
                     {/* Icon with enhanced styling */}
-                    <X className="w-5 h-5 text-slate-600 group-hover:text-red-600 transition-all duration-300 relative z-10 group-hover:scale-110" />
+                    <X className="w-5 h-5 text-neutral-600 group-hover:text-red-600 transition-all duration-300 relative z-10 group-hover:scale-110" />
                     
                     {/* Pulsing dot indicator */}
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
@@ -2232,14 +2232,14 @@ export default function Home() {
             </button>
             <div className="p-8">
               <div className="text-center mb-6">
-                <h3 className="text-3xl font-bold text-slate-900 mb-4">
+                <h3 className="text-3xl font-bold text-neutral-900 mb-4">
                   See{" "}
                   <span className="bg-gradient-to-r from-slate-900 via-blue-700 to-purple-700 bg-clip-text text-transparent">
                     LLMfied
                   </span>
                   {" "}in Action
                 </h3>
-                <p className="text-slate-600 text-lg">Experience the future of AI-powered education</p>
+                <p className="text-neutral-600 text-lg">Experience the future of AI-powered education</p>
               </div>
               
               <div className="bg-gradient-to-br from-slate-100 to-blue-50 rounded-xl p-8 aspect-video flex items-center justify-center">
@@ -2247,8 +2247,8 @@ export default function Home() {
                   <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
                     <Play className="w-12 h-12 text-white ml-1" />
                   </div>
-                  <h4 className="text-xl font-semibold text-slate-800 mb-2">Interactive Demo</h4>
-                  <p className="text-slate-600 mb-6">Click to start the interactive tour of our platform</p>
+                  <h4 className="text-xl font-semibold text-neutral-800 mb-2">Interactive Demo</h4>
+                  <p className="text-neutral-600 mb-6">Click to start the interactive tour of our platform</p>
                   <div className="flex gap-4 justify-center">
                     <Button 
                       className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
@@ -2322,7 +2322,7 @@ export default function Home() {
                 onClick={() => setShowWaitingList(false)}
                 className="absolute top-6 right-6 p-3 bg-white/80 hover:bg-white/95 rounded-2xl transition-all duration-300 border border-slate-200/60 hover:border-emerald-300/60 shadow-lg hover:shadow-xl hover:scale-110 z-20"
               >
-                <X className="w-5 h-5 text-slate-600 hover:text-emerald-600 transition-colors duration-300" />
+                <X className="w-5 h-5 text-neutral-600 hover:text-emerald-600 transition-colors duration-300" />
               </button>
               
               <div className="p-8 relative">
@@ -2331,15 +2331,15 @@ export default function Home() {
                   <div className="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg mb-6">
                     <GraduationCap className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-4">Join the Educator Waiting List</h3>
-                  <p className="text-slate-600 text-lg">Be among the first to experience revolutionary AI-powered teaching tools</p>
+                  <h3 className="text-3xl font-bold text-neutral-900 mb-4">Join the Educator Waiting List</h3>
+                  <p className="text-neutral-600 text-lg">Be among the first to experience revolutionary AI-powered teaching tools</p>
                 </div>
 
                 {/* Form */}
                 <form onSubmit={handleWaitingListSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-slate-700">Full Name *</label>
+                      <label className="text-sm font-semibold text-neutral-700">Full Name *</label>
                       <input
                         type="text"
                         required
@@ -2350,7 +2350,7 @@ export default function Home() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-slate-700">Email Address *</label>
+                      <label className="text-sm font-semibold text-neutral-700">Email Address *</label>
                       <input
                         type="email"
                         required
@@ -2363,7 +2363,7 @@ export default function Home() {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">Institution/Organization</label>
+                    <label className="text-sm font-semibold text-neutral-700">Institution/Organization</label>
                     <input
                       type="text"
                       value={waitingListData.institution}
@@ -2374,7 +2374,7 @@ export default function Home() {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">Teaching Experience</label>
+                    <label className="text-sm font-semibold text-neutral-700">Teaching Experience</label>
                     <select
                       value={waitingListData.experience}
                       onChange={(e) => setWaitingListData(prev => ({ ...prev, experience: e.target.value }))}
@@ -2389,7 +2389,7 @@ export default function Home() {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">Areas of Interest</label>
+                    <label className="text-sm font-semibold text-neutral-700">Areas of Interest</label>
                     <textarea
                       value={waitingListData.interests}
                       onChange={(e) => setWaitingListData(prev => ({ ...prev, interests: e.target.value }))}
@@ -2497,7 +2497,7 @@ export default function Home() {
                 onClick={() => setShowFeedback(false)}
                 className="absolute top-6 right-6 p-3 bg-white/80 hover:bg-white/95 rounded-2xl transition-all duration-300 border border-slate-200/60 hover:border-orange-300/60 shadow-lg hover:shadow-xl hover:scale-110 z-20"
               >
-                <X className="w-5 h-5 text-slate-600 hover:text-orange-600 transition-colors duration-300" />
+                <X className="w-5 h-5 text-neutral-600 hover:text-orange-600 transition-colors duration-300" />
               </button>
               
               <div className="p-8 relative">
@@ -2506,15 +2506,15 @@ export default function Home() {
                   <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg mb-6">
                     <MessageCircle className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-4">Share Your Feedback</h3>
-                  <p className="text-slate-600 text-lg">Help us improve LLMfied by sharing your thoughts and suggestions</p>
+                  <h3 className="text-3xl font-bold text-neutral-900 mb-4">Share Your Feedback</h3>
+                  <p className="text-neutral-600 text-lg">Help us improve LLMfied by sharing your thoughts and suggestions</p>
                 </div>
 
                 {/* Form */}
                 <form onSubmit={handleFeedbackSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-slate-700">Your Name</label>
+                      <label className="text-sm font-semibold text-neutral-700">Your Name</label>
                       <input
                         type="text"
                         value={feedbackData.name}
@@ -2524,7 +2524,7 @@ export default function Home() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-slate-700">Email Address</label>
+                      <label className="text-sm font-semibold text-neutral-700">Email Address</label>
                       <input
                         type="email"
                         value={feedbackData.email}
@@ -2536,7 +2536,7 @@ export default function Home() {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">Feedback Type</label>
+                    <label className="text-sm font-semibold text-neutral-700">Feedback Type</label>
                     <select
                       value={feedbackData.type}
                       onChange={(e) => setFeedbackData(prev => ({ ...prev, type: e.target.value }))}
@@ -2553,7 +2553,7 @@ export default function Home() {
 
                   {/* Rating */}
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">Overall Experience Rating</label>
+                    <label className="text-sm font-semibold text-neutral-700">Overall Experience Rating</label>
                     <div className="flex items-center gap-2">
                       {[1, 2, 3, 4, 5].map((rating) => (
                         <button
@@ -2569,7 +2569,7 @@ export default function Home() {
                           <Star className={`w-8 h-8 ${feedbackData.rating >= rating ? 'fill-current' : ''}`} />
                         </button>
                       ))}
-                      <span className="ml-4 text-sm text-slate-600">
+                      <span className="ml-4 text-sm text-neutral-600">
                         {feedbackData.rating === 5 ? '🎉 Excellent!' : 
                          feedbackData.rating === 4 ? '😊 Great!' :
                          feedbackData.rating === 3 ? '👍 Good' :
@@ -2579,7 +2579,7 @@ export default function Home() {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">Your Message *</label>
+                    <label className="text-sm font-semibold text-neutral-700">Your Message *</label>
                     <textarea
                       required
                       value={feedbackData.message}

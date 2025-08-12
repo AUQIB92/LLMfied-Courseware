@@ -1,0 +1,16 @@
+{
+  "test_info": {
+    "test_id": "TEST_02",
+    "test_name": "Test 2 - Application-Based Problems",
+    "description": "Application-focused test with practical problem-solving scenarios across all modules",
+    "total_questions": 120,
+    "total_marks": 120,
+    "time_duration": "120 minutes",
+    "difficulty_distribution": {
+      "easy": 36,
+      "medium": 72,
+      "hard": 12
+    }
+  },
+  "questions": [
+

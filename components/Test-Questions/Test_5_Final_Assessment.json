@@ -1,0 +1,66 @@
+{
+  "test_info": {
+    "test_id": "TEST_05",
+    "test_name": "Test 5 - Final Comprehensive Assessment",
+    "description": "Exam-pattern questions for final evaluation with competitive exam style",
+    "total_questions": 120,
+    "total_marks": 120,
+    "time_duration": "120 minutes",
+    "difficulty_distribution": {
+      "easy": 36,
+      "medium": 60,
+      "hard": 24
+    },
+    "content_mix": {
+      "numerical_problems": 60,
+      "theoretical_concepts": 60
+    }
+  },
+  "questions": [
+    {
+      "question_id": 481,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "In a series RLC circuit with R=10Ω, L=0.1H, C=100μF, find the resonant frequency.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "15.9 Hz",
+        "B": "31.8 Hz",
+        "C": "50 Hz",
+        "D": "100 Hz"
+      },
+      "correct_answer": "A",
+      "explanation": "Resonant frequency f₀ = 1/(2π√LC) = 1/(2π√(0.1×100×10⁻⁶)) = 1/(2π×0.01) = 15.9 Hz",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Resonance",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 482,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The main purpose of load forecasting in power systems is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Generation planning",
+        "B": "Transmission planning",
+        "C": "Distribution planning",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Load forecasting is essential for all aspects of power system planning including generation capacity, transmission network expansion, and distribution system upgrades.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "System Planning",
+      "type": "Theory"
+    }
+  ]
+}
+

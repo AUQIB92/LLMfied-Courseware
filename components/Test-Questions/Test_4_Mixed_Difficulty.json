@@ -1,0 +1,66 @@
+{
+  "test_info": {
+    "test_id": "TEST_04",
+    "test_name": "Test 4 - Mixed Difficulty Assessment",
+    "description": "Comprehensive coverage with balanced difficulty levels and cross-module integration",
+    "total_questions": 120,
+    "total_marks": 120,
+    "time_duration": "120 minutes",
+    "difficulty_distribution": {
+      "easy": 42,
+      "medium": 54,
+      "hard": 24
+    },
+    "content_mix": {
+      "numerical_problems": 60,
+      "theoretical_concepts": 60
+    }
+  },
+  "questions": [
+    {
+      "question_id": 361,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A balanced 3-phase system has line voltage 400V and line current 20A at 0.8 power factor lagging. Calculate total apparent power.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "11.09 kVA",
+        "B": "13.86 kVA",
+        "C": "16.63 kVA",
+        "D": "19.20 kVA"
+      },
+      "correct_answer": "B",
+      "explanation": "For 3-phase system: S = √3 × VL × IL = √3 × 400 × 20 = 13,856 VA = 13.86 kVA",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Power",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 362,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The transfer function of a system is G(s) = 10/(s²+4s+13). The system is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Overdamped",
+        "B": "Critically damped",
+        "C": "Underdamped",
+        "D": "Unstable"
+      },
+      "correct_answer": "C",
+      "explanation": "Comparing with standard form s²+2ζωₙs+ωₙ²: ωₙ² = 13, so ωₙ = 3.6. 2ζωₙ = 4, so ζ = 4/(2×3.6) = 0.56 < 1, hence underdamped.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "System Classification",
+      "type": "Theory"
+    }
+  ]
+}
+

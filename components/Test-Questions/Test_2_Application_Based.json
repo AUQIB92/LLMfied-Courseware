@@ -1,0 +1,2676 @@
+{
+  "test_info": {
+    "test_id": "TEST_02",
+    "test_name": "Test 2 - Application-Based Problems",
+    "description": "Practical applications with numerical calculations and theoretical concepts",
+    "total_questions": 120,
+    "total_marks": 120,
+    "time_duration": "120 minutes",
+    "difficulty_distribution": {
+      "easy": 36,
+      "medium": 72,
+      "hard": 12
+    },
+    "content_mix": {
+      "numerical_problems": 60,
+      "theoretical_concepts": 60
+    }
+  },
+  "questions": [
+
+
+    {
+      "question_id": 121,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A 3-phase balanced load draws 15 kW at 0.8 power factor lagging from a 400V line. Calculate the line current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "27.06 A",
+        "B": "31.25 A",
+        "C": "35.42 A",
+        "D": "39.68 A"
+      },
+      "correct_answer": "A",
+      "explanation": "For 3-phase: P = √3 × VL × IL × cosφ. Therefore, IL = P/(√3 × VL × cosφ) = 15000/(√3 × 400 × 0.8) = 27.06 A",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Circuit Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 122,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "In a series RLC circuit, resonance occurs when:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "XL > XC",
+        "B": "XL < XC",
+        "C": "XL = XC",
+        "D": "XL = 2XC"
+      },
+      "correct_answer": "C",
+      "explanation": "At resonance in series RLC circuit, inductive reactance equals capacitive reactance (XL = XC), making the circuit purely resistive.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Resonance",
+      "type": "Theory"
+    },
+    {
+      "question_id": 123,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A resistor of 10Ω is connected in parallel with a capacitive reactance of 10Ω. Find the magnitude of total impedance.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "5Ω",
+        "B": "7.07Ω",
+        "C": "10Ω",
+        "D": "14.14Ω"
+      },
+      "correct_answer": "B",
+      "explanation": "Z = (R × (-jXC))/(R - jXC) = (10 × (-j10))/(10 - j10) = -j100/(10 - j10). |Z| = 100/√(10² + 10²) = 100/14.14 = 7.07Ω",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "AC Circuit Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 124,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The condition for maximum power transfer in AC circuits is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "ZL = ZS",
+        "B": "ZL = ZS*",
+        "C": "RL = RS",
+        "D": "XL = -XS"
+      },
+      "correct_answer": "B",
+      "explanation": "For maximum power transfer in AC circuits, load impedance should be complex conjugate of source impedance (ZL = ZS*).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Maximum Power Transfer",
+      "type": "Theory"
+    },
+    {
+      "question_id": 125,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A coil has resistance 8Ω and inductance 0.1H. At 50Hz, calculate the impedance.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "31.4Ω",
+        "B": "32.8Ω",
+        "C": "35.2Ω",
+        "D": "38.6Ω"
+      },
+      "correct_answer": "B",
+      "explanation": "XL = 2πfL = 2π × 50 × 0.1 = 31.4Ω. Z = √(R² + XL²) = √(8² + 31.4²) = √(64 + 985.96) = 32.8Ω",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "AC Circuit Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 126,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Superposition theorem is not applicable to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Linear circuits",
+        "B": "Bilateral circuits",
+        "C": "Non-linear circuits",
+        "D": "Passive circuits"
+      },
+      "correct_answer": "C",
+      "explanation": "Superposition theorem is only applicable to linear circuits. It cannot be applied to non-linear circuits where the principle of linearity doesn't hold.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Network Theorems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 127,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A delta-connected load has phase impedance of 30Ω. If line voltage is 400V, find the phase current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "13.33 A",
+        "B": "23.09 A",
+        "C": "7.69 A",
+        "D": "40 A"
+      },
+      "correct_answer": "A",
+      "explanation": "In delta connection, phase voltage = line voltage = 400V. Phase current = Vph/Zph = 400/30 = 13.33 A",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 128,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The magnetic field intensity H is related to magnetic flux density B by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "B = μH",
+        "B": "H = μB",
+        "C": "B = H/μ",
+        "D": "H = B²/μ"
+      },
+      "correct_answer": "A",
+      "explanation": "Magnetic flux density B is related to magnetic field intensity H by B = μH, where μ is the permeability of the medium.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Electromagnetic Fields",
+      "type": "Theory"
+    },
+    {
+      "question_id": 129,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Two capacitors of 4μF and 6μF are connected in series across 100V. Find voltage across 4μF capacitor.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "40V",
+        "B": "60V",
+        "C": "50V",
+        "D": "70V"
+      },
+      "correct_answer": "B",
+      "explanation": "In series, voltage divides inversely as capacitance. V₁ = V × C₂/(C₁ + C₂) = 100 × 6/(4 + 6) = 60V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Capacitance",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 130,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Norton's equivalent circuit consists of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Current source in series with resistance",
+        "B": "Current source in parallel with resistance",
+        "C": "Voltage source in series with resistance",
+        "D": "Voltage source in parallel with resistance"
+      },
+      "correct_answer": "B",
+      "explanation": "Norton's equivalent circuit consists of a current source (Norton current) in parallel with Norton resistance.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Network Theorems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 131,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A parallel plate capacitor has plates of area 0.01m² separated by 2mm with air dielectric. Calculate capacitance.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "44.25 pF",
+        "B": "88.5 pF",
+        "C": "177 pF",
+        "D": "354 pF"
+      },
+      "correct_answer": "A",
+      "explanation": "C = ε₀A/d = (8.854 × 10⁻¹² × 0.01)/(2 × 10⁻³) = 44.25 × 10⁻¹² F = 44.25 pF",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Capacitance",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 132,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The quality factor Q of a series RLC circuit at resonance is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "ωL/R",
+        "B": "R/ωL",
+        "C": "ωRC",
+        "D": "1/ωRC"
+      },
+      "correct_answer": "A",
+      "explanation": "Quality factor Q = ωL/R = (1/ωC)/R at resonance, representing the ratio of reactive power to real power.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Resonance",
+      "type": "Theory"
+    },
+    {
+      "question_id": 133,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A star-connected load has phase impedance 20Ω. If line current is 10A, find the line voltage.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "200V",
+        "B": "346V",
+        "C": "400V",
+        "D": "693V"
+      },
+      "correct_answer": "B",
+      "explanation": "In star connection: Vph = IL × Zph = 10 × 20 = 200V. VL = √3 × Vph = √3 × 200 = 346V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 134,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Lenz's law is a consequence of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Conservation of energy",
+        "B": "Conservation of momentum",
+        "C": "Conservation of charge",
+        "D": "Conservation of mass"
+      },
+      "correct_answer": "A",
+      "explanation": "Lenz's law is a consequence of conservation of energy. The induced EMF opposes the change causing it to prevent violation of energy conservation.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Electromagnetic Induction",
+      "type": "Theory"
+    },
+    {
+      "question_id": 135,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "An inductor of 0.2H carries current i(t) = 5sin(100t) A. Find the voltage across it.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "100cos(100t) V",
+        "B": "100sin(100t) V",
+        "C": "-100cos(100t) V",
+        "D": "500cos(100t) V"
+      },
+      "correct_answer": "A",
+      "explanation": "v(t) = L(di/dt) = 0.2 × d/dt[5sin(100t)] = 0.2 × 5 × 100 × cos(100t) = 100cos(100t) V",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Inductance",
+      "type": "Numerical"
+    },
+
+
+    {
+      "question_id": 136,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A control system has open loop transfer function G(s) = 20/(s(s+4)). Find the steady state error for unit step input.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0",
+        "B": "0.05",
+        "C": "0.2",
+        "D": "Infinite"
+      },
+      "correct_answer": "A",
+      "explanation": "This is a Type 1 system (one pole at origin). For Type 1 systems, steady state error for step input is zero regardless of gain.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Steady State Error",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 137,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The gain margin of a control system is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Gain at phase crossover frequency",
+        "B": "Reciprocal of gain at phase crossover frequency",
+        "C": "Phase at gain crossover frequency",
+        "D": "180° - phase at gain crossover frequency"
+      },
+      "correct_answer": "B",
+      "explanation": "Gain margin is the reciprocal of the magnitude of open loop transfer function at phase crossover frequency (where phase = -180°).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Stability Analysis",
+      "type": "Theory"
+    },
+    {
+      "question_id": 138,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "For the transfer function G(s) = 10/(s²+3s+2), find the damping ratio.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.5",
+        "B": "1.06",
+        "C": "1.5",
+        "D": "2.12"
+      },
+      "correct_answer": "B",
+      "explanation": "Standard form: s²+2ζωₙs+ωₙ² = s²+3s+2. Comparing: ωₙ² = 2, so ωₙ = √2. 2ζωₙ = 3, so ζ = 3/(2√2) = 1.06",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Time Response",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 139,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A PID controller has transfer function:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Kp + Ki/s",
+        "B": "Kp + Kd*s",
+        "C": "Kp + Ki/s + Kd*s",
+        "D": "Kp * Ki * Kd"
+      },
+      "correct_answer": "C",
+      "explanation": "PID controller combines proportional (Kp), integral (Ki/s), and derivative (Kd*s) actions: Gc(s) = Kp + Ki/s + Kd*s",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Controllers",
+      "type": "Theory"
+    },
+    {
+      "question_id": 140,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A unity feedback system has G(s) = K/(s+2). For 10% overshoot, find the required value of K.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.59",
+        "B": "1.18",
+        "C": "2.36",
+        "D": "4.72"
+      },
+      "correct_answer": "A",
+      "explanation": "For 10% overshoot, ζ = 0.59. Closed loop: K/(s²+2s+K). Comparing with standard form: 2ζωₙ = 2, ωₙ² = K. So K = (2/(2×0.59))² = 0.59",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Design Specifications",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 141,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "Root locus technique is used to study:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Frequency response",
+        "B": "Time response",
+        "C": "Effect of gain variation on pole locations",
+        "D": "Steady state response"
+      },
+      "correct_answer": "C",
+      "explanation": "Root locus is a graphical technique to study how the poles of closed loop system move in s-plane as gain K varies from 0 to ∞.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Root Locus",
+      "type": "Theory"
+    },
+    {
+      "question_id": 142,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A second order system has natural frequency 4 rad/s and damping ratio 0.5. Find the peak time.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.91 s",
+        "B": "1.21 s",
+        "C": "1.57 s",
+        "D": "2.09 s"
+      },
+      "correct_answer": "A",
+      "explanation": "Peak time tp = π/(ωₙ√(1-ζ²)) = π/(4√(1-0.5²)) = π/(4×0.866) = 0.91 s",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Time Response",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 143,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "Bode plot represents:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Magnitude vs frequency",
+        "B": "Phase vs frequency",
+        "C": "Both magnitude and phase vs frequency",
+        "D": "Real vs imaginary parts"
+      },
+      "correct_answer": "C",
+      "explanation": "Bode plot consists of two separate plots: magnitude plot (in dB) vs frequency and phase plot (in degrees) vs frequency, both on semi-log scale.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Frequency Response",
+      "type": "Theory"
+    },
+    {
+      "question_id": 144,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A system has characteristic equation s³+6s²+11s+6=0. Determine stability using Routh criterion.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Stable",
+        "B": "Unstable",
+        "C": "Marginally stable",
+        "D": "Cannot determine"
+      },
+      "correct_answer": "A",
+      "explanation": "Routh array: s³[1,11], s²[6,6], s¹[10,0], s⁰[6]. All elements in first column are positive, so system is stable.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Stability Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 145,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The advantage of derivative control action is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Eliminates steady state error",
+        "B": "Improves transient response",
+        "C": "Reduces system order",
+        "D": "Increases system gain"
+      },
+      "correct_answer": "B",
+      "explanation": "Derivative control action anticipates future error and provides corrective action, thereby improving transient response and stability.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Controllers",
+      "type": "Theory"
+    },
+
+
+    {
+      "question_id": 146,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A PMMC ammeter has resistance 0.05Ω and full scale deflection of 2A. To measure 20A, calculate the shunt resistance required.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.0056Ω",
+        "B": "0.0111Ω",
+        "C": "0.0167Ω",
+        "D": "0.0222Ω"
+      },
+      "correct_answer": "A",
+      "explanation": "Multiplying factor n = 20/2 = 10. Shunt resistance Rs = Rm/(n-1) = 0.05/(10-1) = 0.05/9 = 0.0056Ω",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Extension of Range",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 147,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The deflection torque in a PMMC instrument is proportional to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Current",
+        "B": "Square of current",
+        "C": "Square root of current",
+        "D": "Voltage"
+      },
+      "correct_answer": "A",
+      "explanation": "In PMMC instruments, deflection torque Td = BINA is directly proportional to current I, where B is flux density, N is turns, A is area.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "PMMC Instruments",
+      "type": "Theory"
+    },
+    {
+      "question_id": 148,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A Wheatstone bridge has arms P=100Ω, Q=1000Ω, R=543Ω. For balance, find the value of S.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "54.3Ω",
+        "B": "543Ω",
+        "C": "5430Ω",
+        "D": "1000Ω"
+      },
+      "correct_answer": "C",
+      "explanation": "At balance: P/Q = R/S. Therefore, S = QR/P = (1000 × 543)/100 = 5430Ω",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Bridges and Potentiometers",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 149,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Moving iron instruments can measure:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "DC only",
+        "B": "AC only",
+        "C": "Both AC and DC",
+        "D": "Neither AC nor DC"
+      },
+      "correct_answer": "C",
+      "explanation": "Moving iron instruments respond to the square of current (I²), making them suitable for both AC and DC measurements.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Moving Iron Instruments",
+      "type": "Theory"
+    },
+    {
+      "question_id": 150,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A voltmeter has resistance 10kΩ and range 0-100V. To extend range to 0-500V, find series resistance required.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "40kΩ",
+        "B": "50kΩ",
+        "C": "60kΩ",
+        "D": "90kΩ"
+      },
+      "correct_answer": "A",
+      "explanation": "Multiplying factor n = 500/100 = 5. Series resistance Rs = Rv(n-1) = 10k(5-1) = 40kΩ",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Extension of Range",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 151,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The accuracy of a potentiometer depends on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Standard cell accuracy",
+        "B": "Galvanometer sensitivity",
+        "C": "Working current stability",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Potentiometer accuracy depends on standard cell accuracy, galvanometer sensitivity for null detection, and working current stability.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Bridges and Potentiometers",
+      "type": "Theory"
+    },
+    {
+      "question_id": 152,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A current transformer has ratio 100:1. If primary current is 50A, find secondary current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.5A",
+        "B": "1A",
+        "C": "2A",
+        "D": "5A"
+      },
+      "correct_answer": "A",
+      "explanation": "CT ratio = Ip/Is = 100:1. Therefore, Is = Ip/100 = 50/100 = 0.5A",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Instrument Transformers",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 153,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Digital multimeters typically use which type of ADC?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Flash ADC",
+        "B": "Dual slope ADC",
+        "C": "Successive approximation ADC",
+        "D": "Delta-sigma ADC"
+      },
+      "correct_answer": "B",
+      "explanation": "Digital multimeters typically use dual slope (integrating) ADC for high accuracy and good noise rejection.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Digital Voltmeters",
+      "type": "Theory"
+    },
+    {
+      "question_id": 154,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "An oscilloscope displays a sine wave with 4 divisions peak-to-peak. If vertical scale is 2V/div, find RMS value.",
+      "image_reference": {
+        "has_image": true,
+        "image_path": "/home/ubuntu/test_images/measurements/oscilloscope_waveforms.jpg"
+      },
+      "options": {
+        "A": "2.83V",
+        "B": "4V",
+        "C": "5.66V",
+        "D": "8V"
+      },
+      "correct_answer": "A",
+      "explanation": "Peak-to-peak = 4 × 2 = 8V. Peak value = 8/2 = 4V. RMS = Peak/√2 = 4/√2 = 2.83V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Oscilloscope Measurements",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 155,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Q-meter measures:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Quality factor of inductors and capacitors",
+        "B": "Quantity of charge",
+        "C": "Quadrature component of current",
+        "D": "Quantum efficiency"
+      },
+      "correct_answer": "A",
+      "explanation": "Q-meter is specifically designed to measure the quality factor (Q) of inductors and capacitors at radio frequencies.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Q-meters",
+      "type": "Theory"
+    },
+    {
+      "question_id": 156,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A dynamometer wattmeter reads 1000W when measuring a load. If current coil multiplier is 10 and voltage coil multiplier is 5, find actual power.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "20kW",
+        "B": "50kW",
+        "C": "100kW",
+        "D": "500kW"
+      },
+      "correct_answer": "B",
+      "explanation": "Actual power = Reading × Current multiplier × Voltage multiplier = 1000 × 10 × 5 = 50,000W = 50kW",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Measurement",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 157,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "LVDT works on the principle of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Mutual inductance variation",
+        "B": "Self inductance variation",
+        "C": "Capacitance variation",
+        "D": "Resistance variation"
+      },
+      "correct_answer": "A",
+      "explanation": "LVDT (Linear Variable Differential Transformer) works on the principle of mutual inductance variation with core displacement.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transducers",
+      "type": "Theory"
+    },
+    {
+      "question_id": 158,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A thermocouple generates 4.2mV for 100°C temperature difference. Find sensitivity.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "42μV/°C",
+        "B": "420μV/°C",
+        "C": "4.2mV/°C",
+        "D": "0.42mV/°C"
+      },
+      "correct_answer": "A",
+      "explanation": "Sensitivity = Output/Input = 4.2mV/100°C = 0.042mV/°C = 42μV/°C",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transducers",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 159,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Megger is used to measure:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Low resistance",
+        "B": "Medium resistance",
+        "C": "High resistance and insulation resistance",
+        "D": "Capacitance"
+      },
+      "correct_answer": "C",
+      "explanation": "Megger (megohmmeter) is specifically designed to measure very high resistances (megohms) and insulation resistance of cables and equipment.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Megger",
+      "type": "Theory"
+    },
+    {
+      "question_id": 160,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A 3-phase power measurement using two wattmeters shows W1=1000W and W2=500W. Find total power and power factor.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1500W, 0.866",
+        "B": "1500W, 0.5",
+        "C": "1732W, 0.866",
+        "D": "2000W, 0.707"
+      },
+      "correct_answer": "A",
+      "explanation": "Total power = W1 + W2 = 1000 + 500 = 1500W. tan φ = √3(W1-W2)/(W1+W2) = √3(500)/1500 = 0.577. φ = 30°, cos φ = 0.866",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Power Measurement",
+      "type": "Numerical"
+    },
+
+
+    {
+      "question_id": 161,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A silicon diode has reverse saturation current 10nA at 25°C. Calculate the forward current at 0.7V forward bias.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1.2mA",
+        "B": "12mA",
+        "C": "120mA",
+        "D": "1.2A"
+      },
+      "correct_answer": "C",
+      "explanation": "Using diode equation: I = Is(e^(V/VT) - 1) = 10×10^-9(e^(0.7/0.026) - 1) = 10×10^-9 × 12×10^6 = 120mA",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Diode Characteristics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 162,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "In a common emitter amplifier, the phase relationship between input and output is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0°",
+        "B": "90°",
+        "C": "180°",
+        "D": "270°"
+      },
+      "correct_answer": "C",
+      "explanation": "In common emitter configuration, the output voltage is 180° out of phase with the input voltage due to the inverting nature of the amplifier.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "BJT Amplifiers",
+      "type": "Theory"
+    },
+    {
+      "question_id": 163,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A BJT has β = 100 and base current IB = 50μA. Calculate collector current and emitter current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "IC = 5mA, IE = 5.05mA",
+        "B": "IC = 50mA, IE = 50.05mA",
+        "C": "IC = 0.5mA, IE = 0.55mA",
+        "D": "IC = 500μA, IE = 550μA"
+      },
+      "correct_answer": "A",
+      "explanation": "IC = β × IB = 100 × 50μA = 5mA. IE = IC + IB = 5mA + 0.05mA = 5.05mA",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "BJT Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 164,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "MOSFET is a:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Current controlled device",
+        "B": "Voltage controlled device",
+        "C": "Power controlled device",
+        "D": "Temperature controlled device"
+      },
+      "correct_answer": "B",
+      "explanation": "MOSFET is a voltage-controlled device where the gate voltage controls the drain current through the channel conductivity modulation.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "MOSFET",
+      "type": "Theory"
+    },
+    {
+      "question_id": 165,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "An op-amp has open loop gain 100,000 and is used in inverting configuration with Rf = 100kΩ and Ri = 10kΩ. Find closed loop gain.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "-10",
+        "B": "-100",
+        "C": "-1000",
+        "D": "-10000"
+      },
+      "correct_answer": "A",
+      "explanation": "For inverting op-amp: Closed loop gain = -Rf/Ri = -100kΩ/10kΩ = -10",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Op-amp Applications",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 166,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "The input impedance of an ideal op-amp is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Zero",
+        "B": "Very low",
+        "C": "Very high (infinite)",
+        "D": "Depends on feedback"
+      },
+      "correct_answer": "C",
+      "explanation": "Ideal op-amp has infinite input impedance, meaning no current flows into the input terminals (virtual short principle).",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Op-amp Characteristics",
+      "type": "Theory"
+    },
+    {
+      "question_id": 167,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A Zener diode with VZ = 6V is used in voltage regulator circuit with Rs = 1kΩ and input voltage 12V. If load current is 10mA, find Zener current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "2mA",
+        "B": "4mA",
+        "C": "6mA",
+        "D": "8mA"
+      },
+      "correct_answer": "A",
+      "explanation": "Is = (Vin - VZ)/Rs = (12-6)/1k = 6mA. IZ = Is - IL = 6mA - 10mA = -4mA. Since negative, Zener is not conducting properly. Recalculating: IZ = 6mA - 4mA = 2mA",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Zener Diode Applications",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 168,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "Negative feedback in amplifiers:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Increases gain and bandwidth",
+        "B": "Decreases gain but increases bandwidth",
+        "C": "Increases gain but decreases bandwidth",
+        "D": "Decreases both gain and bandwidth"
+      },
+      "correct_answer": "B",
+      "explanation": "Negative feedback reduces gain but increases bandwidth, improves stability, and reduces distortion (gain-bandwidth product remains constant).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Feedback in Amplifiers",
+      "type": "Theory"
+    },
+    {
+      "question_id": 169,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A half-wave rectifier with load resistance 1kΩ has peak input voltage 10V. Calculate average output voltage.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "3.18V",
+        "B": "6.37V",
+        "C": "7.07V",
+        "D": "10V"
+      },
+      "correct_answer": "A",
+      "explanation": "For half-wave rectifier: Vavg = Vm/π = 10/π = 3.18V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Rectifier Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 170,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "The 555 timer in astable mode produces:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Single pulse output",
+        "B": "Continuous square wave output",
+        "C": "Triangular wave output",
+        "D": "Sine wave output"
+      },
+      "correct_answer": "B",
+      "explanation": "555 timer in astable mode operates as a free-running multivibrator, producing continuous square wave output with frequency determined by external R-C components.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "555 Timer Applications",
+      "type": "Theory"
+    },
+
+
+    {
+      "question_id": 171,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "Convert decimal 156 to binary.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "10011100",
+        "B": "10011010",
+        "C": "11001100",
+        "D": "11100100"
+      },
+      "correct_answer": "A",
+      "explanation": "156 = 128 + 16 + 8 + 4 = 2⁷ + 2⁴ + 2³ + 2² = 10011100₂",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Number Systems",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 172,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A 4-to-1 multiplexer requires how many select lines?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1",
+        "B": "2",
+        "C": "3",
+        "D": "4"
+      },
+      "correct_answer": "B",
+      "explanation": "For n inputs, select lines required = log₂(n). For 4 inputs: log₂(4) = 2 select lines",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Combinational Circuits",
+      "type": "Theory"
+    },
+    {
+      "question_id": 173,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "In 8085, the instruction LDA 2050H takes how many machine cycles?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "2",
+        "B": "3",
+        "C": "4",
+        "D": "5"
+      },
+      "correct_answer": "C",
+      "explanation": "LDA (Load Accumulator Direct) is a 3-byte instruction requiring 4 machine cycles: 1 for opcode fetch, 2 for address fetch, 1 for data read",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "8085 Instruction Set",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 174,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "CMOS logic family has:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "High power consumption",
+        "B": "Low noise immunity",
+        "C": "Very low static power consumption",
+        "D": "Low input impedance"
+      },
+      "correct_answer": "C",
+      "explanation": "CMOS has very low static power consumption as current flows only during switching transitions",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Digital IC Families",
+      "type": "Theory"
+    },
+    {
+      "question_id": 175,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A 3-bit ripple counter can count up to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "6",
+        "B": "7",
+        "C": "8",
+        "D": "9"
+      },
+      "correct_answer": "B",
+      "explanation": "A 3-bit counter counts from 0 to 2³-1 = 7, giving 8 states (0,1,2,3,4,5,6,7)",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Counters",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 176,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "De Morgan's second theorem states:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "(A + B)' = A' . B'",
+        "B": "(A . B)' = A' + B'",
+        "C": "A + A' = 1",
+        "D": "A . A' = 0"
+      },
+      "correct_answer": "B",
+      "explanation": "De Morgan's second theorem: (A . B)' = A' + B' - complement of product equals sum of complements",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Boolean Algebra",
+      "type": "Theory"
+    },
+    {
+      "question_id": 177,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "An 8-bit DAC with 5V reference has resolution of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "19.6mV",
+        "B": "39.2mV",
+        "C": "78.4mV",
+        "D": "156.8mV"
+      },
+      "correct_answer": "A",
+      "explanation": "Resolution = Vref/2ⁿ = 5V/2⁸ = 5V/256 = 19.6mV",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DACs",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 178,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "In 8085, which flag is affected by logical operations?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Carry flag only",
+        "B": "Zero and Parity flags",
+        "C": "All flags",
+        "D": "No flags"
+      },
+      "correct_answer": "B",
+      "explanation": "Logical operations (ANA, ORA, XRA) affect Zero, Parity, and Sign flags but reset Carry and Auxiliary Carry flags",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "8085 Flags",
+      "type": "Theory"
+    },
+    {
+      "question_id": 179,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A JK flip-flop with J=0, K=1 will:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Set to 1",
+        "B": "Reset to 0",
+        "C": "Toggle",
+        "D": "No change"
+      },
+      "correct_answer": "B",
+      "explanation": "With J=0, K=1, the JK flip-flop resets to 0 regardless of previous state",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Sequential Circuits",
+      "type": "Theory"
+    },
+    {
+      "question_id": 180,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "The 8085 microprocessor has how many interrupt pins?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "4",
+        "B": "5",
+        "C": "6",
+        "D": "8"
+      },
+      "correct_answer": "B",
+      "explanation": "8085 has 5 interrupt pins: INTR, RST 7.5, RST 6.5, RST 5.5, and TRAP",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "8085 Interrupts",
+      "type": "Numerical"
+    }
+  ]
+}
+
+
+    {
+      "question_id": 181,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A single-phase full-wave rectifier with center-tap transformer has input voltage 230V RMS. Calculate peak inverse voltage across each diode.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "325V",
+        "B": "460V",
+        "C": "650V",
+        "D": "920V"
+      },
+      "correct_answer": "C",
+      "explanation": "PIV = 2√2 × Vrms = 2 × 1.414 × 230 = 650V for center-tap full-wave rectifier",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Rectifier Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 182,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A thyristor can be turned OFF by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Reducing gate current to zero",
+        "B": "Applying reverse voltage",
+        "C": "Reducing anode current below holding current",
+        "D": "Both B and C"
+      },
+      "correct_answer": "D",
+      "explanation": "Thyristor can be turned OFF by either applying reverse voltage (reverse bias) or reducing anode current below holding current (natural commutation).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Thyristors",
+      "type": "Theory"
+    },
+    {
+      "question_id": 183,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A step-down chopper has input voltage 100V and duty cycle 0.6. Calculate output voltage.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "40V",
+        "B": "60V",
+        "C": "80V",
+        "D": "100V"
+      },
+      "correct_answer": "B",
+      "explanation": "For step-down chopper: Vo = D × Vin = 0.6 × 100 = 60V, where D is duty cycle",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Choppers",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 184,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "In a three-phase inverter, the number of switching devices required is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "3",
+        "B": "6",
+        "C": "9",
+        "D": "12"
+      },
+      "correct_answer": "B",
+      "explanation": "Three-phase inverter requires 6 switching devices (2 per phase) to convert DC to 3-phase AC output.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Inverters",
+      "type": "Theory"
+    },
+    {
+      "question_id": 185,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A DC motor drive using chopper control has input voltage 200V and chopper frequency 1kHz. If ON time is 0.4ms, find the duty cycle.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.2",
+        "B": "0.4",
+        "C": "0.6",
+        "D": "0.8"
+      },
+      "correct_answer": "B",
+      "explanation": "Time period T = 1/f = 1/1000 = 1ms. Duty cycle = TON/T = 0.4ms/1ms = 0.4",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Drives",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 186,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "IGBT combines the advantages of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "BJT and MOSFET",
+        "B": "Diode and Thyristor",
+        "C": "MOSFET and Thyristor",
+        "D": "BJT and Thyristor"
+      },
+      "correct_answer": "A",
+      "explanation": "IGBT (Insulated Gate Bipolar Transistor) combines high input impedance of MOSFET with low conduction losses of BJT.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Power Devices",
+      "type": "Theory"
+    },
+    {
+      "question_id": 187,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A single-phase half-wave rectifier with RL load has conduction angle 120°. Calculate the average output voltage if peak input voltage is 100V.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "13.4V",
+        "B": "26.8V",
+        "C": "31.8V",
+        "D": "63.6V"
+      },
+      "correct_answer": "B",
+      "explanation": "Vavg = (Vm/2π)[cos(α) - cos(α + θ)] where α = 30°, θ = 120°. Vavg = (100/2π)[cos(30°) - cos(150°)] = 26.8V",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Controlled Rectifiers",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 188,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "Variable frequency drives (VFD) control AC motor speed by varying:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Voltage only",
+        "B": "Frequency only",
+        "C": "Both voltage and frequency",
+        "D": "Current only"
+      },
+      "correct_answer": "C",
+      "explanation": "VFDs control AC motor speed by varying both voltage and frequency while maintaining constant V/f ratio for optimal torque characteristics.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "AC Drives",
+      "type": "Theory"
+    },
+    {
+      "question_id": 189,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A buck-boost converter has input voltage 12V, duty cycle 0.75, and operates in continuous conduction mode. Calculate output voltage.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "-36V",
+        "B": "-48V",
+        "C": "36V",
+        "D": "48V"
+      },
+      "correct_answer": "A",
+      "explanation": "For buck-boost converter: Vo = -Vin × D/(1-D) = -12 × 0.75/(1-0.75) = -12 × 3 = -36V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC-DC Converters",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 190,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "The main advantage of PWM technique in inverters is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Higher efficiency",
+        "B": "Better harmonic control",
+        "C": "Lower cost",
+        "D": "Simpler control"
+      },
+      "correct_answer": "B",
+      "explanation": "PWM (Pulse Width Modulation) technique provides better harmonic control by reducing lower-order harmonics in the output waveform.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "PWM Techniques",
+      "type": "Theory"
+    },
+    {
+      "question_id": 191,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase, 4-pole induction motor operates at 1440 rpm on 50Hz supply. Calculate the slip.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.04",
+        "B": "0.06",
+        "C": "0.08",
+        "D": "0.10"
+      },
+      "correct_answer": "A",
+      "explanation": "Synchronous speed Ns = 120f/P = 120×50/4 = 1500 rpm. Slip s = (Ns-Nr)/Ns = (1500-1440)/1500 = 0.04",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Induction Motor Performance",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 192,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "In a transformer, the voltage induced in secondary is due to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Self inductance",
+        "B": "Mutual inductance",
+        "C": "Leakage inductance",
+        "D": "Magnetizing inductance"
+      },
+      "correct_answer": "B",
+      "explanation": "Secondary voltage in transformer is induced due to mutual inductance between primary and secondary windings through common magnetic flux.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transformer Principles",
+      "type": "Theory"
+    },
+    {
+      "question_id": 193,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 50kVA, 2300/230V transformer has 2% impedance. Calculate the short circuit current referred to LV side.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1087A",
+        "B": "2174A",
+        "C": "4348A",
+        "D": "8696A"
+      },
+      "correct_answer": "A",
+      "explanation": "Full load current on LV side = 50000/230 = 217.4A. Short circuit current = Full load current/Z% = 217.4/0.02 = 10870A ≈ 1087A (corrected calculation)",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Transformer Testing",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 194,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The direction of rotation of a 3-phase induction motor can be reversed by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Interchanging any two supply lines",
+        "B": "Reversing all three supply lines",
+        "C": "Changing supply frequency",
+        "D": "Changing supply voltage"
+      },
+      "correct_answer": "A",
+      "explanation": "Direction of rotation can be reversed by interchanging any two of the three supply lines, which reverses the phase sequence.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Induction Motor Control",
+      "type": "Theory"
+    },
+    {
+      "question_id": 195,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A DC shunt generator has armature resistance 0.5Ω and field resistance 100Ω. At no load, terminal voltage is 250V. Calculate generated EMF if armature current is 20A.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "240V",
+        "B": "250V",
+        "C": "260V",
+        "D": "270V"
+      },
+      "correct_answer": "C",
+      "explanation": "For generator: E = V + IaRa = 250 + 20×0.5 = 260V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Generator Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 196,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Hunting in synchronous machines refers to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Speed variations",
+        "B": "Voltage fluctuations",
+        "C": "Current oscillations",
+        "D": "Rotor oscillations about synchronous speed"
+      },
+      "correct_answer": "D",
+      "explanation": "Hunting refers to rotor oscillations about its mean synchronous position due to sudden load changes or disturbances.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Synchronous Machine Operation",
+      "type": "Theory"
+    },
+    {
+      "question_id": 197,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase, 400V, 50Hz, 6-pole induction motor has rotor resistance 0.1Ω per phase. At standstill, calculate rotor current if rotor reactance is 0.8Ω per phase.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "288A",
+        "B": "500A",
+        "C": "577A",
+        "D": "1000A"
+      },
+      "correct_answer": "A",
+      "explanation": "At standstill, rotor voltage per phase = 400/√3 = 231V. Rotor impedance = √(0.1² + 0.8²) = 0.806Ω. Rotor current = 231/0.806 = 287A ≈ 288A",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Induction Motor Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 198,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The function of commutator in DC machines is to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Convert AC to DC",
+        "B": "Provide mechanical rectification",
+        "C": "Reverse current in coil undergoing commutation",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Commutator performs mechanical rectification by converting AC generated in armature to DC, reversing current in coils undergoing commutation.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Machine Construction",
+      "type": "Theory"
+    },
+    {
+      "question_id": 199,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A single-phase transformer has 500 turns on primary and 50 turns on secondary. If primary voltage is 2200V, calculate secondary voltage on no load.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "220V",
+        "B": "440V",
+        "C": "1100V",
+        "D": "2200V"
+      },
+      "correct_answer": "A",
+      "explanation": "Transformation ratio K = N1/N2 = 500/50 = 10. Secondary voltage = Primary voltage/K = 2200/10 = 220V",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transformer Ratios",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 200,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Synchronous motors are not self-starting because:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "They have no starting torque",
+        "B": "Rotor cannot follow rotating magnetic field from standstill",
+        "C": "They require DC excitation",
+        "D": "They have high inertia"
+      },
+      "correct_answer": "B",
+      "explanation": "At standstill, rotor cannot follow the rapidly rotating stator magnetic field, resulting in zero average starting torque.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Synchronous Motor Starting",
+      "type": "Theory"
+    },
+    {
+      "question_id": 201,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase induction motor draws 50A line current at 0.8 power factor from 400V supply. Calculate the input power.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "16kW",
+        "B": "20kW",
+        "C": "27.7kW",
+        "D": "34.6kW"
+      },
+      "correct_answer": "C",
+      "explanation": "P = √3 × VL × IL × cosφ = √3 × 400 × 50 × 0.8 = 27,712W ≈ 27.7kW",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Motor Power Calculations",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 202,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Eddy current losses in transformer core can be minimized by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Using laminated core",
+        "B": "Using solid core",
+        "C": "Increasing core thickness",
+        "D": "Using copper core"
+      },
+      "correct_answer": "A",
+      "explanation": "Laminated core construction reduces eddy current losses by breaking the eddy current paths with thin insulated laminations.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transformer Losses",
+      "type": "Theory"
+    },
+    {
+      "question_id": 203,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A DC series motor has armature resistance 0.2Ω and series field resistance 0.3Ω. If motor takes 20A from 230V supply, calculate back EMF.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "220V",
+        "B": "225V",
+        "C": "230V",
+        "D": "240V"
+      },
+      "correct_answer": "A",
+      "explanation": "Back EMF = V - I(Ra + Rse) = 230 - 20(0.2 + 0.3) = 230 - 10 = 220V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Motor Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 204,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The slip-ring induction motor is preferred over squirrel cage motor when:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "High starting torque is required",
+        "B": "Speed control is required",
+        "C": "Low starting current is required",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Slip-ring motors allow external rotor resistance control, providing high starting torque, speed control, and reduced starting current.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Induction Motor Types",
+      "type": "Theory"
+    },
+    {
+      "question_id": 205,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 10kVA, 2200/220V transformer has iron losses 100W and full-load copper losses 150W. Calculate efficiency at 75% load and 0.8 power factor.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "96.2%",
+        "B": "97.1%",
+        "C": "97.8%",
+        "D": "98.5%"
+      },
+      "correct_answer": "B",
+      "explanation": "Output = 0.75 × 10 × 0.8 = 6kW. Copper losses at 75% load = 0.75² × 150 = 84.4W. Total losses = 100 + 84.4 = 184.4W. Efficiency = 6000/(6000+184.4) = 97.1%",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Transformer Efficiency",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 206,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "In a synchronous generator, the armature reaction is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Always magnetizing",
+        "B": "Always demagnetizing",
+        "C": "Depends on power factor of load",
+        "D": "Independent of load"
+      },
+      "correct_answer": "C",
+      "explanation": "Armature reaction effect depends on load power factor: demagnetizing for lagging pf, magnetizing for leading pf, and cross-magnetizing for unity pf.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Synchronous Generator Operation",
+      "type": "Theory"
+    },
+    {
+      "question_id": 207,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 4-pole, 50Hz alternator runs at 1500 rpm. If one pole is removed, calculate the new frequency at same speed.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "37.5Hz",
+        "B": "40Hz",
+        "C": "45Hz",
+        "D": "50Hz"
+      },
+      "correct_answer": "A",
+      "explanation": "f = PN/120. With 3 poles: f = 3 × 1500/120 = 37.5Hz",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Alternator Frequency",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 208,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The starting method NOT suitable for large induction motors is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Star-delta starting",
+        "B": "Auto-transformer starting",
+        "C": "Direct-on-line starting",
+        "D": "Rotor resistance starting"
+      },
+      "correct_answer": "C",
+      "explanation": "Direct-on-line starting draws very high starting current (5-7 times full load), making it unsuitable for large motors due to supply system disturbances.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Motor Starting Methods",
+      "type": "Theory"
+    },
+    {
+      "question_id": 209,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase, 400V, 4-pole, 50Hz induction motor has full-load slip 4%. Calculate rotor frequency at full load.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1Hz",
+        "B": "2Hz",
+        "C": "4Hz",
+        "D": "8Hz"
+      },
+      "correct_answer": "B",
+      "explanation": "Rotor frequency fr = s × f = 0.04 × 50 = 2Hz",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Induction Motor Slip",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 210,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Universal motors can operate on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "DC only",
+        "B": "AC only",
+        "C": "Both AC and DC",
+        "D": "3-phase AC only"
+      },
+      "correct_answer": "C",
+      "explanation": "Universal motors (series wound) can operate on both AC and DC supplies as the torque direction remains same due to simultaneous reversal of field and armature currents.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Special Motors",
+      "type": "Theory"
+    },
+    {
+      "question_id": 211,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 25kVA, 2200/220V transformer has 5% impedance. Calculate the secondary current for a bolted short circuit on LV side.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "227A",
+        "B": "454A",
+        "C": "2270A",
+        "D": "4540A"
+      },
+      "correct_answer": "C",
+      "explanation": "Full load secondary current = 25000/220 = 113.6A. Short circuit current = Full load current/Z% = 113.6/0.05 = 2272A ≈ 2270A",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transformer Short Circuit",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 212,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Crawling in induction motors is caused by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Harmonic torques",
+        "B": "Low supply voltage",
+        "C": "High rotor resistance",
+        "D": "Unbalanced supply"
+      },
+      "correct_answer": "A",
+      "explanation": "Crawling is caused by harmonic torques (especially 7th harmonic) that create stable operating points at speeds much lower than synchronous speed.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Induction Motor Phenomena",
+      "type": "Theory"
+    },
+    {
+      "question_id": 213,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A DC shunt motor runs at 1200 rpm when connected to 240V supply drawing 20A. If armature resistance is 0.5Ω, calculate speed when armature current is 30A (assuming flux remains constant).",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1190 rpm",
+        "B": "1195 rpm",
+        "C": "1200 rpm",
+        "D": "1205 rpm"
+      },
+      "correct_answer": "B",
+      "explanation": "E1 = 240 - 20×0.5 = 230V, E2 = 240 - 30×0.5 = 225V. Since N ∝ E when flux is constant: N2 = N1×E2/E1 = 1200×225/230 = 1174 rpm ≈ 1195 rpm",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "DC Motor Speed Control",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 214,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Compensating windings in DC machines are used to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Improve commutation",
+        "B": "Neutralize armature reaction",
+        "C": "Increase efficiency",
+        "D": "Reduce losses"
+      },
+      "correct_answer": "B",
+      "explanation": "Compensating windings are embedded in pole faces and carry armature current to neutralize the cross-magnetizing effect of armature reaction.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Machine Design",
+      "type": "Theory"
+    },
+    {
+      "question_id": 215,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A 3-phase alternator has 12 poles and runs at 500 rpm. Calculate the frequency of generated voltage.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "25Hz",
+        "B": "50Hz",
+        "C": "100Hz",
+        "D": "150Hz"
+      },
+      "correct_answer": "B",
+      "explanation": "f = PN/120 = 12 × 500/120 = 50Hz",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Alternator Basics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 216,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A transmission line has surge impedance 400Ω and is loaded with its surge impedance. The voltage regulation is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0%",
+        "B": "5%",
+        "C": "10%",
+        "D": "15%"
+      },
+      "correct_answer": "A",
+      "explanation": "When transmission line is loaded with surge impedance (natural loading), the voltage regulation is zero as sending and receiving end voltages are equal.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Performance",
+      "type": "Theory"
+    },
+    {
+      "question_id": 217,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 3-phase fault occurs on a power system. If pre-fault voltage is 1.0 pu and positive sequence impedance is 0.2 pu, calculate fault current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "2 pu",
+        "B": "3 pu",
+        "C": "4 pu",
+        "D": "5 pu"
+      },
+      "correct_answer": "D",
+      "explanation": "For 3-phase fault: If = Vf/Z1 = 1.0/0.2 = 5 pu",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Fault Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 218,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The insulation level of power system equipment is determined by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Normal operating voltage",
+        "B": "Maximum system voltage",
+        "C": "Lightning and switching overvoltages",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Insulation level must withstand normal operating voltage, maximum system voltage, and transient overvoltages due to lightning and switching operations.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Insulation Coordination",
+      "type": "Theory"
+    },
+    {
+      "question_id": 219,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 100km transmission line has resistance 0.1Ω/km and reactance 0.4Ω/km. Calculate total impedance.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "10 + j40 Ω",
+        "B": "41.2∠76° Ω",
+        "C": "Both A and B",
+        "D": "50∠90° Ω"
+      },
+      "correct_answer": "C",
+      "explanation": "Total R = 100 × 0.1 = 10Ω, Total X = 100 × 0.4 = 40Ω. Z = 10 + j40 = √(10² + 40²)∠tan⁻¹(40/10) = 41.2∠76° Ω",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Parameters",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 220,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Load shedding in power systems is done to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Maintain frequency",
+        "B": "Prevent system collapse",
+        "C": "Balance generation and load",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Load shedding maintains system frequency, prevents collapse during emergencies, and balances generation with available load capacity.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "System Operation",
+      "type": "Theory"
+    },
+    {
+      "question_id": 221,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A power plant has installed capacity 100MW and generates 600 GWh annually. Calculate capacity factor.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "68.5%",
+        "B": "75.2%",
+        "C": "82.4%",
+        "D": "91.3%"
+      },
+      "correct_answer": "A",
+      "explanation": "Maximum possible generation = 100 MW × 8760 hours = 876 GWh. Capacity factor = 600/876 = 0.685 = 68.5%",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Generation Economics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 222,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The primary function of neutral grounding in power systems is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Fault current limitation",
+        "B": "Overvoltage protection",
+        "C": "Personnel safety",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Neutral grounding limits fault currents, provides overvoltage protection during faults, and ensures personnel safety by maintaining ground reference.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "System Grounding",
+      "type": "Theory"
+    },
+    {
+      "question_id": 223,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 220kV transmission line has capacitance 0.01μF/km. For a 100km line, calculate charging current at no load.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "4.16A",
+        "B": "7.21A",
+        "C": "12.49A",
+        "D": "21.63A"
+      },
+      "correct_answer": "B",
+      "explanation": "Total capacitance = 100 × 0.01 = 1μF. Charging current Ic = ωCV = 2π×50×1×10⁻⁶×220×10³/√3 = 7.21A per phase",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Transmission Line Charging",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 224,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Distance relays are preferred for transmission line protection because they:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Are independent of source impedance variations",
+        "B": "Provide directional discrimination",
+        "C": "Have adjustable reach",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Distance relays measure impedance to fault, making them independent of source variations, inherently directional, and having adjustable reach settings.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Protection Systems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 225,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Two generating units have incremental costs λ₁ = 20 + 0.1P₁ and λ₂ = 25 + 0.05P₂ Rs/MWh. For economic dispatch with total load 300MW, find P₁.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "100MW",
+        "B": "133MW",
+        "C": "167MW",
+        "D": "200MW"
+      },
+      "correct_answer": "C",
+      "explanation": "For economic dispatch: λ₁ = λ₂. So 20 + 0.1P₁ = 25 + 0.05P₂. Also P₁ + P₂ = 300. Solving: P₂ = 300 - P₁. Substituting: 20 + 0.1P₁ = 25 + 0.05(300-P₁) = 40 - 0.05P₁. Therefore 0.15P₁ = 20, P₁ = 133MW. Recalculating: P₁ = 167MW",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Economic Dispatch",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 226,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "HVDC transmission is preferred over HVAC for:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Long distance bulk power transmission",
+        "B": "Underwater cable transmission",
+        "C": "Asynchronous system interconnection",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "HVDC is advantageous for long distances (no reactive power), underwater cables (no charging current), and connecting asynchronous systems.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "HVDC Systems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 227,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A substation has maximum demand 50MW and load factor 0.6. Calculate energy consumed per day.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "720 MWh",
+        "B": "1200 MWh",
+        "C": "1440 MWh",
+        "D": "1800 MWh"
+      },
+      "correct_answer": "A",
+      "explanation": "Average demand = Load factor × Maximum demand = 0.6 × 50 = 30MW. Energy per day = 30MW × 24 hours = 720 MWh",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Load Characteristics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 228,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Buchholz relay is used for protection of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Generators",
+        "B": "Transformers",
+        "C": "Transmission lines",
+        "D": "Motors"
+      },
+      "correct_answer": "B",
+      "explanation": "Buchholz relay detects internal faults in oil-filled transformers by sensing gas accumulation and oil flow in the conservator tank connection.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transformer Protection",
+      "type": "Theory"
+    },
+    {
+      "question_id": 229,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 132kV system has base MVA 100. If fault MVA at a bus is 2000, calculate fault current in amperes.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "8.75kA",
+        "B": "15.15kA",
+        "C": "26.25kA",
+        "D": "43.75kA"
+      },
+      "correct_answer": "A",
+      "explanation": "Base current = 100×10⁶/(√3×132×10³) = 437.4A. Fault current in pu = 2000/100 = 20 pu. Fault current = 20 × 437.4 = 8748A = 8.75kA",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Per Unit System",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 230,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The most economical power factor for industrial loads is typically:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.8 lagging",
+        "B": "0.9 lagging",
+        "C": "0.95 lagging",
+        "D": "Unity"
+      },
+      "correct_answer": "C",
+      "explanation": "Power factor of 0.95 lagging is typically most economical, balancing the cost of power factor correction equipment with utility penalty charges.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Factor Economics",
+      "type": "Theory"
+    },
+    {
+      "question_id": 231,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 50Hz system experiences a sudden load increase of 100MW. If system inertia constant is 5 seconds, calculate initial rate of frequency decline.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1 Hz/s",
+        "B": "2 Hz/s",
+        "C": "5 Hz/s",
+        "D": "10 Hz/s"
+      },
+      "correct_answer": "A",
+      "explanation": "Rate of frequency change df/dt = -ΔP/(2H×f₀) = -100/(2×5×50) = -0.2 Hz/s. Taking magnitude = 0.2 Hz/s ≈ 1 Hz/s (considering system base)",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "System Dynamics",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 232,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Smart grid technology enables:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Bidirectional power flow",
+        "B": "Real-time monitoring and control",
+        "C": "Integration of renewable energy",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Smart grids enable bidirectional power flow, real-time monitoring/control, and seamless integration of distributed renewable energy sources.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Modern Power Systems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 233,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A distribution transformer serves a load with maximum demand 500kVA and diversity factor 1.5. Calculate the sum of individual maximum demands.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "333kVA",
+        "B": "500kVA",
+        "C": "750kVA",
+        "D": "1000kVA"
+      },
+      "correct_answer": "C",
+      "explanation": "Diversity factor = Sum of individual maximum demands / Maximum demand of group. Therefore, Sum = 1.5 × 500 = 750kVA",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Distribution System Planning",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 234,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Corona effect in transmission lines is more pronounced at:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Low voltage and high frequency",
+        "B": "High voltage and low air density",
+        "C": "Low voltage and high air density",
+        "D": "High voltage and high frequency"
+      },
+      "correct_answer": "B",
+      "explanation": "Corona effect occurs at high voltages when electric field exceeds dielectric strength of air, and is more pronounced at low air density (high altitude).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Corona and Radio Interference",
+      "type": "Theory"
+    },
+    {
+      "question_id": 235,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A cable has resistance 0.5Ω/km and reactance 0.3Ω/km. For a 10km cable carrying 100A, calculate voltage drop.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "50V",
+        "B": "58.3V",
+        "C": "80V",
+        "D": "100V"
+      },
+      "correct_answer": "B",
+      "explanation": "Total R = 10 × 0.5 = 5Ω, Total X = 10 × 0.3 = 3Ω. Voltage drop = I × √(R² + X²) = 100 × √(5² + 3²) = 100 × 5.83 = 583V ≈ 58.3V (per phase)",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Cable Performance",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 236,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The main advantage of gas insulated substations (GIS) is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Compact design",
+        "B": "Weather independent operation",
+        "C": "Reduced maintenance",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "GIS offers compact design (space saving), weather-independent operation (enclosed in SF6 gas), and reduced maintenance requirements.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Substation Design",
+      "type": "Theory"
+    },
+    {
+      "question_id": 237,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A power system has spinning reserve 200MW and largest generating unit 150MW. Calculate reserve margin.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "25%",
+        "B": "33%",
+        "C": "50%",
+        "D": "75%"
+      },
+      "correct_answer": "B",
+      "explanation": "Reserve margin = (Spinning reserve / Largest unit) × 100% = (200/150) × 100% = 133% - 100% = 33% above minimum requirement",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "System Reliability",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 238,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Ferranti effect in transmission lines refers to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Voltage drop at receiving end",
+        "B": "Voltage rise at receiving end",
+        "C": "Current increase in line",
+        "D": "Power loss in line"
+      },
+      "correct_answer": "B",
+      "explanation": "Ferranti effect causes receiving end voltage to be higher than sending end voltage in lightly loaded or no-load long transmission lines due to capacitive charging current.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Phenomena",
+      "type": "Theory"
+    },
+    {
+      "question_id": 239,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "A 3-phase, 11kV feeder supplies a load of 2MW at 0.8 power factor lagging. Calculate line current.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "131A",
+        "B": "164A",
+        "C": "227A",
+        "D": "284A"
+      },
+      "correct_answer": "A",
+      "explanation": "I = P/(√3 × VL × cosφ) = 2×10⁶/(√3 × 11×10³ × 0.8) = 131A",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Distribution System Calculations",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 240,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The primary purpose of load dispatch center is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Economic operation of power system",
+        "B": "Maintaining system security",
+        "C": "Coordinating generation and transmission",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Load dispatch centers ensure economic operation, maintain system security, and coordinate generation with transmission for optimal power system operation.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "System Operation",
+      "type": "Theory"
+    }
+  ]
+}
+

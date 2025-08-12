@@ -97,8 +97,13 @@ export default function QuizModal({ quiz, open, onOpenChange, onQuizComplete }) 
                 value={selectedAnswers[currentQuestionIndex]?.toString() || ""}
                 className="space-y-4"
               >
-                {currentQuestion.options.map((option, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                {(Array.isArray(currentQuestion.options) 
+                  ? currentQuestion.options 
+                  : (typeof currentQuestion.options === 'object' && currentQuestion.options !== null) 
+                    ? Object.keys(currentQuestion.options).sort().map(key => currentQuestion.options[key]) 
+                    : []
+                ).map((option, index) => (
+                  <div key={index} className="flex items-start space-x-3 p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors">
                     <RadioGroupItem 
                       value={index.toString()} 
                       id={`option-${index}`}
@@ -133,17 +138,17 @@ export default function QuizModal({ quiz, open, onOpenChange, onQuizComplete }) 
         ) : (
           <div className="space-y-6">
             <div className="text-center bg-gradient-to-r from-green-50 to-blue-50 p-8 rounded-lg border">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Quiz Complete!</h3>
+              <h3 className="text-2xl font-bold text-neutral-800 mb-4">Quiz Complete!</h3>
               <div className="text-4xl font-bold text-blue-600 mb-2">
                 {score.toFixed(1)}%
               </div>
-              <p className="text-gray-600">
+              <p className="text-neutral-600">
                 You scored {Math.round((score / 100) * quiz.questions.length)} out of {quiz.questions.length} questions correctly
               </p>
             </div>
             
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">Review Your Answers:</h4>
+              <h4 className="text-lg font-semibold text-neutral-800 mb-4">Review Your Answers:</h4>
               
               {quiz.questions.map((question, index) => {
                 const userAnswer = selectedAnswers[index];
@@ -171,9 +176,12 @@ export default function QuizModal({ quiz, open, onOpenChange, onQuizComplete }) 
                     
                     <div className="ml-8 space-y-2">
                       <div className={`p-2 rounded ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-                        <div className="text-sm font-medium text-gray-700 mb-1">Your Answer:</div>
+                        <div className="text-sm font-medium text-neutral-700 mb-1">Your Answer:</div>
                         <ContentDisplay 
-                          content={question.options[userAnswer] || "No answer selected"}
+                          content={(Array.isArray(question.options) ? question.options[userAnswer] : 
+                            (typeof question.options === 'object' && question.options !== null) ? 
+                            question.options[Object.keys(question.options).sort()[userAnswer]] : 
+                            "No answer selected") || "No answer selected"}
                           renderingMode="math-optimized"
                           className="user-answer"
                           inline={false}
@@ -182,9 +190,12 @@ export default function QuizModal({ quiz, open, onOpenChange, onQuizComplete }) 
                       
                       {!isCorrect && (
                         <div className="p-2 rounded bg-green-100">
-                          <div className="text-sm font-medium text-gray-700 mb-1">Correct Answer:</div>
+                          <div className="text-sm font-medium text-neutral-700 mb-1">Correct Answer:</div>
                           <ContentDisplay 
-                            content={question.options[question.correct]}
+                            content={(Array.isArray(question.options) ? question.options[question.correct] : 
+                              (typeof question.options === 'object' && question.options !== null) ? 
+                              question.options[question.correct] : 
+                              "No correct answer") || "No correct answer"}
                             renderingMode="math-optimized"
                             className="correct-answer"
                             inline={false}
@@ -194,7 +205,7 @@ export default function QuizModal({ quiz, open, onOpenChange, onQuizComplete }) 
                       
                       {question.explanation && (
                         <div className="p-2 rounded bg-blue-50 border border-blue-200">
-                          <div className="text-sm font-medium text-gray-700 mb-1">Explanation:</div>
+                          <div className="text-sm font-medium text-neutral-700 mb-1">Explanation:</div>
                           <ContentDisplay 
                             content={question.explanation}
                             renderingMode="math-optimized"

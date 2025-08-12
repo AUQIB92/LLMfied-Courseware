@@ -1220,8 +1220,8 @@
   }
 }
 
-/* Dark Mode Enhancements */
-@media (prefers-color-scheme: dark) {
+/* Dark Mode Enhancements - now only when `.dark` class is present */
+.dark {
   .subsection-card {
     background: linear-gradient(
       135deg,
@@ -1635,8 +1635,8 @@
   }
 }
 
-/* Dark mode support for feature cards */
-@media (prefers-color-scheme: dark) {
+/* Dark mode support for feature cards - only under `.dark` */
+.dark {
   .feature-card-premium {
     background: rgba(30, 41, 59, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.1);

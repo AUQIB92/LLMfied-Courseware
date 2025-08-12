@@ -41,9 +41,11 @@ import {
   Upload,
   FileText,
   Download,
+  Wrench,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function TestSeriesCreator({ onTestSeriesCreated }) {
   const [activeStep, setActiveStep] = useState("basic");
@@ -55,6 +57,8 @@ export default function TestSeriesCreator({ onTestSeriesCreated }) {
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [provider, setProvider] = useState("perplexity");
+  const [isImportingJson, setIsImportingJson] = useState(false);
+  const [jsonImportData, setJsonImportData] = useState(null);
 
   const [testSeriesData, setTestSeriesData] = useState({
     title: "",
@@ -78,6 +82,7 @@ export default function TestSeriesCreator({ onTestSeriesCreated }) {
   });
 
   const { user, getAuthHeaders } = useAuth();
+  const { toast } = useToast();
 
   // Markdown parser function
   const parseMarkdownFile = (content) => {
@@ -314,6 +319,38 @@ export default function TestSeriesCreator({ onTestSeriesCreated }) {
         "databases",
         "networks",
         "operating systems",
+      ],
+      "Electrical Engineering": [
+        "electrical engineering",
+        "electric circuits",
+        "control systems",
+        "electrical measurements",
+        "electronic devices",
+        "digital electronics",
+        "microprocessor",
+        "power electronics",
+        "electrical machines",
+        "power systems",
+        "transformer",
+        "motor",
+        "generator",
+        "circuit",
+        "measurements",
+        "electronics",
+        "power",
+        "electrical",
+        "electrical machines",
+        "electrical measurements",
+        "electrical symbols",
+        "electrical circuits",
+        "electrical power",
+        "electrical systems",
+        "electrical devices",
+        "electrical equipment",
+        "electrical installation",
+        "electrical safety",
+        "electrical wiring",
+        "electrical components",
       ],
       Economics: [
         "microeconomics",
@@ -691,12 +728,19 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
     setCurrentGenerationStep("Initializing test series generation...");
 
     try {
+      // Debug: Log the current state
+      console.log("Current testSeriesData:", testSeriesData);
+      console.log("Current subject:", testSeriesData.subject);
+      console.log("Current topics:", testSeriesData.topics);
+
       // Validate required fields before proceeding
       if (!testSeriesData.title?.trim()) {
         throw new Error("Please enter a test series title");
       }
 
       if (!testSeriesData.subject?.trim()) {
+        console.error("Subject validation failed. Current subject:", testSeriesData.subject);
+        console.error("Available subjects:", ["Physics", "Chemistry", "Mathematics", "Biology", "Computer Science Engineering", "Electrical Engineering", "Economics", "Business Administration", "English", "History", "Geography"]);
         throw new Error("Please select a subject");
       }
 
@@ -937,6 +981,194 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
   );
   const theoreticalCount = totalQuestions - numericalCount;
 
+  // JSON import parser function
+  const parseJsonTestSeries = (jsonData) => {
+    let allQuestions = [];
+    
+    // Helper function to normalize question options
+    const normalizeQuestionOptions = (question) => {
+      if (!question.options) return [];
+      if (Array.isArray(question.options)) {
+        return question.options;
+      }
+      if (typeof question.options === 'object' && question.options !== null) {
+        const optionKeys = Object.keys(question.options).sort();
+        return optionKeys.map(key => question.options[key]);
+      }
+      return [];
+    };
+
+    // Helper function to process image references
+    const processImageReference = (question) => {
+      if (question.image_reference && question.image_reference.has_image) {
+        return {
+          hasImage: true,
+          imageDescription: `Image for question ${question.question_id}`,
+          imageAltText: `Question ${question.question_id} diagram`,
+          imagePath: question.image_reference.image_path
+        };
+      }
+      return {
+        hasImage: false,
+        imageDescription: null,
+        imageAltText: null,
+        imagePath: null
+      };
+    };
+
+    // Extract questions from different possible structures
+    if (jsonData.questions && Array.isArray(jsonData.questions)) {
+      allQuestions = jsonData.questions.map((question, index) => ({
+        question_id: question.question_id || index + 1,
+        question_text: question.question_text || question.question || question.text,
+        options: normalizeQuestionOptions(question),
+        correct: question.correct_answer || question.correct || 0,
+        explanation: question.explanation || "",
+        difficulty: question.difficulty_level || "Medium",
+        topic: question.topic || "General",
+        marks: question.marks || 1,
+        ...processImageReference(question)
+      }));
+    } else if (jsonData.testSeriesInfo && jsonData.testSeriesInfo.tests) {
+      jsonData.testSeriesInfo.tests.forEach(test => {
+        if (test.questions && Array.isArray(test.questions)) {
+          const testQuestions = test.questions.map((question, index) => ({
+            question_id: question.question_id || index + 1,
+            question_text: question.question_text || question.question || question.text,
+            options: normalizeQuestionOptions(question),
+            correct: question.correct_answer || question.correct || 0,
+            explanation: question.explanation || "",
+            difficulty: question.difficulty_level || "Medium",
+            topic: question.topic || "General",
+            marks: question.marks || 1,
+            ...processImageReference(question)
+          }));
+          allQuestions.push(...testQuestions);
+        }
+      });
+    } else if (jsonData.sample_test && jsonData.sample_test.questions) {
+      allQuestions = jsonData.sample_test.questions.map((question, index) => ({
+        question_id: question.question_id || index + 1,
+        question_text: question.question_text || question.question || question.text,
+        options: normalizeQuestionOptions(question),
+        correct: question.correct_answer || question.correct || 0,
+        explanation: question.explanation || "",
+        difficulty: question.difficulty_level || "Medium",
+        topic: question.topic || "General",
+        marks: question.marks || 1,
+        ...processImageReference(question)
+      }));
+    } else if (jsonData.master_test_series && jsonData.master_test_series.tests) {
+      jsonData.master_test_series.tests.forEach(test => {
+        if (test.questions && Array.isArray(test.questions)) {
+          const testQuestions = test.questions.map((question, index) => ({
+            question_id: question.question_id || index + 1,
+            question_text: question.question_text || question.question || question.text,
+            options: normalizeQuestionOptions(question),
+            correct: question.correct_answer || question.correct || 0,
+            explanation: question.explanation || "",
+            difficulty: question.difficulty_level || "Medium",
+            topic: question.topic || "General",
+            marks: question.marks || 1,
+            ...processImageReference(question)
+          }));
+          allQuestions.push(...testQuestions);
+        }
+      });
+    }
+
+    // Extract test series info
+    const testSeriesInfo = jsonData.test_info || jsonData.testSeriesInfo || jsonData.sample_test || {};
+    
+    return {
+      title: testSeriesInfo.test_name || testSeriesInfo.title || "Imported Test Series",
+      description: testSeriesInfo.description || "Test series imported from JSON",
+      subject: detectSubjectFromTopics(allQuestions.map(q => q.topic)),
+      totalQuestions: allQuestions.length,
+      timeLimit: testSeriesInfo.time_duration ? parseInt(testSeriesInfo.time_duration) : 120,
+      marksPerQuestion: testSeriesInfo.marks_per_question || 1,
+      negativeMarking: testSeriesInfo.negative_marking || 0,
+      difficultyDistribution: testSeriesInfo.difficulty_distribution || {
+        easy: Math.floor(allQuestions.length * 0.4),
+        medium: Math.floor(allQuestions.length * 0.5),
+        hard: Math.floor(allQuestions.length * 0.1)
+      },
+      questions: allQuestions
+    };
+  };
+
+  // Handle JSON file upload
+  const handleJsonFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsImportingJson(true);
+    try {
+      const content = await file.text();
+      const jsonData = JSON.parse(content);
+      
+      const parsedData = parseJsonTestSeries(jsonData);
+      
+      setJsonImportData(parsedData);
+      setActiveTab("import-json");
+      
+      toast({
+        title: "JSON Imported Successfully",
+        description: `Found ${parsedData.questions.length} questions with images.`,
+      });
+    } catch (error) {
+      console.error("Error parsing JSON:", error);
+      toast({
+        title: "Import Failed",
+        description: "Invalid JSON file or unsupported format.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImportingJson(false);
+    }
+  };
+
+  // Create test series from imported JSON
+  const createTestSeriesFromJson = async () => {
+    if (!jsonImportData) return;
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch("/api/test-series/import-json", {
+        method: "POST",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(jsonImportData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create test series");
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: "Test Series Created Successfully",
+        description: `Created test series with ${jsonImportData.questions.length} questions.`,
+      });
+
+      if (onTestSeriesCreated) {
+        onTestSeriesCreated(result.testSeries);
+      }
+    } catch (error) {
+      console.error("Error creating test series:", error);
+      toast({
+        title: "Creation Failed",
+        description: error.message || "Failed to create test series from JSON.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -970,10 +1202,11 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
       )}
 
       <Tabs value={activeStep} onValueChange={setActiveStep}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="basic">Basic Info</TabsTrigger>
           <TabsTrigger value="syllabus">Syllabus</TabsTrigger>
           <TabsTrigger value="config">Configuration</TabsTrigger>
+          <TabsTrigger value="import">Import JSON</TabsTrigger>
           <TabsTrigger value="generate">Generate</TabsTrigger>
         </TabsList>
 
@@ -1488,7 +1721,6 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
         </TabsContent>
 
         <TabsContent value="syllabus" className="space-y-6">
-          {/* File Upload Section */}
           <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-800">
@@ -1572,6 +1804,97 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
                   <li>
                     <strong>Prerequisites:</strong> Add "Prerequisites: your
                     text"
+                  </li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <Upload className="w-5 h-5" />
+                Import Test Series from JSON
+              </CardTitle>
+              <CardDescription>
+                Upload a .json file containing a pre-existing test series
+                structure and questions to create a new test series.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="jsonFile" className="cursor-pointer">
+                    <div className="flex items-center gap-2 p-4 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      <span className="text-blue-700">
+                        {isImportingJson
+                          ? "Importing JSON..."
+                          : uploadedFileName ||
+                            "Click to upload .json file or drag & drop"}
+                      </span>
+                      {isImportingJson && (
+                        <div className="ml-2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      )}
+                    </div>
+                  </Label>
+                  <Input
+                    id="jsonFile"
+                    type="file"
+                    accept=".json"
+                    onChange={handleJsonFileUpload}
+                    className="hidden"
+                    disabled={isImportingJson}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = ".json";
+                    input.onchange = (event) => {
+                      handleJsonFileUpload({ target: event.target });
+                    };
+                    input.click();
+                  }}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Choose JSON File
+                </Button>
+              </div>
+
+              <div className="mt-4 text-sm text-blue-600">
+                <p>
+                  <strong>JSON Structure:</strong>
+                </p>
+                <ul className="list-disc list-inside space-y-1 mt-2">
+                  <li>
+                    <strong>test_series_info:</strong> Contains basic
+                    information about the test series.
+                  </li>
+                  <li>
+                    <strong>tests:</strong> An array of test objects, each
+                    containing a <strong>questions</strong> array.
+                  </li>
+                  <li>
+                    <strong>test_series_info.syllabus_distribution:</strong>
+                    Defines the distribution of marks across different
+                    modules/topics.
+                  </li>
+                  <li>
+                    <strong>test_series_info.syllabus_distribution.module_name:</strong>
+                    Name of the module.
+                  </li>
+                  <li>
+                    <strong>test_series_info.syllabus_distribution.weightage_marks:</strong>
+                    Marks allocated to the module.
+                  </li>
+                  <li>
+                    <strong>test_series_info.syllabus_distribution.topics:</strong>
+                    An array of subtopics within the module.
                   </li>
                 </ul>
               </div>
@@ -1872,21 +2195,21 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
                 <h4 className="font-semibold mb-2">Test Series Summary</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Total Tests:</span>
+                    <span className="text-neutral-600">Total Tests:</span>
                     <div className="font-medium">
                       {testSeriesData.totalTests}
                     </div>
                   </div>
                   <div>
-                    <span className="text-gray-600">Total Questions:</span>
+                    <span className="text-neutral-600">Total Questions:</span>
                     <div className="font-medium">{totalQuestions}</div>
                   </div>
                   <div>
-                    <span className="text-gray-600">Numerical Questions:</span>
+                    <span className="text-neutral-600">Numerical Questions:</span>
                     <div className="font-medium">{numericalCount}</div>
                   </div>
                   <div>
-                    <span className="text-gray-600">
+                    <span className="text-neutral-600">
                       Theoretical Questions:
                     </span>
                     <div className="font-medium">{theoreticalCount}</div>
@@ -1897,7 +2220,194 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
           </Card>
         </TabsContent>
 
+        <TabsContent value="import" className="space-y-6">
+          {/* Clear instructions for JSON import */}
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              <strong>JSON Import Instructions:</strong> Upload your JSON file below, then click "Create Test Series from JSON" to import your questions. Do NOT use the "Generate Test Series (Draft)" button in the Generate tab - that's for AI generation only.
+            </AlertDescription>
+          </Alert>
+
+          <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-800">
+                <Upload className="w-5 h-5" />
+                Import Test Series from JSON
+              </CardTitle>
+              <CardDescription>
+                Upload a .json file containing a pre-existing test series
+                structure and questions to create a new test series.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="jsonFile" className="cursor-pointer">
+                    <div className="flex items-center gap-2 p-4 border-2 border-dashed border-green-300 rounded-lg hover:border-green-400 hover:bg-green-50/50 transition-colors">
+                      <FileText className="w-5 h-5 text-green-600" />
+                      <span className="text-green-700">
+                        {isImportingJson
+                          ? "Importing JSON..."
+                          : uploadedFileName ||
+                            "Click to upload .json file or drag & drop"}
+                      </span>
+                      {isImportingJson && (
+                        <div className="ml-2 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                      )}
+                    </div>
+                  </Label>
+                  <Input
+                    id="jsonFile"
+                    type="file"
+                    accept=".json"
+                    onChange={handleJsonFileUpload}
+                    className="hidden"
+                    disabled={isImportingJson}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = ".json";
+                    input.onchange = (event) => {
+                      handleJsonFileUpload({ target: event.target });
+                    };
+                    input.click();
+                  }}
+                  className="border-green-300 text-green-700 hover:bg-green-50"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Choose JSON File
+                </Button>
+              </div>
+
+              {/* Show JSON import data summary */}
+              {jsonImportData && (
+                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-2">
+                    ✅ JSON Data Imported Successfully
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-green-600">Total Questions:</span>
+                      <div className="font-medium text-green-800">
+                        {jsonImportData.totalQuestions}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-green-600">Modules:</span>
+                      <div className="font-medium text-green-800">
+                        {jsonImportData.modules.length}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-green-600">Test Series:</span>
+                      <div className="font-medium text-green-800">
+                        {jsonImportData.testSeriesInfo?.title || "Unknown"}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-green-600">Status:</span>
+                      <div className="font-medium text-green-800">
+                        Ready to Create
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex gap-4">
+                    <Button
+                      onClick={createTestSeriesFromJson}
+                      disabled={isGenerating}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                          Creating Test Series...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Create Test Series from JSON
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch('/api/test-series/fix-options', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                          });
+                          const result = await response.json();
+                          alert(`Fixed ${result.stats?.fixedQuestions || 0} questions out of ${result.stats?.totalQuestions || 0} total questions`);
+                        } catch (error) {
+                          console.error('Error fixing options:', error);
+                          alert('Error fixing options. Check console for details.');
+                        }
+                      }}
+                      variant="outline"
+                      className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                    >
+                      <Wrench className="w-4 h-4 mr-2" />
+                      Fix Existing Options
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 text-sm text-green-600">
+                <p>
+                  <strong>JSON Structure:</strong>
+                </p>
+                <ul className="list-disc list-inside space-y-1 mt-2">
+                  <li>
+                    <strong>test_series_info:</strong> Contains basic
+                    information about the test series.
+                  </li>
+                  <li>
+                    <strong>tests:</strong> An array of test objects, each
+                    containing a <strong>questions</strong> array.
+                  </li>
+                  <li>
+                    <strong>test_series_info.syllabus_distribution:</strong>
+                    Defines the distribution of marks across different
+                    modules/topics.
+                  </li>
+                  <li>
+                    <strong>test_series_info.syllabus_distribution.module_name:</strong>
+                    Name of the module.
+                  </li>
+                  <li>
+                    <strong>test_series_info.syllabus_distribution.weightage_marks:</strong>
+                    Marks allocated to the module.
+                  </li>
+                  <li>
+                    <strong>test_series_info.syllabus_distribution.topics:</strong>
+                    An array of subtopics within the module.
+                  </li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="generate" className="space-y-6">
+          {/* Warning for JSON import users */}
+          {jsonImportData && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                <strong>⚠️ WRONG TAB!</strong> You have imported JSON data. You should NOT be in this tab. Please go to the "Import JSON" tab and click "Create Test Series from JSON" to import your questions. This tab is for AI-powered generation only.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-indigo-800">
@@ -1921,35 +2431,35 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="text-center p-4 bg-white rounded-lg border">
                   <Search className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                  <h4 className="font-semibold text-gray-800">
+                  <h4 className="font-semibold text-neutral-800">
                     Extensive Research
                   </h4>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-neutral-600">
                     Real-time web search for current information
                   </p>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg border">
                   <Calculator className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <h4 className="font-semibold text-gray-800">
+                  <h4 className="font-semibold text-neutral-800">
                     {testSeriesData.numericalPercentage}% Numerical
                   </h4>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-neutral-600">
                     {numericalCount} numerical questions
                   </p>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg border">
                   <BookOpen className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                  <h4 className="font-semibold text-gray-800">
+                  <h4 className="font-semibold text-neutral-800">
                     {testSeriesData.theoreticalPercentage}% Theoretical
                   </h4>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-neutral-600">
                     {theoreticalCount} theoretical questions
                   </p>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg border">
                   <CheckCircle className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                  <h4 className="font-semibold text-gray-800">AI Validated</h4>
-                  <p className="text-sm text-gray-600">
+                  <h4 className="font-semibold text-neutral-800">AI Validated</h4>
+                  <p className="text-sm text-neutral-600">
                     AI-verified accuracy and relevance
                   </p>
                 </div>
@@ -1964,11 +2474,12 @@ Prerequisites: Basic understanding of Class 10 mathematics, familiarity with alg
                     disabled={
                       totalWeightage !== 100 ||
                       testSeriesData.topics.length === 0 ||
-                      !testSeriesData.title
+                      !testSeriesData.title ||
+                      jsonImportData // Disable if JSON data is imported
                     }
                   >
                     <Brain className="w-4 h-4 mr-2" />
-                    Generate Test Series (Draft)
+                    {jsonImportData ? "Use Import JSON Tab Instead" : "Generate Test Series (Draft)"}
                   </Button>
                 </div>
               )}

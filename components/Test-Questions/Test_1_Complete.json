@@ -1,0 +1,2556 @@
+{
+  "test_info": {
+    "test_id": "TEST_01",
+    "test_name": "Test 1 - Fundamental Concepts",
+    "description": "Comprehensive test covering fundamental concepts across all modules",
+    "total_questions": 120,
+    "total_marks": 120,
+    "time_duration": "120 minutes",
+    "difficulty_distribution": {
+      "easy": 48,
+      "medium": 60,
+      "hard": 12
+    }
+  },
+  "questions": [
+
+
+    {
+      "question_id": 1,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "According to Ohm's law, if the voltage across a resistor is doubled while keeping the resistance constant, the current will:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Remain the same",
+        "B": "Double",
+        "C": "Become half",
+        "D": "Become four times"
+      },
+      "correct_answer": "B",
+      "explanation": "According to Ohm's law, V = IR. If voltage is doubled and resistance remains constant, current must double to maintain the relationship.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Basic Concepts"
+    },
+    {
+      "question_id": 2,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "In the circuit shown, find the equivalent resistance between points A and B.",
+      "image_reference": {
+        "has_image": true,
+        "image_path": "/home/ubuntu/test_images/circuits/circuit_diagram_1.png"
+      },
+      "options": {
+        "A": "10 Ω",
+        "B": "15 Ω",
+        "C": "20 Ω",
+        "D": "25 Ω"
+      },
+      "correct_answer": "B",
+      "explanation": "Using series and parallel resistance formulas: R_parallel = (R1 × R2)/(R1 + R2) for parallel resistors, and R_series = R1 + R2 for series resistors.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Network Analysis"
+    },
+    {
+      "question_id": 3,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Kirchhoff's Current Law (KCL) states that the algebraic sum of currents at any node is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Equal to the supply voltage",
+        "B": "Equal to zero",
+        "C": "Equal to the total resistance",
+        "D": "Equal to the power consumed"
+      },
+      "correct_answer": "B",
+      "explanation": "KCL is based on conservation of charge. The sum of currents entering a node equals the sum of currents leaving the node, making the algebraic sum zero.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Circuit Laws"
+    },
+    {
+      "question_id": 4,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "In a series RLC circuit at resonance, the impedance is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Maximum and equal to R",
+        "B": "Minimum and equal to R",
+        "C": "Zero",
+        "D": "Infinite"
+      },
+      "correct_answer": "B",
+      "explanation": "At resonance, XL = XC, so the reactive components cancel out, leaving only the resistance R as the impedance, which is the minimum value.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Resonance"
+    },
+    {
+      "question_id": 5,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The Thevenin equivalent voltage of a network is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "The short circuit current",
+        "B": "The open circuit voltage",
+        "C": "The voltage across the load",
+        "D": "The supply voltage"
+      },
+      "correct_answer": "B",
+      "explanation": "Thevenin voltage is the open circuit voltage measured across the terminals when the load is disconnected.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Network Theorems"
+    },
+    {
+      "question_id": 6,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "In a balanced three-phase system, if the line voltage is 400V, the phase voltage is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "400V",
+        "B": "231V",
+        "C": "200V",
+        "D": "692V"
+      },
+      "correct_answer": "B",
+      "explanation": "In a star-connected system, phase voltage = line voltage / √3 = 400 / √3 = 231V.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Circuits"
+    },
+    {
+      "question_id": 7,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The unit of inductance is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Farad",
+        "B": "Henry",
+        "C": "Weber",
+        "D": "Tesla"
+      },
+      "correct_answer": "B",
+      "explanation": "The unit of inductance is Henry (H), named after Joseph Henry. It represents the property of a circuit to oppose changes in current.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Basic Concepts"
+    },
+    {
+      "question_id": 8,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Norton's theorem states that any linear network can be replaced by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "A voltage source in series with a resistance",
+        "B": "A current source in parallel with a resistance",
+        "C": "A voltage source in parallel with a resistance",
+        "D": "A current source in series with a resistance"
+      },
+      "correct_answer": "B",
+      "explanation": "Norton's theorem replaces a network with an equivalent current source in parallel with Norton resistance.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Network Theorems"
+    },
+    {
+      "question_id": 9,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The power factor of a purely inductive circuit is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1",
+        "B": "0",
+        "C": "0.5",
+        "D": "0.707"
+      },
+      "correct_answer": "B",
+      "explanation": "In a purely inductive circuit, current lags voltage by 90°, making cos(90°) = 0, so power factor is zero.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "AC Circuits"
+    },
+    {
+      "question_id": 10,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Superposition theorem is applicable to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Linear circuits only",
+        "B": "Non-linear circuits only",
+        "C": "Both linear and non-linear circuits",
+        "D": "Circuits with dependent sources only"
+      },
+      "correct_answer": "A",
+      "explanation": "Superposition theorem is only applicable to linear circuits where the principle of linearity holds.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Network Theorems"
+    },
+    {
+      "question_id": 11,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The capacitance of a parallel plate capacitor is directly proportional to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Distance between plates",
+        "B": "Area of plates",
+        "C": "Voltage applied",
+        "D": "Current flowing"
+      },
+      "correct_answer": "B",
+      "explanation": "Capacitance C = ε₀εᵣA/d, where A is the area of plates. Capacitance is directly proportional to the area of plates.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Capacitance"
+    },
+    {
+      "question_id": 12,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "In mesh analysis, the number of independent equations required is equal to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Number of nodes",
+        "B": "Number of branches",
+        "C": "Number of independent loops",
+        "D": "Number of voltage sources"
+      },
+      "correct_answer": "C",
+      "explanation": "Mesh analysis requires writing KVL equations for each independent loop in the circuit.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Network Analysis"
+    },
+    {
+      "question_id": 13,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The magnetic field intensity H is measured in:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Tesla",
+        "B": "Weber",
+        "C": "Ampere/meter",
+        "D": "Henry"
+      },
+      "correct_answer": "C",
+      "explanation": "Magnetic field intensity H is measured in Ampere per meter (A/m), representing the magnetizing force.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Electromagnetic Fields"
+    },
+    {
+      "question_id": 14,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "For maximum power transfer, the load resistance should be:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Equal to source resistance",
+        "B": "Half of source resistance",
+        "C": "Double the source resistance",
+        "D": "Zero"
+      },
+      "correct_answer": "A",
+      "explanation": "Maximum power transfer theorem states that maximum power is transferred when load resistance equals source resistance.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Maximum Power Transfer"
+    },
+    {
+      "question_id": 15,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The phase difference between voltage and current in a purely resistive AC circuit is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0°",
+        "B": "90°",
+        "C": "180°",
+        "D": "270°"
+      },
+      "correct_answer": "A",
+      "explanation": "In a purely resistive circuit, voltage and current are in phase, so the phase difference is 0°.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "AC Circuits"
+    },
+
+
+    {
+      "question_id": 16,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "In the block diagram shown, what type of control system is represented?",
+      "image_reference": {
+        "has_image": true,
+        "image_path": "/home/ubuntu/test_images/control_systems/block_diagram.jpg"
+      },
+      "options": {
+        "A": "Open loop control system",
+        "B": "Closed loop control system",
+        "C": "Feed-forward control system",
+        "D": "Cascade control system"
+      },
+      "correct_answer": "B",
+      "explanation": "The diagram shows a closed loop control system with feedback path from output to input for comparison.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Block Diagram Representation"
+    },
+    {
+      "question_id": 17,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The main advantage of closed loop control system over open loop is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Lower cost",
+        "B": "Simplicity",
+        "C": "Better accuracy and stability",
+        "D": "Faster response"
+      },
+      "correct_answer": "C",
+      "explanation": "Closed loop systems provide better accuracy and stability due to feedback mechanism that corrects for disturbances.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Open and Closed Loop Systems"
+    },
+    {
+      "question_id": 18,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The transfer function of a system is defined as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Output/Input in time domain",
+        "B": "Input/Output in frequency domain",
+        "C": "Output/Input in frequency domain",
+        "D": "Error/Input in time domain"
+      },
+      "correct_answer": "C",
+      "explanation": "Transfer function is the ratio of Laplace transform of output to Laplace transform of input with zero initial conditions.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Basic Control System Components"
+    },
+    {
+      "question_id": 19,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "For a stable system, all poles of the transfer function must lie:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "On the right half of s-plane",
+        "B": "On the left half of s-plane",
+        "C": "On the imaginary axis",
+        "D": "At the origin"
+      },
+      "correct_answer": "B",
+      "explanation": "For stability, all poles must have negative real parts, i.e., lie in the left half of the s-plane.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Stability Analysis"
+    },
+    {
+      "question_id": 20,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The steady state error of a unity feedback system with type 1 system for step input is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Zero",
+        "B": "Infinite",
+        "C": "1/(1+Kp)",
+        "D": "1/Kv"
+      },
+      "correct_answer": "A",
+      "explanation": "Type 1 systems have one pole at origin, giving zero steady state error for step input.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Stability Analysis"
+    },
+    {
+      "question_id": 21,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "In block diagram reduction, blocks in cascade are:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Added",
+        "B": "Subtracted",
+        "C": "Multiplied",
+        "D": "Divided"
+      },
+      "correct_answer": "C",
+      "explanation": "When blocks are in cascade (series), their transfer functions are multiplied to get the overall transfer function.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Block Diagram Reduction"
+    },
+    {
+      "question_id": 22,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The characteristic equation of a control system is obtained from:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Numerator of closed loop transfer function",
+        "B": "Denominator of closed loop transfer function",
+        "C": "Numerator of open loop transfer function",
+        "D": "1 + G(s)H(s) = 0"
+      },
+      "correct_answer": "D",
+      "explanation": "The characteristic equation is 1 + G(s)H(s) = 0, where G(s) is forward path and H(s) is feedback path transfer function.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Basic Control System Components"
+    },
+    {
+      "question_id": 23,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "Negative feedback in control systems:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Increases system gain",
+        "B": "Decreases system stability",
+        "C": "Improves system stability",
+        "D": "Has no effect on performance"
+      },
+      "correct_answer": "C",
+      "explanation": "Negative feedback improves system stability, reduces sensitivity to parameter variations, and improves transient response.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Open and Closed Loop Systems"
+    },
+    {
+      "question_id": 24,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The order of a system is determined by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Number of poles",
+        "B": "Number of zeros",
+        "C": "Highest power of s in numerator",
+        "D": "Highest power of s in denominator"
+      },
+      "correct_answer": "D",
+      "explanation": "The order of a system is determined by the highest power of 's' in the denominator of the transfer function.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Basic Control System Components"
+    },
+    {
+      "question_id": 25,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A proportional controller has transfer function:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Kp",
+        "B": "Kp + Ki/s",
+        "C": "Kp + Kd*s",
+        "D": "Kp + Ki/s + Kd*s"
+      },
+      "correct_answer": "A",
+      "explanation": "A proportional controller has a constant gain Kp, providing output proportional to the error signal.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Basic Control System Components"
+    },
+
+
+    {
+      "question_id": 26,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The waveform shown on the oscilloscope indicates:",
+      "image_reference": {
+        "has_image": true,
+        "image_path": "/home/ubuntu/test_images/measurements/oscilloscope_waveforms.jpg"
+      },
+      "options": {
+        "A": "Pure sinusoidal wave",
+        "B": "Square wave",
+        "C": "Triangular wave",
+        "D": "Sawtooth wave"
+      },
+      "correct_answer": "A",
+      "explanation": "The oscilloscope display shows a smooth, continuous sinusoidal waveform characteristic of a pure sine wave.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Oscilloscope Measurements"
+    },
+    {
+      "question_id": 27,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "PMMC instruments can be used for measuring:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "AC current only",
+        "B": "DC current only",
+        "C": "Both AC and DC current",
+        "D": "Power only"
+      },
+      "correct_answer": "B",
+      "explanation": "PMMC (Permanent Magnet Moving Coil) instruments can only measure DC quantities due to their construction with permanent magnets.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "PMMC Instruments"
+    },
+    {
+      "question_id": 28,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The accuracy of a Wheatstone bridge is maximum when:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "All arms have equal resistance",
+        "B": "The galvanometer shows maximum deflection",
+        "C": "The bridge is balanced",
+        "D": "The supply voltage is maximum"
+      },
+      "correct_answer": "C",
+      "explanation": "Maximum accuracy is achieved when the bridge is balanced, as the measurement doesn't depend on the galvanometer sensitivity.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Bridges and Potentiometers"
+    },
+    {
+      "question_id": 29,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Moving iron instruments can measure:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "DC quantities only",
+        "B": "AC quantities only",
+        "C": "Both AC and DC quantities",
+        "D": "Power factor only"
+      },
+      "correct_answer": "C",
+      "explanation": "Moving iron instruments can measure both AC and DC quantities as they respond to the square of the current.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Moving Iron Instruments"
+    },
+    {
+      "question_id": 30,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The range of an ammeter can be extended by using:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Series resistance",
+        "B": "Parallel resistance (shunt)",
+        "C": "Series capacitance",
+        "D": "Parallel capacitance"
+      },
+      "correct_answer": "B",
+      "explanation": "The range of an ammeter is extended by connecting a shunt (parallel resistance) to carry most of the current.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Extension of Range"
+    },
+    {
+      "question_id": 31,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A current transformer is used to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Step up voltage",
+        "B": "Step down current for measurement",
+        "C": "Provide isolation only",
+        "D": "Measure power factor"
+      },
+      "correct_answer": "B",
+      "explanation": "Current transformers step down high currents to measurable levels for instruments and provide isolation.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Instrument Transformers"
+    },
+    {
+      "question_id": 32,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Digital voltmeters typically use:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Moving coil mechanism",
+        "B": "Analog-to-digital conversion",
+        "C": "Moving iron mechanism",
+        "D": "Electrostatic mechanism"
+      },
+      "correct_answer": "B",
+      "explanation": "Digital voltmeters use analog-to-digital converters to convert the analog voltage signal to digital display.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Digital Voltmeters"
+    },
+    {
+      "question_id": 33,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The Q-factor of a coil can be measured using:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Wattmeter",
+        "B": "Q-meter",
+        "C": "Multimeter",
+        "D": "Oscilloscope"
+      },
+      "correct_answer": "B",
+      "explanation": "Q-meter is specifically designed to measure the quality factor (Q) of inductors and capacitors.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Q-meters"
+    },
+    {
+      "question_id": 34,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Dynamometer type instruments are used for measuring:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "DC power only",
+        "B": "AC power only",
+        "C": "Both AC and DC power",
+        "D": "Reactive power only"
+      },
+      "correct_answer": "C",
+      "explanation": "Dynamometer instruments can measure both AC and DC power as they use electromagnetic induction principle.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Dynamometer Instruments"
+    },
+    {
+      "question_id": 35,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The range of a voltmeter can be extended by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Adding series resistance",
+        "B": "Adding parallel resistance",
+        "C": "Adding series capacitance",
+        "D": "Adding parallel inductance"
+      },
+      "correct_answer": "A",
+      "explanation": "Voltmeter range is extended by adding series resistance to limit the current through the meter.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Extension of Range"
+    },
+    {
+      "question_id": 36,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Induction type instruments are primarily used for measuring:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "DC quantities",
+        "B": "AC energy",
+        "C": "DC power",
+        "D": "Resistance"
+      },
+      "correct_answer": "B",
+      "explanation": "Induction type instruments are primarily used for measuring AC energy in energy meters (kWh meters).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Induction Type Instruments"
+    },
+    {
+      "question_id": 37,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A megger is used to measure:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Low resistance",
+        "B": "High resistance and insulation resistance",
+        "C": "Capacitance",
+        "D": "Inductance"
+      },
+      "correct_answer": "B",
+      "explanation": "Megger (megohmmeter) is used to measure very high resistances and insulation resistance of cables and equipment.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Megger"
+    },
+    {
+      "question_id": 38,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Phase measurement can be done using:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Ammeter",
+        "B": "Voltmeter",
+        "C": "Oscilloscope",
+        "D": "Wattmeter"
+      },
+      "correct_answer": "C",
+      "explanation": "Oscilloscope can display waveforms and measure phase differences between voltage and current signals.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Phase Measurement"
+    },
+    {
+      "question_id": 39,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "LVDT is a type of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Temperature transducer",
+        "B": "Displacement transducer",
+        "C": "Pressure transducer",
+        "D": "Flow transducer"
+      },
+      "correct_answer": "B",
+      "explanation": "LVDT (Linear Variable Differential Transformer) is a displacement transducer that converts linear displacement to electrical signal.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transducers"
+    },
+    {
+      "question_id": 40,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The power factor of a circuit can be measured using:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Ammeter and voltmeter",
+        "B": "Wattmeter, ammeter and voltmeter",
+        "C": "Oscilloscope only",
+        "D": "Frequency meter"
+      },
+      "correct_answer": "B",
+      "explanation": "Power factor = P/(V×I), so we need wattmeter for power, ammeter for current, and voltmeter for voltage measurements.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Factor Measurement"
+    },
+
+
+    {
+      "question_id": 41,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "In a forward-biased PN junction diode, the width of the depletion region:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Increases",
+        "B": "Decreases",
+        "C": "Remains constant",
+        "D": "Becomes infinite"
+      },
+      "correct_answer": "B",
+      "explanation": "In forward bias, the applied voltage opposes the built-in potential, reducing the depletion region width.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Semiconductor Physics"
+    },
+    {
+      "question_id": 42,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "The energy gap of silicon at room temperature is approximately:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.7 eV",
+        "B": "1.1 eV",
+        "C": "1.4 eV",
+        "D": "3.2 eV"
+      },
+      "correct_answer": "B",
+      "explanation": "Silicon has an energy gap of approximately 1.1 eV at room temperature, making it suitable for semiconductor devices.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Energy Bands in Silicon"
+    },
+    {
+      "question_id": 43,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A Zener diode is primarily used for:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Rectification",
+        "B": "Voltage regulation",
+        "C": "Amplification",
+        "D": "Switching"
+      },
+      "correct_answer": "B",
+      "explanation": "Zener diodes are primarily used for voltage regulation due to their constant voltage drop in reverse bias breakdown region.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Diodes"
+    },
+    {
+      "question_id": 44,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "In a BJT, the base region is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Heavily doped and thick",
+        "B": "Lightly doped and thin",
+        "C": "Heavily doped and thin",
+        "D": "Lightly doped and thick"
+      },
+      "correct_answer": "B",
+      "explanation": "The base region in BJT is lightly doped and thin to allow most carriers to pass through to the collector.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transistors"
+    },
+    {
+      "question_id": 45,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "The current gain (β) of a transistor is defined as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "IC/IE",
+        "B": "IC/IB",
+        "C": "IB/IC",
+        "D": "IE/IB"
+      },
+      "correct_answer": "B",
+      "explanation": "Current gain β (beta) is defined as the ratio of collector current to base current (IC/IB).",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Transistors"
+    },
+    {
+      "question_id": 46,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "JFET operates in:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Enhancement mode only",
+        "B": "Depletion mode only",
+        "C": "Both enhancement and depletion modes",
+        "D": "Neither mode"
+      },
+      "correct_answer": "B",
+      "explanation": "JFET (Junction Field Effect Transistor) operates only in depletion mode, where the channel is depleted by reverse bias.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "JFET"
+    },
+    {
+      "question_id": 47,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "An operational amplifier has:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Low input impedance and low gain",
+        "B": "High input impedance and high gain",
+        "C": "Low input impedance and high gain",
+        "D": "High input impedance and low gain"
+      },
+      "correct_answer": "B",
+      "explanation": "Ideal op-amp has very high input impedance (infinite) and very high voltage gain for differential input.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Op-amp"
+    },
+    {
+      "question_id": 48,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "A clipper circuit is used to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Amplify signals",
+        "B": "Remove unwanted portions of waveform",
+        "C": "Shift DC level",
+        "D": "Generate oscillations"
+      },
+      "correct_answer": "B",
+      "explanation": "Clipper circuits remove or clip unwanted portions of the input waveform above or below certain levels.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Simple Diode Circuits"
+    },
+    {
+      "question_id": 49,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "The 555 timer IC can be configured as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Monostable multivibrator only",
+        "B": "Astable multivibrator only",
+        "C": "Both monostable and astable multivibrator",
+        "D": "Amplifier only"
+      },
+      "correct_answer": "C",
+      "explanation": "555 timer IC is versatile and can be configured as both monostable (one-shot) and astable (free-running) multivibrator.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "555 Timer IC"
+    },
+    {
+      "question_id": 50,
+      "module_id": 4,
+      "module_name": "Electronic Devices and Circuits",
+      "question_text": "Negative feedback in amplifiers:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Increases gain and decreases stability",
+        "B": "Decreases gain and increases stability",
+        "C": "Increases both gain and stability",
+        "D": "Decreases both gain and stability"
+      },
+      "correct_answer": "B",
+      "explanation": "Negative feedback reduces gain but improves stability, reduces distortion, and increases bandwidth.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Feedback in Amplifiers"
+    },
+
+
+    {
+      "question_id": 51,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "Looking at the logic gate symbols, which gate produces HIGH output only when all inputs are HIGH?",
+      "image_reference": {
+        "has_image": true,
+        "image_path": "/home/ubuntu/test_images/digital/logic_gates.jpg"
+      },
+      "options": {
+        "A": "OR gate",
+        "B": "AND gate",
+        "C": "NAND gate",
+        "D": "XOR gate"
+      },
+      "correct_answer": "B",
+      "explanation": "AND gate produces HIGH output only when all inputs are HIGH, implementing Boolean multiplication.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Logic Gates"
+    },
+    {
+      "question_id": 52,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "The binary equivalent of decimal number 25 is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "11001",
+        "B": "11010",
+        "C": "11100",
+        "D": "10011"
+      },
+      "correct_answer": "A",
+      "explanation": "25 in decimal = 16 + 8 + 1 = 2⁴ + 2³ + 2⁰ = 11001 in binary.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Number Systems"
+    },
+    {
+      "question_id": 53,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "De Morgan's first theorem states:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "(A + B)' = A' . B'",
+        "B": "(A . B)' = A' + B'",
+        "C": "A + A' = 1",
+        "D": "A . A' = 0"
+      },
+      "correct_answer": "A",
+      "explanation": "De Morgan's first theorem: The complement of sum equals the product of complements: (A + B)' = A' . B'.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Boolean Algebra"
+    },
+    {
+      "question_id": 54,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A multiplexer with 4 data inputs requires how many select lines?",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1",
+        "B": "2",
+        "C": "3",
+        "D": "4"
+      },
+      "correct_answer": "B",
+      "explanation": "For n data inputs, a multiplexer requires log₂(n) select lines. For 4 inputs: log₂(4) = 2 select lines.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Combinational Circuits"
+    },
+    {
+      "question_id": 55,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A JK flip-flop with J=1 and K=1 will:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Set to 1",
+        "B": "Reset to 0",
+        "C": "Toggle",
+        "D": "Remain unchanged"
+      },
+      "correct_answer": "C",
+      "explanation": "When J=1 and K=1, the JK flip-flop toggles its output state on each clock pulse.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Sequential Circuits"
+    },
+    {
+      "question_id": 56,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "The 8085 microprocessor has:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "8-bit data bus and 8-bit address bus",
+        "B": "8-bit data bus and 16-bit address bus",
+        "C": "16-bit data bus and 8-bit address bus",
+        "D": "16-bit data bus and 16-bit address bus"
+      },
+      "correct_answer": "B",
+      "explanation": "8085 microprocessor has 8-bit data bus and 16-bit address bus, allowing access to 64KB memory.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Microprocessor 8085"
+    },
+    {
+      "question_id": 57,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "TTL logic family operates with supply voltage of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "3.3V",
+        "B": "5V",
+        "C": "12V",
+        "D": "15V"
+      },
+      "correct_answer": "B",
+      "explanation": "TTL (Transistor-Transistor Logic) family typically operates with +5V supply voltage.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Digital IC Families"
+    },
+    {
+      "question_id": 58,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "A 4-bit binary counter can count up to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "15",
+        "B": "16",
+        "C": "31",
+        "D": "32"
+      },
+      "correct_answer": "A",
+      "explanation": "A 4-bit counter can count from 0 to 2⁴-1 = 15, giving 16 different states (0 to 15).",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Counters"
+    },
+    {
+      "question_id": 59,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "The resolution of an 8-bit DAC with reference voltage 10V is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "39.06 mV",
+        "B": "78.12 mV",
+        "C": "156.25 mV",
+        "D": "312.5 mV"
+      },
+      "correct_answer": "A",
+      "explanation": "Resolution = Vref/(2ⁿ-1) = 10V/(2⁸-1) = 10V/255 = 39.06 mV.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "DACs"
+    },
+    {
+      "question_id": 60,
+      "module_id": 5,
+      "module_name": "Digital Electronics and Microprocessor",
+      "question_text": "In 8085, the instruction MOV A,B means:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Move accumulator content to register B",
+        "B": "Move register B content to accumulator",
+        "C": "Add A and B",
+        "D": "Compare A and B"
+      },
+      "correct_answer": "B",
+      "explanation": "MOV A,B instruction moves the content of register B to the accumulator (register A).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "8085 Instruction Set"
+    },
+
+
+    {
+      "question_id": 61,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "In the bridge rectifier circuit shown, the peak inverse voltage across each diode is:",
+      "image_reference": {
+        "has_image": true,
+        "image_path": "/home/ubuntu/test_images/power_electronics/bridge_rectifier.png"
+      },
+      "options": {
+        "A": "Vm",
+        "B": "2Vm",
+        "C": "Vm/2",
+        "D": "√2 × Vm"
+      },
+      "correct_answer": "A",
+      "explanation": "In bridge rectifier, each diode experiences PIV equal to peak input voltage Vm during reverse bias.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Rectifier Circuits"
+    },
+    {
+      "question_id": 62,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A thyristor can be turned ON by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Forward bias only",
+        "B": "Gate trigger only",
+        "C": "Forward bias and gate trigger",
+        "D": "Reverse bias"
+      },
+      "correct_answer": "C",
+      "explanation": "Thyristor requires both forward bias (anode positive w.r.t. cathode) and gate trigger pulse to turn ON.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Thyristors"
+    },
+    {
+      "question_id": 63,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "The efficiency of a full-wave rectifier is approximately:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "40.6%",
+        "B": "81.2%",
+        "C": "90%",
+        "D": "100%"
+      },
+      "correct_answer": "B",
+      "explanation": "The maximum efficiency of a full-wave rectifier is 81.2%, which is higher than half-wave rectifier (40.6%).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Rectifier Circuits"
+    },
+    {
+      "question_id": 64,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A chopper is used to control:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "AC voltage",
+        "B": "DC voltage",
+        "C": "AC frequency",
+        "D": "Power factor"
+      },
+      "correct_answer": "B",
+      "explanation": "Chopper is a DC-to-DC converter used to control DC voltage by varying the duty cycle of switching.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Choppers"
+    },
+    {
+      "question_id": 65,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "An inverter converts:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "AC to DC",
+        "B": "DC to AC",
+        "C": "AC to AC",
+        "D": "DC to DC"
+      },
+      "correct_answer": "B",
+      "explanation": "Inverter is a power electronic device that converts DC power to AC power with desired frequency and voltage.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Inverters"
+    },
+    {
+      "question_id": 66,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "MOSFET is a:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Current controlled device",
+        "B": "Voltage controlled device",
+        "C": "Power controlled device",
+        "D": "Temperature controlled device"
+      },
+      "correct_answer": "B",
+      "explanation": "MOSFET (Metal Oxide Semiconductor Field Effect Transistor) is a voltage-controlled device with high input impedance.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Power MOSFETs"
+    },
+    {
+      "question_id": 67,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "The speed of a DC motor can be controlled by varying:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Armature voltage only",
+        "B": "Field current only",
+        "C": "Both armature voltage and field current",
+        "D": "Load torque only"
+      },
+      "correct_answer": "C",
+      "explanation": "DC motor speed can be controlled by varying either armature voltage or field current, or both methods can be used.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Drives"
+    },
+    {
+      "question_id": 68,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "Variable frequency drives (VFD) are used to control:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "DC motor speed",
+        "B": "AC motor speed",
+        "C": "Motor torque only",
+        "D": "Motor power factor only"
+      },
+      "correct_answer": "B",
+      "explanation": "VFDs control AC motor speed by varying the frequency and voltage of the power supplied to the motor.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "AC Drives"
+    },
+    {
+      "question_id": 69,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "A triac is equivalent to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "One SCR",
+        "B": "Two SCRs in parallel",
+        "C": "Two SCRs in anti-parallel",
+        "D": "Four diodes"
+      },
+      "correct_answer": "C",
+      "explanation": "Triac is equivalent to two SCRs connected in anti-parallel, allowing bidirectional current flow.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Triacs"
+    },
+    {
+      "question_id": 70,
+      "module_id": 6,
+      "module_name": "Power Electronics and Drives",
+      "question_text": "The duty cycle of a chopper is defined as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "TON/TOFF",
+        "B": "TOFF/TON",
+        "C": "TON/(TON + TOFF)",
+        "D": "TOFF/(TON + TOFF)"
+      },
+      "correct_answer": "C",
+      "explanation": "Duty cycle = TON/(TON + TOFF) = TON/T, where TON is ON time and T is total time period.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Choppers"
+    },
+
+
+    {
+      "question_id": 71,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "In the transformer equivalent circuit shown, the magnetizing reactance Xm represents:",
+      "image_reference": {
+        "has_image": true,
+        "image_path": "/home/ubuntu/test_images/machines/transformer_equivalent.jpg"
+      },
+      "options": {
+        "A": "Leakage reactance of primary",
+        "B": "Leakage reactance of secondary",
+        "C": "Reactance due to mutual flux",
+        "D": "Total reactance"
+      },
+      "correct_answer": "C",
+      "explanation": "Magnetizing reactance Xm represents the reactance due to mutual flux that links both primary and secondary windings.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transformer Equivalent Circuit"
+    },
+    {
+      "question_id": 72,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The transformation ratio of a transformer is defined as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "N1/N2",
+        "B": "N2/N1",
+        "C": "V1/V2",
+        "D": "I2/I1"
+      },
+      "correct_answer": "A",
+      "explanation": "Transformation ratio K = N1/N2, where N1 is primary turns and N2 is secondary turns.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Single-phase Transformers"
+    },
+    {
+      "question_id": 73,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The no-load current in a transformer is primarily:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Resistive",
+        "B": "Inductive",
+        "C": "Capacitive",
+        "D": "Unity power factor"
+      },
+      "correct_answer": "B",
+      "explanation": "No-load current is primarily inductive (magnetizing current) required to establish flux in the core.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Single-phase Transformers"
+    },
+    {
+      "question_id": 74,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "In a DC generator, the EMF equation is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "E = φZN/60",
+        "B": "E = φZNP/60A",
+        "C": "E = φZNA/60P",
+        "D": "E = φN/60"
+      },
+      "correct_answer": "B",
+      "explanation": "EMF equation: E = φZNP/60A, where φ=flux, Z=conductors, N=speed, P=poles, A=parallel paths.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "DC Machines"
+    },
+    {
+      "question_id": 75,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The back EMF in a DC motor:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Opposes the applied voltage",
+        "B": "Aids the applied voltage",
+        "C": "Is independent of speed",
+        "D": "Is always zero"
+      },
+      "correct_answer": "A",
+      "explanation": "Back EMF opposes the applied voltage according to Lenz's law and is proportional to motor speed.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "DC Machines"
+    },
+    {
+      "question_id": 76,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "In a 3-phase induction motor, the rotor frequency at slip s is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "f",
+        "B": "sf",
+        "C": "f/s",
+        "D": "f(1-s)"
+      },
+      "correct_answer": "B",
+      "explanation": "Rotor frequency = slip × supply frequency = sf, where s is slip and f is supply frequency.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Induction Motors"
+    },
+    {
+      "question_id": 77,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The synchronous speed of a 4-pole, 50 Hz induction motor is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1500 rpm",
+        "B": "1000 rpm",
+        "C": "3000 rpm",
+        "D": "750 rpm"
+      },
+      "correct_answer": "A",
+      "explanation": "Synchronous speed Ns = 120f/P = 120×50/4 = 1500 rpm.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Three-phase Induction Motors"
+    },
+    {
+      "question_id": 78,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Slip in an induction motor is defined as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "(Ns - Nr)/Ns",
+        "B": "(Nr - Ns)/Ns",
+        "C": "Ns/Nr",
+        "D": "Nr/Ns"
+      },
+      "correct_answer": "A",
+      "explanation": "Slip s = (Ns - Nr)/Ns, where Ns is synchronous speed and Nr is rotor speed.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Three-phase Induction Motors"
+    },
+    {
+      "question_id": 79,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A synchronous motor runs at:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Synchronous speed only",
+        "B": "Any speed below synchronous speed",
+        "C": "Any speed above synchronous speed",
+        "D": "Variable speed"
+      },
+      "correct_answer": "A",
+      "explanation": "Synchronous motor runs at constant synchronous speed regardless of load (within limits).",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Synchronous Machines"
+    },
+    {
+      "question_id": 80,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The starting torque of a squirrel cage induction motor can be improved by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Increasing rotor resistance",
+        "B": "Decreasing rotor resistance",
+        "C": "Increasing supply voltage",
+        "D": "Decreasing supply frequency"
+      },
+      "correct_answer": "A",
+      "explanation": "Higher rotor resistance increases starting torque but reduces efficiency at running conditions.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Induction Motors"
+    },
+    {
+      "question_id": 81,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "In a transformer, the core losses consist of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Hysteresis losses only",
+        "B": "Eddy current losses only",
+        "C": "Both hysteresis and eddy current losses",
+        "D": "Copper losses"
+      },
+      "correct_answer": "C",
+      "explanation": "Core losses include both hysteresis losses (due to magnetization cycles) and eddy current losses (due to induced currents in core).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Single-phase Transformers"
+    },
+    {
+      "question_id": 82,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The efficiency of a transformer is maximum when:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Core losses = Copper losses",
+        "B": "Core losses > Copper losses",
+        "C": "Core losses < Copper losses",
+        "D": "Load is maximum"
+      },
+      "correct_answer": "A",
+      "explanation": "Maximum efficiency occurs when variable losses (copper losses) equal constant losses (core losses).",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Single-phase Transformers"
+    },
+    {
+      "question_id": 83,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Armature reaction in a DC machine:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Strengthens the main field",
+        "B": "Weakens and distorts the main field",
+        "C": "Has no effect on main field",
+        "D": "Only distorts the main field"
+      },
+      "correct_answer": "B",
+      "explanation": "Armature reaction both weakens and distorts the main magnetic field, affecting machine performance.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Machines"
+    },
+    {
+      "question_id": 84,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A single-phase induction motor is not self-starting because:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "It has high starting current",
+        "B": "It produces pulsating magnetic field",
+        "C": "It has low efficiency",
+        "D": "It has high slip"
+      },
+      "correct_answer": "B",
+      "explanation": "Single-phase supply produces pulsating magnetic field, not rotating field, hence no starting torque.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Single-phase Induction Motors"
+    },
+    {
+      "question_id": 85,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The power factor of a synchronous motor can be controlled by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Varying the mechanical load",
+        "B": "Varying the field excitation",
+        "C": "Varying the supply voltage",
+        "D": "Varying the supply frequency"
+      },
+      "correct_answer": "B",
+      "explanation": "Power factor of synchronous motor can be controlled by varying the DC field excitation current.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Synchronous Machines"
+    },
+
+
+    {
+      "question_id": 86,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "In a DC shunt motor, if the field current is reduced:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Speed decreases",
+        "B": "Speed increases",
+        "C": "Speed remains constant",
+        "D": "Motor stops"
+      },
+      "correct_answer": "B",
+      "explanation": "In DC shunt motor, speed is inversely proportional to field flux. Reducing field current decreases flux and increases speed.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Machines"
+    },
+    {
+      "question_id": 87,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The regulation of a transformer is defined as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "(V2NL - V2FL)/V2FL × 100%",
+        "B": "(V2FL - V2NL)/V2NL × 100%",
+        "C": "(V1 - V2)/V1 × 100%",
+        "D": "(I2FL - I2NL)/I2NL × 100%"
+      },
+      "correct_answer": "A",
+      "explanation": "Voltage regulation = (No-load secondary voltage - Full-load secondary voltage)/Full-load secondary voltage × 100%.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Single-phase Transformers"
+    },
+    {
+      "question_id": 88,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Commutation in DC machines is the process of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Converting AC to DC",
+        "B": "Reversing current in coil undergoing commutation",
+        "C": "Starting the machine",
+        "D": "Controlling speed"
+      },
+      "correct_answer": "B",
+      "explanation": "Commutation is the process of current reversal in the coil that is short-circuited by the brush.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Machines"
+    },
+    {
+      "question_id": 89,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A stepper motor rotates in:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Continuous motion",
+        "B": "Discrete angular steps",
+        "C": "Variable speed only",
+        "D": "One direction only"
+      },
+      "correct_answer": "B",
+      "explanation": "Stepper motor rotates in discrete angular steps, making it suitable for precise positioning applications.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Servo and Stepper Motors"
+    },
+    {
+      "question_id": 90,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The torque-speed characteristic of a DC series motor is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Linear",
+        "B": "Hyperbolic",
+        "C": "Constant",
+        "D": "Exponential"
+      },
+      "correct_answer": "B",
+      "explanation": "DC series motor has hyperbolic torque-speed characteristic with high starting torque and variable speed.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "DC Machines"
+    },
+    {
+      "question_id": 91,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "In a 3-phase transformer, the delta-star connection provides:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "No phase shift",
+        "B": "30° phase shift",
+        "C": "60° phase shift",
+        "D": "90° phase shift"
+      },
+      "correct_answer": "B",
+      "explanation": "Delta-star connection introduces 30° phase shift between primary and secondary line voltages.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Transformers"
+    },
+    {
+      "question_id": 92,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "An autotransformer has:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Electrical isolation between primary and secondary",
+        "B": "No electrical isolation between primary and secondary",
+        "C": "Higher copper losses than normal transformer",
+        "D": "Lower efficiency than normal transformer"
+      },
+      "correct_answer": "B",
+      "explanation": "Autotransformer has common winding for primary and secondary, providing no electrical isolation but higher efficiency.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Transformers"
+    },
+    {
+      "question_id": 93,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "Regenerative braking in motors means:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Motor acts as generator and returns energy to supply",
+        "B": "Motor is disconnected from supply",
+        "C": "Motor is short-circuited",
+        "D": "Motor runs in reverse direction"
+      },
+      "correct_answer": "A",
+      "explanation": "In regenerative braking, motor acts as generator and returns kinetic energy back to the electrical supply.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Braking of Motors"
+    },
+    {
+      "question_id": 94,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "The maximum torque in a 3-phase induction motor occurs at slip:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "s = 0",
+        "B": "s = 1",
+        "C": "s = R2/X2",
+        "D": "s = X2/R2"
+      },
+      "correct_answer": "C",
+      "explanation": "Maximum torque occurs when rotor reactance equals rotor resistance, i.e., at slip s = R2/X2.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Three-phase Induction Motors"
+    },
+    {
+      "question_id": 95,
+      "module_id": 7,
+      "module_name": "Electrical Machines",
+      "question_text": "A servo motor is characterized by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "High inertia and low speed",
+        "B": "Low inertia and high speed response",
+        "C": "Constant speed operation",
+        "D": "High starting torque only"
+      },
+      "correct_answer": "B",
+      "explanation": "Servo motors have low inertia and high speed response for precise control in positioning applications.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Servo and Stepper Motors"
+    },
+
+
+    {
+      "question_id": 96,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "In power system protection, distance relays are most suitable for:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Generator protection",
+        "B": "Transformer protection",
+        "C": "Long transmission line protection",
+        "D": "Motor protection"
+      },
+      "correct_answer": "C",
+      "explanation": "Distance relays measure impedance to fault location, making them ideal for long transmission line protection.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power System Protection"
+    },
+    {
+      "question_id": 97,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The per-unit system is used in power system analysis to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Simplify calculations",
+        "B": "Eliminate transformer ratios",
+        "C": "Normalize different voltage levels",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Per-unit system simplifies calculations, eliminates transformer ratios, and normalizes different voltage levels in power system analysis.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power System Analysis"
+    },
+    {
+      "question_id": 98,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Load frequency control in power systems is achieved by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Varying generator voltage",
+        "B": "Varying generator excitation",
+        "C": "Varying prime mover input",
+        "D": "Varying load impedance"
+      },
+      "correct_answer": "C",
+      "explanation": "Load frequency control is achieved by varying the prime mover input (steam, water, gas) to generators to maintain system frequency.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Load Frequency Control"
+    },
+    {
+      "question_id": 99,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Corona effect in transmission lines:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Improves power transfer capability",
+        "B": "Causes power loss and radio interference",
+        "C": "Reduces line inductance",
+        "D": "Increases line capacitance"
+      },
+      "correct_answer": "B",
+      "explanation": "Corona effect causes power loss, radio interference, and audible noise due to ionization of air around conductors.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Performance"
+    },
+    {
+      "question_id": 100,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The positive, negative, and zero sequence impedances of a transmission line are related as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Z1 = Z2 ≠ Z0",
+        "B": "Z1 ≠ Z2 = Z0",
+        "C": "Z1 = Z2 = Z0",
+        "D": "Z1 ≠ Z2 ≠ Z0"
+      },
+      "correct_answer": "A",
+      "explanation": "For transmission lines, positive and negative sequence impedances are equal (Z1 = Z2) but different from zero sequence impedance (Z0).",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Symmetrical Components"
+    },
+    {
+      "question_id": 101,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Differential protection is based on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Kirchhoff's voltage law",
+        "B": "Kirchhoff's current law",
+        "C": "Ohm's law",
+        "D": "Faraday's law"
+      },
+      "correct_answer": "B",
+      "explanation": "Differential protection is based on KCL - under normal conditions, current entering equals current leaving the protected zone.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Protection Principles"
+    },
+    {
+      "question_id": 102,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The surge impedance of a transmission line is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "√(L/C)",
+        "B": "√(R/G)",
+        "C": "√(LC)",
+        "D": "L/C"
+      },
+      "correct_answer": "A",
+      "explanation": "Surge impedance (characteristic impedance) of a transmission line is √(L/C), where L is inductance and C is capacitance per unit length.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Models"
+    },
+    {
+      "question_id": 103,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Power factor correction in distribution systems is achieved by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Adding inductors",
+        "B": "Adding capacitors",
+        "C": "Adding resistors",
+        "D": "Reducing load"
+      },
+      "correct_answer": "B",
+      "explanation": "Power factor correction is achieved by adding capacitors to compensate for inductive reactive power and improve power factor.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Distribution Systems"
+    },
+    {
+      "question_id": 104,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Bus-bar protection typically uses:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Overcurrent relays",
+        "B": "Distance relays",
+        "C": "Differential relays",
+        "D": "Directional relays"
+      },
+      "correct_answer": "C",
+      "explanation": "Bus-bar protection typically uses differential relays to detect faults within the bus zone by comparing incoming and outgoing currents.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Protection of Bus-bar"
+    },
+    {
+      "question_id": 105,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Lightning arresters are connected:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "In series with the line",
+        "B": "In parallel with the equipment",
+        "C": "Between line and ground",
+        "D": "Both B and C"
+      },
+      "correct_answer": "D",
+      "explanation": "Lightning arresters are connected in parallel with equipment and between line and ground to provide a low-resistance path for lightning currents.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Lightning Protection"
+    },
+    {
+      "question_id": 106,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The economic operation of power systems involves:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Minimizing fuel costs only",
+        "B": "Minimizing transmission losses only",
+        "C": "Optimal scheduling of generation",
+        "D": "Maximizing power generation"
+      },
+      "correct_answer": "C",
+      "explanation": "Economic operation involves optimal scheduling of generation to minimize total operating costs while meeting load demand and constraints.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Economic Operation"
+    },
+    {
+      "question_id": 107,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Circuit breakers are rated based on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Normal current only",
+        "B": "Breaking current only",
+        "C": "Both normal and breaking current",
+        "D": "Voltage only"
+      },
+      "correct_answer": "C",
+      "explanation": "Circuit breakers are rated for both normal operating current and breaking current (fault current interruption capability).",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Circuit Breakers"
+    },
+    {
+      "question_id": 108,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Grounding in power systems is done to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Provide safety to personnel",
+        "B": "Limit overvoltages",
+        "C": "Provide return path for fault currents",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Grounding provides safety, limits overvoltages during faults, and provides a return path for fault currents to operate protective devices.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Earthing"
+    },
+    {
+      "question_id": 109,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The illumination level is measured in:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Candela",
+        "B": "Lumen",
+        "C": "Lux",
+        "D": "Watt"
+      },
+      "correct_answer": "C",
+      "explanation": "Illumination level (illuminance) is measured in lux, which is lumens per square meter.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Utilization - Illumination"
+    },
+    {
+      "question_id": 110,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "In electrical heating, the heat produced is proportional to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Current",
+        "B": "Square of current",
+        "C": "Voltage",
+        "D": "Square of voltage"
+      },
+      "correct_answer": "B",
+      "explanation": "According to Joule's law, heat produced H = I²Rt, so heat is proportional to the square of current.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Utilization - Electrical Heating"
+    },
+    {
+      "question_id": 111,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Two-part tariff consists of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Fixed charge only",
+        "B": "Running charge only",
+        "C": "Fixed charge + Running charge",
+        "D": "Demand charge only"
+      },
+      "correct_answer": "C",
+      "explanation": "Two-part tariff consists of a fixed charge (independent of consumption) and a running charge (proportional to energy consumed).",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Tariffs"
+    },
+    {
+      "question_id": 112,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Load factor is defined as:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Maximum demand / Average demand",
+        "B": "Average demand / Maximum demand",
+        "C": "Peak load / Average load",
+        "D": "Connected load / Maximum demand"
+      },
+      "correct_answer": "B",
+      "explanation": "Load factor = Average demand / Maximum demand, indicating how effectively the maximum demand is utilized.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Generation Basics"
+    },
+    {
+      "question_id": 113,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Diversity factor is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Sum of individual maximum demands / Maximum demand of group",
+        "B": "Maximum demand of group / Sum of individual maximum demands",
+        "C": "Always less than 1",
+        "D": "Always equal to 1"
+      },
+      "correct_answer": "A",
+      "explanation": "Diversity factor = Sum of individual maximum demands / Maximum demand of group, typically greater than 1.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Power Generation Basics"
+    },
+    {
+      "question_id": 114,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Feeder protection typically uses:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Differential relays",
+        "B": "Overcurrent relays",
+        "C": "Distance relays",
+        "D": "Frequency relays"
+      },
+      "correct_answer": "B",
+      "explanation": "Feeder protection typically uses overcurrent relays (both instantaneous and time-delayed) for fault detection and isolation.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Protection of Feeder"
+    },
+    {
+      "question_id": 115,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "In electroplating, the amount of material deposited is governed by:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Ohm's law",
+        "B": "Faraday's laws of electrolysis",
+        "C": "Kirchhoff's laws",
+        "D": "Lenz's law"
+      },
+      "correct_answer": "B",
+      "explanation": "Faraday's laws of electrolysis govern the amount of material deposited during electroplating, relating it to current and time.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Utilization - Electroplating"
+    },
+    {
+      "question_id": 116,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Cable insulation is tested using:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Megger",
+        "B": "Multimeter",
+        "C": "Oscilloscope",
+        "D": "Wattmeter"
+      },
+      "correct_answer": "A",
+      "explanation": "Cable insulation resistance is tested using a megger (insulation tester) which applies high voltage to measure insulation resistance.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Cable Performance"
+    },
+    {
+      "question_id": 117,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Solid state relays have advantages of:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "No moving parts",
+        "B": "Fast operation",
+        "C": "Long life",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Solid state relays have no moving parts, operate faster than electromechanical relays, and have longer life with better reliability.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Solid State Relays"
+    },
+    {
+      "question_id": 118,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Sub-station earthing is done to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Provide safety during faults",
+        "B": "Maintain equipment potential",
+        "C": "Provide path for fault currents",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Sub-station earthing provides safety, maintains equipment at ground potential, and provides a path for fault currents to operate protection.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Sub-station Practices"
+    },
+    {
+      "question_id": 119,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "The skin effect in conductors causes:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Uniform current distribution",
+        "B": "Current concentration at conductor center",
+        "C": "Current concentration at conductor surface",
+        "D": "No effect on current distribution"
+      },
+      "correct_answer": "C",
+      "explanation": "Skin effect causes AC current to concentrate near the conductor surface, increasing effective resistance at higher frequencies.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Transmission Line Performance"
+    },
+    {
+      "question_id": 120,
+      "module_id": 8,
+      "module_name": "Power Systems",
+      "question_text": "Maximum demand indicator in energy meters shows:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Total energy consumed",
+        "B": "Average power demand",
+        "C": "Highest power demand in a period",
+        "D": "Current power demand"
+      },
+      "correct_answer": "C",
+      "explanation": "Maximum demand indicator records and displays the highest power demand that occurred during a specified time period.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Power Generation Basics"
+    }
+  ]
+}
+

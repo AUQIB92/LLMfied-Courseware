@@ -206,7 +206,7 @@ export default function SignupPage() {
 
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             {/* Signup Form */}
-            <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden animate-fade-in-up">
+            <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden animate-fade-in-up">
               <CardHeader className="pb-6">
                 <CardTitle className="text-2xl font-bold text-center text-slate-900 mb-2">
                   Create Your Account

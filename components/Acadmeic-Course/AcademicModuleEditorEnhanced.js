@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import HtmlEditor from "@/components/ui/html-editor";
 import {
   Card,
   CardContent,
@@ -69,6 +70,7 @@ import {
 } from "lucide-react";
 import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
 import UniversalContentRenderer from "@/components/UniversalContentRenderer";
+import HtmlMathViewer from "@/components/HtmlMathViewer";
 import {
   Sheet,
   SheetContent,
@@ -87,7 +89,7 @@ import {
 } from "@/components/ui/dialog";
 import AIProviderSelector from "@/components/educator/AIProviderSelector";
 
-// Add CSS for 3D flip cards
+// Add CSS for 3D flip cards and math rendering
 const flipCardStyles = `
   .perspective-1000 {
     perspective: 1000px;
@@ -97,16 +99,99 @@ const flipCardStyles = `
     transform-style: preserve-3d;
   }
   
-  .backface-hidden {
-    backface-visibility: hidden;
+  /* Math rendering styles for \(...\) and \[...\] format */
+  .page-content {
+    line-height: 1.6;
   }
   
-  .rotate-y-180 {
-    transform: rotateY(180deg);
+  /* Ensure proper spacing around math expressions */
+  .page-content p {
+    margin: 0.5rem 0;
   }
   
-  .group:hover .hover\\:rotate-y-180 {
-    transform: rotateY(180deg);
+  /* Handle display math blocks */
+  .page-content p:has(span.katex-display) {
+    margin: 1rem 0;
+    text-align: center;
+  }
+  
+  /* KaTeX specific styles for perfect rendering */
+  .katex {
+    font-size: 1.1em;
+    line-height: 1.2;
+    text-rendering: auto;
+  }
+  
+  .katex-display {
+    margin: 1rem 0;
+    text-align: center;
+    display: block;
+  }
+  
+  .katex-display > .katex {
+    display: inline-block;
+    text-align: center;
+    max-width: 100%;
+  }
+  
+  .katex-error {
+    color: #d32f2f;
+    background-color: #ffebee;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    border: 1px solid #f44336;
+  }
+  
+  /* Ensure math expressions don't break layout */
+  .katex {
+    white-space: nowrap;
+  }
+  
+  /* Responsive math display */
+  @media (max-width: 768px) {
+    .katex {
+      font-size: 1em;
+    }
+    
+    .katex-display {
+      margin: 0.5rem 0;
+    }
+  }
+  
+  /* Handle overflow for long math expressions */
+  .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure proper vertical alignment for inline math */
+  .page-content p .katex {
+    vertical-align: middle;
+  }
+  
+  /* Better error display for math rendering issues */
+  .katex-error {
+    color: #d32f2f;
+    background-color: #ffebee;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    border: 1px solid #f44336;
+  }
+  
+  /* Ensure math expressions are properly contained */
+  .page-content {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+  
+  .katex-display {
+    word-break: break-word;
   }
 `;
 
@@ -366,6 +451,28 @@ export default function AcademicModuleEditorEnhanced({
 }) {
   const { getAuthHeaders, user, apiCall, isTokenValid } = useAuth();
 
+  // Ensure KaTeX is loaded for math rendering
+  useEffect(() => {
+    // Check if KaTeX is already loaded
+    if (typeof window !== 'undefined' && window.katex) {
+      return;
+    }
+
+    // Load KaTeX CSS if not already loaded
+    const loadKatexCss = () => {
+      if (!document.querySelector('link[href*="katex"]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+        link.integrity = 'sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV';
+        link.crossOrigin = 'anonymous';
+        document.head.appendChild(link);
+      }
+    };
+
+    loadKatexCss();
+  }, []);
+
   // Safety check for required props
   if (!module) {
     console.error("AcademicModuleEditorEnhanced: module prop is required");
@@ -378,9 +485,148 @@ export default function AcademicModuleEditorEnhanced({
 
   // Helper function to safely render content
   const safeContent = (content) => {
-    if (typeof content === "string") return content;
-    if (content == null) return "";
-    return JSON.stringify(content);
+    if (!content) return "";
+    return content.replace(/[<>]/g, (match) => {
+      return match === "<" ? "&lt;" : "&gt;";
+    });
+  };
+
+  // Helper function to convert markdown to HTML for the editor
+  const convertMarkdownToHtml = (markdownContent) => {
+    if (!markdownContent) return "";
+    
+    // First, protect LaTeX math expressions from being processed
+    const mathExpressions = [];
+    let mathCounter = 0;
+    
+    // Replace LaTeX math with placeholders to protect them
+    let html = markdownContent
+      // Protect inline math: $...$ or \(...\)
+      .replace(/\$([^$\n]+?)\$/g, (match, math) => {
+        const placeholder = `__MATH_INLINE_${mathCounter}__`;
+        mathExpressions.push({ placeholder, math: `\\(${math}\\)`, type: 'inline' });
+        mathCounter++;
+        return placeholder;
+      })
+      .replace(/\\\(([^)]+?)\\\)/g, (match, math) => {
+        const placeholder = `__MATH_INLINE_${mathCounter}__`;
+        mathExpressions.push({ placeholder, math: `\\(${math}\\)`, type: 'inline' });
+        mathCounter++;
+        return placeholder;
+      })
+      // Protect block math: $$...$$ or \[...\]
+      .replace(/\$\$([\s\S]+?)\$\$/g, (match, math) => {
+        const placeholder = `__MATH_BLOCK_${mathCounter}__`;
+        mathExpressions.push({ placeholder, math: `\\[${math}\\]`, type: 'block' });
+        mathCounter++;
+        return placeholder;
+      })
+      .replace(/\\\[([\s\S]+?)\\\]/g, (match, math) => {
+        const placeholder = `__MATH_BLOCK_${mathCounter}__`;
+        mathExpressions.push({ placeholder, math: `\\[${math}\\]`, type: 'block' });
+        mathCounter++;
+        return placeholder;
+      });
+    
+    // Now process the markdown (without math)
+    html = html
+      // Headers
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      // Bold
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      // Italic
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      // Code blocks (but not inline code that might contain math)
+      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      // Blockquotes
+      .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
+      // Lists
+      .replace(/^\d+\. (.*$)/gim, '<li>$1</li>')
+      .replace(/^- (.*$)/gim, '<li>$1</li>')
+      .replace(/^\* (.*$)/gim, '<li>$1</li>')
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+      // Images
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+      // Line breaks
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+    
+    // Restore math expressions with the new format
+    mathExpressions.forEach(({ placeholder, math, type }) => {
+      html = html.replace(placeholder, math);
+    });
+    
+    // Wrap in paragraph tags if not already wrapped
+    if (!html.startsWith('<h') && !html.startsWith('<p') && !html.startsWith('<blockquote') && !html.startsWith('<pre') && !html.startsWith('<ul') && !html.startsWith('<ol')) {
+      html = `<p>${html}</p>`;
+    }
+    
+    // Fix list structure
+    html = html.replace(/(<li>.*<\/li>)/gs, (match) => {
+      return `<ul>${match}</ul>`;
+    });
+    
+    return html;
+  };
+
+  // Helper function to detect if content is already HTML
+  const isHtmlContent = (content) => {
+    if (!content) return false;
+    return /<[^>]*>/g.test(content);
+  };
+
+  // Helper function to convert HTML back to markdown
+  const convertHtmlToMarkdown = (htmlContent) => {
+    if (!htmlContent) return "";
+    
+    let markdown = htmlContent
+      // Headers
+      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1')
+      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1')
+      .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1')
+      // Bold
+      .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+      .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+      // Italic
+      .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+      .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
+      // Code blocks
+      .replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, '```\n$1\n```')
+      .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
+      // Blockquotes
+      .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, '> $1')
+      // Lists
+      .replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, (match, content) => {
+        return content.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1').trim();
+      })
+      .replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (match, content) => {
+        let counter = 1;
+        return content.replace(/<li[^>]*>(.*?)<\/li>/gi, () => `${counter++}. $1`).trim();
+      })
+      // Links
+      .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+      // Images
+      .replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/gi, '![$2]($1)')
+      .replace(/<img[^>]*alt="([^"]*)"[^>]*src="([^"]*)"[^>]*>/gi, '![$1]($2)')
+      .replace(/<img[^>]*src="([^"]*)"[^>]*>/gi, '![]($1)')
+      // Line breaks and paragraphs
+      .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '')
+      .replace(/<p[^>]*>/gi, '')
+      // Remove any remaining HTML tags
+      .replace(/<[^>]*>/g, '')
+      // Clean up extra whitespace
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .trim();
+    
+    return markdown;
   };
 
   // Helper function to ensure proper page structure
@@ -448,7 +694,8 @@ export default function AcademicModuleEditorEnhanced({
     pageIndex: null,
     content: "",
     title: "",
-    takeaway: ""
+    takeaway: "",
+    editMode: "html" // Add edit mode state
   });
 
   // Backup modal state using ref to prevent re-render interference
@@ -503,16 +750,41 @@ export default function AcademicModuleEditorEnhanced({
       hasContent: !!page.content
     });
 
+    // Convert content to HTML if it's markdown and we're in HTML mode
+    let processedContent = page.content || "";
+    if (processedContent && !isHtmlContent(processedContent)) {
+      processedContent = convertMarkdownToHtml(processedContent);
+      console.log("🔄 Content converted to HTML:", {
+        originalLength: page.content?.length || 0,
+        convertedLength: processedContent.length,
+        originalPreview: page.content?.substring(0, 100),
+        convertedPreview: processedContent.substring(0, 100)
+      });
+    } else {
+      console.log("🔄 Content already HTML or empty:", {
+        contentLength: processedContent.length,
+        isHtml: isHtmlContent(processedContent),
+        preview: processedContent.substring(0, 100)
+      });
+    }
+
     const newModalState = {
       isOpen: true,
       subsectionIndex,
       pageIndex,
-      content: page.content || "",
+      content: processedContent,
       title: page.pageTitle || page.title || "",
-      takeaway: page.keyTakeaway || ""
+      takeaway: page.keyTakeaway || "",
+      editMode: "html"
     };
 
     console.log("🚀 Setting modal state:", newModalState);
+    console.log("🔍 Content being passed to modal:", {
+      contentLength: processedContent?.length || 0,
+      contentPreview: processedContent?.substring(0, 200),
+      isHtml: isHtmlContent(processedContent),
+      editMode: "html"
+    });
     
     // Update state, ref, and localStorage for maximum persistence  
     modalStateRef.current = newModalState;
@@ -558,7 +830,8 @@ export default function AcademicModuleEditorEnhanced({
       pageIndex: null,
       content: "",
       title: "",
-      takeaway: ""
+      takeaway: "",
+      editMode: "html"
     });
   };
 
@@ -587,7 +860,7 @@ export default function AcademicModuleEditorEnhanced({
   });
 
   const saveEditModal = () => {
-    const { subsectionIndex, pageIndex, content, title, takeaway } = editModal;
+    const { subsectionIndex, pageIndex, content, title, takeaway, editMode } = editModal;
     const updatedModule = { ...localModule };
     const subsection = updatedModule.detailedSubsections[subsectionIndex];
 
@@ -601,14 +874,22 @@ export default function AcademicModuleEditorEnhanced({
       subsection.pages[pageIndex] = {
         content: "",
         pageTitle: subsection.title || "Academic Content",
+        title: subsection.title || "Academic Content",
         keyTakeaway: ""
       };
+    }
+
+    // Keep content as HTML since LLM returns HTML directly
+    let finalContent = content;
+    // Only convert to markdown if explicitly requested (for backward compatibility)
+    if (editMode === "markdown" && isHtmlContent(content)) {
+      finalContent = convertHtmlToMarkdown(content);
     }
 
     // Update the page
     subsection.pages[pageIndex] = {
       ...subsection.pages[pageIndex],
-      content: content,
+      content: finalContent,
       pageTitle: title,
       keyTakeaway: takeaway,
     };
@@ -969,6 +1250,27 @@ export default function AcademicModuleEditorEnhanced({
         hasDetailedContent: true,
         lastUpdated: new Date(),
       };
+
+      // Debug: log returned HTML snippets from bulk generation
+      try {
+        if (Array.isArray(data?.detailedSubsections)) {
+          data.detailedSubsections.forEach((sub, sIdx) => {
+            const pages = Array.isArray(sub?.pages?.pages) ? sub.pages.pages : sub?.pages;
+            if (Array.isArray(pages)) {
+              pages.forEach((p, pIdx) => {
+                if (p && p.html) {
+                  console.log(
+                    `[HTML TEST] Bulk generation subsection ${sIdx + 1} page ${pIdx + 1} HTML:`,
+                    typeof p.html === 'string' ? p.html.slice(0, 400) : p.html
+                  );
+                }
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("[HTML TEST] Failed to log bulk generation HTML:", e);
+      }
 
       setLocalModule(updatedModule);
 
@@ -2496,6 +2798,21 @@ export default function AcademicModuleEditorEnhanced({
 
       const result = await response.json();
       console.log("✅ Enhanced individual academic content generated:", result);
+      // Debug: log returned HTML (if any) for quick verification
+      try {
+        if (result && result.content && Array.isArray(result.content.pages)) {
+          result.content.pages.forEach((page, idx) => {
+            if (page && page.html) {
+              console.log(
+                `[HTML TEST] Individual subsection '${subsection.title}' page ${idx + 1} HTML:`,
+                typeof page.html === 'string' ? page.html.slice(0, 400) : page.html
+              );
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("[HTML TEST] Failed to log individual subsection HTML:", e);
+      }
 
       if (result.success && result.content && result.content.pages) {
         // Enhanced update with all the new metadata
@@ -4256,19 +4573,34 @@ Detailed discussion here..."
                                           currentPageData.pageTitle ||
                                           "Page Content"}
                                       </h4>
-                                      <UniversalContentRenderer
-                                        content={
-                                          typeof currentPageData.content ===
-                                          "string"
-                                            ? currentPageData.content
-                                            : JSON.stringify(
-                                                currentPageData.content
-                                              )
+                                      {(() => {
+                                        const content = typeof currentPageData.content === "string"
+                                          ? currentPageData.content
+                                          : JSON.stringify(currentPageData.content);
+                                        
+                                        // Check if content is HTML (from LLM) or markdown
+                                        const isHtml = /<[^>]*>/g.test(content);
+                                        
+                                        if (isHtml) {
+                                          // Render HTML content with math support using HtmlMathViewer
+                                          return (
+                                            <HtmlMathViewer
+                                              html={content}
+                                              className="page-content"
+                                            />
+                                          );
+                                        } else {
+                                          // Render markdown content using UniversalContentRenderer
+                                          return (
+                                            <UniversalContentRenderer
+                                              content={content}
+                                              className="page-content"
+                                              enableAnalytics={false}
+                                              accessibilityLabel="Academic page content with mathematical expressions"
+                                            />
+                                          );
                                         }
-                                        className="page-content"
-                                        enableAnalytics={false}
-                                        accessibilityLabel="Academic page content with mathematical expressions"
-                                      />
+                                      })()}
                                       {currentPageData.keyTakeaway && (
                                         <div className="mt-3 p-2 bg-blue-50 rounded-lg">
                                           <p className="text-sm text-blue-800 italic">
@@ -5089,18 +5421,31 @@ Detailed discussion here..."
                                       ) : (
                                         // View mode
                                         <>
-                                          <UniversalContentRenderer
-                                            content={
-                                              typeof currentPageData.content ===
-                                              "string"
-                                                ? currentPageData.content
-                                                : JSON.stringify(
-                                                    currentPageData.content
-                                                  )
-                                            }
-                                            className="page-content"
-                                            enableAnalytics={false}
-                                          />
+                                          {/* HTML viewer path: if page provides HTML, render with math-safe viewer */}
+                                          (currentPageData && currentPageData.html) ? (
+                                            <HtmlMathViewer
+                                              html={currentPageData.html}
+                                              markdownFallback={
+                                                (currentPageData && typeof currentPageData.content === 'string'
+                                                  ? currentPageData.content
+                                                  : JSON.stringify(currentPageData?.content || ''))
+                                              }
+                                              className="page-content"
+                                            />
+                                          ) : (
+                                            <UniversalContentRenderer
+                                              content={
+                                                currentPageData && typeof currentPageData.content ===
+                                                "string"
+                                                  ? currentPageData.content
+                                                  : JSON.stringify(
+                                                      (currentPageData?.content || '')
+                                                    )
+                                              }
+                                              className="page-content"
+                                              enableAnalytics={false}
+                                            />
+                                          )
                                           {currentPageData.keyTakeaway && (
                                             <div className="mt-3 p-2 bg-blue-50 rounded-lg">
                                               <p className="text-sm text-blue-800 italic">
@@ -5239,12 +5584,16 @@ Detailed discussion here..."
                                         </div>
                                       ) : (
                                         // View mode
-                                        <MathMarkdownRenderer
-                                          content={
-                                            pages[0]?.content ||
-                                            "No content available"
-                                          }
-                                        />
+                                        (pages && pages[0] && pages[0].html) ? (
+                                          <HtmlMathViewer
+                                            html={pages[0].html}
+                                            markdownFallback={(pages && pages[0] && pages[0].content) || 'No content available'}
+                                          />
+                                        ) : (
+                                          <MathMarkdownRenderer
+                                            content={(pages && pages[0] && pages[0].content) || 'No content available'}
+                                          />
+                                        )
                                       )}
                                     </div>
                                   )}
@@ -5905,6 +6254,17 @@ Detailed discussion here..."
               </Button>
             </div>
 
+            {/* Helpful Instructions */}
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-blue-800 mb-2">💡 Editing Tips:</h4>
+              <div className="text-xs text-blue-700 space-y-1">
+                <div>• <strong>HTML Mode:</strong> Use the toolbar buttons for rich formatting (bold, italic, lists, etc.)</div>
+                <div>• <strong>Markdown Mode:</strong> Use markdown syntax like **bold**, *italic*, # headings, etc.</div>
+                <div>• <strong>Preview:</strong> See exactly how your content will appear to students</div>
+                <div>• <strong>Switch Modes:</strong> Toggle between HTML and Markdown editing anytime</div>
+              </div>
+            </div>
+
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium">Page Title</Label>
@@ -5923,20 +6283,120 @@ Detailed discussion here..."
               </div>
 
               <div>
-                <Label className="text-sm font-medium">Content (Markdown supported)</Label>
-                <Textarea
-                  value={editModal.content || modalStateRef.current?.content || ""}
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    setEditModal(prev => ({ ...prev, content: newValue }));
-                    if (modalStateRef.current) {
-                      modalStateRef.current.content = newValue;
-                    }
-                  }}
-                  placeholder="Enter page content using Markdown..."
-                  rows={15}
-                  className="mt-1 font-mono text-sm"
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-sm font-medium">Content</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">Edit Mode:</span>
+                    <div className="flex border rounded-md">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentContent = editModal.content || modalStateRef.current?.content || "";
+                          const currentMode = editModal.editMode || modalStateRef.current?.editMode || "html";
+                          
+                          // Convert content if switching from markdown to HTML
+                          let convertedContent = currentContent;
+                          if (currentMode === "markdown" && !isHtmlContent(currentContent)) {
+                            convertedContent = convertMarkdownToHtml(currentContent);
+                          }
+                          
+                          setEditModal(prev => ({ 
+                            ...prev, 
+                            editMode: "html",
+                            content: convertedContent
+                          }));
+                          if (modalStateRef.current) {
+                            modalStateRef.current.editMode = "html";
+                            modalStateRef.current.content = convertedContent;
+                          }
+                        }}
+                        className={`px-3 py-1 text-xs font-medium rounded-l-md transition-colors ${
+                          (editModal.editMode || modalStateRef.current?.editMode || "html") === "html"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        HTML
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentContent = editModal.content || modalStateRef.current?.content || "";
+                          const currentMode = editModal.editMode || modalStateRef.current?.editMode || "html";
+                          
+                          // Convert content if switching from HTML to markdown
+                          let convertedContent = currentContent;
+                          if (currentMode === "html" && isHtmlContent(currentContent)) {
+                            convertedContent = convertHtmlToMarkdown(currentContent);
+                          }
+                          
+                          setEditModal(prev => ({ 
+                            ...prev, 
+                            editMode: "markdown",
+                            content: convertedContent
+                          }));
+                          if (modalStateRef.current) {
+                            modalStateRef.current.editMode = "markdown";
+                            modalStateRef.current.content = convertedContent;
+                          }
+                        }}
+                        className={`px-3 py-1 text-xs font-medium rounded-r-md transition-colors ${
+                          (editModal.editMode || modalStateRef.current?.editMode || "html") === "markdown"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        Markdown
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {(editModal.editMode || modalStateRef.current?.editMode || "html") === "html" ? (
+                  (() => {
+                    const contentToPass = editModal.content || modalStateRef.current?.content || "";
+                    console.log("🔄 About to render HtmlEditor:", {
+                      contentLength: contentToPass?.length || 0,
+                      contentPreview: contentToPass?.substring(0, 200),
+                      editModalContent: editModal.content?.length || 0,
+                      refContent: modalStateRef.current?.content?.length || 0,
+                      isHtml: /<[^>]*>/g.test(contentToPass || "")
+                    });
+                    return (
+                      <HtmlEditor
+                        key={`html-editor-${contentToPass?.length || 0}`}
+                        value={contentToPass}
+                        onChange={(newValue) => {
+                          console.log("🔄 HtmlEditor onChange:", {
+                            newValueLength: newValue?.length || 0,
+                            hasValue: !!newValue
+                          });
+                          setEditModal(prev => ({ ...prev, content: newValue }));
+                          if (modalStateRef.current) {
+                            modalStateRef.current.content = newValue;
+                          }
+                        }}
+                        placeholder="Enter page content using the HTML editor..."
+                        rows={15}
+                        className="mt-1"
+                      />
+                    );
+                  })()
+                ) : (
+                  <Textarea
+                    value={editModal.content || modalStateRef.current?.content || ""}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setEditModal(prev => ({ ...prev, content: newValue }));
+                      if (modalStateRef.current) {
+                        modalStateRef.current.content = newValue;
+                      }
+                    }}
+                    placeholder="Enter page content using Markdown..."
+                    rows={15}
+                    className="mt-1 font-mono text-sm"
+                  />
+                )}
               </div>
 
               <div>
@@ -5958,11 +6418,18 @@ Detailed discussion here..."
               <div>
                 <Label className="text-sm font-medium mb-2 block">Preview:</Label>
                 <div className="bg-gray-50 rounded border p-3 max-h-60 overflow-y-auto">
-                  <UniversalContentRenderer
-                    content={editModal.content || modalStateRef.current?.content || "No content to preview"}
-                    className="text-sm"
-                    enableAnalytics={false}
-                  />
+                  {(editModal.editMode || modalStateRef.current?.editMode || "html") === "html" ? (
+                    <HtmlMathViewer
+                      html={editModal.content || modalStateRef.current?.content || "No content to preview"}
+                      className="text-sm"
+                    />
+                  ) : (
+                    <UniversalContentRenderer
+                      content={editModal.content || modalStateRef.current?.content || "No content to preview"}
+                      className="text-sm"
+                      enableAnalytics={false}
+                    />
+                  )}
                 </div>
               </div>
 

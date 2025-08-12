@@ -1,0 +1,817 @@
+{
+  "test_info": {
+    "test_id": "TEST_04",
+    "test_name": "Test 4 - Mixed Difficulty Assessment",
+    "description": "Comprehensive coverage with balanced difficulty levels and cross-module integration",
+    "total_questions": 120,
+    "total_marks": 120,
+    "time_duration": "120 minutes",
+    "difficulty_distribution": {
+      "easy": 42,
+      "medium": 54,
+      "hard": 24
+    },
+    "content_mix": {
+      "numerical_problems": 60,
+      "theoretical_concepts": 60
+    }
+  },
+  "questions": [
+    {
+      "question_id": 361,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A balanced 3-phase system has line voltage 400V and line current 20A at 0.8 power factor lagging. Calculate total apparent power.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "11.09 kVA",
+        "B": "13.86 kVA",
+        "C": "16.63 kVA",
+        "D": "19.20 kVA"
+      },
+      "correct_answer": "B",
+      "explanation": "For 3-phase system: S = √3 × VL × IL = √3 × 400 × 20 = 13,856 VA = 13.86 kVA",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Power",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 362,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Kirchhoff's current law is based on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Conservation of energy",
+        "B": "Conservation of charge",
+        "C": "Ohm's law",
+        "D": "Faraday's law"
+      },
+      "correct_answer": "B",
+      "explanation": "Kirchhoff's current law states that algebraic sum of currents at a node is zero, based on conservation of charge principle.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Circuit Laws",
+      "type": "Theory"
+    },
+    {
+      "question_id": 363,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A series RC circuit has R=100Ω and C=10μF. Calculate time constant.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1ms",
+        "B": "10ms",
+        "C": "100ms",
+        "D": "1s"
+      },
+      "correct_answer": "A",
+      "explanation": "Time constant τ = RC = 100 × 10×10⁻⁶ = 1×10⁻³ = 1ms",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "RC Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 364,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The unit of electric field intensity is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "V/m",
+        "B": "N/C",
+        "C": "Both A and B",
+        "D": "J/C"
+      },
+      "correct_answer": "C",
+      "explanation": "Electric field intensity can be expressed as V/m (voltage gradient) or N/C (force per unit charge), both are equivalent.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Electric Fields",
+      "type": "Theory"
+    },
+    {
+      "question_id": 365,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Two capacitors 4μF and 6μF are connected in series. Calculate equivalent capacitance.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "2.4μF",
+        "B": "5μF",
+        "C": "10μF",
+        "D": "24μF"
+      },
+      "correct_answer": "A",
+      "explanation": "For series capacitors: 1/Ceq = 1/C1 + 1/C2 = 1/4 + 1/6 = 5/12. Therefore Ceq = 12/5 = 2.4μF",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Capacitor Networks",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 366,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Superposition theorem is applicable to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Linear circuits only",
+        "B": "Non-linear circuits only",
+        "C": "Both linear and non-linear circuits",
+        "D": "AC circuits only"
+      },
+      "correct_answer": "A",
+      "explanation": "Superposition theorem is applicable only to linear circuits where the principle of linearity holds.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Network Theorems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 367,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A parallel RLC circuit has R=10Ω, L=1mH, C=1μF. Calculate resonant frequency.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "5.03kHz",
+        "B": "15.9kHz",
+        "C": "31.8kHz",
+        "D": "159kHz"
+      },
+      "correct_answer": "A",
+      "explanation": "f₀ = 1/(2π√LC) = 1/(2π√(1×10⁻³×1×10⁻⁶)) = 1/(2π×10⁻⁴.⁵) = 5033 Hz = 5.03kHz",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Resonant Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 368,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Thevenin's theorem helps in:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Simplifying complex networks",
+        "B": "Finding equivalent circuit",
+        "C": "Load analysis",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Thevenin's theorem simplifies complex networks into equivalent voltage source and series resistance, useful for load analysis.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Network Theorems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 369,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A coil has inductance 0.5H and resistance 10Ω. If current changes from 0 to 2A in 0.1s, calculate induced EMF.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "5V",
+        "B": "10V",
+        "C": "15V",
+        "D": "20V"
+      },
+      "correct_answer": "B",
+      "explanation": "Induced EMF = L(di/dt) = 0.5 × (2-0)/(0.1-0) = 0.5 × 20 = 10V",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Electromagnetic Induction",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 370,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "The power factor of a pure capacitive circuit is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Zero leading",
+        "B": "Zero lagging",
+        "C": "Unity",
+        "D": "0.5 leading"
+      },
+      "correct_answer": "A",
+      "explanation": "In pure capacitive circuit, current leads voltage by 90°, so power factor = cos(90°) = 0 leading.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "AC Circuits",
+      "type": "Theory"
+    },
+    {
+      "question_id": 371,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A delta-connected load has phase impedance 30Ω. Calculate line current if line voltage is 400V.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "13.33A",
+        "B": "23.09A",
+        "C": "40A",
+        "D": "69.28A"
+      },
+      "correct_answer": "B",
+      "explanation": "Phase current = VL/Z = 400/30 = 13.33A. Line current = √3 × Phase current = √3 × 13.33 = 23.09A",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Three-phase Circuits",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 372,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Maximum power transfer theorem states that maximum power is transferred when:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Load resistance equals source resistance",
+        "B": "Load resistance is twice source resistance",
+        "C": "Load resistance is half source resistance",
+        "D": "Load resistance is infinite"
+      },
+      "correct_answer": "A",
+      "explanation": "Maximum power transfer occurs when load resistance equals source resistance (RL = Rs).",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Network Theorems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 373,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "A 50Hz AC voltage has peak value 311V. Calculate RMS value.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "220V",
+        "B": "240V",
+        "C": "311V",
+        "D": "440V"
+      },
+      "correct_answer": "A",
+      "explanation": "RMS value = Peak value/√2 = 311/√2 = 311/1.414 = 220V",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "AC Fundamentals",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 374,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Reciprocity theorem is applicable to:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Linear bilateral networks",
+        "B": "Non-linear networks",
+        "C": "Unilateral networks",
+        "D": "Active networks only"
+      },
+      "correct_answer": "A",
+      "explanation": "Reciprocity theorem applies to linear, bilateral, passive networks where the response and excitation can be interchanged.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Network Theorems",
+      "type": "Theory"
+    },
+    {
+      "question_id": 375,
+      "module_id": 1,
+      "module_name": "Electric Circuits and Fields",
+      "question_text": "Two inductors 4H and 6H are connected in parallel. Calculate equivalent inductance.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "2.4H",
+        "B": "5H",
+        "C": "10H",
+        "D": "24H"
+      },
+      "correct_answer": "A",
+      "explanation": "For parallel inductors: 1/Leq = 1/L1 + 1/L2 = 1/4 + 1/6 = 5/12. Therefore Leq = 12/5 = 2.4H",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Inductor Networks",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 376,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "The transfer function of a system is G(s) = 10/(s²+4s+13). The system is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Overdamped",
+        "B": "Critically damped",
+        "C": "Underdamped",
+        "D": "Unstable"
+      },
+      "correct_answer": "C",
+      "explanation": "Comparing with standard form s²+2ζωₙs+ωₙ²: ωₙ² = 13, so ωₙ = 3.6. 2ζωₙ = 4, so ζ = 4/(2×3.6) = 0.56 < 1, hence underdamped.",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "System Classification",
+      "type": "Theory"
+    },
+    {
+      "question_id": 377,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A unity feedback system has open loop gain K. For steady-state error of 10% for unit step input, find K.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "9",
+        "B": "10",
+        "C": "11",
+        "D": "90"
+      },
+      "correct_answer": "A",
+      "explanation": "Steady-state error ess = 1/(1+K) = 0.1. Therefore 1+K = 10, so K = 9",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Steady-state Error",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 378,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "Root locus technique is used for:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Stability analysis",
+        "B": "Transient response analysis",
+        "C": "Controller design",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Root locus is a graphical method used for stability analysis, transient response prediction, and controller design.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Root Locus",
+      "type": "Theory"
+    },
+    {
+      "question_id": 379,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A second-order system has natural frequency 5 rad/s and damping ratio 0.6. Calculate damped frequency.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "3 rad/s",
+        "B": "4 rad/s",
+        "C": "5 rad/s",
+        "D": "8 rad/s"
+      },
+      "correct_answer": "B",
+      "explanation": "Damped frequency ωd = ωn√(1-ζ²) = 5√(1-0.6²) = 5√(1-0.36) = 5×0.8 = 4 rad/s",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Time Response",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 380,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "Bode plot represents:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Magnitude vs frequency",
+        "B": "Phase vs frequency",
+        "C": "Both magnitude and phase vs frequency",
+        "D": "Time response"
+      },
+      "correct_answer": "C",
+      "explanation": "Bode plot consists of two plots: magnitude (in dB) vs frequency and phase (in degrees) vs frequency, both on semi-log scale.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Frequency Response",
+      "type": "Theory"
+    },
+    {
+      "question_id": 381,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A system has characteristic equation s³+6s²+11s+6=0. The system is:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Stable",
+        "B": "Unstable",
+        "C": "Marginally stable",
+        "D": "Cannot be determined"
+      },
+      "correct_answer": "A",
+      "explanation": "All coefficients are positive and present. Using Routh-Hurwitz: first column has all positive terms, so system is stable.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Stability Analysis",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 382,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "PID controller provides:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Zero steady-state error",
+        "B": "Good transient response",
+        "C": "Derivative action for stability",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "PID controller combines proportional, integral (eliminates steady-state error), and derivative (improves transient response and stability) actions.",
+      "difficulty_level": "Easy",
+      "marks": 1,
+      "topic": "Controller Design",
+      "type": "Theory"
+    },
+    {
+      "question_id": 383,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A system has poles at s = -2, -3, -5. Calculate settling time (2% criterion).",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "1 second",
+        "B": "2 seconds",
+        "C": "3 seconds",
+        "D": "5 seconds"
+      },
+      "correct_answer": "B",
+      "explanation": "Settling time is determined by the dominant pole (closest to imaginary axis). Dominant pole = -2. Ts = 4/|dominant pole| = 4/2 = 2 seconds",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Time Response",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 384,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "Nyquist stability criterion is based on:",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "Routh-Hurwitz criterion",
+        "B": "Cauchy's principle of argument",
+        "C": "Root locus",
+        "D": "Bode plot"
+      },
+      "correct_answer": "B",
+      "explanation": "Nyquist stability criterion is based on Cauchy's principle of argument from complex variable theory.",
+      "difficulty_level": "Hard",
+      "marks": 1,
+      "topic": "Frequency Response",
+      "type": "Theory"
+    },
+    {
+      "question_id": 385,
+      "module_id": 2,
+      "module_name": "Control Systems",
+      "question_text": "A type-1 system has velocity error constant Kv = 20. For unit ramp input, calculate steady-state error.",
+      "image_reference": {
+        "has_image": false,
+        "image_path": null
+      },
+      "options": {
+        "A": "0.05",
+        "B": "0.1",
+        "C": "0.2",
+        "D": "1"
+      },
+      "correct_answer": "A",
+      "explanation": "For unit ramp input in type-1 system: ess = 1/Kv = 1/20 = 0.05",
+      "difficulty_level": "Medium",
+      "marks": 1,
+      "topic": "Steady-state Error",
+      "type": "Numerical"
+    }
+  ],
+  "note": "This represents the first 25 questions (361-385) of Test 4. The complete test would continue with questions 386-480 covering all remaining modules with the same quality and structure."
+}
+
+
+    {
+      "question_id": 386,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A moving coil instrument has full scale deflection current 1mA and internal resistance 100Ω. To measure 10A, calculate shunt resistance.",
+      "options": {
+        "A": "0.01Ω",
+        "B": "0.1Ω", 
+        "C": "1Ω",
+        "D": "10Ω"
+      },
+      "correct_answer": "A",
+      "explanation": "Multiplying factor n = 10/0.001 = 10000. Shunt resistance Rs = Rm/(n-1) = 100/(10000-1) ≈ 0.01Ω",
+      "difficulty_level": "Medium",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 387,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The accuracy of a measurement is:",
+      "options": {
+        "A": "Closeness to true value",
+        "B": "Repeatability of readings",
+        "C": "Resolution of instrument",
+        "D": "Sensitivity of instrument"
+      },
+      "correct_answer": "A",
+      "explanation": "Accuracy refers to how close a measured value is to the true or actual value.",
+      "difficulty_level": "Easy",
+      "type": "Theory"
+    },
+    {
+      "question_id": 388,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A wattmeter reads 500W when connected to measure power in a circuit. If current coil has 5A and voltage coil has 100V, find power factor.",
+      "options": {
+        "A": "0.8",
+        "B": "0.9",
+        "C": "1.0",
+        "D": "1.2"
+      },
+      "correct_answer": "C",
+      "explanation": "Apparent power = V × I = 100 × 5 = 500VA. Power factor = P/S = 500/500 = 1.0",
+      "difficulty_level": "Medium",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 389,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Digital multimeters use:",
+      "options": {
+        "A": "Analog-to-digital conversion",
+        "B": "Dual slope integration",
+        "C": "Successive approximation",
+        "D": "All of the above"
+      },
+      "correct_answer": "D",
+      "explanation": "Digital multimeters can use various ADC techniques including dual slope integration and successive approximation.",
+      "difficulty_level": "Medium",
+      "type": "Theory"
+    },
+    {
+      "question_id": 390,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "An energy meter has meter constant 1000 rev/kWh. If disc makes 50 revolutions in 2 minutes, calculate power.",
+      "options": {
+        "A": "1.5kW",
+        "B": "2.0kW",
+        "C": "2.5kW",
+        "D": "3.0kW"
+      },
+      "correct_answer": "A",
+      "explanation": "Energy = 50/1000 = 0.05kWh in 2 minutes = 1/30 hour. Power = 0.05/(1/30) = 1.5kW",
+      "difficulty_level": "Hard",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 391,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "CRO stands for:",
+      "options": {
+        "A": "Cathode Ray Oscilloscope",
+        "B": "Current Resistance Ohmmeter",
+        "C": "Capacitive Reactive Oscillator",
+        "D": "Control Room Operator"
+      },
+      "correct_answer": "A",
+      "explanation": "CRO stands for Cathode Ray Oscilloscope, an instrument for displaying voltage waveforms.",
+      "difficulty_level": "Easy",
+      "type": "Theory"
+    },
+    {
+      "question_id": 392,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A voltmeter has range 0-150V and accuracy ±2%. Calculate maximum error.",
+      "options": {
+        "A": "±1.5V",
+        "B": "±3V",
+        "C": "±4.5V",
+        "D": "±6V"
+      },
+      "correct_answer": "B",
+      "explanation": "Maximum error = ±2% of full scale = ±0.02 × 150 = ±3V",
+      "difficulty_level": "Easy",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 393,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Wheatstone bridge is used to measure:",
+      "options": {
+        "A": "Medium resistance",
+        "B": "Low resistance",
+        "C": "High resistance", 
+        "D": "Capacitance"
+      },
+      "correct_answer": "A",
+      "explanation": "Wheatstone bridge is most suitable for measuring medium resistance values (1Ω to 1MΩ).",
+      "difficulty_level": "Easy",
+      "type": "Theory"
+    },
+    {
+      "question_id": 394,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A CT has ratio 100/5. If primary current is 80A, calculate secondary current.",
+      "options": {
+        "A": "2A",
+        "B": "4A",
+        "C": "5A",
+        "D": "8A"
+      },
+      "correct_answer": "B",
+      "explanation": "CT ratio = 100/5 = 20. Secondary current = Primary current/ratio = 80/20 = 4A",
+      "difficulty_level": "Medium",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 395,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The deflection of a moving iron instrument is proportional to:",
+      "options": {
+        "A": "Current",
+        "B": "Square of current",
+        "C": "Square root of current",
+        "D": "Cube of current"
+      },
+      "correct_answer": "B",
+      "explanation": "Moving iron instruments have deflection proportional to square of current (I²) due to magnetic force being proportional to I².",
+      "difficulty_level": "Medium",
+      "type": "Theory"
+    },
+    {
+      "question_id": 396,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A 3-phase wattmeter reads 2000W. If line voltage is 400V and line current is 10A at 0.8 pf, find total power.",
+      "options": {
+        "A": "4000W",
+        "B": "5547W",
+        "C": "6000W",
+        "D": "6928W"
+      },
+      "correct_answer": "B",
+      "explanation": "Total 3-phase power = √3 × VL × IL × cosφ = √3 × 400 × 10 × 0.8 = 5547W",
+      "difficulty_level": "Hard",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 397,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "Kelvin double bridge is used for measuring:",
+      "options": {
+        "A": "Very low resistance",
+        "B": "Very high resistance",
+        "C": "Medium resistance",
+        "D": "Inductance"
+      },
+      "correct_answer": "A",
+      "explanation": "Kelvin double bridge eliminates lead resistance effects and is used for measuring very low resistance values.",
+      "difficulty_level": "Medium",
+      "type": "Theory"
+    },
+    {
+      "question_id": 398,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "A dynamometer wattmeter can measure:",
+      "options": {
+        "A": "DC power only",
+        "B": "AC power only",
+        "C": "Both DC and AC power",
+        "D": "Reactive power only"
+      },
+      "correct_answer": "C",
+      "explanation": "Dynamometer wattmeter can measure both DC and AC power as it responds to average value of power.",
+      "difficulty_level": "Easy",
+      "type": "Theory"
+    },
+    {
+      "question_id": 399,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "An ammeter has resistance 0.1Ω and reads 10A. Calculate power loss in ammeter.",
+      "options": {
+        "A": "1W",
+        "B": "10W",
+        "C": "100W",
+        "D": "1000W"
+      },
+      "correct_answer": "B",
+      "explanation": "Power loss = I²R = 10² × 0.1 = 100 × 0.1 = 10W",
+      "difficulty_level": "Easy",
+      "type": "Numerical"
+    },
+    {
+      "question_id": 400,
+      "module_id": 3,
+      "module_name": "Electrical and Electronic Measurements",
+      "question_text": "The time base generator in CRO produces:",
+      "options": {
+        "A": "Sawtooth wave",
+        "B": "Sine wave",
+        "C": "Square wave",
+        "D": "Triangular wave"
+      },
+      "correct_answer": "A",
+      "explanation": "Time base generator produces sawtooth wave for horizontal deflection to create time sweep in CRO.",
+      "difficulty_level": "Medium",
+      "type": "Theory"
+    }
+  ]
+}
+

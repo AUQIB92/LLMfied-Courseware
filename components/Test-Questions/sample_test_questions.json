@@ -1,0 +1,259 @@
+{
+  "test_series": {
+    "title": "JKSSB Junior Engineer (Electrical) - Sample Test",
+    "description": "Sample test with 10 MCQ questions covering all modules with images",
+    "total_tests": 1,
+    "questions_per_test": 10,
+    "total_marks": 10,
+    "time_duration": "20 minutes",
+    "modules": [
+      {
+        "module_id": 1,
+        "name": "Electric Circuits and Fields",
+        "marks": 15,
+        "questions_in_sample": 2
+      },
+      {
+        "module_id": 2,
+        "name": "Control Systems", 
+        "marks": 10,
+        "questions_in_sample": 1
+      },
+      {
+        "module_id": 3,
+        "name": "Electrical and Electronic Measurements",
+        "marks": 15,
+        "questions_in_sample": 1
+      },
+      {
+        "module_id": 4,
+        "name": "Electronic Devices and Circuits",
+        "marks": 10,
+        "questions_in_sample": 1
+      },
+      {
+        "module_id": 5,
+        "name": "Digital Electronics and Microprocessor",
+        "marks": 10,
+        "questions_in_sample": 1
+      },
+      {
+        "module_id": 6,
+        "name": "Power Electronics and Drives",
+        "marks": 10,
+        "questions_in_sample": 1
+      },
+      {
+        "module_id": 7,
+        "name": "Electrical Machines",
+        "marks": 25,
+        "questions_in_sample": 2
+      },
+      {
+        "module_id": 8,
+        "name": "Power Systems",
+        "marks": 25,
+        "questions_in_sample": 1
+      }
+    ],
+    "tests": [
+      {
+        "test_id": 1,
+        "test_name": "Sample Test - All Modules",
+        "questions": [
+          {
+            "question_id": 1,
+            "module_id": 1,
+            "module_name": "Electric Circuits and Fields",
+            "question_text": "In the circuit shown below, what is the equivalent resistance between points A and B?",
+            "image_path": "/home/ubuntu/test_images/circuits/circuit_diagram_1.png",
+            "has_image": true,
+            "options": {
+              "A": "10 Ω",
+              "B": "15 Ω", 
+              "C": "20 Ω",
+              "D": "25 Ω"
+            },
+            "correct_answer": "B",
+            "explanation": "Using series and parallel resistance formulas: R_parallel = (R1 × R2)/(R1 + R2) for parallel resistors, and R_series = R1 + R2 for series resistors. The equivalent resistance works out to 15 Ω.",
+            "difficulty": "Medium",
+            "marks": 1,
+            "topic": "Network Analysis"
+          },
+          {
+            "question_id": 2,
+            "module_id": 1,
+            "module_name": "Electric Circuits and Fields",
+            "question_text": "According to Kirchhoff's Current Law (KCL), the algebraic sum of currents at any node in a circuit is:",
+            "image_path": null,
+            "has_image": false,
+            "options": {
+              "A": "Equal to the supply voltage",
+              "B": "Equal to zero",
+              "C": "Equal to the total resistance",
+              "D": "Equal to the power consumed"
+            },
+            "correct_answer": "B",
+            "explanation": "Kirchhoff's Current Law states that the algebraic sum of all currents entering and leaving a node must equal zero. This is based on the principle of conservation of charge.",
+            "difficulty": "Easy",
+            "marks": 1,
+            "topic": "Circuit Laws"
+          },
+          {
+            "question_id": 3,
+            "module_id": 2,
+            "module_name": "Control Systems",
+            "question_text": "In the block diagram shown, what type of control system configuration is represented?",
+            "image_path": "/home/ubuntu/test_images/control_systems/block_diagram.jpg",
+            "has_image": true,
+            "options": {
+              "A": "Open loop control system",
+              "B": "Closed loop control system with negative feedback",
+              "C": "Closed loop control system with positive feedback", 
+              "D": "Feed-forward control system"
+            },
+            "correct_answer": "B",
+            "explanation": "The diagram shows a closed loop control system with negative feedback, where the output is fed back and compared with the reference input to generate an error signal that drives the controller.",
+            "difficulty": "Medium",
+            "marks": 1,
+            "topic": "Block Diagram Representation"
+          },
+          {
+            "question_id": 4,
+            "module_id": 3,
+            "module_name": "Electrical and Electronic Measurements",
+            "question_text": "The waveform shown on the oscilloscope indicates which type of signal?",
+            "image_path": "/home/ubuntu/test_images/measurements/oscilloscope_waveforms.jpg",
+            "has_image": true,
+            "options": {
+              "A": "Pure sinusoidal wave",
+              "B": "Square wave with harmonics",
+              "C": "Triangular wave",
+              "D": "Sawtooth wave"
+            },
+            "correct_answer": "A",
+            "explanation": "The oscilloscope display shows a smooth, continuous sinusoidal waveform with constant amplitude and frequency, characteristic of a pure sine wave without harmonic distortion.",
+            "difficulty": "Easy",
+            "marks": 1,
+            "topic": "Oscilloscope Measurements"
+          },
+          {
+            "question_id": 5,
+            "module_id": 4,
+            "module_name": "Electronic Devices and Circuits",
+            "question_text": "In a forward-biased PN junction diode, the width of the depletion region:",
+            "image_path": null,
+            "has_image": false,
+            "options": {
+              "A": "Increases significantly",
+              "B": "Decreases significantly", 
+              "C": "Remains constant",
+              "D": "Becomes infinite"
+            },
+            "correct_answer": "B",
+            "explanation": "In forward bias, the applied voltage opposes the built-in potential, reducing the electric field across the junction and causing the depletion region width to decrease significantly, allowing current to flow.",
+            "difficulty": "Medium",
+            "marks": 1,
+            "topic": "Semiconductor Physics"
+          },
+          {
+            "question_id": 6,
+            "module_id": 5,
+            "module_name": "Digital Electronics and Microprocessor",
+            "question_text": "Looking at the logic gate symbols shown, which gate produces a HIGH output only when all inputs are HIGH?",
+            "image_path": "/home/ubuntu/test_images/digital/logic_gates.jpg",
+            "has_image": true,
+            "options": {
+              "A": "OR gate",
+              "B": "AND gate",
+              "C": "NAND gate",
+              "D": "XOR gate"
+            },
+            "correct_answer": "B",
+            "explanation": "The AND gate produces a HIGH (1) output only when all of its inputs are HIGH (1). If any input is LOW (0), the output will be LOW (0). This is the fundamental characteristic of the AND logic operation.",
+            "difficulty": "Easy",
+            "marks": 1,
+            "topic": "Logic Gates"
+          },
+          {
+            "question_id": 7,
+            "module_id": 6,
+            "module_name": "Power Electronics and Drives",
+            "question_text": "In the bridge rectifier circuit shown, what is the peak inverse voltage (PIV) across each diode?",
+            "image_path": "/home/ubuntu/test_images/power_electronics/bridge_rectifier.png",
+            "has_image": true,
+            "options": {
+              "A": "Vm (peak input voltage)",
+              "B": "2Vm",
+              "C": "Vm/2",
+              "D": "√2 × Vm"
+            },
+            "correct_answer": "A",
+            "explanation": "In a bridge rectifier, during the negative half-cycle, two diodes are reverse-biased and each experiences a peak inverse voltage equal to the peak input voltage Vm, not 2Vm as in center-tap rectifiers.",
+            "difficulty": "Medium",
+            "marks": 1,
+            "topic": "Rectifier Circuits"
+          },
+          {
+            "question_id": 8,
+            "module_id": 7,
+            "module_name": "Electrical Machines",
+            "question_text": "In the transformer equivalent circuit shown, what does the magnetizing reactance Xm represent?",
+            "image_path": "/home/ubuntu/test_images/machines/transformer_equivalent.jpg",
+            "has_image": true,
+            "options": {
+              "A": "Leakage reactance of primary winding",
+              "B": "Leakage reactance of secondary winding",
+              "C": "Reactance due to mutual flux linkage",
+              "D": "Total reactance of the transformer"
+            },
+            "correct_answer": "C",
+            "explanation": "The magnetizing reactance Xm in the transformer equivalent circuit represents the reactance due to the mutual flux that links both primary and secondary windings, responsible for the magnetizing current component.",
+            "difficulty": "Medium",
+            "marks": 1,
+            "topic": "Transformer Equivalent Circuit"
+          },
+          {
+            "question_id": 9,
+            "module_id": 7,
+            "module_name": "Electrical Machines",
+            "question_text": "The synchronous reactance of a synchronous machine is the sum of:",
+            "image_path": null,
+            "has_image": false,
+            "options": {
+              "A": "Armature resistance and leakage reactance",
+              "B": "Leakage reactance and magnetizing reactance",
+              "C": "Armature resistance and magnetizing reactance", 
+              "D": "All reactances in the machine"
+            },
+            "correct_answer": "B",
+            "explanation": "Synchronous reactance (Xs) is the sum of armature leakage reactance (Xl) and armature reaction reactance (Xa). It represents the total inductive reactance of the armature circuit under synchronous conditions.",
+            "difficulty": "Medium",
+            "marks": 1,
+            "topic": "Synchronous Machines"
+          },
+          {
+            "question_id": 10,
+            "module_id": 8,
+            "module_name": "Power Systems",
+            "question_text": "In power system protection, which type of relay is most suitable for protecting long transmission lines?",
+            "image_path": null,
+            "has_image": false,
+            "options": {
+              "A": "Overcurrent relay",
+              "B": "Differential relay",
+              "C": "Distance relay",
+              "D": "Directional relay"
+            },
+            "correct_answer": "C",
+            "explanation": "Distance relays (impedance relays) are most suitable for long transmission line protection because they measure the impedance to the fault location, providing both selectivity and speed. They are less affected by system conditions compared to overcurrent relays.",
+            "difficulty": "Medium",
+            "marks": 1,
+            "topic": "Power System Protection"
+          }
+        ]
+      }
+    ]
+  }
+}
+

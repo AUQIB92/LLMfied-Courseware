@@ -106,8 +106,8 @@ export default function AuthForm({ initialMode = "login", onClose, onShowWaiting
   return (
     <Card className="w-full max-w-md border-0 relative overflow-hidden">
       {/* Enhanced Card Background */}
-      <div className="absolute inset-0 bg-white/95 backdrop-blur-2xl rounded-3xl"></div>
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white/30 to-purple-50/50 rounded-3xl"></div>
+      <div className="absolute inset-0 bg-white/98 backdrop-blur-2xl rounded-3xl"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-white/50 to-purple-50/30 rounded-3xl"></div>
       
       {/* Subtle floating particles inside card */}
       <div className="absolute inset-0 overflow-hidden rounded-3xl">
@@ -167,7 +167,7 @@ export default function AuthForm({ initialMode = "login", onClose, onShowWaiting
                   value={formData.name} 
                   onChange={handleChange} 
                   required 
-                  className="border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 bg-white/80 backdrop-blur-sm rounded-xl h-12 transition-all duration-300 hover:bg-white/90"
+                  className="border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 bg-white/95 backdrop-blur-sm rounded-xl h-12 transition-all duration-300 hover:bg-white text-slate-900"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -187,7 +187,7 @@ export default function AuthForm({ initialMode = "login", onClose, onShowWaiting
                 value={formData.email} 
                 onChange={handleChange} 
                 required 
-                className="border-slate-200 focus:border-purple-400 focus:ring-purple-400/20 bg-white/80 backdrop-blur-sm rounded-xl h-12 transition-all duration-300 hover:bg-white/90"
+                className="border-slate-200 focus:border-purple-400 focus:ring-purple-400/20 bg-white/95 backdrop-blur-sm rounded-xl h-12 transition-all duration-300 hover:bg-white text-slate-900"
                 placeholder="Enter your email"
               />
             </div>
@@ -206,7 +206,7 @@ export default function AuthForm({ initialMode = "login", onClose, onShowWaiting
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="border-slate-200 focus:border-emerald-400 focus:ring-emerald-400/20 bg-white/80 backdrop-blur-sm rounded-xl h-12 transition-all duration-300 hover:bg-white/90"
+                className="border-slate-200 focus:border-emerald-400 focus:ring-emerald-400/20 bg-white/95 backdrop-blur-sm rounded-xl h-12 transition-all duration-300 hover:bg-white text-slate-900"
                 placeholder="Enter your password"
               />
               {isLogin && (
