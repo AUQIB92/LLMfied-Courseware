@@ -1,9 +1,7 @@
 'use client'
 
-import React, { useMemo, useEffect } from 'react'
+import React, { useMemo, useEffect, useRef } from 'react'
 import DOMPurify from 'dompurify'
-import katex from 'katex'
-import 'katex/dist/katex.min.css'
 
 // Very small, safe Markdown-to-HTML helper for headings, lists and paragraphs.
 // This is not a full Markdown parser, but good enough as a fallback when
@@ -52,77 +50,93 @@ function basicMarkdownToHtml(markdown) {
   return html
 }
 
-function renderMathWithKatex(html) {
-  if (!html || typeof html !== 'string') return ''
+// --- MathJax loader (v3) ---
+let mathJaxLoadingPromise = null
 
-  const render = (tex, displayMode) => {
-    try {
-      // Unescape the LaTeX backslashes (convert \\ to \)
-      const unescapedTex = tex.replace(/\\\\/g, '\\');
-      
-      return katex.renderToString(unescapedTex, {
-        displayMode,
-        throwOnError: false,
-        strict: false,
-        output: 'html',
-        trust: true,
-        macros: {
-          "\\RR": "\\mathbb{R}",
-          "\\NN": "\\mathbb{N}",
-          "\\ZZ": "\\mathbb{Z}",
-          "\\QQ": "\\mathbb{Q}",
-          "\\CC": "\\mathbb{C}"
-        }
-      })
-    } catch (e) {
-      console.warn('KaTeX rendering error:', e.message, 'for tex:', tex);
-      return `<span class="katex-error" title="Math rendering error: ${e.message}">${tex}</span>`
+function configureGlobalMathJax() {
+  if (typeof window === 'undefined') return
+  if (window.MathJax && window.MathJax.configuredForHtmlViewer) return
+
+  window.MathJax = {
+    loader: {
+      load: [
+        '[tex]/ams',
+        '[tex]/physics',
+        '[tex]/mhchem',
+        '[tex]/color',
+        '[tex]/noerrors',
+        '[tex]/noundefined'
+      ]
+    },
+    ...(window.MathJax || {}),
+    tex: {
+      inlineMath: [["$", "$"], ["\\(", "\\)"]],
+      displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+      processEscapes: true,
+      processEnvironments: true,
+      tags: 'none',
+      packages: { '[+]': ['base', 'ams', 'newcommand', 'configmacros', 'physics', 'mhchem', 'color', 'noerrors', 'noundefined'] },
+      macros: {
+        "\\RR": "\\mathbb{R}",
+        "\\NN": "\\mathbb{N}",
+        "\\ZZ": "\\mathbb{Z}",
+        "\\QQ": "\\mathbb{Q}",
+        "\\CC": "\\mathbb{C}",
+        "\\f": ["\\frac{#1}{#2}", 2],
+        "\\half": "\\frac{1}{2}",
+        "\\ohm": "\\Omega",
+        "\\degree": "^\\circ"
+      }
+    },
+    // Use CommonHTML output like StackExchange
+    chtml: {
+      scale: 1,
+      minScale: 0.5,
+      matchFontHeight: true,
+      mtextInheritFont: false,
+      merrorInheritFont: true,
+      fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts',
+      displayAlign: 'center',
+      displayIndent: '0'
+    },
+    options: {
+      skipHtmlTags: { '[-]': ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    },
+    startup: {
+      typeset: false
     }
   }
+  window.MathJax.configuredForHtmlViewer = true
+}
 
-  // Handle new HTML format with \(...\) and \[...\] delimiters
-  let out = html
-  
-  // Replace display math: \[...\]
-  out = out.replace(/\\\[([\s\S]+?)\\\]/g, (_, tex) => {
-    return render(tex, true)
-  })
-  
-  // Replace inline math: \(...\)
-  out = out.replace(/\\\(([\s\S]+?)\\\)/g, (_, tex) => {
-    return render(tex, false)
-  })
-  
-  // Also handle traditional LaTeX format for backward compatibility
-  // Display math first
-  out = out.replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => render(tex, true))
-  // Then inline math. Avoid matching $$
-  out = out.replace(/(?<!\$)\$([^$\n]+?)\$(?!\$)/g, (_, tex) => render(tex, false))
-  
-  return out
+function loadMathJax() {
+  if (typeof window === 'undefined') return Promise.resolve(null)
+  if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+    return Promise.resolve(window.MathJax)
+  }
+  if (!mathJaxLoadingPromise) {
+    configureGlobalMathJax()
+    mathJaxLoadingPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
+      script.async = true
+      script.onload = () => resolve(window.MathJax)
+      script.onerror = (e) => reject(e)
+      document.head.appendChild(script)
+    })
+  }
+  return mathJaxLoadingPromise
 }
 
 export default function HtmlMathViewer({ html, markdownFallback = '', className = '' }) {
-  // Ensure KaTeX is properly loaded
-  useEffect(() => {
-    // Load KaTeX CSS if not already loaded
-    if (typeof window !== 'undefined' && !document.querySelector('link[href*="katex"]')) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
-      link.integrity = 'sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV';
-      link.crossOrigin = 'anonymous';
-      document.head.appendChild(link);
-    }
-  }, []);
+  const containerRef = useRef(null)
 
   const processed = useMemo(() => {
     let source = html
     if (!source && markdownFallback) {
       source = basicMarkdownToHtml(markdownFallback)
     }
-    const withMath = renderMathWithKatex(source || '')
-    const clean = DOMPurify.sanitize(withMath, {
+    const clean = DOMPurify.sanitize(source || '', {
       USE_PROFILES: { html: true },
       ALLOWED_TAGS: [
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'code', 'pre',
@@ -132,17 +146,37 @@ export default function HtmlMathViewer({ html, markdownFallback = '', className 
       ALLOWED_ATTR: [
         'class', 'href', 'src', 'alt', 'title', 'id', 'style'
       ],
-      ALLOWED_CLASSES: {
-        'span': ['katex', 'katex-error'],
-        'div': ['katex', 'katex-display'],
-        '*': ['katex', 'katex-error', 'katex-display']
-      }
+      ALLOWED_CLASSES: {}
     })
     return clean
   }, [html, markdownFallback])
 
+  // Typeset with MathJax after HTML is injected
+  useEffect(() => {
+    let cancelled = false
+    const typeset = async () => {
+      try {
+        const mj = await loadMathJax()
+        if (!cancelled && mj && containerRef.current) {
+          // Defer typesetting to end of frame to mimic SE behavior and avoid layout thrash
+          requestAnimationFrame(async () => {
+            if (!cancelled && mj && containerRef.current) {
+              await mj.typesetPromise([containerRef.current])
+            }
+          })
+        }
+      } catch (e) {
+        console.warn('MathJax load/typeset failed:', e)
+      }
+    }
+    typeset()
+    return () => {
+      cancelled = true
+    }
+  }, [processed])
+
   return (
-    <div className={`html-math-viewer ${className}`} dangerouslySetInnerHTML={{ __html: processed }} />
+    <div ref={containerRef} className={`html-math-viewer ${className}`} dangerouslySetInnerHTML={{ __html: processed }} />
   )
 }
 

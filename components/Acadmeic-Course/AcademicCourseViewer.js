@@ -1,12 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
+import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import ContentDisplay from "@/components/ContentDisplay"
 import { 
   ArrowLeft, 
   BookOpen, 
@@ -23,14 +25,13 @@ import {
   Lightbulb,
   BarChart3,
   ChevronLeft,
-  ChevronDown,
-  ChevronUp,
   Calendar,
   Award
 } from "lucide-react"
 
 export default function AcademicCourseViewer({ courseId, course: initialCourse, onBack }) {
-  const [course, setCourse] = useState(initialCourse || null)
+  const { getAuthHeaders } = useAuth()
+  const [viewerCourse, setViewerCourse] = useState(initialCourse || null)
   const [loading, setLoading] = useState(!initialCourse)
   const [error, setError] = useState(null)
   const [currentModule, setCurrentModule] = useState(0)
@@ -39,12 +40,9 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
 
   useEffect(() => {
     if (initialCourse) {
-      // If we already have course data, no need to fetch
-      console.log("📖 Academic course data provided:", initialCourse.title)
-      setCourse(initialCourse)
+      setViewerCourse(initialCourse)
       setLoading(false)
     } else if (courseId) {
-      // Otherwise fetch the course data
       fetchCourse()
     }
   }, [courseId, initialCourse])
@@ -53,29 +51,24 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
     try {
       setLoading(true)
       setError(null)
-      
       const idToUse = courseId || initialCourse?._id
       if (!idToUse) {
         setError("No course ID provided")
         setLoading(false)
         return
       }
-      
       const response = await fetch(`/api/academic-courses/${idToUse}`)
-      
       if (response.ok) {
-        const courseData = await response.json()
-        setCourse(courseData)
-        console.log("📖 Academic course loaded:", courseData.title)
+        const data = await response.json()
+        setViewerCourse(data)
       } else if (response.status === 404) {
         setError("Course not found or not accessible")
       } else {
         const errorData = await response.json()
         setError(errorData.error || "Failed to load course")
       }
-      
-    } catch (error) {
-      console.error("Error fetching course:", error)
+    } catch (e) {
+      console.error("Error fetching course:", e)
       setError("Network error: Failed to load course")
     } finally {
       setLoading(false)
@@ -87,8 +80,8 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   }
 
   const getProgressPercentage = () => {
-    if (!course?.modules?.length) return 0
-    return (completedModules.size / course.modules.length) * 100
+    if (!viewerCourse?.modules?.length) return 0
+    return (completedModules.size / viewerCourse.modules.length) * 100
   }
 
   const getAcademicLevelConfig = (level) => {
@@ -137,7 +130,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
     )
   }
 
-  if (!course) {
+  if (!viewerCourse) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50 flex items-center justify-center">
         <div className="max-w-2xl mx-auto text-center py-16">
@@ -155,7 +148,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
     )
   }
 
-  const levelConfig = getAcademicLevelConfig(course.academicLevel)
+  const levelConfig = getAcademicLevelConfig(viewerCourse.academicLevel)
 
   return (
     <motion.div 
@@ -165,7 +158,6 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
       transition={{ duration: 0.5 }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
         <motion.div 
           className="flex items-center gap-4 mb-6"
           initial={{ y: -20, opacity: 0 }}
@@ -182,7 +174,6 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
           </div>
         </motion.div>
 
-        {/* Course Hero Section */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -200,17 +191,17 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                     {levelConfig.icon}
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
+                    <h1 className="text-3xl font-bold mb-2">{viewerCourse.title}</h1>
                     <div className="flex flex-wrap gap-2">
                       <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
                         {levelConfig.name}
                       </Badge>
                       <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
-                        {course.subject}
+                        {viewerCourse.subject}
                       </Badge>
-                      {course.semester && (
+                      {viewerCourse.semester && (
                         <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
-                          Semester {course.semester}
+                          Semester {viewerCourse.semester}
                         </Badge>
                       )}
                     </div>
@@ -219,31 +210,30 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
               </div>
 
               <p className="text-white/90 text-lg leading-relaxed mb-6 max-w-3xl">
-                {course.description}
+                {viewerCourse.description}
               </p>
 
               <div className="flex items-center gap-8 text-white/80 mb-6">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5" />
-                  <span>{course.modules?.length || 0} modules</span>
+                  <span>{viewerCourse.modules?.length || 0} modules</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  <span>{course.enrollmentCount || 0} students</span>
+                  <span>{viewerCourse.enrollmentCount || 0} students</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5" />
-                  <span>{course.credits || 3} credits</span>
+                  <span>{viewerCourse.credits || 3} credits</span>
                 </div>
-                {course.assignments && (
+                {viewerCourse.assignments && (
                   <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
-                    <span>{course.assignments.length} assignments</span>
+                    <span>{viewerCourse.assignments.length} assignments</span>
                   </div>
                 )}
               </div>
 
-              {/* Progress Bar */}
               <div className="bg-white/20 rounded-full p-1 mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-white/90">Course Progress</span>
@@ -255,7 +245,6 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
           </Card>
         </motion.div>
 
-        {/* Content Tabs */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -283,8 +272,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
 
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Course Objectives */}
-                {course.objectives?.length > 0 && (
+                {viewerCourse.objectives?.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -294,7 +282,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
-                        {course.objectives.map((objective, index) => (
+                        {viewerCourse.objectives.map((objective, index) => (
                           <li key={index} className="flex items-start gap-2">
                             <CheckCircle className="h-4 w-4 text-green-600 mt-1 flex-shrink-0" />
                             <span className="text-sm text-slate-700">{objective}</span>
@@ -305,8 +293,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                   </Card>
                 )}
 
-                {/* Prerequisites */}
-                {course.prerequisites?.length > 0 && (
+                {viewerCourse.prerequisites?.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -316,7 +303,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
-                        {course.prerequisites.map((prerequisite, index) => (
+                        {viewerCourse.prerequisites.map((prerequisite, index) => (
                           <li key={index} className="flex items-start gap-2">
                             <ChevronRight className="h-4 w-4 text-amber-600 mt-1 flex-shrink-0" />
                             <span className="text-sm text-slate-700">{prerequisite}</span>
@@ -328,8 +315,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                 )}
               </div>
 
-              {/* Assessment Criteria */}
-              {course.assessmentCriteria && (
+              {viewerCourse.assessmentCriteria && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -341,25 +327,25 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="text-center p-4 bg-blue-50 rounded-lg">
                         <div className="text-2xl font-bold text-blue-600 mb-1">
-                          {course.assessmentCriteria.assignments}%
+                          {viewerCourse.assessmentCriteria.assignments}%
                         </div>
                         <div className="text-sm text-slate-600">Assignments</div>
                       </div>
                       <div className="text-center p-4 bg-green-50 rounded-lg">
                         <div className="text-2xl font-bold text-green-600 mb-1">
-                          {course.assessmentCriteria.quizzes}%
+                          {viewerCourse.assessmentCriteria.quizzes}%
                         </div>
                         <div className="text-sm text-slate-600">Quizzes</div>
                       </div>
                       <div className="text-center p-4 bg-amber-50 rounded-lg">
                         <div className="text-2xl font-bold text-amber-600 mb-1">
-                          {course.assessmentCriteria.midterm}%
+                          {viewerCourse.assessmentCriteria.midterm}%
                         </div>
                         <div className="text-sm text-slate-600">Midterm</div>
                       </div>
                       <div className="text-center p-4 bg-red-50 rounded-lg">
                         <div className="text-2xl font-bold text-red-600 mb-1">
-                          {course.assessmentCriteria.final}%
+                          {viewerCourse.assessmentCriteria.final}%
                         </div>
                         <div className="text-sm text-slate-600">Final</div>
                       </div>
@@ -370,9 +356,8 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
             </TabsContent>
 
             <TabsContent value="modules" className="space-y-4">
-              {course.modules?.length > 0 ? (
+              {viewerCourse.modules?.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[calc(100vh-16rem)]">
-                  {/* Module Sidebar */}
                   <Card className="lg:col-span-1">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -381,7 +366,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                     </CardHeader>
                     <CardContent className="p-0">
                       <div className="space-y-2 p-4">
-                        {course.modules.map((module, index) => (
+                        {viewerCourse.modules.map((module, index) => (
                           <Button
                             key={index}
                             variant={currentModule === index ? "default" : "ghost"}
@@ -431,17 +416,16 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                     </CardContent>
                   </Card>
 
-                  {/* Module Content */}
                   <Card className="lg:col-span-3">
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
                           <CardTitle className="text-xl">
-                            {course.modules[currentModule]?.title || `Module ${currentModule + 1}`}
+                            {viewerCourse.modules[currentModule]?.title || `Module ${currentModule + 1}`}
                           </CardTitle>
-                          {course.modules[currentModule]?.description && (
+                          {viewerCourse.modules[currentModule]?.description && (
                             <p className="text-slate-600 mt-2">
-                              {course.modules[currentModule].description}
+                              {viewerCourse.modules[currentModule].description}
                             </p>
                           )}
                         </div>
@@ -466,39 +450,19 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-6">
-                        {/* Module Content */}
                         <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-100">
                           <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
                             <Play className="h-5 w-5 text-blue-600" />
                             Module Content
                           </h4>
-                          <p className="text-slate-700 mb-4">
-                            {course.modules[currentModule]?.content || 
-                             "Interactive learning materials and resources for this module will be displayed here."}
-                          </p>
-                          
-                          {/* Action Buttons */}
-                          <div className="flex gap-3">
-                            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-                              <Play className="h-4 w-4 mr-2" />
-                              Start Learning
-                            </Button>
-                            {course.modules[currentModule]?.resources?.length > 0 && (
-                              <Button variant="outline">
-                                <FileText className="h-4 w-4 mr-2" />
-                                Resources ({course.modules[currentModule].resources.length})
-                              </Button>
-                            )}
-                            {course.modules[currentModule]?.quiz && (
-                              <Button variant="outline">
-                                <Target className="h-4 w-4 mr-2" />
-                                Take Quiz
-                              </Button>
-                            )}
+                          <div className="prose max-w-none">
+                            <ContentDisplay
+                              content={viewerCourse.modules[currentModule]?.content || viewerCourse.modules[currentModule]?.summary || "Interactive learning materials and resources for this module will be displayed here."}
+                              renderingMode="math-optimized"
+                            />
                           </div>
                         </div>
 
-                        {/* Module Navigation */}
                         <div className="flex items-center justify-between pt-4 border-t">
                           <Button
                             variant="outline"
@@ -510,13 +474,13 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                           </Button>
                           
                           <div className="text-sm text-slate-600">
-                            Module {currentModule + 1} of {course.modules.length}
+                            Module {currentModule + 1} of {viewerCourse.modules.length}
                           </div>
                           
                           <Button
                             variant="outline"
-                            onClick={() => setCurrentModule(Math.min(course.modules.length - 1, currentModule + 1))}
-                            disabled={currentModule === course.modules.length - 1}
+                            onClick={() => setCurrentModule(Math.min(viewerCourse.modules.length - 1, currentModule + 1))}
+                            disabled={currentModule === viewerCourse.modules.length - 1}
                           >
                             Next Module
                             <ChevronRight className="h-4 w-4 ml-2" />
@@ -543,9 +507,9 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                   <CardTitle>Course Assignments</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {course.assignments?.length > 0 ? (
+                  {viewerCourse.assignments?.length > 0 ? (
                     <div className="space-y-4">
-                      {course.assignments.map((assignment, index) => (
+                      {viewerCourse.assignments.map((assignment, index) => (
                         <div key={index} className="p-4 border border-slate-200 rounded-lg">
                           <h4 className="font-semibold text-slate-800 mb-2">
                             {assignment.title}
@@ -604,13 +568,13 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                       </div>
                       <div className="text-center p-4 bg-slate-50 rounded-lg">
                         <div className="text-2xl font-bold text-slate-600 mb-1">
-                          {(course.modules?.length || 0) - completedModules.size}
+                          {(viewerCourse.modules?.length || 0) - completedModules.size}
                         </div>
                         <div className="text-sm text-slate-600">Modules Remaining</div>
                       </div>
                       <div className="text-center p-4 bg-green-50 rounded-lg">
                         <div className="text-2xl font-bold text-green-600 mb-1">
-                          {course.credits || 3}
+                          {viewerCourse.credits || 3}
                         </div>
                         <div className="text-sm text-slate-600">Credits</div>
                       </div>

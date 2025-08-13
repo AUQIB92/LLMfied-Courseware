@@ -209,11 +209,14 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
   ];
 
   const handleFileSelection = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      toast.success(`✅ File selected: ${selectedFile.name}`);
+    const files = e?.target?.files;
+    const selectedFile = files && files.length > 0 ? files[0] : null;
+    if (!selectedFile) {
+      toast.error("No file selected");
+      return;
     }
+    setFile(selectedFile);
+    toast.success(`✅ File selected: ${selectedFile.name}`);
   };
 
   const handleProcessFile = async () => {

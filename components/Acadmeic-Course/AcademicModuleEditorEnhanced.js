@@ -4568,11 +4568,38 @@ Detailed discussion here..."
                                   {currentPageData &&
                                   typeof currentPageData === "object" ? (
                                     <div className="prose prose-sm max-w-none">
-                                      <h4 className="font-semibold text-md mb-2">
-                                        {currentPageData.title ||
-                                          currentPageData.pageTitle ||
-                                          "Page Content"}
-                                      </h4>
+                                      <div className="flex items-center justify-between mb-2">
+                                        <h4 className="font-semibold text-md">
+                                          {currentPageData.title ||
+                                            currentPageData.pageTitle ||
+                                            "Page Content"}
+                                        </h4>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            generateIndividualAcademicSubsection(
+                                              subsection,
+                                              globalIndex
+                                            );
+                                          }}
+                                          disabled={subsection.isGenerating}
+                                          className="ml-2"
+                                        >
+                                          {subsection.isGenerating ? (
+                                            <>
+                                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                              Regenerating
+                                            </>
+                                          ) : (
+                                            <>
+                                              <RefreshCw className="h-4 w-4 mr-2" />
+                                              Regenerate
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
                                       {(() => {
                                         const content = typeof currentPageData.content === "string"
                                           ? currentPageData.content
