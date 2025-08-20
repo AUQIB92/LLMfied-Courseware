@@ -287,7 +287,7 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
       // Update course data with the structured modules
       const updatedCourseData = {
         ...courseData,
-        modules: structuredModules,
+        modules: structuredModules || [],
         isAcademicCourse: true,
         isCompetitiveExam: true,
       };
@@ -445,7 +445,7 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
         const data = await response.json();
         toast.success("🏆 Quiz created successfully!");
 
-        const updatedModules = courseData.modules.map((m) =>
+        const updatedModules = (courseData.modules || []).map((m) =>
           m.id === module.id ? { ...m, quiz: data.quiz } : m
         );
         setCourseData((prev) => ({ ...prev, modules: updatedModules }));
@@ -1186,7 +1186,7 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
               </p>
             </CardHeader>
             <CardContent>
-              {selectedModule !== null ? (
+              {selectedModule !== null && courseData.modules && courseData.modules.length > selectedModule && selectedModule >= 0 ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">
@@ -1207,6 +1207,7 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
                     <AcademicModuleEditorEnhanced
                       module={courseData.modules[selectedModule]}
                       onUpdate={(updatedModule) => {
+                        if (!courseData.modules || selectedModule >= courseData.modules.length || selectedModule < 0) return;
                         const updatedModules = [...courseData.modules];
                         updatedModules[selectedModule] = updatedModule;
                         setCourseData({
@@ -1250,7 +1251,7 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
               ) : (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {courseData.modules.map((module, index) => (
+                    {(courseData.modules || []).map((module, index) => (
                       <Card
                         key={index}
                         className="hover:shadow-lg transition-shadow duration-200"

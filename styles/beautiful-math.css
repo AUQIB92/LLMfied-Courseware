@@ -1,0 +1,492 @@
+/* ===========================
+   BEAUTIFUL MATH RENDERING CSS
+   Ultra-professional mathematical typography
+   =========================== */
+
+/* Import beautiful fonts for math */
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+/* Root variables for beautiful math theming */
+:root {
+  --math-primary: #2563eb;
+  --math-secondary: #7c3aed;
+  --math-accent: #059669;
+  --math-error: #dc2626;
+  --math-bg-light: rgba(37, 99, 235, 0.03);
+  --math-bg-medium: rgba(37, 99, 235, 0.08);
+  --math-bg-dark: rgba(37, 99, 235, 0.12);
+  --math-border: rgba(37, 99, 235, 0.2);
+  --math-shadow: 0 4px 20px rgba(37, 99, 235, 0.1);
+  --math-shadow-hover: 0 8px 30px rgba(37, 99, 235, 0.15);
+  --math-glow: 0 0 20px rgba(37, 99, 235, 0.3);
+}
+
+/* Base KaTeX styling with beautiful typography */
+.katex {
+  font-family: 'Crimson Text', 'KaTeX_Main', serif !important;
+  font-size: 1.2em !important;
+  color: #1e293b !important;
+  line-height: 1.6 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* Beautiful inline math with subtle highlighting */
+.katex.katex-inline {
+  background: linear-gradient(135deg, var(--math-bg-light), var(--math-bg-medium));
+  padding: 4px 8px;
+  border-radius: 8px;
+  margin: 0 3px;
+  border: 1px solid var(--math-border);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.katex.katex-inline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s ease;
+}
+
+.katex.katex-inline:hover::before {
+  left: 100%;
+}
+
+.katex.katex-inline:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--math-shadow-hover);
+  border-color: var(--math-primary);
+}
+
+/* Stunning display math with glass morphism */
+.katex-display {
+  margin: 2rem 0 !important;
+  padding: 2rem !important;
+  text-align: center;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.9), 
+    rgba(240, 249, 255, 0.8)
+  );
+  border-radius: 16px;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(37, 99, 235, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.katex-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--math-primary), 
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.katex-display:hover::before {
+  opacity: 1;
+}
+
+.katex-display:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 16px 48px rgba(37, 99, 235, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-color: var(--math-primary);
+}
+
+.katex-display .katex {
+  font-size: 1.4em !important;
+  color: #0f172a !important;
+}
+
+/* Beautiful mathematical symbols with color coding */
+.katex .mord {
+  color: #334155 !important;
+  font-weight: 500;
+}
+
+.katex .mbin {
+  color: var(--math-accent) !important;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.katex .mrel {
+  color: var(--math-error) !important;
+  font-weight: 600;
+}
+
+.katex .mopen, .katex .mclose {
+  color: var(--math-secondary) !important;
+  font-weight: 600;
+}
+
+.katex .mop {
+  color: var(--math-primary) !important;
+  font-weight: 700;
+}
+
+/* Enhanced fraction styling */
+.katex .frac-line {
+  border-bottom-color: var(--math-primary) !important;
+  border-bottom-width: 2px !important;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
+}
+
+.katex .mfrac {
+  position: relative;
+}
+
+.katex .mfrac::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--math-primary), 
+    transparent
+  );
+  transform: translateY(-50%);
+  opacity: 0.7;
+}
+
+/* Beautiful square root styling */
+.katex .sqrt > .sqrt-line {
+  border-top-color: var(--math-primary) !important;
+  border-top-width: 2px !important;
+  box-shadow: 0 -1px 3px rgba(37, 99, 235, 0.2);
+}
+
+.katex .sqrt-sign {
+  color: var(--math-primary) !important;
+  font-weight: 700;
+}
+
+/* Enhanced summation and integral styling */
+.katex .mop.op-symbol {
+  color: var(--math-primary) !important;
+  font-weight: 800;
+  font-size: 1.2em;
+  text-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.katex .msupsub {
+  font-size: 0.75em;
+  color: var(--math-secondary) !important;
+}
+
+/* Beautiful matrix and array styling */
+.katex .arraycolsep {
+  width: 1em;
+}
+
+.katex .array, .katex .matrix {
+  border: 2px solid var(--math-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  padding: 8px;
+}
+
+/* Stunning error styling */
+.katex-error {
+  background: linear-gradient(135deg, 
+    rgba(239, 68, 68, 0.1), 
+    rgba(220, 38, 38, 0.05)
+  ) !important;
+  color: var(--math-error) !important;
+  border: 2px solid rgba(239, 68, 68, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 4px 8px !important;
+  font-weight: 600 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+  animation: errorPulse 2s infinite;
+}
+
+@keyframes errorPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Beautiful animations */
+.katex {
+  animation: mathFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes mathFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.katex-display {
+  animation: displayMathSlide 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes displayMathSlide {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced Greek letters styling */
+.katex .greek {
+  color: var(--math-secondary) !important;
+  font-style: italic;
+  font-weight: 600;
+}
+
+/* Beautiful parentheses and brackets */
+.katex .delim-size1, .katex .delim-size2, .katex .delim-size3, .katex .delim-size4 {
+  color: var(--math-secondary) !important;
+  font-weight: 600;
+}
+
+/* Enhanced subscripts and superscripts */
+.katex .msubsup {
+  position: relative;
+}
+
+.katex .msubsup .vlist-t {
+  color: var(--math-accent) !important;
+  font-weight: 500;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --math-primary: #60a5fa;
+    --math-secondary: #a78bfa;
+    --math-accent: #34d399;
+    --math-error: #f87171;
+    --math-bg-light: rgba(96, 165, 250, 0.05);
+    --math-bg-medium: rgba(96, 165, 250, 0.1);
+    --math-bg-dark: rgba(96, 165, 250, 0.15);
+    --math-border: rgba(96, 165, 250, 0.3);
+  }
+
+  .katex {
+    color: #e2e8f0 !important;
+  }
+
+  .katex-display {
+    background: linear-gradient(135deg, 
+      rgba(15, 23, 42, 0.9), 
+      rgba(30, 41, 59, 0.8)
+    );
+    border-color: var(--math-border);
+  }
+
+  .katex .mord {
+    color: #cbd5e1 !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .katex {
+    color: #000 !important;
+    font-weight: 700;
+  }
+  
+  .katex-display {
+    background: #fff;
+    border: 3px solid #000;
+  }
+  
+  .katex.katex-inline {
+    background: #f5f5f5;
+    border: 2px solid #000;
+  }
+}
+
+/* Print optimization */
+@media print {
+  .katex-display {
+    break-inside: avoid;
+    background: white !important;
+    border: 1px solid #000;
+    box-shadow: none;
+  }
+  
+  .katex {
+    color: black !important;
+    animation: none;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .katex,
+  .katex-display,
+  .katex.katex-inline {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Mobile responsive design */
+@media (max-width: 768px) {
+  .katex-display {
+    margin: 1rem 0;
+    padding: 1rem;
+    font-size: 0.9em;
+  }
+  
+  .katex {
+    font-size: 1em !important;
+  }
+
+  .katex.katex-inline {
+    padding: 2px 4px;
+    margin: 0 1px;
+  }
+}
+
+/* Beautiful focus states for accessibility */
+.katex:focus-visible {
+  outline: 3px solid var(--math-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Special styling for specific mathematical content */
+.katex .text {
+  font-family: 'Crimson Text', serif !important;
+  color: #475569 !important;
+  font-style: normal;
+}
+
+.katex .mathit {
+  font-style: italic;
+  color: var(--math-secondary) !important;
+}
+
+.katex .mathbf {
+  font-weight: 700;
+  color: var(--math-primary) !important;
+}
+
+/* Content wrapper enhancements */
+.universal-content-renderer .katex-display {
+  position: relative;
+  z-index: 1;
+}
+
+.universal-content-renderer .katex-display::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, 
+    var(--math-primary), 
+    var(--math-secondary), 
+    var(--math-accent), 
+    var(--math-primary)
+  );
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background-size: 300% 300%;
+  animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.universal-content-renderer .katex-display:hover::after {
+  opacity: 0.1;
+}
+
+/* Equation numbering support */
+.katex-display.numbered {
+  position: relative;
+}
+
+.katex-display.numbered::before {
+  content: '(' counter(equation) ')';
+  counter-increment: equation;
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Crimson Text', serif;
+  font-weight: 600;
+  color: var(--math-secondary);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* Beautiful theorem and proof environments */
+.math-theorem, .math-proof, .math-definition {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  border-radius: 12px;
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.math-theorem {
+  background: linear-gradient(135deg, 
+    rgba(37, 99, 235, 0.05), 
+    rgba(59, 130, 246, 0.03)
+  );
+  border-left: 4px solid var(--math-primary);
+}
+
+.math-proof {
+  background: linear-gradient(135deg, 
+    rgba(124, 58, 237, 0.05), 
+    rgba(139, 92, 246, 0.03)
+  );
+  border-left: 4px solid var(--math-secondary);
+}
+
+.math-definition {
+  background: linear-gradient(135deg, 
+    rgba(5, 150, 105, 0.05), 
+    rgba(16, 185, 129, 0.03)
+  );
+  border-left: 4px solid var(--math-accent);
+}

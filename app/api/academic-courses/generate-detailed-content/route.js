@@ -3,59 +3,17 @@ import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
 import { generateAcademicSubsectionSummary } from "@/lib/gemini";
 
-// Minimal markdown → HTML converter that preserves LaTeX delimiters
-function basicMarkdownToHtml(markdown = "") {
-  if (typeof markdown !== "string") return "";
-  const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  // fenced code blocks
-  let html = markdown.replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${escape(code)}</code></pre>`);
-  // headings
-  html = html.replace(/^######\s*(.*)$/gm, '<h6>$1</h6>');
-  html = html.replace(/^#####\s*(.*)$/gm, '<h5>$1</h5>');
-  html = html.replace(/^####\s*(.*)$/gm, '<h4>$1</h4>');
-  html = html.replace(/^###\s*(.*)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^##\s*(.*)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^#\s*(.*)$/gm, '<h1>$1</h1>');
-  // emphasis/code
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-  // lists
-  html = html.replace(/^(\s*[-*+]\s+.*(?:\n\s*[-*+]\s+.*)*)/gm, (m) => {
-    const items = m.split(/\n/).map((l) => l.replace(/^\s*[-*+]\s+/, "")).join('</li><li>');
-    return `<ul><li>${items}</li></ul>`;
-  });
-  // paragraphs
-  html = html
-    .split(/\n{2,}/)
-    .map((b) => {
-      const t = b.trim();
-      if (!t) return "";
-      if (/^<h\d|^<ul|^<pre|^<table|^<blockquote/.test(t)) return t;
-      return `<p>${t.replace(/\n/g, '<br/>')}</p>`;
-    })
-    .join("\n");
-  return html;
-}
 
-function ensureHtmlOnPages(pages) {
+function ensureContentAndHtmlOnPages(pages) {
   const arr = Array.isArray(pages) ? pages : [];
   return arr.map((p) => {
-    // If the page already has HTML content, use it directly
-    if (typeof p?.html === 'string' && p.html.trim() !== '') {
-      return { 
-        pageTitle: p?.pageTitle || p?.title || 'Page', 
-        html: p.html,
-        math: p?.math || [] // Include math field if present
-      };
-    }
+    // Use HTML content directly, no markdown conversion
+    const html = typeof p?.html === 'string' && p.html.trim() !== '' ? p.html : '<p>No content available</p>';
     
-    // Otherwise, convert from markdown content
-    const html = basicMarkdownToHtml(typeof p?.content === 'string' ? p.content : '');
     return { 
-      pageTitle: p?.pageTitle || p?.title || 'Page', 
-      html,
-      math: p?.math || []
+      pageTitle: p?.pageTitle || p?.title || 'Page',
+      html: html,        // Only HTML content
+      math: p?.math || [] // Include math field if present
     };
   });
 }
@@ -146,6 +104,7 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
 
   try {
     console.log(`🤖 Generating enhanced AI content for: ${subsectionTitle}`);
+    console.log(`🔧 Academic level: ${academicLevel}, Subject: ${subject}`);
 
     // Use the enhanced subsection generation function
     const context = {
@@ -155,10 +114,12 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
       totalModules: 1,
     };
 
+    console.log(`🔧 Calling generateAcademicSubsectionSummary...`);
     const enhancedContent = await generateAcademicSubsectionSummary(
-      `Topic: ${subsectionTitle}\nContext: ${moduleContext}\nAcademic Level: ${academicLevel}\nSubject: ${subject}\n\nSPECIAL REQUIREMENTS:\n- Return content directly in HTML format with proper LaTeX math handling\n- Wrap all math in \\( ... \\) for inline or \\[ ... \\] for display\n- Escape backslashes twice (\\\\ for each \\) in JSON output\n- Include comprehensive mathematical equations and formulas with proper LaTeX formatting\n- Provide detailed mathematical derivations and proofs where applicable\n- Cover both fundamental and advanced mathematical concepts related to this topic\n- Use only semantic HTML tags (h2/h3/p/ul/ol/li/table/thead/tbody/tr/th/td/pre/code/blockquote)\n- Return JSON with separate "html" and "math" fields for each page`,
+      `Topic: ${subsectionTitle}\nContext: ${moduleContext}\nAcademic Level: ${academicLevel}\nSubject: ${subject}\n\nSPECIAL REQUIREMENTS:\n- Return content in HTML format with proper LaTeX math handling\n- Use $ ... $ for inline math and $$ ... $$ for display math\n- Use proper HTML formatting (<h1> <h2> <h3> for headers, <strong> for bold, <em> for italic, <ul>/<li> for lists, etc.)\n- Include comprehensive mathematical equations and formulas with proper LaTeX formatting\n- Provide detailed mathematical derivations and proofs where applicable\n- Cover both fundamental and advanced mathematical concepts related to this topic\n- Return JSON with "html" field containing HTML and "math" fields for each page`,
       context
     );
+    console.log(`✅ Gemini response received, structure:`, Object.keys(enhancedContent));
 
     // Transform the enhanced content into the expected format with pages only
     let aiContent;
@@ -171,7 +132,7 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
         pages: enhancedContent.detailedSubsections.flatMap(
           (subsection, index) => {
             if (subsection.pages && Array.isArray(subsection.pages)) {
-              return ensureHtmlOnPages(subsection.pages);
+              return ensureContentAndHtmlOnPages(subsection.pages);
             } else {
               // Create a single page from subsection data
               return [
@@ -180,10 +141,10 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
                   pageTitle:
                     subsection.title ||
                     `${subsectionTitle} - Part ${index + 1}`,
-                  content:
+                  html:
                     subsection.explanation ||
                     subsection.summary ||
-                    `Academic content for ${subsection.title}`,
+                    `<p>Academic content for ${subsection.title}</p>`,
                   keyTakeaway: subsection.keyPoints
                     ? subsection.keyPoints.join(". ")
                     : `Key insights about ${subsection.title}`,
@@ -196,13 +157,13 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
     } else {
       // Fallback: create pages from the summary content
       aiContent = {
-        pages: ensureHtmlOnPages([
+        pages: ensureContentAndHtmlOnPages([
           {
             pageNumber: 1,
             pageTitle: `${subsectionTitle} - Introduction`,
-            content:
+            html:
               enhancedContent.summary ||
-              `Comprehensive study of ${subsectionTitle}`,
+              `<p>Comprehensive study of ${subsectionTitle}</p>`,
             keyTakeaway:
               enhancedContent.objectives &&
               enhancedContent.objectives.length > 0
@@ -212,12 +173,10 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
           {
             pageNumber: 2,
             pageTitle: `${subsectionTitle} - Core Concepts`,
-            content:
+            html:
               enhancedContent.examples && enhancedContent.examples.length > 0
-                ? `Key examples and applications:\n\n${enhancedContent.examples.join(
-                    "\n\n"
-                  )}`
-                : `Core academic concepts related to ${subsectionTitle}`,
+                ? `<p>Key examples and applications:</p><ul>${enhancedContent.examples.map(ex => `<li>${ex}</li>`).join('')}</ul>`
+                : `<p>Core academic concepts related to ${subsectionTitle}</p>`,
             keyTakeaway: `Apply theoretical knowledge through practical examples and real-world scenarios.`,
           },
         ]),
@@ -241,75 +200,79 @@ Generate real, substantive academic flashcards about ${subsectionTitle} - no tem
         {
           pageNumber: 1,
           pageTitle: `${subsectionTitle} - Academic Overview`,
-          content: `# ${subsectionTitle} - Academic Study
+          html: `<h1>${subsectionTitle} - Academic Study</h1>
 
-## Introduction
+<h2>Introduction</h2>
 
-${subsectionTitle} is an important topic within ${moduleContext} that requires comprehensive academic understanding at the ${academicLevel} level in ${subject}.
+<p>${subsectionTitle} is an important topic within ${moduleContext} that requires comprehensive academic understanding at the ${academicLevel} level in ${subject}.</p>
 
-## Core Concepts
+<h2>Core Concepts</h2>
 
-This section covers the fundamental principles and theoretical frameworks that underpin ${subsectionTitle}. Students should focus on:
+<p>This section covers the fundamental principles and theoretical frameworks that underpin ${subsectionTitle}. Students should focus on:</p>
 
-1. **Theoretical Foundation**: Understanding the basic principles
-2. **Academic Context**: How this fits within the broader discipline
-3. **Practical Applications**: Real-world relevance and applications
-4. **Critical Analysis**: Developing analytical skills
+<ol>
+<li><strong>Theoretical Foundation</strong>: Understanding the basic principles</li>
+<li><strong>Academic Context</strong>: How this fits within the broader discipline</li>
+<li><strong>Practical Applications</strong>: Real-world relevance and applications</li>
+<li><strong>Critical Analysis</strong>: Developing analytical skills</li>
+</ol>
 
-This topic connects to other areas within ${moduleContext} and provides foundation for advanced study in ${subject}.`,
+<p>This topic connects to other areas within ${moduleContext} and provides foundation for advanced study in ${subject}.</p>`,
           keyTakeaway: `${subsectionTitle} requires systematic academic study combining theoretical understanding with practical application.`,
         },
         {
           pageNumber: 2,
           pageTitle: `${subsectionTitle} - Mathematical Foundations`,
-          content: `# Mathematical Foundations of ${subsectionTitle}
+          html: `<h1>Mathematical Foundations of ${subsectionTitle}</h1>
 
-## Fundamental Equations
+<h2>Fundamental Equations</h2>
 
-The mathematical representation of ${subsectionTitle} involves several key equations and relationships that form the foundation of theoretical understanding.
+<p>The mathematical representation of ${subsectionTitle} involves several key equations and relationships that form the foundation of theoretical understanding.</p>
 
-### Basic Mathematical Framework
+<h3>Basic Mathematical Framework</h3>
 
-For ${subsectionTitle}, we consider the fundamental relationship:
+<p>For ${subsectionTitle}, we consider the fundamental relationship:</p>
 
 $$f(x) = ax + b$$
 
-Where:
-- $a$ represents the coefficient
-- $b$ represents the constant term
-- $x$ represents the variable
+<p>Where:</p>
+<ul>
+<li>$a$ represents the coefficient</li>
+<li>$b$ represents the constant term</li>
+<li>$x$ represents the variable</li>
+</ul>
 
-### Advanced Mathematical Relationships
+<h3>Advanced Mathematical Relationships</h3>
 
-More complex relationships in ${subsectionTitle} can be expressed as:
+<p>More complex relationships in ${subsectionTitle} can be expressed as:</p>
 
 $$\\sum_{i=1}^{n} f(x_i) = \\int_{a}^{b} f(x) dx$$
 
-This integral relationship demonstrates the connection between discrete and continuous mathematical representations.
+<p>This integral relationship demonstrates the connection between discrete and continuous mathematical representations.</p>
 
-## Mathematical Analysis
+<h2>Mathematical Analysis</h2>
 
-The mathematical framework provides the foundation for understanding the theoretical principles and practical applications of ${subsectionTitle}.`,
+<p>The mathematical framework provides the foundation for understanding the theoretical principles and practical applications of ${subsectionTitle}.</p>`,
           keyTakeaway: `Mathematical equations provide the quantitative foundation for understanding ${subsectionTitle}.`,
         },
         {
           pageNumber: 3,
           pageTitle: `${subsectionTitle} - Advanced Mathematical Models`,
-          content: `# Advanced Mathematical Models for ${subsectionTitle}
+          html: `<h1>Advanced Mathematical Models for ${subsectionTitle}</h1>
 
-## Complex Mathematical Relationships
+<h2>Complex Mathematical Relationships</h2>
 
-Advanced studies of ${subsectionTitle} require understanding of sophisticated mathematical models and their derivations.
+<p>Advanced studies of ${subsectionTitle} require understanding of sophisticated mathematical models and their derivations.</p>
 
-### Differential Equations
+<h3>Differential Equations</h3>
 
-The dynamic behavior of systems related to ${subsectionTitle} can be modeled using differential equations:
+<p>The dynamic behavior of systems related to ${subsectionTitle} can be modeled using differential equations:</p>
 
 $$\\frac{dy}{dx} = f(x, y)$$
 
-### Matrix Representations
+<h3>Matrix Representations</h3>
 
-For multi-dimensional analysis, we use matrix notation:
+<p>For multi-dimensional analysis, we use matrix notation:</p>
 
 $$\\mathbf{A} = \\begin{pmatrix}
 a_{11} & a_{12} & \\cdots & a_{1n} \\\\
@@ -318,17 +281,17 @@ a_{21} & a_{22} & \\cdots & a_{2n} \\\\
 a_{m1} & a_{m2} & \\cdots & a_{mn}
 \\end{pmatrix}$$
 
-### Statistical Models
+<h3>Statistical Models</h3>
 
-For probabilistic analysis in ${subsectionTitle}:
+<p>For probabilistic analysis in ${subsectionTitle}:</p>
 
 $$P(A|B) = \\frac{P(B|A) \\cdot P(A)}{P(B)}$$
 
-This Bayesian framework is essential for understanding uncertainty and making predictions.
+<p>This Bayesian framework is essential for understanding uncertainty and making predictions.</p>
 
-## Mathematical Derivations
+<h2>Mathematical Derivations</h2>
 
-Step-by-step derivations help students understand how these mathematical relationships are developed and applied in the context of ${subsectionTitle}.`,
+<p>Step-by-step derivations help students understand how these mathematical relationships are developed and applied in the context of ${subsectionTitle}.</p>`,
           keyTakeaway: `Advanced mathematical models enable sophisticated analysis and prediction in ${subsectionTitle}.`,
         },
       ],
@@ -471,7 +434,7 @@ export async function POST(request) {
         : enhancedContent?.pages || [];
       const academicContent = {
         title: subsectionTitle,
-        pages: ensureHtmlOnPages(pagesNorm),
+        pages: ensureContentAndHtmlOnPages(pagesNorm),
       };
 
       console.log(
@@ -562,7 +525,7 @@ export async function POST(request) {
 
       const detailedSubsection = {
         title: subsection.title,
-        pages: ensureHtmlOnPages(Array.isArray(pages?.pages) ? pages.pages : pages),
+        pages: ensureContentAndHtmlOnPages(Array.isArray(pages?.pages) ? pages.pages : pages),
       };
 
       detailedSubsections.push(detailedSubsection);

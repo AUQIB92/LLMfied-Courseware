@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo, useState, useCallback, useEffect, Suspense } from "react";
 import { preprocessContent, analyzeContent } from "@/lib/contentProcessor";
 import UniversalContentRenderer from "./UniversalContentRenderer";
@@ -50,6 +52,11 @@ const ContentDisplay = ({
   const [renderErrors, setRenderErrors] = useState([]);
   const [renderSuccess, setRenderSuccess] = useState(false);
   const [manualMode, setManualMode] = useState(renderingMode);
+  
+  // Update manualMode when renderingMode prop changes
+  useEffect(() => {
+    setManualMode(renderingMode);
+  }, [renderingMode]);
   const [showSourceCode, setShowSourceCode] = useState(false);
   const [renderMetrics, setRenderMetrics] = useState(null);
   
@@ -89,6 +96,8 @@ const ContentDisplay = ({
   
   // Determine optimal rendering mode
   const optimalRenderingMode = useMemo(() => {
+    // If manualMode is explicitly set to math-optimized, use full rendering
+    if (manualMode === "math-optimized") return "full";
     if (manualMode !== "auto") return manualMode;
     if (!contentAnalysis) return "safe";
     

@@ -5,6 +5,15 @@
 /* Import KaTeX styles for math rendering */
 @import url("https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css");
 
+/* Import enhanced math rendering styles */
+@import url("../styles/math.css");
+
+/* Import professional LibreTexts-quality math rendering */
+@import url("../styles/professional-math.css");
+
+/* Import Stack Exchange math rendering styles */
+@import url("../styles/stack-exchange-math.css");
+
 /* Enhanced KaTeX base styling */
 .katex {
   font-family: KaTeX_Main, "Times New Roman", serif !important;

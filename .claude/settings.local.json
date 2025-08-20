@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(rm:*)",
+      "WebFetch(domain:math.libretexts.org)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(node:*)",
+      "Bash(npm run lint)",
+      "WebFetch(domain:math.stackexchange.com)",
+      "Bash(npx tsc:*)",
+      "Bash(mv:*)",
+      "WebFetch(domain:localhost)"
+    ],
+    "deny": [],
+    "defaultMode": "acceptEdits"
+  }
+}

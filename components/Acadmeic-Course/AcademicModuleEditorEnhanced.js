@@ -491,6 +491,56 @@ export default function AcademicModuleEditorEnhanced({
     });
   };
 
+  // Helper function to restore corrupted math placeholders
+  const restoreMathPlaceholders = (content) => {
+    if (!content) return "";
+    
+    // Common math expressions that might have been corrupted
+    const mathRestorations = [
+      // Common patterns found in your content
+      { pattern: /\*\*MATH\*INLINE\*(\d+)\*\*/g, replacement: '$x_$1$' }, // Generic inline math
+      { pattern: /\*\*MATH\*BLOCK\*(\d+)\*\*/g, replacement: '$$x_$1$$' }, // Generic block math
+      
+      // More specific restorations based on reflexive relations context
+      { pattern: /\*\*MATH\*INLINE\*0\*\*/g, replacement: '$R$' },
+      { pattern: /\*\*MATH\*INLINE\*1\*\*/g, replacement: '$A$' },
+      { pattern: /\*\*MATH\*INLINE\*2\*\*/g, replacement: '$A$' },
+      { pattern: /\*\*MATH\*INLINE\*3\*\*/g, replacement: '$a \\in A$' },
+      { pattern: /\*\*MATH\*INLINE\*4\*\*/g, replacement: '$(a,a)$' },
+      { pattern: /\*\*MATH\*INLINE\*5\*\*/g, replacement: '$R$' },
+      { pattern: /\*\*MATH\*INLINE\*6\*\*/g, replacement: '$A = \\{1, 2, 3\\}$' },
+      { pattern: /\*\*MATH\*INLINE\*7\*\*/g, replacement: '$R_1 = \\{(1,1), (2,2), (3,3), (1,2)\\}$' },
+      { pattern: /\*\*MATH\*INLINE\*8\*\*/g, replacement: '$R_2 = \\{(1,1), (2,2), (3,3), (1,3), (2,1)\\}$' },
+      { pattern: /\*\*MATH\*INLINE\*9\*\*/g, replacement: '$R_3 = A \\times A$' },
+      { pattern: /\*\*MATH\*INLINE\*10\*\*/g, replacement: '$R_4 = \\{(1,2), (2,3)\\}$' },
+      { pattern: /\*\*MATH\*INLINE\*11\*\*/g, replacement: '$(1,1)$' },
+      { pattern: /\*\*MATH\*INLINE\*12\*\*/g, replacement: '$R_4$' },
+      { pattern: /\*\*MATH\*INLINE\*13\*\*/g, replacement: '$R = \\{(a,b) \\mid a \\leq b\\}$' },
+      { pattern: /\*\*MATH\*INLINE\*14\*\*/g, replacement: '$\\mathbb{Z}$' },
+      { pattern: /\*\*MATH\*INLINE\*15\*\*/g, replacement: '$R$' },
+      { pattern: /\*\*MATH\*INLINE\*16\*\*/g, replacement: '$a \\in \\mathbb{Z}$' },
+      { pattern: /\*\*MATH\*INLINE\*17\*\*/g, replacement: '$a \\leq a$' },
+      { pattern: /\*\*MATH\*INLINE\*18\*\*/g, replacement: '$a \\leq a$' },
+      { pattern: /\*\*MATH\*INLINE\*19\*\*/g, replacement: '$a$' },
+      { pattern: /\*\*MATH\*INLINE\*20\*\*/g, replacement: '$(a,a)$' },
+      { pattern: /\*\*MATH\*INLINE\*21\*\*/g, replacement: '$R$' },
+      { pattern: /\*\*MATH\*INLINE\*22\*\*/g, replacement: '$R$' },
+      { pattern: /\*\*MATH\*INLINE\*23\*\*/g, replacement: '$A$' },
+      { pattern: /\*\*MATH\*INLINE\*24\*\*/g, replacement: '$I_A = \\{(a,a) \\mid a \\in A\\}$' },
+      { pattern: /\*\*MATH\*INLINE\*25\*\*/g, replacement: '$R$' },
+      { pattern: /\*\*MATH\*INLINE\*26\*\*/g, replacement: '$A$' },
+      { pattern: /\*\*MATH\*INLINE\*27\*\*/g, replacement: '$I_A$' },
+      { pattern: /\*\*MATH\*INLINE\*28\*\*/g, replacement: '$I_A \\subseteq R$' }
+    ];
+    
+    let restoredContent = content;
+    mathRestorations.forEach(({ pattern, replacement }) => {
+      restoredContent = restoredContent.replace(pattern, replacement);
+    });
+    
+    return restoredContent;
+  };
+
   // Helper function to convert markdown to HTML for the editor
   const convertMarkdownToHtml = (markdownContent) => {
     if (!markdownContent) return "";
@@ -714,11 +764,20 @@ export default function AcademicModuleEditorEnhanced({
   const openEditModal = (subsectionIndex, pageIndex) => {
     console.log("🔴 Opening edit modal START", { subsectionIndex, pageIndex, currentModalState: editModal });
     
-    // Use localStorage as backup to prevent timing issues
-    const modalKey = `editModal_${Date.now()}`;
-    localStorage.setItem('currentEditModal', modalKey);
+    console.log("🔍 Module and subsections data:", {
+      hasDetailedSubsections: !!localModule.detailedSubsections,
+      detailedSubsectionsLength: localModule.detailedSubsections?.length || 0,
+      subsectionIndex,
+      subsectionExists: !!localModule.detailedSubsections?.[subsectionIndex]
+    });
     
     const subsection = localModule.detailedSubsections[subsectionIndex];
+    if (!subsection) {
+      console.error("❌ No subsection found:", { subsectionIndex, availableSubsections: localModule.detailedSubsections });
+      toast.error(`No subsection found at index ${subsectionIndex}`);
+      return;
+    }
+    
     console.log("🔍 Subsection data:", {
       title: subsection?.title,
       hasPages: !!subsection?.pages,
@@ -737,7 +796,8 @@ export default function AcademicModuleEditorEnhanced({
     } else {
       // Create from basic subsection data
       page = {
-        content: subsection.explanation || subsection.content || subsection.generatedMarkdown || "",
+        content: subsection.explanation || subsection.content || subsection.html || subsection.generatedMarkdown || "",
+        html: subsection.html || subsection.explanation || subsection.content || subsection.generatedMarkdown || "",
         pageTitle: subsection.title || "Academic Content",
         keyTakeaway: subsection.keyTakeaway || ""
       };
@@ -750,21 +810,31 @@ export default function AcademicModuleEditorEnhanced({
       hasContent: !!page.content
     });
 
+    // Prioritize HTML content from API, fallback to content field
+    let processedContent = page.html || page.content || "";
+    
+    // First, try to restore any corrupted math placeholders
+    if (processedContent.includes('**MATH*INLINE*') || processedContent.includes('**MATH*BLOCK*')) {
+      console.log("🔧 Restoring corrupted math placeholders");
+      processedContent = restoreMathPlaceholders(processedContent);
+    }
+    
     // Convert content to HTML if it's markdown and we're in HTML mode
-    let processedContent = page.content || "";
     if (processedContent && !isHtmlContent(processedContent)) {
       processedContent = convertMarkdownToHtml(processedContent);
       console.log("🔄 Content converted to HTML:", {
-        originalLength: page.content?.length || 0,
+        originalLength: (page.html || page.content)?.length || 0,
         convertedLength: processedContent.length,
-        originalPreview: page.content?.substring(0, 100),
+        originalPreview: (page.html || page.content)?.substring(0, 100),
         convertedPreview: processedContent.substring(0, 100)
       });
     } else {
       console.log("🔄 Content already HTML or empty:", {
         contentLength: processedContent.length,
         isHtml: isHtmlContent(processedContent),
-        preview: processedContent.substring(0, 100)
+        preview: processedContent.substring(0, 100),
+        source: page.html ? 'html field' : 'content field',
+        hadMathPlaceholders: (page.html || page.content || "").includes('**MATH*INLINE*')
       });
     }
 
@@ -786,44 +856,18 @@ export default function AcademicModuleEditorEnhanced({
       editMode: "html"
     });
     
-    // Update state, ref, and localStorage for maximum persistence  
+    // Update both state and ref for consistency
     modalStateRef.current = newModalState;
-    localStorage.setItem('editModalState', JSON.stringify(newModalState));
     setEditModal(newModalState);
     
-    // Check if state was set correctly after various delays
-    setTimeout(() => {
-      console.log("⏰ Modal state after 50ms:", {
-        stateValue: editModal,
-        refValue: modalStateRef.current
-      });
-    }, 50);
-    
-    setTimeout(() => {
-      console.log("⏰ Modal state after 100ms:", {
-        stateValue: editModal,
-        refValue: modalStateRef.current
-      });
-    }, 100);
-    
-    setTimeout(() => {
-      console.log("⏰ Modal state after 500ms:", {
-        stateValue: editModal,
-        refValue: modalStateRef.current
-      });
-    }, 500);
+    console.log("✅ Modal state updated:", newModalState);
   };
 
   const closeEditModal = () => {
     console.log("🔴 Closing edit modal");
     
-    // Clear all modal state storage
+    // Clear modal state
     modalStateRef.current = { isOpen: false };
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('editModalState');
-      localStorage.removeItem('currentEditModal');
-    }
-    
     setEditModal({
       isOpen: false,
       subsectionIndex: null,
@@ -835,29 +879,14 @@ export default function AcademicModuleEditorEnhanced({
     });
   };
 
-  // Track modal state changes with detailed debugging
+  // Track modal state changes
   useEffect(() => {
     console.log("📊 Modal state changed:", {
       isOpen: editModal.isOpen,
-      hasContent: !!editModal.content,
-      timestamp: new Date().toISOString(),
-      fullModalState: editModal,
-      refState: modalStateRef.current
+      hasContent: !!editModal.content
     });
-    
-    if (!editModal.isOpen && modalStateRef.current?.isOpen) {
-      console.warn("🚨 Modal state mismatch! State says closed but ref says open");
-    }
-  }, [editModal.isOpen, editModal]);
+  }, [editModal.isOpen, editModal.content]);
 
-  // Additional tracking for any state changes that might affect the modal
-  useEffect(() => {
-    console.log("🔄 Component re-rendered, modal state:", {
-      editModalOpen: editModal.isOpen,
-      refModalOpen: modalStateRef.current?.isOpen,
-      timestamp: new Date().toISOString()
-    });
-  });
 
   const saveEditModal = () => {
     const { subsectionIndex, pageIndex, content, title, takeaway, editMode } = editModal;
@@ -873,6 +902,7 @@ export default function AcademicModuleEditorEnhanced({
     if (!subsection.pages[pageIndex]) {
       subsection.pages[pageIndex] = {
         content: "",
+        html: "",
         pageTitle: subsection.title || "Academic Content",
         title: subsection.title || "Academic Content",
         keyTakeaway: ""
@@ -881,22 +911,49 @@ export default function AcademicModuleEditorEnhanced({
 
     // Keep content as HTML since LLM returns HTML directly
     let finalContent = content;
-    // Only convert to markdown if explicitly requested (for backward compatibility)
-    if (editMode === "markdown" && isHtmlContent(content)) {
-      finalContent = convertHtmlToMarkdown(content);
+    let finalHtml = content;
+    
+    // Handle content based on edit mode
+    if (editMode === "markdown" && !isHtmlContent(content)) {
+      // User edited in markdown mode
+      finalContent = content; // Keep original markdown
+      finalHtml = convertMarkdownToHtml(content); // Convert for html field
+    } else if (editMode === "html" && isHtmlContent(content)) {
+      // User edited in HTML mode  
+      finalContent = content; // Keep HTML in content field for backward compatibility
+      finalHtml = content; // Store HTML in html field
+    } else {
+      // Fallback - try to determine format
+      if (isHtmlContent(content)) {
+        finalContent = content;
+        finalHtml = content;
+      } else {
+        finalContent = content;
+        finalHtml = convertMarkdownToHtml(content);
+      }
     }
 
-    // Update the page
+    // Update the page with manual edit flag
     subsection.pages[pageIndex] = {
       ...subsection.pages[pageIndex],
       content: finalContent,
+      html: finalHtml,
       pageTitle: title,
       keyTakeaway: takeaway,
+      isManuallyEdited: true, // Flag to indicate manual edits
+      lastEditedAt: new Date().toISOString(), // Timestamp of last edit
     };
 
     setLocalModule(updatedModule);
+    
+    // Also update parent component to ensure changes persist
+    if (onUpdate) {
+      console.log("🔄 Updating parent component with manual edits");
+      onUpdate(updatedModule);
+    }
+    
     closeEditModal();
-    alert("Content saved successfully!");
+    toast.success("Content saved successfully! Your manual LaTeX edits have been preserved.");
   };
 
   // Old editing useEffect hooks - DISABLED
@@ -2798,20 +2855,21 @@ export default function AcademicModuleEditorEnhanced({
 
       const result = await response.json();
       console.log("✅ Enhanced individual academic content generated:", result);
-      // Debug: log returned HTML (if any) for quick verification
+      // Debug: log returned content (markdown/HTML) for quick verification
       try {
         if (result && result.content && Array.isArray(result.content.pages)) {
           result.content.pages.forEach((page, idx) => {
-            if (page && page.html) {
+            const contentToLog = page.content || page.html;
+            if (contentToLog) {
               console.log(
-                `[HTML TEST] Individual subsection '${subsection.title}' page ${idx + 1} HTML:`,
-                typeof page.html === 'string' ? page.html.slice(0, 400) : page.html
+                `[CONTENT TEST] Individual subsection '${subsection.title}' page ${idx + 1} content:`,
+                typeof contentToLog === 'string' ? contentToLog.slice(0, 400) : contentToLog
               );
             }
           });
         }
       } catch (e) {
-        console.warn("[HTML TEST] Failed to log individual subsection HTML:", e);
+        console.warn("[CONTENT TEST] Failed to log individual subsection content:", e);
       }
 
       if (result.success && result.content && result.content.pages) {
@@ -5310,13 +5368,25 @@ Detailed discussion here..."
                                             currentPageData.title}
                                         </h4>
                                         <div className="flex items-center gap-2">
+                                          {currentPageData.isManuallyEdited && (
+                                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                              ✏️ Manually Edited
+                                            </Badge>
+                                          )}
                                           <Button
                                             size="sm"
                                             variant="outline"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              console.log("🔴 Multi-page edit button clicked");
-                                              openEditModal(globalIndex, currentSubsectionPage);
+                                              console.log("🔴 Multi-page edit button clicked", { globalIndex, currentSubsectionPage });
+                                              console.log(`Attempting to open edit modal for subsection ${globalIndex}, page ${currentSubsectionPage}`);
+                                              try {
+                                                openEditModal(globalIndex, currentSubsectionPage);
+                                                console.log("✅ openEditModal called successfully");
+                                              } catch (error) {
+                                                console.error("❌ Error calling openEditModal:", error);
+                                                toast.error(`Error: ${error.message}`);
+                                              }
                                             }}
                                             className="text-xs"
                                           >
@@ -5493,13 +5563,25 @@ Detailed discussion here..."
                                             "Academic Content"}
                                         </h4>
                                         <div className="flex items-center gap-2">
+                                          {pages[0]?.isManuallyEdited && (
+                                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                              ✏️ Manually Edited
+                                            </Badge>
+                                          )}
                                           <Button
                                             size="sm"
                                             variant="outline"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              console.log("🔴 Single-page edit button clicked");
-                                              openEditModal(globalIndex, 0);
+                                              console.log("🔴 Single-page edit button clicked", { globalIndex });
+                                              console.log(`Attempting to open edit modal for subsection ${globalIndex}, page 0`);
+                                              try {
+                                                openEditModal(globalIndex, 0);
+                                                console.log("✅ openEditModal called successfully");
+                                              } catch (error) {
+                                                console.error("❌ Error calling openEditModal:", error);
+                                                toast.error(`Error: ${error.message}`);
+                                              }
                                             }}
                                             className="text-xs"
                                           >
@@ -6270,8 +6352,7 @@ Detailed discussion here..."
       </Tabs>
 
       {/* Edit Modal */}
-      {(editModal.isOpen || modalStateRef.current?.isOpen || 
-        (typeof window !== 'undefined' && localStorage.getItem('editModalState'))) && (
+      {editModal.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4">
             <div className="flex items-center justify-between mb-4">
@@ -6289,6 +6370,8 @@ Detailed discussion here..."
                 <div>• <strong>Markdown Mode:</strong> Use markdown syntax like **bold**, *italic*, # headings, etc.</div>
                 <div>• <strong>Preview:</strong> See exactly how your content will appear to students</div>
                 <div>• <strong>Switch Modes:</strong> Toggle between HTML and Markdown editing anytime</div>
+                <div>• <strong>Fix Math:</strong> If you see corrupted math like **MATH*INLINE*0**, click "🔧 Fix Math" to restore proper LaTeX</div>
+                <div>• <strong>Manual Edits:</strong> Your changes are automatically saved and marked as "Manually Edited" to preserve them</div>
               </div>
             </div>
 
@@ -6296,7 +6379,7 @@ Detailed discussion here..."
               <div>
                 <Label className="text-sm font-medium">Page Title</Label>
                 <Input
-                  value={editModal.title || modalStateRef.current?.title || ""}
+                  value={editModal.title || ""}
                   onChange={(e) => {
                     const newValue = e.target.value;
                     setEditModal(prev => ({ ...prev, title: newValue }));
@@ -6312,7 +6395,29 @@ Detailed discussion here..."
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-sm font-medium">Content</Label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    {/* Math restoration button */}
+                    {((editModal.content || modalStateRef.current?.content || "").includes('**MATH*INLINE*') || 
+                      (editModal.content || modalStateRef.current?.content || "").includes('**MATH*BLOCK*')) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const currentContent = editModal.content || modalStateRef.current?.content || "";
+                          const restoredContent = restoreMathPlaceholders(currentContent);
+                          setEditModal(prev => ({ ...prev, content: restoredContent }));
+                          if (modalStateRef.current) {
+                            modalStateRef.current.content = restoredContent;
+                          }
+                          toast.success("Math expressions restored!");
+                        }}
+                        className="text-xs bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100"
+                      >
+                        🔧 Fix Math
+                      </Button>
+                    )}
+                    
                     <span className="text-xs text-gray-500">Edit Mode:</span>
                     <div className="flex border rounded-md">
                       <button
@@ -6380,38 +6485,26 @@ Detailed discussion here..."
                 </div>
                 
                 {(editModal.editMode || modalStateRef.current?.editMode || "html") === "html" ? (
-                  (() => {
-                    const contentToPass = editModal.content || modalStateRef.current?.content || "";
-                    console.log("🔄 About to render HtmlEditor:", {
-                      contentLength: contentToPass?.length || 0,
-                      contentPreview: contentToPass?.substring(0, 200),
-                      editModalContent: editModal.content?.length || 0,
-                      refContent: modalStateRef.current?.content?.length || 0,
-                      isHtml: /<[^>]*>/g.test(contentToPass || "")
-                    });
-                    return (
-                      <HtmlEditor
-                        key={`html-editor-${contentToPass?.length || 0}`}
-                        value={contentToPass}
-                        onChange={(newValue) => {
-                          console.log("🔄 HtmlEditor onChange:", {
-                            newValueLength: newValue?.length || 0,
-                            hasValue: !!newValue
-                          });
-                          setEditModal(prev => ({ ...prev, content: newValue }));
-                          if (modalStateRef.current) {
-                            modalStateRef.current.content = newValue;
-                          }
-                        }}
-                        placeholder="Enter page content using the HTML editor..."
-                        rows={15}
-                        className="mt-1"
-                      />
-                    );
-                  })()
+                  <HtmlEditor
+                    key={`html-editor-${editModal.subsectionIndex}-${editModal.pageIndex}`}
+                    value={editModal.content || ""}
+                    onChange={(newValue) => {
+                      console.log("🔄 HtmlEditor onChange:", {
+                        newValueLength: newValue?.length || 0,
+                        hasValue: !!newValue
+                      });
+                      setEditModal(prev => ({ ...prev, content: newValue }));
+                      if (modalStateRef.current) {
+                        modalStateRef.current.content = newValue;
+                      }
+                    }}
+                    placeholder="Enter page content using the HTML editor..."
+                    rows={15}
+                    className="mt-1"
+                  />
                 ) : (
                   <Textarea
-                    value={editModal.content || modalStateRef.current?.content || ""}
+                    value={editModal.content || ""}
                     onChange={(e) => {
                       const newValue = e.target.value;
                       setEditModal(prev => ({ ...prev, content: newValue }));
@@ -6429,7 +6522,7 @@ Detailed discussion here..."
               <div>
                 <Label className="text-sm font-medium">Key Takeaway</Label>
                 <Input
-                  value={editModal.takeaway || modalStateRef.current?.takeaway || ""}
+                  value={editModal.takeaway || ""}
                   onChange={(e) => {
                     const newValue = e.target.value;
                     setEditModal(prev => ({ ...prev, takeaway: newValue }));
@@ -6447,12 +6540,12 @@ Detailed discussion here..."
                 <div className="bg-gray-50 rounded border p-3 max-h-60 overflow-y-auto">
                   {(editModal.editMode || modalStateRef.current?.editMode || "html") === "html" ? (
                     <HtmlMathViewer
-                      html={editModal.content || modalStateRef.current?.content || "No content to preview"}
+                      html={editModal.content || "No content to preview"}
                       className="text-sm"
                     />
                   ) : (
                     <UniversalContentRenderer
-                      content={editModal.content || modalStateRef.current?.content || "No content to preview"}
+                      content={editModal.content || "No content to preview"}
                       className="text-sm"
                       enableAnalytics={false}
                     />

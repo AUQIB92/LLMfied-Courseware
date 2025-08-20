@@ -1,0 +1,191 @@
+/* Beautiful Math Rendering CSS */
+
+/* KaTeX Math Styling */
+.katex {
+  font-size: 1.1em !important;
+  color: #1a202c;
+  line-height: 1.5;
+}
+
+.katex-display {
+  margin: 1.5rem 0 !important;
+  text-align: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+/* Inline math styling */
+.katex.katex-inline {
+  background: rgba(99, 102, 241, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin: 0 2px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* Math error styling */
+.katex-error {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  font-weight: 500 !important;
+}
+
+/* Enhanced readability for math symbols */
+.katex .mord {
+  color: #374151;
+}
+
+.katex .mbin {
+  color: #059669;
+}
+
+.katex .mrel {
+  color: #dc2626;
+}
+
+.katex .mopen, .katex .mclose {
+  color: #7c3aed;
+}
+
+.katex .mop {
+  color: #1d4ed8;
+}
+
+.katex .mfrac > span {
+  border-color: #6b7280 !important;
+}
+
+/* Responsive math display */
+@media (max-width: 768px) {
+  .katex-display {
+    font-size: 0.9em;
+    margin: 1rem 0;
+    padding: 0.25rem;
+  }
+  
+  .katex {
+    font-size: 1em !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .katex {
+    color: #000 !important;
+  }
+  
+  .katex-display {
+    background: #f9f9f9;
+    border: 2px solid #333;
+  }
+  
+  .katex.katex-inline {
+    background: #f0f0f0;
+    border: 1px solid #333;
+  }
+}
+
+/* Print styles for math */
+@media print {
+  .katex-display {
+    break-inside: avoid;
+    background: white;
+    border: 1px solid #ccc;
+  }
+  
+  .katex {
+    color: black !important;
+  }
+}
+
+/* Accessibility improvements */
+.katex[role="math"] {
+  /* Ensure math content is announced by screen readers */
+}
+
+/* Beautiful fraction styling */
+.katex .frac-line {
+  border-bottom-color: #374151 !important;
+  border-bottom-width: 1px !important;
+}
+
+/* Enhanced square root styling */
+.katex .sqrt > .sqrt-line {
+  border-top-color: #374151 !important;
+  border-top-width: 1px !important;
+}
+
+/* Matrix and array styling */
+.katex .arraycolsep {
+  width: 0.8em;
+}
+
+.katex .col-align-c > .vlist-t {
+  text-align: center;
+}
+
+/* Summation and integral styling */
+.katex .mop.op-symbol {
+  color: #1d4ed8 !important;
+  font-weight: bold;
+}
+
+.katex .msupsub {
+  font-size: 0.8em;
+}
+
+/* Custom animation for math rendering */
+.katex {
+  animation: mathFadeIn 0.3s ease-in-out;
+}
+
+@keyframes mathFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Content display wrapper styling */
+.universal-content-renderer .katex-display {
+  position: relative;
+}
+
+.universal-content-renderer .katex-display::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1));
+  border-radius: 8px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.universal-content-renderer .katex-display:hover::before {
+  opacity: 1;
+}
+
+/* Math container spacing */
+.universal-content-renderer p:has(.katex-display) {
+  margin: 0;
+}
+
+.universal-content-renderer .katex-display + p,
+.universal-content-renderer p + .katex-display {
+  margin-top: 1rem;
+}

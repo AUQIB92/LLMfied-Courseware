@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 import { PremiumFeatureButton } from "@/components/ui/premium-upgrade";
 import { checkPremiumFeature } from "@/lib/models";
 import {
