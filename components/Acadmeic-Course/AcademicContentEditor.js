@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,22 +34,58 @@ export default function AcademicContentEditor({ course, onBack, onSave }) {
   const [activeModule, setActiveModule] = useState(null)
   const [saving, setSaving] = useState(false)
   const [expandedModules, setExpandedModules] = useState(new Set())
+  const scrollPositionRef = useRef(0)
 
+  // Initialize course data only once when component mounts or when course ID changes
+  // Prevent unnecessary re-renders that cause page jumping during editing
   useEffect(() => {
-    setEditedCourse(course)
-  }, [course])
+    // Only update if it's a different course (by ID) or if editedCourse is not initialized
+    if (!editedCourse || (course?._id && course._id !== editedCourse._id)) {
+      console.log("🔄 AcademicContentEditor: Initializing course data", {
+        courseId: course?._id,
+        courseTitle: course?.title,
+        isNewCourse: !editedCourse,
+        isDifferentCourse: course?._id !== editedCourse?._id
+      });
+      setEditedCourse(course);
+    }
+  }, [course?._id])
+
+  // Enhanced module navigation functions
+  const handleEditModule = (moduleIndex) => {
+    // Save current scroll position
+    scrollPositionRef.current = window.scrollY;
+    console.log("📝 Opening module editor for module", moduleIndex, "- scroll position saved:", scrollPositionRef.current);
+    
+    // Set active module to open the editor
+    setActiveModule(moduleIndex);
+  }
+
+  const handleBackToCourse = () => {
+    console.log("⬅️ Returning to course overview - restoring scroll position:", scrollPositionRef.current);
+    
+    // Set active module to null to return to course view
+    setActiveModule(null);
+    
+    // Restore scroll position after the component re-renders
+    setTimeout(() => {
+      window.scrollTo({ top: scrollPositionRef.current, behavior: 'smooth' });
+    }, 100);
+  }
 
   const handleCourseUpdate = (updates) => {
     setEditedCourse(prev => ({ ...prev, ...updates }))
   }
 
   const handleModuleUpdate = (moduleIndex, updates) => {
+    console.log("🔄 Immediately updating module", moduleIndex, "with changes:", Object.keys(updates));
+    
     setEditedCourse(prev => ({
       ...prev,
       modules: prev.modules.map((module, index) =>
         index === moduleIndex ? { ...module, ...updates } : module
       )
-    }))
+    }));
   }
 
   const handleAddModule = () => {
@@ -85,7 +121,10 @@ export default function AcademicContentEditor({ course, onBack, onSave }) {
       modules: [...(prev.modules || []), newModule]
     }))
 
-    setActiveModule(modules.length)
+    // Use the enhanced navigation function for new modules
+    setTimeout(() => {
+      handleEditModule(modules.length);
+    }, 100);
   }
 
   const handleRemoveModule = (moduleIndex) => {
@@ -215,7 +254,7 @@ export default function AcademicContentEditor({ course, onBack, onSave }) {
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="outline"
-              onClick={() => setActiveModule(null)}
+              onClick={handleBackToCourse}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -525,7 +564,7 @@ export default function AcademicContentEditor({ course, onBack, onSave }) {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setActiveModule(index)}
+                                onClick={() => handleEditModule(index)}
                                 className="hover:bg-blue-100 hover:text-blue-600"
                               >
                                 <Settings className="h-4 w-4" />
@@ -574,7 +613,7 @@ export default function AcademicContentEditor({ course, onBack, onSave }) {
                               </div>
                               
                               <Button
-                                onClick={() => setActiveModule(index)}
+                                onClick={() => handleEditModule(index)}
                                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                               >
                                 <Settings className="h-4 w-4 mr-2" />

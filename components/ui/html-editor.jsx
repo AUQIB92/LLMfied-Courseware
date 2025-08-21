@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import ImageManager from '@/components/ui/image-manager';
 import { 
   Bold, 
   Italic, 
@@ -61,8 +62,14 @@ const HtmlEditor = ({
     setHtmlContent(contentToSet);
   }, []);
 
-  // Update content when value changes
+  // Update content when value changes (optimized to prevent editing interference)
   useEffect(() => {
+    // Only update if the editor is not currently focused (to prevent interference during typing)
+    if (document.activeElement === editorRef.current) {
+      console.log("⚠️ HtmlEditor: Skipping value update - editor is focused");
+      return;
+    }
+
     console.log("🔄 HtmlEditor: Value changed", {
       valueLength: value?.length || 0,
       currentHtmlLength: htmlContent?.length || 0,
@@ -78,7 +85,7 @@ const HtmlEditor = ({
       });
       setHtmlContent(contentToSet);
     }
-  }, [value, htmlContent]);
+  }, [value]);
 
   // Monitor LaTeX status
   useEffect(() => {
@@ -87,42 +94,23 @@ const HtmlEditor = ({
     setLatexStatus(hasIssues ? 'issues' : 'good');
   }, [htmlContent]);
 
-  // Force content update after render with better synchronization
+  // Force content update after render with better synchronization (DISABLED during editing)
   useEffect(() => {
+    // Skip force updates if the editor is actively being used
+    if (isFocused || document.activeElement === editorRef.current) {
+      console.log("⚠️ HtmlEditor: Skipping force update - editor is active");
+      return;
+    }
+
     if (value && value !== htmlContent) {
       console.log("🔄 HtmlEditor: Force updating content after render", {
         valueLength: value.length,
         valuePreview: value.substring(0, 100)
       });
       
-      // Preserve cursor position during content updates
-      const selection = window.getSelection();
-      const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-      const wasEditorFocused = document.activeElement === editorRef.current;
-      
       setHtmlContent(value);
-      
-      // Restore focus and cursor if editor was previously focused
-      if (wasEditorFocused && editorRef.current) {
-        setTimeout(() => {
-          editorRef.current.focus();
-          if (range) {
-            try {
-              selection.removeAllRanges();
-              selection.addRange(range);
-            } catch (e) {
-              // Place cursor at end if restoration fails
-              const range = document.createRange();
-              range.selectNodeContents(editorRef.current);
-              range.collapse(false);
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }
-          }
-        }, 0);
-      }
     }
-  }, [value, htmlContent]);
+  }, [value, isFocused]);
 
   const execCommand = (command, value = null) => {
     document.execCommand(command, false, value);
@@ -135,6 +123,11 @@ const HtmlEditor = ({
     
     const content = editorRef.current.innerHTML || '';
     
+    // Only update if content actually changed to prevent unnecessary re-renders
+    if (content === htmlContent) {
+      return;
+    }
+    
     // Preserve cursor position
     const selection = window.getSelection();
     const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
@@ -146,9 +139,9 @@ const HtmlEditor = ({
       onChange(content);
     }
     
-    // Restore cursor position after content update
-    setTimeout(() => {
-      if (cursorContainer && range && editorRef.current) {
+    // Restore cursor position after content update (only if needed)
+    if (cursorContainer && range && editorRef.current) {
+      setTimeout(() => {
         try {
           const newRange = document.createRange();
           newRange.setStart(cursorContainer, Math.min(cursorOffset, cursorContainer.textContent?.length || 0));
@@ -159,8 +152,8 @@ const HtmlEditor = ({
           // Fallback: place cursor at end
           editorRef.current.focus();
         }
-      }
-    }, 0);
+      }, 0);
+    }
   };
 
   // Smart paste handler with LaTeX detection and fixing
@@ -191,7 +184,7 @@ const HtmlEditor = ({
     }
   };
 
-  // Smart LaTeX processing function
+  // Enhanced Smart LaTeX processing function with alignment environment support
   const smartLatexProcessing = (content) => {
     if (!content || typeof content !== 'string') return content;
     
@@ -218,6 +211,84 @@ const HtmlEditor = ({
     
     mathRestorations.forEach(({ pattern, replacement }) => {
       processed = processed.replace(pattern, replacement);
+    });
+
+    // Enhanced multi-line equation detection and alignment environment wrapping
+    
+    // First, handle consecutive single-dollar equations like the user's example
+    processed = processed.replace(/\$([^$\n]+)\$\s*\n\s*\$([^$\n]+)\$/g, (match, eq1, eq2) => {
+      console.log('🔧 Consecutive single-dollar equations detected, converting to align environment');
+      
+      // Check if both equations have equals signs (mathematical equations)
+      if (eq1.includes('=') && eq2.includes('=')) {
+        let alignContent1 = eq1.trim().replace(/=/g, '&=');
+        let alignContent2 = eq2.trim().replace(/=/g, '&=');
+        
+        return `$$\\begin{align}\n${alignContent1}\\\\\n${alignContent2}\n\\end{align}$$`;
+      }
+      
+      return match; // Keep original if not mathematical equations
+    });
+    
+    // Then handle display math ($$) equations
+    processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (match, mathContent) => {
+      const trimmed = mathContent.trim();
+      
+      // Skip if already has alignment environment
+      if (/\\begin\{(align|equation|gather|split|multline)\}/.test(trimmed)) {
+        return match;
+      }
+      
+      // Check for consecutive equations like the example you provided
+      const consecutiveEquations = trimmed.split(/\n\s*\n|\$\$\s*\$\$/);
+      
+      if (consecutiveEquations.length > 1) {
+        console.log('🔧 Multiple equations detected, adding align environment');
+        
+        let alignContent = consecutiveEquations
+          .map(eq => eq.trim())
+          .filter(eq => eq.length > 0)
+          .map(eq => {
+            // Remove any existing $$ delimiters
+            eq = eq.replace(/\$\$/g, '').trim();
+            // Add alignment at equals signs
+            return eq.includes('=') ? eq.replace(/=/g, '&=') : '&' + eq;
+          })
+          .join(' \\\\\n');
+          
+        return `$$\\begin{align}\n${alignContent}\n\\end{align}$$`;
+      }
+      
+      // Check for single equations with equals signs that are complex enough for alignment
+      if (trimmed.includes('=')) {
+        // Count equals signs and check length to determine if alignment is needed
+        const equalsCount = (trimmed.match(/=/g) || []).length;
+        const hasComplexMath = /\\[a-zA-Z]+/.test(trimmed); // Has LaTeX commands
+        
+        if (equalsCount >= 1 && (trimmed.length > 40 || hasComplexMath)) {
+          console.log('🔧 Complex equation with equals detected, adding align environment');
+          
+          let alignContent = trimmed.replace(/=/g, '&=');
+          return `$$\\begin{align}\n${alignContent}\n\\end{align}$$`;
+        }
+      }
+      
+      return match; // Return unchanged for simple equations
+    });
+    
+    // Process consecutive $$ blocks that were separated
+    processed = processed.replace(/\$\$(.*?)\$\$\s*\$\$(.*?)\$\$/g, (match, eq1, eq2) => {
+      console.log('🔧 Consecutive separate equations detected, combining with align');
+      
+      // Clean up the equations
+      let content1 = eq1.replace(/\\begin\{align\}|\\end\{align\}/g, '').trim();
+      let content2 = eq2.replace(/\\begin\{align\}|\\end\{align\}/g, '').trim();
+      
+      // Add alignment markers
+      if (!content1.includes('&')) content1 = content1.replace(/=/g, '&=');
+      if (!content2.includes('&')) content2 = content2.replace(/=/g, '&=');
+      
+      return `$$\\begin{align}\n${content1}\\\\\n${content2}\n\\end{align}$$`;
     });
     
     // Fix common LaTeX formatting issues
@@ -318,6 +389,34 @@ const HtmlEditor = ({
     const url = prompt('Enter image URL:');
     if (url) {
       execCommand('insertImage', url);
+    }
+  };
+
+  const handleImageInsert = (imageHtml, imageData) => {
+    // Insert the image HTML directly into the editor
+    if (editorRef.current) {
+      const selection = window.getSelection();
+      const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+      
+      if (range) {
+        range.deleteContents();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = imageHtml;
+        while (tempDiv.firstChild) {
+          range.insertNode(tempDiv.firstChild);
+        }
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        // Fallback: append to end
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = imageHtml;
+        editorRef.current.appendChild(tempDiv.firstChild);
+      }
+      
+      updateContent();
+      editorRef.current.focus();
     }
   };
 
@@ -555,7 +654,12 @@ const HtmlEditor = ({
           <ToolbarButton 
             icon={Image} 
             onClick={insertImage} 
-            title="Insert Image"
+            title="Insert Image URL"
+          />
+          <ImageManager 
+            onImageInsert={handleImageInsert}
+            buttonText=""
+            className="h-8 w-8 p-0 hover:bg-gray-100"
           />
         </div>
 

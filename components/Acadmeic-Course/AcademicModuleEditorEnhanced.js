@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -879,13 +879,14 @@ export default function AcademicModuleEditorEnhanced({
     });
   };
 
-  // Track modal state changes
+  // Track modal state changes - Only track isOpen, not content to avoid triggering on every keystroke
   useEffect(() => {
     console.log("📊 Modal state changed:", {
       isOpen: editModal.isOpen,
-      hasContent: !!editModal.content
+      subsectionIndex: editModal.subsectionIndex,
+      pageIndex: editModal.pageIndex
     });
-  }, [editModal.isOpen, editModal.content]);
+  }, [editModal.isOpen, editModal.subsectionIndex, editModal.pageIndex]);
 
 
   const saveEditModal = () => {
@@ -964,17 +965,19 @@ export default function AcademicModuleEditorEnhanced({
   */
 
   // Sync local module state when module prop changes (important for Academic courses)
+  // Removed editModal.isOpen from dependencies to prevent interference during editing
   useEffect(() => {
     console.log("🔄 Module prop changed, updating localModule:", {
       moduleTitle: module.title,
       hasContent: !!module.content,
       hasDetailedSubsections: !!module.detailedSubsections?.length,
       isAcademicCourse: module.isAcademicCourse,
+      modalIsOpen: editModal.isOpen,
     });
 
-    // Skip module updates if modal is open
+    // Skip module updates if modal is open to prevent interference with editing
     if (editModal.isOpen) {
-      console.log("⚠️ Skipping module update - modal is open");
+      console.log("⚠️ Skipping module update - modal is open to preserve editing state");
       return;
     }
 
@@ -996,7 +999,7 @@ export default function AcademicModuleEditorEnhanced({
 
     // Reset changes flag when module prop changes
     setHasChanges(false);
-  }, [module, course?.isAcademicCourse, course?.courseType, academicLevel, editModal.isOpen]);
+  }, [module, course?.isAcademicCourse, course?.courseType, academicLevel]);
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -1488,50 +1491,46 @@ export default function AcademicModuleEditorEnhanced({
     setSaveStatus("editing");
   };
 
-  const debouncedParentUpdate = (updatedModule) => {
-    // Skip updates while editing to prevent interference
-    if (editModal.isOpen) {
-      console.log("⚠️ Skipping debounced update - modal is open");
-      return;
-    }
-
+  const debouncedAutoSave = () => {
+    // This function is now only for triggering auto-save, not for UI updates
     if (updateTimeout) {
       clearTimeout(updateTimeout);
     }
 
     const newTimeout = setTimeout(() => {
-      if (onUpdate && !editModal.isOpen) {
+      if (hasChanges && !editModal.isOpen) {
         setSaveStatus("saving");
-        console.log("🔄 Debounced parent update with module changes");
-        onUpdate(updatedModule);
-
-        // Set status back to saved after a brief delay
+        console.log("💾 Auto-saving module changes");
+        
+        // The actual save logic will be handled by the auto-save useEffect
+        // This just triggers the status change
         setTimeout(() => {
           setSaveStatus("saved");
         }, 500);
       }
-    }, 1000); // Wait 1 second after user stops typing
+    }, 2000); // Wait 2 seconds after user stops typing for auto-save
 
     setUpdateTimeout(newTimeout);
   };
 
-  // Helper function to update module with appropriate method (debounced for academic courses)
-  const updateModule = (updatedModule) => {
-    // For ALL academic courses, use debounced updates to prevent constant saving
-    if (localModule.isAcademicCourse || course?.isAcademicCourse) {
-      console.log("🔄 Using debounced update for academic course");
-      debouncedParentUpdate(updatedModule);
-    } else {
-      // For non-academic courses, update immediately
-      if (onUpdate) {
-        console.log("🔄 Immediate parent update for non-academic course");
-        onUpdate(updatedModule);
-      }
+  // Helper function to update module with both immediate UI updates and debounced persistence
+  const updateModule = useCallback((updatedModule) => {
+    // ALWAYS update parent immediately for UI reflection
+    if (onUpdate) {
+      console.log("🔄 Immediate parent update for UI reflection");
+      onUpdate(updatedModule);
     }
-  };
+
+    // For academic courses, also trigger debounced auto-save (but not blocking UI updates)
+    if (localModule.isAcademicCourse || course?.isAcademicCourse) {
+      console.log("🔄 Scheduling debounced auto-save for academic course");
+      // The debounced update is now just for auto-saving, not for UI updates
+      setHasChanges(true); // This will trigger the auto-save useEffect
+    }
+  }, [onUpdate, localModule.isAcademicCourse, course?.isAcademicCourse]);
 
   // Enhanced update module fields for academic content
-  const updateModuleField = (field, value) => {
+  const updateModuleField = useCallback((field, value) => {
     console.log("📝 updateModuleField called:", {
       field,
       valueLength: value?.length,
@@ -1539,7 +1538,9 @@ export default function AcademicModuleEditorEnhanced({
     });
 
     // Update local state immediately for responsive UI
-    updateLocalModuleField(field, value);
+    setLocalModule(prev => ({ ...prev, [field]: value }));
+    setHasChanges(true);
+    setSaveStatus("editing");
 
     // Use the helper function for consistent behavior
     const updatedModule = {
@@ -1547,7 +1548,7 @@ export default function AcademicModuleEditorEnhanced({
       [field]: value,
     };
     updateModule(updatedModule);
-  };
+  }, [localModule, updateModule]);
 
   // Enhanced save function that preserves academic course structure
   const saveModuleChanges = async () => {
@@ -1718,6 +1719,12 @@ export default function AcademicModuleEditorEnhanced({
 
   // Auto-save function for academic courses (disabled to prevent conflicts)
   useEffect(() => {
+    // Skip auto-save if modal is open to prevent interference with editing
+    if (editModal.isOpen) {
+      console.log("⚠️ Skipping auto-save - modal is open for editing");
+      return;
+    }
+
     if (hasChanges && localModule.isAcademicCourse) {
       // For academic courses, let the parent AcademicCourseCreator handle saving
       // Don't auto-save individual modules to prevent API conflicts
@@ -1727,7 +1734,7 @@ export default function AcademicModuleEditorEnhanced({
       return;
     }
 
-    // Keep auto-save for non-academic courses
+    // Keep auto-save for non-academic courses (only when modal is closed)
     if (hasChanges && !localModule.isAcademicCourse) {
       const autoSaveTimer = setTimeout(() => {
         saveModuleChanges();
@@ -1735,7 +1742,7 @@ export default function AcademicModuleEditorEnhanced({
 
       return () => clearTimeout(autoSaveTimer);
     }
-  }, [hasChanges, localModule]);
+  }, [hasChanges, localModule.isAcademicCourse, localModule.title, localModule.content]);
 
   const totalExplanationPages = Math.ceil(
     detailedSubsections.length / explanationsPerPage
@@ -2141,7 +2148,7 @@ export default function AcademicModuleEditorEnhanced({
   };
 
   // Update subsection - handle both explanation and content fields
-  const updateSubsection = (index, updates) => {
+  const updateSubsection = useCallback((index, updates) => {
     // Skip updates while editing to prevent interference
     if (editModal.isOpen) {
       console.log("⚠️ Skipping subsection update - modal is open");
@@ -2152,7 +2159,31 @@ export default function AcademicModuleEditorEnhanced({
       i === index ? { ...sub, ...updates } : sub
     );
     updateModuleField("detailedSubsections", updatedSubsections);
-  };
+  }, [detailedSubsections, editModal.isOpen, updateModuleField]);
+
+  // Stable input handlers to prevent cursor jumping
+  const handleTitleChange = useCallback((e) => {
+    updateModuleField("title", e.target.value);
+  }, [updateModuleField]);
+
+  const handleSummaryChange = useCallback((e) => {
+    updateModuleField("summary", e.target.value);
+  }, [updateModuleField]);
+
+  const handleContentChange = useCallback((e) => {
+    updateModuleField("content", e.target.value);
+  }, [updateModuleField]);
+
+  // Memoized subsection handlers to prevent re-creation on every render
+  const subsectionHandlers = useMemo(() => {
+    const handlers = {};
+    detailedSubsections.forEach((_, index) => {
+      handlers[`summary_${index}`] = (e) => {
+        updateSubsection(index, { summary: e.target.value });
+      };
+    });
+    return handlers;
+  }, [detailedSubsections.length, updateSubsection]);
 
   // Resource management functions
   const resourceCategories = {
@@ -2214,12 +2245,31 @@ export default function AcademicModuleEditorEnhanced({
       courseTitle: course?.title,
       courseAcademicLevel: course?.academicLevel,
       courseSubject: course?.subject,
+      currentStatus: course?.status,
+      isPublished: course?.isPublished,
     });
 
     if (!course) {
       toast.error("❌ Course object missing. Cannot save changes.");
       console.error("Course object is missing:", { course, courseId });
       return;
+    }
+
+    // Check if the course is already published
+    const isCurrentlyPublished = course?.status === "published" || course?.isPublished;
+    
+    if (isCurrentlyPublished) {
+      // Show warning and get user confirmation
+      const shouldProceed = window.confirm(
+        "⚠️ WARNING: This course is already published!\n\n" +
+        "Saving as draft will unpublish the course and may affect students who are currently enrolled.\n\n" +
+        "Do you want to proceed? Consider using 'Update Published Course' instead."
+      );
+      
+      if (!shouldProceed) {
+        setSaving(false);
+        return;
+      }
     }
 
     // Note: courseId can be null for new courses that haven't been saved yet
@@ -2230,10 +2280,29 @@ export default function AcademicModuleEditorEnhanced({
     setSaving(true);
 
     try {
-      console.log("Saving course as draft:", {
+      // Determine the appropriate status and published state
+      let targetStatus, targetIsPublished;
+      
+      if (isCurrentlyPublished) {
+        // User confirmed they want to unpublish
+        targetStatus = "draft";
+        targetIsPublished = false;
+        console.log("⚠️ Unpublishing course as requested by user");
+      } else {
+        // Course is not published, safe to save as draft
+        targetStatus = "draft";
+        targetIsPublished = false;
+        console.log("✅ Saving non-published course as draft");
+      }
+
+      console.log("Saving course:", {
         courseId,
         moduleCount: course.modules?.length,
         currentModule: localModule.title,
+        fromStatus: course?.status,
+        toStatus: targetStatus,
+        fromPublished: course?.isPublished,
+        toPublished: targetIsPublished,
       });
 
       const response = await fetch("/api/academic-courses/save-course", {
@@ -2246,7 +2315,8 @@ export default function AcademicModuleEditorEnhanced({
           course: {
             ...course,
             _id: courseId,
-            status: "draft",
+            status: targetStatus,
+            isPublished: targetIsPublished,
             isAcademicCourse: true,
             courseType: "academic",
             modules: course.modules, // Include all modules with current changes
@@ -2257,7 +2327,7 @@ export default function AcademicModuleEditorEnhanced({
       if (response.ok) {
         const data = await response.json();
 
-        // Create detailed draft success message
+        // Create detailed success message based on what happened
         const moduleCount = course.modules?.length || 0;
         const subsectionCount =
           course.modules?.reduce(
@@ -2266,16 +2336,24 @@ export default function AcademicModuleEditorEnhanced({
             0
           ) || 0;
 
-        toast.success(
-          `📝 Draft Saved Successfully! 🎯 "${course.title}" • 📚 ${
+        let successMessage;
+        if (isCurrentlyPublished) {
+          successMessage = `⚠️ Course Unpublished & Saved as Draft! 🎯 "${course.title}" • 📚 ${
             course.academicLevel
-          } • �� ${course.subject} • 📋 ${moduleCount} modules${
+          } • 📖 ${course.subject} • 📋 ${moduleCount} modules${
             subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ""
-          } • ✨ Continue editing or publish when ready!`,
-          {
-            duration: 6000,
-          }
-        );
+          } • 🔒 Course is now in draft mode and hidden from students.`;
+        } else {
+          successMessage = `📝 Draft Saved Successfully! 🎯 "${course.title}" • 📚 ${
+            course.academicLevel
+          } • 📖 ${course.subject} • 📋 ${moduleCount} modules${
+            subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ""
+          } • ✨ Continue editing or publish when ready!`;
+        }
+
+        toast.success(successMessage, {
+          duration: isCurrentlyPublished ? 8000 : 6000, // Longer duration for unpublish warning
+        });
 
         if (onSaveSuccess) onSaveSuccess(data.course, "draft");
       } else {
@@ -2299,6 +2377,83 @@ export default function AcademicModuleEditorEnhanced({
     } catch (error) {
       console.error("Save error:", error);
       toast.error(`Failed to save: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // New function to update published courses without unpublishing
+  const handleUpdatePublishedCourse = async () => {
+    console.log("🔄 Updating published course:", {
+      courseId,
+      courseTitle: course?.title,
+      currentStatus: course?.status,
+      isPublished: course?.isPublished,
+    });
+
+    if (!course) {
+      toast.error("❌ Course object missing. Cannot save changes.");
+      return;
+    }
+
+    if (!courseId) {
+      toast.error("❌ Cannot update: Course must be saved first.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const response = await fetch("/api/academic-courses/save-course", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          course: {
+            ...course,
+            _id: courseId,
+            status: "published", // Keep published status
+            isPublished: true, // Keep published flag
+            isAcademicCourse: true,
+            courseType: "academic",
+            modules: course.modules,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        const moduleCount = course.modules?.length || 0;
+        const subsectionCount =
+          course.modules?.reduce(
+            (total, module) =>
+              total + (module.detailedSubsections?.length || 0),
+            0
+          ) || 0;
+
+        toast.success(
+          `🔄 Published Course Updated! 🎯 "${course.title}" • 📚 ${
+            course.academicLevel
+          } • 📖 ${course.subject} • 📋 ${moduleCount} modules${
+            subsectionCount > 0 ? ` • 🔍 ${subsectionCount} subsections` : ""
+          } • ✅ Changes are live for students!`,
+          {
+            duration: 6000,
+          }
+        );
+
+        if (onSaveSuccess) onSaveSuccess(data.course, "published");
+      } else {
+        const errorText = await response.text();
+        console.error("Update published course failed:", errorText);
+        throw new Error("Failed to update published course");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error(`Failed to update published course: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -3384,48 +3539,98 @@ export default function AcademicModuleEditorEnhanced({
               <div>
                 <h3 className="font-semibold text-green-800">Course Actions</h3>
                 <p className="text-sm text-green-600">
-                  Save your changes or publish the course
+                  {course?.status === "published" || course?.isPublished
+                    ? "Update or unpublish the course"
+                    : "Save your changes or publish the course"}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <Button
-                onClick={handleSaveDraft}
-                disabled={saving || publishing}
-                variant="outline"
-                className="border-green-300 text-green-700 hover:bg-green-50"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Save Draft
-                  </>
-                )}
-              </Button>
+              {/* Show different buttons based on published status */}
+              {course?.status === "published" || course?.isPublished ? (
+                <>
+                  {/* For published courses, show Update button as primary action */}
+                  <Button
+                    onClick={handleUpdatePublishedCourse}
+                    disabled={saving || publishing}
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Update Published Course
+                      </>
+                    )}
+                  </Button>
 
-              <Button
-                onClick={handlePublishCourse}
-                disabled={saving || publishing}
-                className="bg-green-500 hover:bg-green-600 text-white"
-              >
-                {publishing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Publishing...
-                  </>
-                ) : (
-                  <>
-                    <Trophy className="h-4 w-4 mr-2" />
-                    Publish Course
-                  </>
-                )}
-              </Button>
+                  {/* Secondary action - Save Draft with warning */}
+                  <Button
+                    onClick={handleSaveDraft}
+                    disabled={saving || publishing}
+                    variant="outline"
+                    className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                    title="This will unpublish the course and make it a draft"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Unpublishing...
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Save as Draft (Unpublish)
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {/* For draft courses, show normal Draft and Publish buttons */}
+                  <Button
+                    onClick={handleSaveDraft}
+                    disabled={saving || publishing}
+                    variant="outline"
+                    className="border-green-300 text-green-700 hover:bg-green-50"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Save Draft
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={handlePublishCourse}
+                    disabled={saving || publishing}
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    {publishing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Publishing...
+                      </>
+                    ) : (
+                      <>
+                        <Trophy className="h-4 w-4 mr-2" />
+                        Publish Course
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </CardContent>
@@ -3504,7 +3709,7 @@ export default function AcademicModuleEditorEnhanced({
                 <Input
                   id="title"
                   value={localModule.title || ""}
-                  onChange={(e) => updateModuleField("title", e.target.value)}
+                  onChange={handleTitleChange}
                   placeholder="Enter module title..."
                   className="border-2 border-gray-200 focus:border-blue-500"
                 />
@@ -3517,7 +3722,7 @@ export default function AcademicModuleEditorEnhanced({
                 <Textarea
                   id="summary"
                   value={localModule.summary || ""}
-                  onChange={(e) => updateModuleField("summary", e.target.value)}
+                  onChange={handleSummaryChange}
                   placeholder="AI-generated summary will appear here..."
                   rows={4}
                   className="border-2 border-gray-200 focus:border-blue-500 resize-none"
@@ -3833,7 +4038,7 @@ export default function AcademicModuleEditorEnhanced({
               )}
               <Textarea
                 value={localModule.content || ""}
-                onChange={(e) => updateModuleField("content", e.target.value)}
+                onChange={handleContentChange}
                 placeholder="Enter detailed module content using markdown structure:
 # Unit 1: Introduction
 ## 1. Fundamental Concepts
@@ -4147,11 +4352,7 @@ Detailed discussion here..."
                                     </Label>
                                     <Textarea
                                       value={subsection.summary || ""}
-                                      onChange={(e) =>
-                                        updateSubsection(globalIndex, {
-                                          summary: e.target.value,
-                                        })
-                                      }
+                                      onChange={subsectionHandlers[`summary_${globalIndex}`]}
                                       placeholder="Enter subsection summary..."
                                       className="border-2 border-gray-300 focus:border-gray-500"
                                       rows={3}
@@ -4452,11 +4653,7 @@ Detailed discussion here..."
                                     </Label>
                                     <Textarea
                                       value={subsection.summary || ""}
-                                      onChange={(e) =>
-                                        updateSubsection(globalIndex, {
-                                          summary: e.target.value,
-                                        })
-                                      }
+                                      onChange={subsectionHandlers[`summary_${globalIndex}`]}
                                       placeholder="Brief overview of the subsection..."
                                       rows={2}
                                       className="border-2 border-purple-300 focus:border-purple-500"

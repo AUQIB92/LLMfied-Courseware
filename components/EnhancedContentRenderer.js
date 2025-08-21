@@ -66,7 +66,7 @@ const analyzeContent = (content) => {
   return analysis;
 };
 
-// Smart content preprocessor
+// Smart content preprocessor with alignment environment detection
 const preprocessContent = (content, analysis) => {
   if (!content || !analysis.hasMath) return content;
 
@@ -80,14 +80,80 @@ const preprocessContent = (content, analysis) => {
     // Fix common LaTeX formatting issues
     .replace(/\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}/g, '\\frac{$1}{$2}')
     .replace(/\\sqrt\s*\{([^}]*)\}/g, '\\sqrt{$1}')
-    .replace(/\\text\s*\{([^}]*)\}/g, '\\text{$1}')
+    .replace(/\\text\s*\{([^}]*)\}/g, '\\text{$1}');
+
+  // Enhanced multi-line equation detection and alignment environment wrapping
+  processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (match, mathContent) => {
+    // Check if this is a multi-line equation that needs alignment
+    const lines = mathContent.trim().split(/\n+/);
     
+    // If multiple lines or contains alignment indicators
+    if (lines.length > 1 || mathContent.includes('=') && mathContent.includes('\\\\')) {
+      console.log('🔧 Multi-line equation detected, adding alignment environment:', mathContent.substring(0, 100));
+      
+      // Check if it already has an alignment environment
+      if (/\\begin\{(align|equation|gather|split|multline)\}/.test(mathContent)) {
+        return match; // Already has proper environment
+      }
+      
+      // Add align environment for multi-line equations
+      let alignedContent = mathContent.trim();
+      
+      // If it has multiple lines but no alignment symbols, add them
+      if (lines.length > 1 && !alignedContent.includes('&')) {
+        // Add alignment at equals signs or appropriate positions
+        alignedContent = alignedContent.replace(/=/g, '&=');
+        
+        // If no equals signs, add alignment at the beginning of each line
+        if (!alignedContent.includes('&')) {
+          alignedContent = alignedContent.replace(/\n\s*/g, '\\\\\n&');
+        }
+      }
+      
+      // If it's a single line with equals signs, it might need alignment
+      if (lines.length === 1 && mathContent.includes('=')) {
+        // Check for multiple equals signs or complex structure
+        const equalsCount = (mathContent.match(/=/g) || []).length;
+        if (equalsCount >= 1 && mathContent.length > 30) {
+          alignedContent = alignedContent.replace(/=/g, '&=');
+        }
+      }
+      
+      // Wrap in align environment
+      return `$$\\begin{align}\n${alignedContent}\n\\end{align}$$`;
+    }
+    
+    return match; // Single line equations stay as is
+  });
+  
+  // Process consecutive $$ blocks that should be part of the same equation
+  processed = processed.replace(/\$\$(.*?)\$\$\s*\$\$(.*?)\$\$/g, (match, eq1, eq2) => {
+    console.log('🔧 Consecutive equations detected, combining:', eq1.substring(0, 50), eq2.substring(0, 50));
+    
+    // Remove existing align environments if present to avoid nesting
+    let content1 = eq1.replace(/\\begin\{align\}|\n\\end\{align\}/g, '').trim();
+    let content2 = eq2.replace(/\\begin\{align\}|\n\\end\{align\}/g, '').trim();
+    
+    // Add alignment markers if not present
+    if (!content1.includes('&')) content1 = content1.replace(/=/g, '&=');
+    if (!content2.includes('&')) content2 = content2.replace(/=/g, '&=');
+    
+    return `$$\\begin{align}\n${content1}\\\\\n${content2}\n\\end{align}$$`;
+  });
+    
+  // Final cleanup
+  processed = processed
     // Enhance readability
     .replace(/\s*\$\s*/g, '$')
     .replace(/\s*\$\$\s*/g, '$$')
     
-    // Clean up whitespace
+    // Clean up whitespace in align environments
+    .replace(/(\\begin\{align\})\s+/g, '$1\n')
+    .replace(/\s+(\\end\{align\})/g, '\n$1')
+    
+    // Clean up general whitespace
     .replace(/\s+/g, ' ')
+    .replace(/\n\s*\n/g, '\n')
     .trim();
 
   return processed;

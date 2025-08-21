@@ -491,9 +491,18 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
         return;
       }
 
+      // Check if the course is already published to preserve status
+      const isCurrentlyPublished = currentCourseData?.status === "published" || currentCourseData?.isPublished;
+      
+      // For AcademicCourseCreator, we generally want to save as draft unless explicitly published
+      // But we should preserve published status if it exists
+      const targetStatus = isCurrentlyPublished && isAutoSave ? "published" : "draft";
+      const targetIsPublished = isCurrentlyPublished && isAutoSave ? true : false;
+
       const payload = {
         ...currentCourseData,
-        status: "draft",
+        status: targetStatus,
+        isPublished: targetIsPublished,
         isAcademicCourse: true,
         isCompetitiveExam: true,
       };

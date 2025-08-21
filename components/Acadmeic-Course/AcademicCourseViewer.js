@@ -39,8 +39,10 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   const [error, setError] = useState(null)
   const [currentModule, setCurrentModule] = useState(0)
   const [currentSubsection, setCurrentSubsection] = useState(0)
+  const [currentPage, setCurrentPage] = useState(0)
   const [completedModules, setCompletedModules] = useState(new Set())
   const [completedSubsections, setCompletedSubsections] = useState(new Set())
+  const [completedPages, setCompletedPages] = useState(new Set())
   const [activeTab, setActiveTab] = useState("overview")
 
   useEffect(() => {
@@ -87,6 +89,11 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   const markSubsectionComplete = (moduleIndex, subsectionIndex) => {
     const subsectionKey = `${moduleIndex}-${subsectionIndex}`
     setCompletedSubsections(prev => new Set([...prev, subsectionKey]))
+  }
+
+  const markPageComplete = (moduleIndex, subsectionIndex, pageIndex) => {
+    const pageKey = `${moduleIndex}-${subsectionIndex}-${pageIndex}`
+    setCompletedPages(prev => new Set([...prev, pageKey]))
   }
 
   const getProgressPercentage = () => {
@@ -292,6 +299,40 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
       summaryPreview: currentSubsectionData.summary ? currentSubsectionData.summary.substring(0, 100) + "..." : "No summary"
     } : null
   })
+
+  // Keyboard navigation for subsections
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (activeTab !== "modules" || !viewerCourse) return
+      
+      if (e.key === "ArrowLeft" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        if (currentSubsection > 0) {
+          setCurrentSubsection(currentSubsection - 1)
+          setCurrentPage(0)
+        } else if (currentModule > 0) {
+          setCurrentModule(currentModule - 1)
+          const prevModuleSubsections = createAcademicSubsections(modules[currentModule - 1])
+          setCurrentSubsection(prevModuleSubsections.length - 1)
+          setCurrentPage(0)
+        }
+      } else if (e.key === "ArrowRight" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        const subsections = createAcademicSubsections(modules[currentModule])
+        if (currentSubsection < subsections.length - 1) {
+          setCurrentSubsection(currentSubsection + 1)
+          setCurrentPage(0)
+        } else if (currentModule < modules.length - 1) {
+          setCurrentModule(currentModule + 1)
+          setCurrentSubsection(0)
+          setCurrentPage(0)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeTab, currentModule, currentSubsection, modules, viewerCourse])
 
   return (
       <motion.div 
@@ -526,6 +567,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                             onClick={() => {
                               setCurrentModule(index)
                               setCurrentSubsection(0)
+                              setCurrentPage(0)
                             }}
                           >
                             <div className="flex items-center gap-3 w-full">
@@ -610,37 +652,217 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                               Module Sections
                             </h4>
                             
-                            {/* Subsection Navigation */}
-                            <div className="flex flex-wrap gap-2 mb-6">
-                              {subsections.map((subsection, index) => {
-                                const isCompleted = completedSubsections.has(`${currentModule}-${index}`)
-                                const isCurrent = currentSubsection === index
-                                
-                                return (
-                                  <Button
-                                    key={index}
-                                    variant={isCurrent ? "default" : "outline"}
-                                    size="sm"
-                                    className={`${
-                                      isCurrent
-                                        ? "bg-blue-600 text-white"
-                                        : isCompleted
-                                        ? "bg-green-50 text-green-700 border-green-200"
-                                        : "hover:bg-blue-50"
-                                    }`}
-                                    onClick={() => setCurrentSubsection(index)}
-                                  >
-                                    {isCompleted && <CheckCircle className="h-3 w-3 mr-1" />}
-                                    {subsection.title || `Section ${index + 1}`}
-                                  </Button>
-                                )
-                              })}
+                            {/* Enhanced Subsection Pagination */}
+                            <div className="mb-6">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-slate-700">Section Navigation</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {currentSubsection + 1} of {subsections.length}
+                                  </Badge>
+                                  <div className="hidden md:flex items-center gap-1 text-xs text-slate-400">
+                                    <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-xs">Ctrl</kbd>
+                                    <span>+</span>
+                                    <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-xs">←→</kbd>
+                                    <span>to navigate</span>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  {Math.round((completedSubsections.size / subsections.length) * 100)}% completed
+                                </div>
+                              </div>
+                              
+                              {/* Desktop Pagination - Show all sections */}
+                              <div className="hidden md:block">
+                                <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200">
+                                  {subsections.map((subsection, index) => {
+                                    const isCompleted = completedSubsections.has(`${currentModule}-${index}`)
+                                    const isCurrent = currentSubsection === index
+                                    const isVisited = index < currentSubsection || isCompleted
+                                    
+                                    return (
+                                      <div key={index} className="flex items-center">
+                                        <motion.button
+                                          onClick={() => {
+                                            setCurrentSubsection(index)
+                                            setCurrentPage(0)
+                                          }}
+                                          className={`relative group transition-all duration-300 ease-in-out ${
+                                            isCurrent
+                                              ? "scale-110"
+                                              : "hover:scale-105"
+                                          }`}
+                                          whileHover={{ scale: 1.05 }}
+                                          whileTap={{ scale: 0.95 }}
+                                        >
+                                          <div className={`
+                                            w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm
+                                            border-2 transition-all duration-300 ${
+                                              isCurrent
+                                                ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white border-blue-400 shadow-lg shadow-blue-200"
+                                                : isCompleted
+                                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-green-400 shadow-md shadow-green-200"
+                                                : isVisited
+                                                ? "bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200"
+                                                : "bg-white text-slate-500 border-slate-300 hover:bg-slate-50 hover:border-slate-400"
+                                            }
+                                          `}>
+                                            {isCompleted ? (
+                                              <CheckCircle className="h-4 w-4" />
+                                            ) : (
+                                              <span>{index + 1}</span>
+                                            )}
+                                          </div>
+                                          
+                                          {/* Tooltip */}
+                                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                            <div className="bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                              {subsection.title || `Section ${index + 1}`}
+                                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
+                                            </div>
+                                          </div>
+                                        </motion.button>
+                                        
+                                        {/* Progress connector */}
+                                        {index < subsections.length - 1 && (
+                                          <div className="flex-1 h-0.5 mx-2 relative">
+                                            <div className="absolute inset-0 bg-slate-200 rounded-full"></div>
+                                            <motion.div
+                                              className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"
+                                              initial={{ width: "0%" }}
+                                              animate={{ 
+                                                width: isCompleted || index < currentSubsection ? "100%" : "0%" 
+                                              }}
+                                              transition={{ duration: 0.3 }}
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                              
+                              {/* Mobile Pagination - Compact view */}
+                              <div className="md:hidden">
+                                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newSubsection = Math.max(0, currentSubsection - 1)
+                                        setCurrentSubsection(newSubsection)
+                                        setCurrentPage(0)
+                                      }}
+                                      disabled={currentSubsection === 0}
+                                      className="flex items-center gap-1"
+                                    >
+                                      <ChevronLeft className="h-3 w-3" />
+                                      Prev
+                                    </Button>
+                                    
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-center">
+                                        <div className="text-sm font-semibold text-slate-800">
+                                          {subsections[currentSubsection]?.title || `Section ${currentSubsection + 1}`}
+                                        </div>
+                                        <div className="text-xs text-slate-500">
+                                          {currentSubsection + 1} of {subsections.length}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setCurrentSubsection(Math.min(subsections.length - 1, currentSubsection + 1))}
+                                      disabled={currentSubsection === subsections.length - 1}
+                                      className="flex items-center gap-1"
+                                    >
+                                      Next
+                                      <ChevronRight className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                  
+                                  {/* Progress bar */}
+                                  <div className="relative">
+                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                      <motion.div
+                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-600"
+                                        initial={{ width: "0%" }}
+                                        animate={{ width: `${((currentSubsection + 1) / subsections.length) * 100}%` }}
+                                        transition={{ duration: 0.3 }}
+                                      />
+                                    </div>
+                                    <div className="absolute inset-0 flex justify-between items-center px-1">
+                                      {subsections.map((_, index) => {
+                                        const isCompleted = completedSubsections.has(`${currentModule}-${index}`)
+                                        const isCurrent = currentSubsection === index
+                                        
+                                        return (
+                                          <div
+                                            key={index}
+                                            className={`w-1.5 h-1.5 rounded-full ${
+                                              isCurrent
+                                                ? "bg-white shadow-sm"
+                                                : isCompleted
+                                                ? "bg-green-400"
+                                                : "bg-slate-300"
+                                            }`}
+                                          />
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Section grid for quick access */}
+                                  <div className="mt-3 pt-3 border-t border-slate-100">
+                                    <div className="grid grid-cols-4 gap-1">
+                                      {subsections.map((subsection, index) => {
+                                        const isCompleted = completedSubsections.has(`${currentModule}-${index}`)
+                                        const isCurrent = currentSubsection === index
+                                        
+                                        return (
+                                          <button
+                                            key={index}
+                                            onClick={() => {
+                                            setCurrentSubsection(index)
+                                            setCurrentPage(0)
+                                          }}
+                                            className={`p-2 rounded text-xs font-medium transition-all duration-200 ${
+                                              isCurrent
+                                                ? "bg-blue-600 text-white shadow-sm"
+                                                : isCompleted
+                                                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                            }`}
+                                          >
+                                            {isCompleted && <CheckCircle className="h-2 w-2 mx-auto mb-0.5" />}
+                                            <div className="truncate">
+                                              {subsection.title?.split(' ').slice(0, 2).join(' ') || `S${index + 1}`}
+                                            </div>
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
 
                             {/* Current Subsection Content */}
-                            {currentSubsectionData && (
-                              <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-100">
-                                <div className="flex items-center justify-between mb-4">
+                            <AnimatePresence mode="wait">
+                              {currentSubsectionData && (
+                                <motion.div 
+                                  key={`${currentModule}-${currentSubsection}`}
+                                  className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-100"
+                                  initial={{ opacity: 0, x: 20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: -20 }}
+                                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                                >
+                                  <div className="flex items-center justify-between mb-4">
                                   <h5 className="text-lg font-semibold text-slate-800">
                                     {currentSubsectionData.title || `Section ${currentSubsection + 1}`}
                                   </h5>
@@ -815,8 +1037,9 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                     </div>
                                   )}
                                 </div>
-                              </div>
-                            )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         ) : (
                           /* Enhanced fallback to module content if no subsections */
@@ -889,50 +1112,140 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                           </div>
                         )}
 
-                        {/* Navigation Controls */}
-                        <div className="flex items-center justify-between pt-4 border-t">
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              if (currentSubsection > 0) {
-                                setCurrentSubsection(currentSubsection - 1)
-                              } else if (currentModule > 0) {
-                                setCurrentModule(currentModule - 1)
-                                setCurrentSubsection(0)
-                              }
-                            }}
-                            disabled={currentModule === 0 && currentSubsection === 0}
-                          >
-                            <ChevronLeft className="h-4 w-4 mr-2" />
-                            Previous
-                          </Button>
-                          
-                          <div className="text-sm text-slate-600">
-                            Module {currentModule + 1} of {modules.length}
-                            {subsections.length > 0 && (
-                              <> • Section {currentSubsection + 1} of {subsections.length}</>
-                            )}
+                        {/* Enhanced Navigation Controls */}
+                        <motion.div 
+                          className="pt-6 border-t border-slate-200"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <motion.div
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  if (currentSubsection > 0) {
+                                    setCurrentSubsection(currentSubsection - 1)
+                                  } else if (currentModule > 0) {
+                                    setCurrentModule(currentModule - 1)
+                                    const prevModuleSubsections = createAcademicSubsections(modules[currentModule - 1])
+                                    setCurrentSubsection(prevModuleSubsections.length - 1)
+                                  }
+                                }}
+                                disabled={currentModule === 0 && currentSubsection === 0}
+                                className="group flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border-slate-300 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <ChevronLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" />
+                                <div className="text-left">
+                                  <div className="font-medium">Previous</div>
+                                  <div className="text-xs text-slate-500">
+                                    {currentSubsection > 0 
+                                      ? `Section ${currentSubsection}`
+                                      : currentModule > 0 
+                                      ? `Module ${currentModule}`
+                                      : "Start"
+                                    }
+                                  </div>
+                                </div>
+                              </Button>
+                            </motion.div>
+                            
+                            <div className="text-center">
+                              <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 rounded-full border border-blue-100">
+                                <div className="flex items-center gap-2">
+                                  <BookOpen className="h-4 w-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-slate-700">
+                                    Module {currentModule + 1} of {modules.length}
+                                  </span>
+                                </div>
+                                {subsections.length > 0 && (
+                                  <>
+                                    <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-3 w-3 text-purple-600" />
+                                      <span className="text-sm text-slate-600">
+                                        Section {currentSubsection + 1} of {subsections.length}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                              
+                              {/* Mini progress indicator */}
+                              <div className="mt-2 flex justify-center">
+                                <div className="flex items-center gap-1">
+                                  {Array.from({ length: Math.min(modules.length, 10) }, (_, i) => (
+                                    <div
+                                      key={i}
+                                      className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                                        i < currentModule
+                                          ? "bg-green-400"
+                                          : i === currentModule
+                                          ? "bg-blue-500"
+                                          : "bg-slate-200"
+                                      }`}
+                                    />
+                                  ))}
+                                  {modules.length > 10 && (
+                                    <span className="text-xs text-slate-400 ml-1">+{modules.length - 10}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <motion.div
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  if (currentSubsection < subsections.length - 1) {
+                                    setCurrentSubsection(currentSubsection + 1)
+                                  } else if (currentModule < modules.length - 1) {
+                                    setCurrentModule(currentModule + 1)
+                                    setCurrentSubsection(0)
+                                  }
+                                }}
+                                disabled={
+                                  currentModule === modules.length - 1 &&
+                                  (subsections.length === 0 || currentSubsection === subsections.length - 1)
+                                }
+                                className="group flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border-slate-300 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <div className="text-right">
+                                  <div className="font-medium">Next</div>
+                                  <div className="text-xs text-slate-500">
+                                    {currentSubsection < subsections.length - 1
+                                      ? `Section ${currentSubsection + 2}`
+                                      : currentModule < modules.length - 1
+                                      ? `Module ${currentModule + 2}`
+                                      : "Complete"
+                                    }
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform duration-200" />
+                              </Button>
+                            </motion.div>
                           </div>
                           
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              if (currentSubsection < subsections.length - 1) {
-                                setCurrentSubsection(currentSubsection + 1)
-                              } else if (currentModule < modules.length - 1) {
-                                setCurrentModule(currentModule + 1)
-                                setCurrentSubsection(0)
-                              }
-                            }}
-                            disabled={
-                              currentModule === modules.length - 1 &&
-                              (subsections.length === 0 || currentSubsection === subsections.length - 1)
-                            }
-                          >
-                            Next
-                            <ChevronRight className="h-4 w-4 ml-2" />
-                          </Button>
-                        </div>
+                          {/* Progress summary */}
+                          <div className="mt-4 text-center">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-xs">
+                              <Trophy className="h-3 w-3 text-amber-500" />
+                              <span className="text-slate-600">
+                                {completedSubsections.size} sections completed
+                              </span>
+                              <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
+                              <span className="text-slate-600">
+                                {Math.round((completedModules.size / modules.length) * 100)}% course progress
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
                       </div>
                     </CardContent>
                   </Card>
