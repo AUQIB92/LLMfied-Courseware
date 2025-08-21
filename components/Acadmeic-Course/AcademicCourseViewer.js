@@ -300,12 +300,30 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
     } : null
   })
 
-  // Keyboard navigation for subsections
+  // Enhanced keyboard navigation for subsections and pages
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (activeTab !== "modules" || !viewerCourse) return
       
-      if (e.key === "ArrowLeft" && (e.ctrlKey || e.metaKey)) {
+      const subsections = createAcademicSubsections(modules[currentModule])
+      const currentSubsectionData = subsections?.[currentSubsection]
+      const totalPages = currentSubsectionData?.pages?.length || 0
+      
+      // Page-level navigation (Arrow keys alone)
+      if (e.key === "ArrowLeft" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        if (totalPages > 0 && currentPage > 0) {
+          setCurrentPage(currentPage - 1)
+        }
+      } else if (e.key === "ArrowRight" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        if (totalPages > 0 && currentPage < totalPages - 1) {
+          setCurrentPage(currentPage + 1)
+        }
+      }
+      
+      // Subsection-level navigation (Ctrl + Arrow keys)
+      else if (e.key === "ArrowLeft" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
         if (currentSubsection > 0) {
           setCurrentSubsection(currentSubsection - 1)
@@ -318,7 +336,6 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
         }
       } else if (e.key === "ArrowRight" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
-        const subsections = createAcademicSubsections(modules[currentModule])
         if (currentSubsection < subsections.length - 1) {
           setCurrentSubsection(currentSubsection + 1)
           setCurrentPage(0)
@@ -332,7 +349,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeTab, currentModule, currentSubsection, modules, viewerCourse])
+  }, [activeTab, currentModule, currentSubsection, currentPage, modules, viewerCourse])
 
   return (
       <motion.div 
@@ -660,11 +677,18 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                   <Badge variant="outline" className="text-xs">
                                     {currentSubsection + 1} of {subsections.length}
                                   </Badge>
-                                  <div className="hidden md:flex items-center gap-1 text-xs text-slate-400">
-                                    <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-xs">Ctrl</kbd>
-                                    <span>+</span>
-                                    <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-xs">←→</kbd>
-                                    <span>to navigate</span>
+                                  <div className="hidden md:flex items-center gap-2 text-xs text-slate-400">
+                                    <div className="flex items-center gap-1">
+                                      <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-xs">←→</kbd>
+                                      <span>pages</span>
+                                    </div>
+                                    <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
+                                    <div className="flex items-center gap-1">
+                                      <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-xs">Ctrl</kbd>
+                                      <span>+</span>
+                                      <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-xs">←→</kbd>
+                                      <span>sections</span>
+                                    </div>
                                   </div>
                                 </div>
                                 <div className="text-xs text-slate-500">
@@ -776,7 +800,11 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => setCurrentSubsection(Math.min(subsections.length - 1, currentSubsection + 1))}
+                                      onClick={() => {
+                                        const newSubsection = Math.min(subsections.length - 1, currentSubsection + 1)
+                                        setCurrentSubsection(newSubsection)
+                                        setCurrentPage(0)
+                                      }}
                                       disabled={currentSubsection === subsections.length - 1}
                                       className="flex items-center gap-1"
                                     >
@@ -912,61 +940,175 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                         </div>
                                       )}
                                       
-                                      {/* Enhanced Pages content with proper handling of markdown and HTML */}
-                                      <div className="space-y-4">
-                                        <h6 className="font-semibold text-slate-800 flex items-center gap-2">
-                                          <BookOpen className="h-4 w-4 text-blue-600" />
-                                          Content Pages ({currentSubsectionData.pages.length} pages)
-                                        </h6>
-                                        {currentSubsectionData.pages.map((page, pageIndex) => {
-                                          // Handle different content formats from the API
-                                          const pageContent = page.html || page.content || page.generatedMarkdown || "Page content will be available soon."
-                                          const pageTitle = page.pageTitle || page.title || `Page ${page.pageNumber || pageIndex + 1}`
+                                      {/* Enhanced Single Page View with Navigation */}
+                                      <div className="space-y-6">
+                                        {/* Page Navigation Header */}
+                                        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                                          <div className="flex items-center gap-3">
+                                            <BookOpen className="h-5 w-5 text-blue-600" />
+                                            <div>
+                                              <h6 className="font-semibold text-slate-800">
+                                                Content Pages
+                                              </h6>
+                                              <p className="text-sm text-slate-600">
+                                                Page {currentPage + 1} of {currentSubsectionData.pages.length}
+                                              </p>
+                                            </div>
+                                          </div>
                                           
-                                          return (
-                                            <div key={pageIndex} className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                                              <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-4 py-3 border-b border-slate-200">
-                                                <div className="flex items-center justify-between">
-                                                  <h6 className="font-medium text-slate-800 flex items-center gap-2">
-                                                    <BookOpen className="h-3 w-3 text-blue-600" />
-                                                    {pageTitle}
-                                                  </h6>
-                                                  <Badge variant="outline" className="text-xs">
-                                                    Page {page.pageNumber || pageIndex + 1}
-                                                  </Badge>
-                                                </div>
-                                              </div>
-                                              <div className="p-6">
-                                                {/* Main content with enhanced math rendering */}
-                                                <div className="mb-4">
-                                                  <ReliableMathRenderer
-                                                    content={pageContent}
-                                                    className="prose prose-lg max-w-none text-slate-700"
-                                                    showMetrics={false}
-                                                  />
-                                                </div>
-                                                
-                                                
-                                                {/* Key takeaway section */}
-                                                {page.keyTakeaway && (
-                                                  <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                                    <div className="flex items-start gap-3">
-                                                      <Lightbulb className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                                                      <div className="flex-1">
-                                                        <p className="font-medium text-green-900 text-sm mb-1">Key Takeaway</p>
-                                                        <ReliableMathRenderer
-                                                          content={page.keyTakeaway}
-                                                          className="text-green-800 text-sm prose prose-sm max-w-none"
-                                                          showMetrics={false}
-                                                        />
-                                                      </div>
+                                          {/* Page Navigation Controls */}
+                                          <div className="flex items-center gap-2">
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                                              disabled={currentPage === 0}
+                                              className="flex items-center gap-1"
+                                            >
+                                              <ChevronLeft className="h-3 w-3" />
+                                              Prev Page
+                                            </Button>
+                                            
+                                            <div className="flex items-center gap-1 px-3">
+                                              {currentSubsectionData.pages.map((_, pageIndex) => (
+                                                <button
+                                                  key={pageIndex}
+                                                  onClick={() => setCurrentPage(pageIndex)}
+                                                  className={`w-8 h-8 rounded-full text-xs font-medium transition-all duration-200 ${
+                                                    currentPage === pageIndex
+                                                      ? "bg-blue-600 text-white shadow-md"
+                                                      : "bg-white text-slate-600 hover:bg-blue-50 border border-slate-200"
+                                                  }`}
+                                                >
+                                                  {pageIndex + 1}
+                                                </button>
+                                              ))}
+                                            </div>
+                                            
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => setCurrentPage(Math.min(currentSubsectionData.pages.length - 1, currentPage + 1))}
+                                              disabled={currentPage === currentSubsectionData.pages.length - 1}
+                                              className="flex items-center gap-1"
+                                            >
+                                              Next Page
+                                              <ChevronRight className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+
+                                        {/* Current Page Content */}
+                                        <AnimatePresence mode="wait">
+                                          {(() => {
+                                            const currentPageData = currentSubsectionData.pages[currentPage]
+                                            if (!currentPageData) return null
+                                            
+                                            const pageContent = currentPageData.html || currentPageData.content || currentPageData.generatedMarkdown || "Page content will be available soon."
+                                            const pageTitle = currentPageData.pageTitle || currentPageData.title || `Page ${currentPageData.pageNumber || currentPage + 1}`
+                                            const isPageCompleted = completedPages.has(`${currentModule}-${currentSubsection}-${currentPage}`)
+                                            
+                                            return (
+                                              <motion.div
+                                                key={`page-${currentModule}-${currentSubsection}-${currentPage}`}
+                                                className="border border-slate-200 rounded-lg overflow-hidden shadow-sm"
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -20 }}
+                                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                              >
+                                                <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200">
+                                                  <div className="flex items-center justify-between">
+                                                    <h6 className="font-medium text-slate-800 flex items-center gap-2">
+                                                      <BookOpen className="h-4 w-4 text-blue-600" />
+                                                      {pageTitle}
+                                                    </h6>
+                                                    <div className="flex items-center gap-2">
+                                                      <Badge variant="outline" className="text-xs">
+                                                        Page {currentPageData.pageNumber || currentPage + 1}
+                                                      </Badge>
+                                                      {!isPageCompleted && (
+                                                        <Button
+                                                          onClick={() => markPageComplete(currentModule, currentSubsection, currentPage)}
+                                                          size="sm"
+                                                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                                                        >
+                                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                                          Mark Complete
+                                                        </Button>
+                                                      )}
+                                                      {isPageCompleted && (
+                                                        <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                                          Completed
+                                                        </Badge>
+                                                      )}
                                                     </div>
                                                   </div>
-                                                )}
-                                              </div>
-                                            </div>
-                                          )
-                                        })}
+                                                </div>
+                                                
+                                                <div className="p-8">
+                                                  {/* Main content with enhanced math rendering */}
+                                                  <div className="mb-6">
+                                                    <ReliableMathRenderer
+                                                      content={pageContent}
+                                                      className="prose prose-lg max-w-none text-slate-700"
+                                                      showMetrics={false}
+                                                    />
+                                                  </div>
+                                                  
+                                                  {/* Key takeaway section */}
+                                                  {currentPageData.keyTakeaway && (
+                                                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                                      <div className="flex items-start gap-3">
+                                                        <Lightbulb className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                                                        <div className="flex-1">
+                                                          <p className="font-medium text-green-900 text-sm mb-1">Key Takeaway</p>
+                                                          <ReliableMathRenderer
+                                                            content={currentPageData.keyTakeaway}
+                                                            className="text-green-800 text-sm prose prose-sm max-w-none"
+                                                            showMetrics={false}
+                                                          />
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                                
+                                                {/* Page Navigation Footer */}
+                                                <div className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+                                                  <div className="flex items-center justify-between">
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                                                      disabled={currentPage === 0}
+                                                      className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+                                                    >
+                                                      <ChevronLeft className="h-4 w-4" />
+                                                      Previous Page
+                                                    </Button>
+                                                    
+                                                    <div className="text-sm text-slate-500">
+                                                      Page {currentPage + 1} of {currentSubsectionData.pages.length}
+                                                    </div>
+                                                    
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      onClick={() => setCurrentPage(Math.min(currentSubsectionData.pages.length - 1, currentPage + 1))}
+                                                      disabled={currentPage === currentSubsectionData.pages.length - 1}
+                                                      className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+                                                    >
+                                                      Next Page
+                                                      <ChevronRight className="h-4 w-4" />
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              </motion.div>
+                                            )
+                                          })()}
+                                        </AnimatePresence>
                                       </div>
                                     </div>
                                   ) : (
@@ -1129,10 +1271,12 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                 onClick={() => {
                                   if (currentSubsection > 0) {
                                     setCurrentSubsection(currentSubsection - 1)
+                                    setCurrentPage(0)
                                   } else if (currentModule > 0) {
                                     setCurrentModule(currentModule - 1)
                                     const prevModuleSubsections = createAcademicSubsections(modules[currentModule - 1])
                                     setCurrentSubsection(prevModuleSubsections.length - 1)
+                                    setCurrentPage(0)
                                   }
                                 }}
                                 disabled={currentModule === 0 && currentSubsection === 0}
@@ -1205,9 +1349,11 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                 onClick={() => {
                                   if (currentSubsection < subsections.length - 1) {
                                     setCurrentSubsection(currentSubsection + 1)
+                                    setCurrentPage(0)
                                   } else if (currentModule < modules.length - 1) {
                                     setCurrentModule(currentModule + 1)
                                     setCurrentSubsection(0)
+                                    setCurrentPage(0)
                                   }
                                 }}
                                 disabled={
@@ -1236,6 +1382,10 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                           <div className="mt-4 text-center">
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-xs">
                               <Trophy className="h-3 w-3 text-amber-500" />
+                              <span className="text-slate-600">
+                                {completedPages.size} pages completed
+                              </span>
+                              <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
                               <span className="text-slate-600">
                                 {completedSubsections.size} sections completed
                               </span>

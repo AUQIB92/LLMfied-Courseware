@@ -1363,10 +1363,14 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
             <CardHeader className="text-center bg-gradient-to-r from-green-50 to-blue-50">
               <CardTitle className="flex items-center justify-center gap-2">
                 <Award className="h-6 w-6 text-green-600" />
-                Publish Your Academic Course
+                {currentCourseData?.status === "published" || currentCourseData?.isPublished 
+                  ? "Republish Your Academic Course" 
+                  : "Publish Your Academic Course"}
               </CardTitle>
               <CardDescription>
-                Final review and publish your course for students
+                {currentCourseData?.status === "published" || currentCourseData?.isPublished 
+                  ? "Update and republish your course with the latest changes"
+                  : "Final review and publish your course for students"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 p-6">
@@ -1433,7 +1437,9 @@ export default function AcademicCourseCreator({ onCourseCreated }) {
                   ) : (
                     <>
                       <Award className="h-4 w-4 mr-2" />
-                      Publish Course
+                      {currentCourseData?.status === "published" || currentCourseData?.isPublished 
+                        ? "Republish Course" 
+                        : "Publish Course"}
                     </>
                   )}
                 </Button>

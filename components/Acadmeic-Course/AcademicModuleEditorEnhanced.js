@@ -1257,9 +1257,99 @@ export default function AcademicModuleEditorEnhanced({
   // Quiz generation state
   const [generatingQuiz, setGeneratingQuiz] = useState({});
   const [quizProgress, setQuizProgress] = useState({});
+
+  // Assignment generation states
+  const [assignmentTopics, setAssignmentTopics] = useState("");
+  const [assignmentInstructions, setAssignmentInstructions] = useState("");
+  const [assignmentDifficulty, setAssignmentDifficulty] = useState("medium");
+  const [generatingAssignment, setGeneratingAssignment] = useState(false);
+  const [generatedAssignment, setGeneratedAssignment] = useState("");
   const [subsectionQuizzes, setSubsectionQuizzes] = useState(
     module.subsectionQuizzes || {}
   );
+
+  // Assignment generation functions
+  const handleGenerateAssignment = async () => {
+    if (!assignmentTopics.trim()) {
+      toast.error("Please provide assignment topics");
+      return;
+    }
+
+    setGeneratingAssignment(true);
+    
+    try {
+      console.log("📝 Generating assignment...");
+
+      const response = await fetch("/api/academic-courses/generate-assignment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          courseId: courseId,
+          moduleTitle: localModule.title,
+          moduleContent: localModule.content,
+          detailedContent: localModule.detailedSubsections,
+          academicLevel: course?.academicLevel || "undergraduate",
+          subject: course?.subject || "General Studies",
+          topics: assignmentTopics,
+          instructions: assignmentInstructions,
+          difficulty: assignmentDifficulty
+        }),
+      });
+
+      // Check if response is ok first
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ API Response Error:", errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText || "Failed to generate assignment"}`);
+      }
+
+      // Check if response has content
+      const responseText = await response.text();
+      if (!responseText) {
+        throw new Error("Empty response from server");
+      }
+
+      // Parse JSON safely
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("❌ JSON Parse Error:", parseError);
+        console.error("❌ Raw Response:", responseText);
+        throw new Error("Invalid JSON response from server");
+      }
+
+      if (data.success && data.assignment) {
+        setGeneratedAssignment(data.assignment);
+        toast.success("Assignment with LaTeX mathematical questions generated successfully!");
+        console.log("✅ Assignment generated with", data.assignment.length, "characters");
+      } else {
+        throw new Error(data.error || data.details || "Failed to generate assignment");
+      }
+    } catch (error) {
+      console.error("❌ Assignment generation error:", error);
+      toast.error(`Failed to generate assignment: ${error.message}`);
+    } finally {
+      setGeneratingAssignment(false);
+    }
+  };
+
+  const handleDownloadAssignment = () => {
+    if (!generatedAssignment) return;
+
+    const blob = new Blob([generatedAssignment], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${localModule.title || 'assignment'}-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   // Academic detailed content generation state
   const [generatingDetailedContent, setGeneratingDetailedContent] =
@@ -1349,6 +1439,7 @@ export default function AcademicModuleEditorEnhanced({
       setGeneratingDetailedContent(false);
     }
   };
+
 
   // Resource management
   const [showManualResourceForm, setShowManualResourceForm] = useState(false);
@@ -3685,6 +3776,10 @@ export default function AcademicModuleEditorEnhanced({
           <TabsTrigger value="quizzes" className="flex items-center gap-2">
             <Trophy className="h-4 w-4" />
             Quizzes
+          </TabsTrigger>
+          <TabsTrigger value="assignments" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Assignments
           </TabsTrigger>
           <TabsTrigger value="resources" className="flex items-center gap-2">
             <Network className="h-4 w-4" />
@@ -6277,6 +6372,116 @@ Detailed discussion here..."
                   })}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Assignments Tab */}
+        <TabsContent value="assignments" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Assignment Generator
+              </CardTitle>
+              <CardDescription>
+                Paste your topics and generate custom assignments based on the module content
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Assignment Input Form */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="assignment-topics">Assignment Topics</Label>
+                    <Textarea
+                      id="assignment-topics"
+                      placeholder="Paste your assignment topics here...&#10;&#10;Examples:&#10;• Linear algebra applications&#10;• Machine learning algorithms&#10;• Data structure implementations&#10;• Problem-solving strategies"
+                      value={assignmentTopics}
+                      onChange={(e) => setAssignmentTopics(e.target.value)}
+                      rows={8}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="assignment-instructions">Additional Instructions (Optional)</Label>
+                    <Textarea
+                      id="assignment-instructions"
+                      placeholder="Submission format, grading criteria, deadlines..."
+                      value={assignmentInstructions}
+                      onChange={(e) => setAssignmentInstructions(e.target.value)}
+                      rows={3}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="difficulty">Difficulty Level</Label>
+                    <Select value={assignmentDifficulty} onValueChange={setAssignmentDifficulty}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="easy">Easy - Basic concepts</SelectItem>
+                        <SelectItem value="medium">Medium - Moderate complexity</SelectItem>
+                        <SelectItem value="hard">Hard - Advanced concepts</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button
+                    onClick={handleGenerateAssignment}
+                    disabled={!assignmentTopics.trim() || generatingAssignment}
+                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
+                  >
+                    {generatingAssignment ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating Assignment...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4 mr-2" />
+                        Generate Assignment
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Generated Assignment Preview */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Generated Assignment</Label>
+                    {generatedAssignment && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDownloadAssignment}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {generatedAssignment ? (
+                    <div className="border rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap text-sm font-mono">
+                        {generatedAssignment}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                      <Target className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500 mb-2">No assignment generated yet</p>
+                      <p className="text-sm text-gray-400">
+                        Paste your topics and click Generate Assignment
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

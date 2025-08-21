@@ -49,7 +49,10 @@ import {
   Loader2,
   Download,
   X,
-  Eye
+  Eye,
+  ClipboardList,
+  Send,
+  FileEdit
 } from "lucide-react"
 
 export default function AcademicCourseManager() {
@@ -94,6 +97,15 @@ export default function AcademicCourseManager() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all") // "all", "published", "draft"
+
+  // Assignment generation states
+  const [selectedCourse, setSelectedCourse] = useState(null)
+  const [selectedModules, setSelectedModules] = useState([])
+  const [assignmentTopics, setAssignmentTopics] = useState("")
+  const [assignmentInstructions, setAssignmentInstructions] = useState("")
+  const [assignmentDifficulty, setAssignmentDifficulty] = useState("medium")
+  const [generatingAssignment, setGeneratingAssignment] = useState(false)
+  const [generatedAssignment, setGeneratedAssignment] = useState("")
 
   // Computed filtered courses
   const filteredCourses = academicCourses.filter(course => {
@@ -738,6 +750,89 @@ export default function AcademicCourseManager() {
   const getExamTypeConfig = (academicLevel) => {
     return academicLevels.find(type => type.id === academicLevel) || academicLevels[academicLevels.length - 1]
   }
+
+  // Assignment generation functions
+  const handleCourseSelect = (course) => {
+    setSelectedCourse(course)
+    setSelectedModules([])
+    setAssignmentTopics("")
+    setAssignmentInstructions("")
+    setGeneratedAssignment("")
+  }
+
+  const handleModuleToggle = (moduleId) => {
+    setSelectedModules(prev => 
+      prev.includes(moduleId) 
+        ? prev.filter(id => id !== moduleId)
+        : [...prev, moduleId]
+    )
+  }
+
+  const handleGenerateAssignment = async () => {
+    if (!selectedCourse || selectedModules.length === 0) {
+      toast.error("Please select a course and at least one module")
+      return
+    }
+
+    if (!assignmentTopics.trim()) {
+      toast.error("Please provide assignment topics or instructions")
+      return
+    }
+
+    setGeneratingAssignment(true)
+    
+    try {
+      const selectedModuleData = selectedCourse.modules?.filter(module => 
+        selectedModules.includes(module._id || module.id)
+      ) || []
+
+      const response = await fetch("/api/academic-courses/generate-assignment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          courseId: selectedCourse._id || selectedCourse.id,
+          courseTitle: selectedCourse.title,
+          courseSubject: selectedCourse.subject,
+          academicLevel: selectedCourse.academicLevel,
+          modules: selectedModuleData,
+          topics: assignmentTopics,
+          instructions: assignmentInstructions,
+          difficulty: assignmentDifficulty
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setGeneratedAssignment(data.assignment)
+        toast.success("Assignment generated successfully!")
+      } else {
+        throw new Error(data.error || "Failed to generate assignment")
+      }
+    } catch (error) {
+      console.error("Assignment generation error:", error)
+      toast.error(`Failed to generate assignment: ${error.message}`)
+    } finally {
+      setGeneratingAssignment(false)
+    }
+  }
+
+  const handleDownloadAssignment = () => {
+    if (!generatedAssignment) return
+
+    const blob = new Blob([generatedAssignment], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${selectedCourse?.title || 'assignment'}-${Date.now()}.md`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
   
   // Function to directly publish a draft course
   const handlePublishDraftCourse = async (course) => {
@@ -904,7 +999,7 @@ export default function AcademicCourseManager() {
 
         {/* Main Content */}
         <Tabs defaultValue="courses" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="courses" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               All Courses ({academicCourses.length})
@@ -916,6 +1011,10 @@ export default function AcademicCourseManager() {
             <TabsTrigger value="drafts" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Drafts ({draftCourses.length})
+            </TabsTrigger>
+            <TabsTrigger value="assignments" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Assignments
             </TabsTrigger>
           </TabsList>
 
@@ -1351,6 +1450,207 @@ export default function AcademicCourseManager() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Assignment Generation Tab */}
+          <TabsContent value="assignments" className="space-y-6">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-purple-800">
+                <Target className="h-5 w-5" />
+                <p className="text-sm font-medium">
+                  Generate custom assignments based on your course modules and content
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Assignment Generation Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardList className="h-5 w-5" />
+                    Create Assignment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Course Selection */}
+                  <div>
+                    <Label htmlFor="course-select">Select Course</Label>
+                    <select
+                      id="course-select"
+                      value={selectedCourse?.id || selectedCourse?._id || ""}
+                      onChange={(e) => {
+                        const course = academicCourses.find(c => (c.id || c._id) === e.target.value)
+                        handleCourseSelect(course)
+                      }}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Choose a course...</option>
+                      {academicCourses.map((course) => (
+                        <option key={course.id || course._id} value={course.id || course._id}>
+                          {course.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Module Selection */}
+                  {selectedCourse && selectedCourse.modules && selectedCourse.modules.length > 0 && (
+                    <div>
+                      <Label>Select Modules ({selectedModules.length} selected)</Label>
+                      <div className="mt-2 max-h-40 overflow-y-auto border rounded-lg p-3 space-y-2">
+                        {selectedCourse.modules.map((module, index) => (
+                          <div key={module._id || module.id || index} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`module-${index}`}
+                              checked={selectedModules.includes(module._id || module.id || index)}
+                              onChange={() => handleModuleToggle(module._id || module.id || index)}
+                              className="rounded"
+                            />
+                            <label htmlFor={`module-${index}`} className="text-sm flex-1">
+                              {module.title || module.name || `Module ${index + 1}`}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Assignment Topics */}
+                  <div>
+                    <Label htmlFor="assignment-topics">Assignment Topics/Instructions</Label>
+                    <textarea
+                      id="assignment-topics"
+                      placeholder="Describe what the assignment should cover, specific topics, learning objectives, or provide detailed instructions..."
+                      value={assignmentTopics}
+                      onChange={(e) => setAssignmentTopics(e.target.value)}
+                      rows={4}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+
+                  {/* Additional Instructions */}
+                  <div>
+                    <Label htmlFor="assignment-instructions">Additional Instructions (Optional)</Label>
+                    <textarea
+                      id="assignment-instructions"
+                      placeholder="Submission format, grading criteria, special requirements..."
+                      value={assignmentInstructions}
+                      onChange={(e) => setAssignmentInstructions(e.target.value)}
+                      rows={2}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+
+                  {/* Difficulty Level */}
+                  <div>
+                    <Label htmlFor="difficulty-select">Difficulty Level</Label>
+                    <select
+                      id="difficulty-select"
+                      value={assignmentDifficulty}
+                      onChange={(e) => setAssignmentDifficulty(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="easy">Easy - Basic concepts and simple problems</option>
+                      <option value="medium">Medium - Moderate complexity and application</option>
+                      <option value="hard">Hard - Advanced concepts and challenging problems</option>
+                    </select>
+                  </div>
+
+                  {/* Generate Button */}
+                  <Button
+                    onClick={handleGenerateAssignment}
+                    disabled={!selectedCourse || selectedModules.length === 0 || !assignmentTopics.trim() || generatingAssignment}
+                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
+                  >
+                    {generatingAssignment ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating Assignment...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Generate Assignment
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Generated Assignment Preview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileEdit className="h-5 w-5" />
+                    Generated Assignment
+                    {generatedAssignment && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDownloadAssignment}
+                        className="ml-auto"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {generatedAssignment ? (
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap text-sm font-mono">
+                          {generatedAssignment}
+                        </pre>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <ClipboardList className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-500 mb-2">No Assignment Generated</h3>
+                      <p className="text-gray-400 text-sm">
+                        Select a course, choose modules, and provide topics to generate a custom assignment.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Assignment History/Examples */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Assignment Tips & Best Practices
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-purple-700">📝 Topic Examples:</h4>
+                    <ul className="space-y-1 text-gray-600">
+                      <li>• "Linear algebra applications in machine learning"</li>
+                      <li>• "Organic chemistry reaction mechanisms"</li>
+                      <li>• "Data structures and algorithm complexity"</li>
+                      <li>• "Financial statement analysis"</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-purple-700">✨ Best Practices:</h4>
+                    <ul className="space-y-1 text-gray-600">
+                      <li>• Select 2-4 related modules for focused assignments</li>
+                      <li>• Be specific about learning objectives</li>
+                      <li>• Include practical application requirements</li>
+                      <li>• Specify submission format and deadlines</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

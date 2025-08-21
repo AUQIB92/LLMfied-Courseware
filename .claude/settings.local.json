@@ -11,7 +11,8 @@
       "WebFetch(domain:math.stackexchange.com)",
       "Bash(npx tsc:*)",
       "Bash(mv:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
