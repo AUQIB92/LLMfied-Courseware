@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Download, FileText, Clock, Users } from 'lucide-react'
 import { LatexRenderer } from '@/components/ui/latex-renderer'
+import SmartMathRenderer from '@/components/SmartMathRenderer'
+import BeautifulAssignmentRenderer from '@/components/ui/beautiful-assignment-renderer'
 import { toast } from 'sonner'
 
 interface AssignmentPreviewModalProps {
@@ -16,6 +18,7 @@ interface AssignmentPreviewModalProps {
   topics: string
   difficulty: string
   dueDate?: Date
+  references?: string
   onPublish?: () => void
   onExportPDF?: () => void
 }
@@ -28,6 +31,7 @@ export const AssignmentPreviewModal: React.FC<AssignmentPreviewModalProps> = ({
   topics,
   difficulty,
   dueDate,
+  references,
   onPublish,
   onExportPDF
 }) => {
@@ -122,16 +126,41 @@ export const AssignmentPreviewModal: React.FC<AssignmentPreviewModalProps> = ({
               </div>
             )}
           </div>
+          
+          {/* References Section */}
+          {references && (
+            <div className="mt-4 p-3 bg-white/80 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm font-semibold text-gray-700">Academic References:</span>
+              </div>
+              <div className="text-xs text-gray-600 max-h-20 overflow-y-auto">
+                {references.split('\n').slice(0, 3).map((ref, index) => (
+                  ref.trim() && (
+                    <div key={index} className="mb-1">• {ref.trim()}</div>
+                  )
+                ))}
+                {references.split('\n').filter(line => line.trim()).length > 3 && (
+                  <div className="text-blue-600 font-medium">... and {references.split('\n').filter(line => line.trim()).length - 3} more references</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Assignment Content */}
         <div className="flex-1 overflow-y-auto bg-white border border-gray-200 rounded-lg">
           <div className="p-6">
             {assignment ? (
-              <LatexRenderer 
-                content={assignment} 
-                className="assignment-content"
-              />
+              <div className="relative">
+                <div className="absolute top-0 right-0 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 text-xs px-3 py-1 rounded-bl-lg font-medium z-10 shadow-md border border-purple-200">
+                  ✨ Beautiful Design • 📐 Math Rendered
+                </div>
+                <BeautifulAssignmentRenderer 
+                  content={assignment} 
+                  className="assignment-content"
+                />
+              </div>
             ) : (
               <div className="text-center text-gray-500 py-12">
                 <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />

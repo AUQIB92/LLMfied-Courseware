@@ -73,6 +73,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import LearnerAssignmentList from "@/components/learner/LearnerAssignmentList";
+import LearnerAssignmentViewer from "@/components/learner/LearnerAssignmentViewer";
 
 export default function LearnerDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -99,6 +101,9 @@ export default function LearnerDashboard() {
     streak: 7,
     certificates: 3,
   });
+  const [assignments, setAssignments] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
   const {
     user,
     getAuthHeaders,
@@ -113,6 +118,8 @@ export default function LearnerDashboard() {
     fetchEnrolledCourses();
     fetchEnrolledAcademicCourses();
     fetchStats();
+    fetchAssignments();
+    fetchSubmissions();
   }, []);
 
   // Enhanced useEffect to instantly update enrolled courses when enrollment changes
@@ -395,6 +402,50 @@ export default function LearnerDashboard() {
     }
   };
 
+  const fetchAssignments = async () => {
+    try {
+      console.log("🚀 Fetching published assignments...");
+      const response = await apiCall("/api/assignments/published", {
+        method: "GET",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("📋 Assignments fetched:", data.assignments?.length || 0);
+        setAssignments(data.assignments || []);
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to fetch assignments:", errorText);
+        setAssignments([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch assignments:", error);
+      setAssignments([]);
+    }
+  };
+
+  const fetchSubmissions = async () => {
+    try {
+      console.log("🚀 Fetching assignment submissions...");
+      const response = await apiCall(`/api/assignments/submissions?studentId=${user?.id || user?._id}`, {
+        method: "GET",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("📝 Submissions fetched:", data.submissions?.length || 0);
+        setSubmissions(data.submissions || []);
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to fetch submissions:", errorText);
+        setSubmissions([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch submissions:", error);
+      setSubmissions([]);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     router.push("/");
@@ -419,6 +470,53 @@ export default function LearnerDashboard() {
     setShowProfileSettings(false);
     setShowPreferences(false);
     setActiveTab("notifications");
+  };
+
+  const handleSubmissionUpdate = async (submission) => {
+    try {
+      console.log("🚀 Updating assignment submission...");
+      const response = await apiCall("/api/assignments/submissions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...submission,
+          studentName: user?.name,
+          dueDate: selectedAssignment?.dueDate,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ Submission updated:", data.submission);
+        
+        // Update local submissions state
+        setSubmissions(prev => {
+          const existingIndex = prev.findIndex(sub => 
+            sub.assignmentId === submission.assignmentId && 
+            sub.studentId === submission.studentId
+          );
+          
+          if (existingIndex >= 0) {
+            const updated = [...prev];
+            updated[existingIndex] = data.submission;
+            return updated;
+          } else {
+            return [...prev, data.submission];
+          }
+        });
+
+        toast.success(data.message || "Submission saved successfully!");
+      } else {
+        const errorData = await response.json();
+        console.error("Failed to update submission:", errorData);
+        toast.error(errorData.details || errorData.error || "Failed to save submission");
+      }
+    } catch (error) {
+      console.error("Error updating submission:", error);
+      toast.error("Error saving submission. Please try again.");
+    }
   };
 
   const handleEnrollmentChange = async (courseId, isEnrolled) => {
@@ -533,6 +631,27 @@ export default function LearnerDashboard() {
   };
 
   const renderContent = () => {
+    if (selectedAssignment) {
+      return (
+        <LearnerAssignmentViewer
+          assignment={selectedAssignment}
+          studentId={user?.id || user?._id}
+          studentName={user?.name || 'Student'}
+          existingSubmission={submissions.find(sub => 
+            sub.assignmentId === selectedAssignment.id && 
+            sub.studentId === (user?.id || user?._id)
+          )}
+          onSubmissionUpdate={handleSubmissionUpdate}
+          onBack={() => {
+            setSelectedAssignment(null);
+            setHideHeader(false);
+            setIsHeaderVisible(true);
+            setLastScrollY(0);
+          }}
+        />
+      );
+    }
+
     if (selectedTestSeries) {
       return (
         <TestSeriesViewer
@@ -1329,6 +1448,23 @@ export default function LearnerDashboard() {
             onEnrollmentChange={handleEnrollmentChange}
           />
         );
+      case "assignments":
+        return (
+          <LearnerAssignmentList
+            assignments={assignments}
+            submissions={submissions}
+            studentId={user?.id || user?._id}
+            studentName={user?.name || 'Student'}
+            onViewAssignment={(assignment) => {
+              console.log("🎯 Assignment selected:", assignment.title);
+              setSelectedAssignment(assignment);
+              setHideHeader(true);
+            }}
+            onDownloadPDF={(assignment) => {
+              console.log("📄 PDF download requested for:", assignment.title);
+            }}
+          />
+        );
       case "academic-courses":
         return (
           <AcademicCourseLibrary
@@ -1399,6 +1535,7 @@ export default function LearnerDashboard() {
                 label: "Academic",
                 icon: GraduationCap,
               },
+              { id: "assignments", label: "Assignments", icon: FileText },
               { id: "test-series", label: "Test Series", icon: FileQuestion },
               { id: "profile", label: "Profile", icon: User },
               { id: "preferences", label: "Settings", icon: Settings },

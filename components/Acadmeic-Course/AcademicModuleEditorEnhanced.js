@@ -67,10 +67,13 @@ import {
   TrendingUp,
   ExternalLink,
   Loader2,
+  Send,
+  Calendar,
 } from "lucide-react";
 import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
 import UniversalContentRenderer from "@/components/UniversalContentRenderer";
 import HtmlMathViewer from "@/components/HtmlMathViewer";
+import AssignmentPreviewModal from "@/components/ui/assignment-preview-modal";
 import {
   Sheet,
   SheetContent,
@@ -1262,8 +1265,12 @@ export default function AcademicModuleEditorEnhanced({
   const [assignmentTopics, setAssignmentTopics] = useState("");
   const [assignmentInstructions, setAssignmentInstructions] = useState("");
   const [assignmentDifficulty, setAssignmentDifficulty] = useState("medium");
+  const [assignmentReferences, setAssignmentReferences] = useState("");
   const [generatingAssignment, setGeneratingAssignment] = useState(false);
   const [generatedAssignment, setGeneratedAssignment] = useState("");
+  const [showAssignmentPreview, setShowAssignmentPreview] = useState(false);
+  const [assignmentDueDate, setAssignmentDueDate] = useState(null);
+  const [assignmentPublished, setAssignmentPublished] = useState(false);
   const [subsectionQuizzes, setSubsectionQuizzes] = useState(
     module.subsectionQuizzes || {}
   );
@@ -1295,7 +1302,8 @@ export default function AcademicModuleEditorEnhanced({
           subject: course?.subject || "General Studies",
           topics: assignmentTopics,
           instructions: assignmentInstructions,
-          difficulty: assignmentDifficulty
+          difficulty: assignmentDifficulty,
+          references: assignmentReferences
         }),
       });
 
@@ -1324,8 +1332,16 @@ export default function AcademicModuleEditorEnhanced({
 
       if (data.success && data.assignment) {
         setGeneratedAssignment(data.assignment);
+        // Set due date to 7 days from now
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7);
+        setAssignmentDueDate(dueDate);
+        
         toast.success("Assignment with LaTeX mathematical questions generated successfully!");
         console.log("✅ Assignment generated with", data.assignment.length, "characters");
+        
+        // Show preview modal
+        setShowAssignmentPreview(true);
       } else {
         throw new Error(data.error || data.details || "Failed to generate assignment");
       }
@@ -1349,6 +1365,100 @@ export default function AcademicModuleEditorEnhanced({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportAssignmentPDF = async () => {
+    if (!generatedAssignment) return;
+
+    try {
+      // Use beautiful PDF export with enhanced visual design
+      const { exportBeautifulAssignmentPDF } = await import('../../utils/beautiful-pdf-export');
+      
+      const metadata = {
+        moduleTitle: localModule.title,
+        topics: assignmentTopics,
+        difficulty: assignmentDifficulty,
+        dueDate: assignmentDueDate,
+        courseTitle: course?.title || 'Course Assignment',
+        institutionName: 'Govt. College of Engineering Safapora Ganderbal Kashmir, India 193504',
+        instructorName: 'Dr. Auqib Hamid Lone',
+        references: assignmentReferences
+      };
+
+      const result = await exportBeautifulAssignmentPDF(generatedAssignment, metadata);
+      toast.success("🎨 Beautiful Assignment PDF Ready! Stunning visual design with SVG icons and clear problem/solution differentiation.");
+    } catch (error) {
+      console.error("Beautiful PDF Export Error:", error);
+      
+      // Fallback to enhanced math PDF export
+      try {
+        console.log("Falling back to enhanced math PDF export...");
+        const { exportMathRenderedPDF } = await import('../../utils/enhanced-math-pdf');
+        const result = await exportMathRenderedPDF(generatedAssignment, metadata);
+        toast.success("📄 PDF with Rendered Mathematics Ready! Professional document with properly displayed math equations.");
+      } catch (fallbackError) {
+        console.error("Fallback PDF Export Error:", fallbackError);
+        toast.error(`Failed to export PDF: ${fallbackError.message}`);
+      }
+    }
+  };
+
+  const handlePublishAssignment = async () => {
+    if (!generatedAssignment) {
+      toast.error("No assignment to publish");
+      return;
+    }
+
+    if (!assignmentDueDate) {
+      toast.error("Please set a due date before publishing");
+      return;
+    }
+
+    try {
+      // Publish assignment to make it available for learners
+      const assignmentData = {
+        courseId: courseId,
+        moduleId: localModule.id,
+        moduleTitle: localModule.title,
+        content: generatedAssignment,
+        topics: assignmentTopics,
+        instructions: assignmentInstructions,
+        difficulty: assignmentDifficulty,
+        dueDate: assignmentDueDate.toISOString(),
+        references: assignmentReferences,
+        instructorName: 'Dr. Auqib Hamid Lone',
+        courseTitle: course?.title || 'Course Assignment',
+        maxScore: 100,
+        publishedBy: 'instructor'
+      };
+
+      console.log("📤 Publishing assignment:", assignmentData);
+
+      const response = await fetch('/api/assignments/published', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(assignmentData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.details || result.error || 'Failed to publish assignment');
+      }
+
+      if (result.success) {
+        setAssignmentPublished(true);
+        toast.success("🎉 Assignment published successfully! Students can now access and submit solutions.");
+        console.log("✅ Assignment published with ID:", result.assignment.id);
+      } else {
+        throw new Error(result.error || 'Failed to publish assignment');
+      }
+    } catch (error) {
+      console.error("❌ Assignment publishing error:", error);
+      toast.error(`Failed to publish assignment: ${error.message}`);
+    }
   };
 
   // Academic detailed content generation state
@@ -6396,10 +6506,26 @@ Detailed discussion here..."
                     <Label htmlFor="assignment-topics">Assignment Topics</Label>
                     <Textarea
                       id="assignment-topics"
-                      placeholder="Paste your assignment topics here...&#10;&#10;Examples:&#10;• Linear algebra applications&#10;• Machine learning algorithms&#10;• Data structure implementations&#10;• Problem-solving strategies"
+                      placeholder="Enter 10 specific mathematical/engineering topics for assignment generation:
+
+Examples:
+• Differential Equations - Second Order Linear
+• Linear Algebra - Matrix Eigenvalues and Eigenvectors  
+• Calculus - Integration by Parts and Substitution
+• Statistics - Normal Distribution and Z-scores
+• Physics - Projectile Motion and Kinematics
+• Engineering Mathematics - Fourier Series Analysis
+• Numerical Methods - Newton-Raphson Method
+• Mechanics - Force Systems and Equilibrium
+• Electromagnetics - Electric Field Calculations
+• Thermodynamics - Heat Transfer and Efficiency
+
+FORMAT: Each topic will generate:
+✓ 1 Complete solved example with step-by-step solution
+✓ 3 Similar unsolved problems for students to solve"
                       value={assignmentTopics}
                       onChange={(e) => setAssignmentTopics(e.target.value)}
-                      rows={8}
+                      rows={12}
                       className="mt-1"
                     />
                   </div>
@@ -6408,12 +6534,48 @@ Detailed discussion here..."
                     <Label htmlFor="assignment-instructions">Additional Instructions (Optional)</Label>
                     <Textarea
                       id="assignment-instructions"
-                      placeholder="Submission format, grading criteria, deadlines..."
+                      placeholder="Specific instructions for students:
+
+Examples:
+• Use proper units in all calculations
+• Show complete derivations for all formulas used
+• Submit handwritten solutions with clear diagrams
+• Reference equations by number from the textbook
+• Grading: 40% methodology, 40% calculations, 20% presentation"
                       value={assignmentInstructions}
                       onChange={(e) => setAssignmentInstructions(e.target.value)}
-                      rows={3}
+                      rows={4}
                       className="mt-1"
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="assignment-references">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        Academic References & Sources
+                      </div>
+                    </Label>
+                    <Textarea
+                      id="assignment-references"
+                      placeholder="Enter textbooks, research papers, online resources, or specific chapters from which to derive problems:
+
+Examples:
+• Calculus: Early Transcendentals by Stewart, Chapter 3-4
+• Linear Algebra and Its Applications by Lay, Section 2.1-2.3
+• Engineering Mathematics by Erwin Kreyszig, Chapter 12
+• Research Paper: 'Numerical Methods in Engineering' (DOI: 10.1234/example)
+• MIT OpenCourseWare: 18.01 Single Variable Calculus
+• Khan Academy: Differential Equations Module"
+                      value={assignmentReferences}
+                      onChange={(e) => setAssignmentReferences(e.target.value)}
+                      rows={6}
+                      className="mt-1 font-mono text-sm"
+                    />
+                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                      <Lightbulb className="h-3 w-3" />
+                      Specify books, papers, or online resources for problem generation. This ensures academic rigor and proper attribution.
+                    </div>
                   </div>
 
                   <div>
@@ -6430,6 +6592,27 @@ Detailed discussion here..."
                     </Select>
                   </div>
 
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="font-semibold text-blue-800">New Assignment Format</span>
+                    </div>
+                    <div className="text-sm text-blue-700 space-y-1">
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">📊 Structure:</span>
+                        <span>10 Questions × (1 Solved + 3 Unsolved) = 40 Problems Total</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">📚 Sources:</span>
+                        <span>Each question references your specified academic materials</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">⚡ Format:</span>
+                        <span>LaTeX math rendering with step-by-step solutions</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <Button
                     onClick={handleGenerateAssignment}
                     disabled={!assignmentTopics.trim() || generatingAssignment}
@@ -6438,12 +6621,12 @@ Detailed discussion here..."
                     {generatingAssignment ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating Assignment...
+                        Generating 10 Questions (1 Solved + 3 Unsolved Each)...
                       </>
                     ) : (
                       <>
                         <Zap className="h-4 w-4 mr-2" />
-                        Generate Assignment
+                        Generate Assignment (10 Questions)
                       </>
                     )}
                   </Button>
@@ -6452,24 +6635,86 @@ Detailed discussion here..."
                 {/* Generated Assignment Preview */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label>Generated Assignment</Label>
+                    <div className="flex items-center gap-2">
+                      <Label>Generated Assignment</Label>
+                      {assignmentPublished && (
+                        <Badge className="bg-green-100 text-green-800 border-green-200">
+                          Published
+                        </Badge>
+                      )}
+                      {assignmentDueDate && (
+                        <Badge variant="outline" className="text-orange-600 border-orange-300">
+                          Due: {assignmentDueDate.toLocaleDateString()}
+                        </Badge>
+                      )}
+                    </div>
                     {generatedAssignment && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleDownloadAssignment}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowAssignmentPreview(true)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleExportAssignmentPDF}
+                          className="bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border-purple-200 text-purple-700 font-semibold"
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Export Beautiful PDF
+                        </Button>
+                        {!assignmentPublished && (
+                          <Button
+                            size="sm"
+                            onClick={handlePublishAssignment}
+                            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                          >
+                            <Send className="h-4 w-4 mr-1" />
+                            Publish
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                   
                   {generatedAssignment ? (
-                    <div className="border rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
-                      <pre className="whitespace-pre-wrap text-sm font-mono">
-                        {generatedAssignment}
-                      </pre>
+                    <div className="border rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50">
+                      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span className="font-medium">Mathematical Assignment</span>
+                          </div>
+                          <div className="text-xs opacity-90">
+                            {Math.ceil(generatedAssignment.length / 1000)}k characters
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 max-h-80 overflow-y-auto">
+                        <div className="text-sm text-gray-700 space-y-2">
+                          {generatedAssignment.split('\n').slice(0, 15).map((line, index) => (
+                            <div key={index} className={line.startsWith('#') ? 'font-semibold text-gray-900' : ''}>
+                              {line || '\u00A0'}
+                            </div>
+                          ))}
+                          {generatedAssignment.split('\n').length > 15 && (
+                            <div className="text-center pt-4">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowAssignmentPreview(true)}
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                View Complete Assignment ({generatedAssignment.split('\n').length - 15} more lines)
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
@@ -6967,6 +7212,20 @@ Detailed discussion here..."
           </div>
         </div>
       )}
+
+      {/* Assignment Preview Modal */}
+      <AssignmentPreviewModal
+        isOpen={showAssignmentPreview}
+        onClose={() => setShowAssignmentPreview(false)}
+        assignment={generatedAssignment}
+        moduleTitle={localModule.title}
+        topics={assignmentTopics}
+        difficulty={assignmentDifficulty}
+        dueDate={assignmentDueDate}
+        references={assignmentReferences}
+        onPublish={handlePublishAssignment}
+        onExportPDF={handleExportAssignmentPDF}
+      />
     </div>
   );
 }
