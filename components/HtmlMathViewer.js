@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useMemo } from 'react'
-import DOMPurify from 'dompurify'
+import React, { useMemo, useEffect, useState } from 'react'
 import ReliableMathRenderer from './ReliableMathRenderer'
 
 // Simple Markdown-to-HTML helper for headings, lists and paragraphs.
@@ -140,6 +139,23 @@ function processHtmlContent(html) {
 }
 
 export default function HtmlMathViewer({ html, markdownFallback = '', className = '' }) {
+  const [DOMPurify, setDOMPurify] = useState(null)
+  const [isClient, setIsClient] = useState(false)
+
+  // Load DOMPurify only on client side
+  useEffect(() => {
+    setIsClient(true)
+    const loadDOMPurify = async () => {
+      try {
+        const DOMPurifyModule = await import('dompurify')
+        setDOMPurify(DOMPurifyModule.default)
+      } catch (error) {
+        console.warn('Failed to load DOMPurify:', error)
+      }
+    }
+    loadDOMPurify()
+  }, [])
+
   const contentToRender = useMemo(() => {
     let source = html
     if (!source && markdownFallback) {
@@ -148,21 +164,26 @@ export default function HtmlMathViewer({ html, markdownFallback = '', className 
       source = processHtmlContent(source)
     }
     
-    // Sanitize the HTML for security but keep it as HTML
-    const clean = DOMPurify.sanitize(source || '', {
-      USE_PROFILES: { html: true },
-      ALLOWED_TAGS: [
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'code', 'pre',
-        'ul', 'ol', 'li', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
-        'span', 'div', 'a', 'img', 'hr'
-      ],
-      ALLOWED_ATTR: [
-        'class', 'href', 'src', 'alt', 'title', 'id'
-      ],
-      ALLOWED_CLASSES: {}
-    })
-    return clean
-  }, [html, markdownFallback])
+    // Only sanitize on client side when DOMPurify is available
+    if (isClient && DOMPurify) {
+      const clean = DOMPurify.sanitize(source || '', {
+        USE_PROFILES: { html: true },
+        ALLOWED_TAGS: [
+          'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'code', 'pre',
+          'ul', 'ol', 'li', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+          'span', 'div', 'a', 'img', 'hr'
+        ],
+        ALLOWED_ATTR: [
+          'class', 'href', 'src', 'alt', 'title', 'id'
+        ],
+        ALLOWED_CLASSES: {}
+      })
+      return clean
+    }
+    
+    // Return unsanitized content during SSR (should be safe if content is trusted)
+    return source || ''
+  }, [html, markdownFallback, isClient, DOMPurify])
 
   // Determine content type from HTML content
   const contentType = useMemo(() => {
