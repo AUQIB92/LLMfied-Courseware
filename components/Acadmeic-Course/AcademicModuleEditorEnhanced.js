@@ -1372,7 +1372,7 @@ export default function AcademicModuleEditorEnhanced({
 
     try {
       // Use beautiful PDF export with enhanced visual design
-      const { exportBeautifulAssignmentPDF } = await import('../../utils/beautiful-pdf-export');
+      const { exportBeautifulAssignmentPDF } = await import('@/utils/beautiful-pdf-export');
       
       const metadata = {
         moduleTitle: localModule.title,
@@ -1393,7 +1393,7 @@ export default function AcademicModuleEditorEnhanced({
       // Fallback to enhanced math PDF export
       try {
         console.log("Falling back to enhanced math PDF export...");
-        const { exportMathRenderedPDF } = await import('../../utils/enhanced-math-pdf');
+        const { exportMathRenderedPDF } = await import('@/utils/enhanced-math-pdf');
         const result = await exportMathRenderedPDF(generatedAssignment, metadata);
         toast.success("📄 PDF with Rendered Mathematics Ready! Professional document with properly displayed math equations.");
       } catch (fallbackError) {
@@ -2605,23 +2605,26 @@ export default function AcademicModuleEditorEnhanced({
     setSaving(true);
 
     try {
+      const requestData = {
+        course: {
+          ...course,
+          _id: courseId,
+          status: "published", // Keep published status
+          isPublished: true, // Keep published flag
+          isAcademicCourse: true,
+          courseType: "academic",
+          modules: course.modules,
+        },
+      };
+
+
       const response = await fetch("/api/academic-courses/save-course", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({
-          course: {
-            ...course,
-            _id: courseId,
-            status: "published", // Keep published status
-            isPublished: true, // Keep published flag
-            isAcademicCourse: true,
-            courseType: "academic",
-            modules: course.modules,
-          },
-        }),
+        body: JSON.stringify(requestData),
       });
 
       if (response.ok) {

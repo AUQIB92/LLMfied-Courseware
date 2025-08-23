@@ -28,6 +28,8 @@ export async function POST(request) {
     const body = await request.json();
     // Handle both direct course data and nested course object
     const requestData = body.course || body;
+    
+    
     const {
       _id,
       title,
@@ -74,38 +76,49 @@ export async function POST(request) {
       // Update existing course
       console.log(`📝 Updating existing academic course with ID: ${_id}`);
       
+      // First, let's get the existing course data to preserve fields not being updated
+      const existingCourse = await coursesCollection.findOne({ _id: new ObjectId(_id) });
+      
+      if (!existingCourse) {
+        return NextResponse.json(
+          { error: "Course not found" },
+          { status: 404 }
+        );
+      }
+
       const updateData = {
-        title: title.trim(),
-        description: description?.trim() || '',
-        subject: courseSubject,
-        academicLevel: courseAcademicLevel,
-        semester: semester?.trim() || '',
-        credits: credits || 3,
-        dueDate: dueDate || null,
-        objectives: Array.isArray(objectives) ? objectives.filter(obj => obj?.trim()) : [],
-        prerequisites: Array.isArray(prerequisites) ? prerequisites.filter(req => req?.trim()) : [],
-        modules: Array.isArray(modules) ? modules : [],
-        assessmentCriteria: assessmentCriteria || {
+        title: title?.trim() || existingCourse.title,
+        description: description?.trim() || existingCourse.description || '',
+        subject: courseSubject || existingCourse.subject,
+        academicLevel: courseAcademicLevel || existingCourse.academicLevel,
+        semester: semester?.trim() || existingCourse.semester || '',
+        credits: credits || existingCourse.credits || 3,
+        dueDate: dueDate !== undefined ? dueDate : existingCourse.dueDate,
+        objectives: Array.isArray(objectives) ? objectives.filter(obj => obj?.trim()) : (existingCourse.objectives || []),
+        prerequisites: Array.isArray(prerequisites) ? prerequisites.filter(req => req?.trim()) : (existingCourse.prerequisites || []),
+        modules: Array.isArray(modules) ? modules : (existingCourse.modules || []),
+        assessmentCriteria: assessmentCriteria || existingCourse.assessmentCriteria || {
           assignments: 40,
           quizzes: 20,
           midterm: 20,
           final: 20
         },
-        allowDiscussions: allowDiscussions !== false,
-        allowGroupWork: allowGroupWork === true,
-        gradingScale: gradingScale || "percentage",
-        status: status || "draft",
-        isPublished: status === "published",
+        allowDiscussions: allowDiscussions !== undefined ? allowDiscussions !== false : (existingCourse.allowDiscussions !== false),
+        allowGroupWork: allowGroupWork !== undefined ? allowGroupWork === true : (existingCourse.allowGroupWork === true),
+        gradingScale: gradingScale || existingCourse.gradingScale || "percentage",
+        status: status || existingCourse.status || "draft",
+        isPublished: status === "published" || (status === undefined && existingCourse.isPublished),
         isAcademicCourse: true,
         courseType: "academic",
         stats: {
-          totalModules: modules?.length || 0,
-          totalAssignments: (modules?.length || 0) * 2,
-          totalQuizzes: modules?.length || 0,
-          estimatedWeeks: (modules?.length || 0) * 2
+          totalModules: (modules?.length || existingCourse.modules?.length || 0),
+          totalAssignments: ((modules?.length || existingCourse.modules?.length || 0) * 2),
+          totalQuizzes: modules?.length || existingCourse.modules?.length || 0,
+          estimatedWeeks: ((modules?.length || existingCourse.modules?.length || 0) * 2)
         },
         updatedAt: new Date()
       };
+
 
       result = await coursesCollection.updateOne(
         { _id: new ObjectId(_id) },
@@ -167,14 +180,13 @@ export async function POST(request) {
       console.log(`✅ Academic course created successfully with ID: ${courseId}`);
     }
 
+    // Fetch the complete course data to return to the client
+    const savedCourse = await coursesCollection.findOne({ _id: new ObjectId(courseId) });
+    
     return NextResponse.json({
       success: true,
       courseId: courseId,
-      course: {
-        _id: courseId,
-        title: title.trim(),
-        status: status || "draft"
-      },
+      course: savedCourse,
       message: `Academic course "${title}" ${isUpdating ? 'updated' : 'created'} successfully`
     });
 
