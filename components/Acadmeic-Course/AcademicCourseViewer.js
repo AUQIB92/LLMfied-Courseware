@@ -32,6 +32,13 @@ import {
   Award
 } from "lucide-react"
 
+// Add style for horizontal scrollbar hiding
+const hiddenScrollbarStyle = {
+  msOverflowStyle: 'none',  /* IE and Edge */
+  scrollbarWidth: 'none',   /* Firefox */
+  WebkitScrollbar: { display: 'none' } /* Chrome, Safari */
+}
+
 export default function AcademicCourseViewer({ courseId, course: initialCourse, onBack }) {
   const { getAuthHeaders } = useAuth()
   const [viewerCourse, setViewerCourse] = useState(initialCourse || null)
@@ -44,6 +51,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   const [completedSubsections, setCompletedSubsections] = useState(new Set())
   const [completedPages, setCompletedPages] = useState(new Set())
   const [activeTab, setActiveTab] = useState("overview")
+  const [focusedModule, setFocusedModule] = useState(null) // New state for focused module view
 
   useEffect(() => {
     if (initialCourse) {
@@ -94,6 +102,18 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   const markPageComplete = (moduleIndex, subsectionIndex, pageIndex) => {
     const pageKey = `${moduleIndex}-${subsectionIndex}-${pageIndex}`
     setCompletedPages(prev => new Set([...prev, pageKey]))
+  }
+
+  // Helper functions for focused module view
+  const handleModuleClick = (moduleIndex) => {
+    setFocusedModule(moduleIndex)
+    setCurrentModule(moduleIndex)
+    setCurrentSubsection(0)
+    setCurrentPage(0)
+  }
+
+  const handleBackToModules = () => {
+    setFocusedModule(null)
   }
 
   const getProgressPercentage = () => {
@@ -529,30 +549,30 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600 mb-1">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                      <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
+                        <div className="text-xl sm:text-2xl font-bold text-blue-600 mb-1">
                           {viewerCourse.assessmentCriteria.assignments}%
                         </div>
-                        <div className="text-sm text-slate-600">Assignments</div>
+                        <div className="text-xs sm:text-sm text-slate-600">Assignments</div>
                       </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600 mb-1">
+                      <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+                        <div className="text-xl sm:text-2xl font-bold text-green-600 mb-1">
                           {viewerCourse.assessmentCriteria.quizzes}%
                         </div>
-                        <div className="text-sm text-slate-600">Quizzes</div>
+                        <div className="text-xs sm:text-sm text-slate-600">Quizzes</div>
                       </div>
-                      <div className="text-center p-4 bg-amber-50 rounded-lg">
-                        <div className="text-2xl font-bold text-amber-600 mb-1">
+                      <div className="text-center p-3 sm:p-4 bg-amber-50 rounded-lg">
+                        <div className="text-xl sm:text-2xl font-bold text-amber-600 mb-1">
                           {viewerCourse.assessmentCriteria.midterm}%
                         </div>
-                        <div className="text-sm text-slate-600">Midterm</div>
+                        <div className="text-xs sm:text-sm text-slate-600">Midterm</div>
                       </div>
-                      <div className="text-center p-4 bg-red-50 rounded-lg">
-                        <div className="text-2xl font-bold text-red-600 mb-1">
+                      <div className="text-center p-3 sm:p-4 bg-red-50 rounded-lg">
+                        <div className="text-xl sm:text-2xl font-bold text-red-600 mb-1">
                           {viewerCourse.assessmentCriteria.final}%
                         </div>
-                        <div className="text-sm text-slate-600">Final</div>
+                        <div className="text-xs sm:text-sm text-slate-600">Final</div>
                       </div>
                     </div>
                   </CardContent>
@@ -562,104 +582,302 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
 
             <TabsContent value="modules" className="space-y-4">
               {modules?.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[calc(100vh-16rem)]">
-                  {/* Module Navigation Sidebar */}
-                  <Card className="lg:col-span-1">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <BookOpen className="h-5 w-5" /> Course Modules
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="space-y-2 p-4">
-                        {modules.map((module, index) => (
-                          <Button
-                            key={index}
-                            variant={currentModule === index ? "default" : "ghost"}
-                            className={`w-full justify-start text-left h-auto p-3 ${
-                              currentModule === index
-                                ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                                : "hover:bg-blue-50"
-                            }`}
-                            onClick={() => {
-                              setCurrentModule(index)
-                              setCurrentSubsection(0)
-                              setCurrentPage(0)
-                            }}
-                          >
-                            <div className="flex items-center gap-3 w-full">
-                              <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                  completedModules.has(index)
-                                    ? "bg-green-500 text-white"
-                                    : currentModule === index
-                                    ? "bg-white/20 text-white"
-                                    : "bg-gray-200 text-gray-600"
-                                }`}
+                // Check if we're in focused module view
+                focusedModule !== null ? (
+                  // Focused Module View - Full Screen with Back Button
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="min-h-[calc(100vh-12rem)]"
+                  >
+                    {/* Back to Modules Header */}
+                    <Card className="mb-6">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <Button
+                              variant="outline"
+                              onClick={handleBackToModules}
+                              className="flex items-center gap-2 hover:bg-blue-50 border-blue-200 text-blue-700 hover:text-blue-800"
+                            >
+                              <ArrowLeft className="h-4 w-4" />
+                              Back to Modules
+                            </Button>
+                            <div className="h-6 w-px bg-slate-200"></div>
+                            <div>
+                              <h2 className="text-xl font-bold text-slate-800">
+                                {modules[focusedModule]?.title || `Module ${focusedModule + 1}`}
+                              </h2>
+                              <p className="text-sm text-slate-600">
+                                Module {focusedModule + 1} of {modules.length}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {!completedModules.has(focusedModule) && (
+                              <Button
+                                onClick={() => markModuleComplete(focusedModule)}
+                                className="bg-green-600 hover:bg-green-700"
                               >
-                                {completedModules.has(index) ? (
-                                  <CheckCircle className="h-4 w-4" />
-                                ) : (
-                                  <span className="text-sm font-bold">
-                                    {index + 1}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">
-                                  {module.title || `Module ${index + 1}`}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Progress
-                                    value={completedModules.has(index) ? 100 : 0}
-                                    className="h-1 flex-1"
-                                  />
-                                  <span className="text-xs opacity-70">
-                                    {completedModules.has(index) ? 100 : 0}%
-                                  </span>
-                                </div>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark Complete
+                              </Button>
+                            )}
+                            {completedModules.has(focusedModule) && (
+                              <Badge className="bg-green-100 text-green-800 border-green-200">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Completed
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Focused Module Content */}
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="space-y-6">
+                          {/* Module Description */}
+                          {modules[focusedModule]?.description && (
+                            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+                              <p className="text-blue-800">{modules[focusedModule].description}</p>
+                            </div>
+                          )}
+                          
+                          {/* Main module content */}
+                          <div className="prose prose-lg max-w-none mb-4">
+                            <ReliableMathRenderer
+                              content={
+                                modules[focusedModule]?.content || 
+                                modules[focusedModule]?.generatedMarkdown ||
+                                "Interactive learning materials and resources for this module will be displayed here."
+                              }
+                              className="prose prose-lg max-w-none"
+                              showMetrics={false}
+                            />
+                          </div>
+                          
+                          {/* Module objectives */}
+                          {modules[focusedModule]?.objectives && modules[focusedModule].objectives.length > 0 && (
+                            <div className="mt-6 p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg">
+                              <h6 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+                                <Target className="h-4 w-4" />
+                                Module Objectives
+                              </h6>
+                              <ul className="space-y-2">
+                                {modules[focusedModule].objectives.map((objective, index) => (
+                                  <li key={index} className="flex items-start gap-2">
+                                    <ChevronRight className="h-4 w-4 text-amber-600 mt-1 flex-shrink-0" />
+                                    <span className="text-amber-800">{objective}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {/* Module topics */}
+                          {modules[focusedModule]?.topics && modules[focusedModule].topics.length > 0 && (
+                            <div className="mt-6 p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
+                              <h6 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                                <BookOpen className="h-4 w-4" />
+                                Topics Covered
+                              </h6>
+                              <ul className="space-y-2">
+                                {modules[focusedModule].topics.map((topic, index) => (
+                                  <li key={index} className="flex items-start gap-2">
+                                    <ChevronRight className="h-4 w-4 text-green-600 mt-1 flex-shrink-0" />
+                                    <span className="text-green-800">{topic}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {/* Module assignments if any */}
+                          {modules[focusedModule]?.assignments && modules[focusedModule].assignments.length > 0 && (
+                            <div className="mt-6 p-4 bg-purple-50 border-l-4 border-purple-400 rounded-r-lg">
+                              <h6 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                Module Assignments
+                              </h6>
+                              <div className="space-y-2">
+                                {modules[focusedModule].assignments.map((assignment, index) => (
+                                  <div key={index} className="flex items-center gap-3 p-2 bg-white rounded border">
+                                    <FileText className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                                    <div className="flex-1">
+                                      <p className="font-medium text-purple-900">{assignment.title}</p>
+                                      <p className="text-sm text-purple-700">
+                                        Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          </Button>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Main Content Area */}
-                  <Card className="lg:col-span-3">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-xl">
-                            {currentModuleData?.title || `Module ${currentModule + 1}`}
-                          </CardTitle>
-                          {currentModuleData?.description && (
-                            <p className="text-slate-600 mt-2">
-                              {currentModuleData.description}
-                            </p>
                           )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {!completedModules.has(currentModule) && (
+                          
+                          {/* Navigation Footer */}
+                          <div className="pt-6 border-t border-slate-200 flex items-center justify-between">
                             <Button
-                              onClick={() => markModuleComplete(currentModule)}
-                              className="bg-green-600 hover:bg-green-700"
+                              variant="outline"
+                              onClick={() => {
+                                if (focusedModule > 0) {
+                                  setFocusedModule(focusedModule - 1)
+                                  setCurrentModule(focusedModule - 1)
+                                  setCurrentSubsection(0)
+                                  setCurrentPage(0)
+                                }
+                              }}
+                              disabled={focusedModule === 0}
+                              className="flex items-center gap-2"
                             >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Mark Complete
+                              <ChevronLeft className="h-4 w-4" />
+                              Previous Module
                             </Button>
-                          )}
-                          {completedModules.has(currentModule) && (
-                            <Badge className="bg-green-100 text-green-800 border-green-200">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Completed
-                            </Badge>
-                          )}
+                            
+                            <div className="flex items-center gap-2">
+                              {Array.from({ length: Math.min(modules.length, 5) }, (_, i) => {
+                                const moduleIndex = Math.max(0, focusedModule - 2) + i;
+                                return moduleIndex < modules.length ? (
+                                  <div
+                                    key={moduleIndex}
+                                    className={`w-3 h-3 rounded-full transition-colors duration-300 ${
+                                      moduleIndex < focusedModule
+                                        ? "bg-green-400"
+                                        : moduleIndex === focusedModule
+                                        ? "bg-blue-500"
+                                        : "bg-slate-200"
+                                    }`}
+                                  />
+                                ) : null;
+                              })}
+                              {modules.length > 5 && (
+                                <span className="text-xs text-slate-400 ml-1">
+                                  {focusedModule + 1}/{modules.length}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                if (focusedModule < modules.length - 1) {
+                                  setFocusedModule(focusedModule + 1)
+                                  setCurrentModule(focusedModule + 1)
+                                  setCurrentSubsection(0)
+                                  setCurrentPage(0)
+                                }
+                              }}
+                              disabled={focusedModule === modules.length - 1}
+                              className="flex items-center gap-2"
+                            >
+                              Next Module
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ) : (
+                  // Regular Module List View
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[calc(100vh-16rem)]">
+                    {/* Module Navigation Sidebar */}
+                    <Card className="lg:col-span-1">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BookOpen className="h-5 w-5" /> Course Modules
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="space-y-2 p-4">
+                          {modules.map((module, index) => (
+                            <Button
+                              key={index}
+                              variant={currentModule === index ? "default" : "ghost"}
+                              className={`w-full justify-start text-left h-auto p-3 ${
+                                currentModule === index
+                                  ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                                  : "hover:bg-blue-50"
+                              }`}
+                              onClick={() => handleModuleClick(index)}
+                            >
+                              <div className="flex items-center gap-3 w-full">
+                                <div
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                    completedModules.has(index)
+                                      ? "bg-green-500 text-white"
+                                      : currentModule === index
+                                      ? "bg-white/20 text-white"
+                                      : "bg-gray-200 text-gray-600"
+                                  }`}
+                                >
+                                  {completedModules.has(index) ? (
+                                    <CheckCircle className="h-4 w-4" />
+                                  ) : (
+                                    <span className="text-sm font-bold">
+                                      {index + 1}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">
+                                    {module.title || `Module ${index + 1}`}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Progress
+                                      value={completedModules.has(index) ? 100 : 0}
+                                      className="h-1 flex-1"
+                                    />
+                                    <span className="text-xs opacity-70">
+                                      {completedModules.has(index) ? 100 : 0}%
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Button>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Main Content Area */}
+                    <Card className="lg:col-span-3">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-xl">
+                              {currentModuleData?.title || `Module ${currentModule + 1}`}
+                            </CardTitle>
+                            {currentModuleData?.description && (
+                              <p className="text-slate-600 mt-2">
+                                {currentModuleData.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {!completedModules.has(currentModule) && (
+                              <Button
+                                onClick={() => markModuleComplete(currentModule)}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark Complete
+                              </Button>
+                            )}
+                            {completedModules.has(currentModule) && (
+                              <Badge className="bg-green-100 text-green-800 border-green-200">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Completed
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
                       <div className="space-y-6">
                         {/* Subsections Display */}
                         {subsections.length > 0 ? (
@@ -696,81 +914,87 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                 </div>
                               </div>
                               
-                              {/* Desktop Pagination - Show all sections */}
+                              {/* Desktop Pagination - Compact horizontal scrollable */}
                               <div className="hidden md:block">
-                                <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200">
-                                  {subsections.map((subsection, index) => {
-                                    const isCompleted = completedSubsections.has(`${currentModule}-${index}`)
-                                    const isCurrent = currentSubsection === index
-                                    const isVisited = index < currentSubsection || isCompleted
-                                    
-                                    return (
-                                      <div key={index} className="flex items-center">
-                                        <motion.button
-                                          onClick={() => {
-                                            setCurrentSubsection(index)
-                                            setCurrentPage(0)
-                                          }}
-                                          className={`relative group transition-all duration-300 ease-in-out ${
-                                            isCurrent
-                                              ? "scale-110"
-                                              : "hover:scale-105"
-                                          }`}
-                                          whileHover={{ scale: 1.05 }}
-                                          whileTap={{ scale: 0.95 }}
-                                        >
-                                          <div className={`
-                                            w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm
-                                            border-2 transition-all duration-300 ${
-                                              isCurrent
-                                                ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white border-blue-400 shadow-lg shadow-blue-200"
-                                                : isCompleted
-                                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-green-400 shadow-md shadow-green-200"
-                                                : isVisited
-                                                ? "bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200"
-                                                : "bg-white text-slate-500 border-slate-300 hover:bg-slate-50 hover:border-slate-400"
-                                            }
-                                          `}>
-                                            {isCompleted ? (
-                                              <CheckCircle className="h-4 w-4" />
-                                            ) : (
-                                              <span>{index + 1}</span>
-                                            )}
-                                          </div>
-                                          
-                                          {/* Tooltip */}
-                                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                                            <div className="bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                                              {subsection.title || `Section ${index + 1}`}
-                                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
+                                <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-200 p-2">
+                                  <div 
+                                    className="flex items-center gap-1 overflow-x-auto pb-1"
+                                    style={hiddenScrollbarStyle}
+                                  >
+                                    {subsections.map((subsection, index) => {
+                                      const isCompleted = completedSubsections.has(`${currentModule}-${index}`)
+                                      const isCurrent = currentSubsection === index
+                                      const isVisited = index < currentSubsection || isCompleted
+                                      
+                                      return (
+                                        <div key={index} className="flex items-center flex-shrink-0">
+                                          <motion.button
+                                            onClick={() => {
+                                              setCurrentSubsection(index)
+                                              setCurrentPage(0)
+                                            }}
+                                            className={`relative group transition-all duration-200 ${
+                                              isCurrent ? "scale-105" : "hover:scale-102"
+                                            }`}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.95 }}
+                                          >
+                                            <div className={`
+                                              w-7 h-7 rounded-full flex items-center justify-center font-medium text-xs
+                                              border transition-all duration-200 ${
+                                                isCurrent
+                                                  ? "bg-blue-600 text-white border-blue-500 shadow-md"
+                                                  : isCompleted
+                                                  ? "bg-green-500 text-white border-green-400"
+                                                  : isVisited
+                                                  ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-150"
+                                                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                                              }
+                                            `}>
+                                              {isCompleted ? (
+                                                <CheckCircle className="h-3 w-3" />
+                                              ) : (
+                                                <span>{index + 1}</span>
+                                              )}
                                             </div>
-                                          </div>
-                                        </motion.button>
-                                        
-                                        {/* Progress connector */}
-                                        {index < subsections.length - 1 && (
-                                          <div className="flex-1 h-0.5 mx-2 relative">
-                                            <div className="absolute inset-0 bg-slate-200 rounded-full"></div>
-                                            <motion.div
-                                              className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"
-                                              initial={{ width: "0%" }}
-                                              animate={{ 
-                                                width: isCompleted || index < currentSubsection ? "100%" : "0%" 
-                                              }}
-                                              transition={{ duration: 0.3 }}
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-                                    )
-                                  })}
+                                            
+                                            {/* Enhanced Tooltip with full title */}
+                                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                              <div className="bg-slate-800 text-white text-xs px-2 py-1.5 rounded-md shadow-lg max-w-48 text-center">
+                                                <div className="font-medium">{subsection.title || `Section ${index + 1}`}</div>
+                                                {subsection.type && (
+                                                  <div className="text-slate-300 text-xs mt-0.5 capitalize">{subsection.type}</div>
+                                                )}
+                                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-slate-800"></div>
+                                              </div>
+                                            </div>
+                                          </motion.button>
+                                          
+                                          {/* Compact Progress connector */}
+                                          {index < subsections.length - 1 && (
+                                            <div className="w-4 h-px mx-0.5 relative">
+                                              <div className="absolute inset-0 bg-slate-300"></div>
+                                              <motion.div
+                                                className="absolute inset-0 bg-blue-500"
+                                                initial={{ width: "0%" }}
+                                                animate={{ 
+                                                  width: isCompleted || index < currentSubsection ? "100%" : "0%" 
+                                                }}
+                                                transition={{ duration: 0.2 }}
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
                                 </div>
                               </div>
                               
-                              {/* Mobile Pagination - Compact view */}
+                              {/* Mobile Pagination - More compact view */}
                               <div className="md:hidden">
-                                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                                  <div className="flex items-center justify-between mb-3">
+                                <div className="bg-white rounded-lg border border-slate-200 p-3 shadow-sm">
+                                  <div className="flex items-center justify-between mb-2">
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -780,20 +1004,18 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                         setCurrentPage(0)
                                       }}
                                       disabled={currentSubsection === 0}
-                                      className="flex items-center gap-1"
+                                      className="flex items-center gap-1 px-2 py-1 h-7 text-xs"
                                     >
                                       <ChevronLeft className="h-3 w-3" />
                                       Prev
                                     </Button>
                                     
-                                    <div className="flex items-center gap-2">
-                                      <div className="text-center">
-                                        <div className="text-sm font-semibold text-slate-800">
-                                          {subsections[currentSubsection]?.title || `Section ${currentSubsection + 1}`}
-                                        </div>
-                                        <div className="text-xs text-slate-500">
-                                          {currentSubsection + 1} of {subsections.length}
-                                        </div>
+                                    <div className="text-center min-w-0 flex-1 mx-2">
+                                      <div className="text-sm font-medium text-slate-800 truncate">
+                                        {subsections[currentSubsection]?.title?.split(' ').slice(0, 3).join(' ') || `Section ${currentSubsection + 1}`}
+                                      </div>
+                                      <div className="text-xs text-slate-500">
+                                        {currentSubsection + 1}/{subsections.length}
                                       </div>
                                     </div>
                                     
@@ -806,74 +1028,69 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                         setCurrentPage(0)
                                       }}
                                       disabled={currentSubsection === subsections.length - 1}
-                                      className="flex items-center gap-1"
+                                      className="flex items-center gap-1 px-2 py-1 h-7 text-xs"
                                     >
                                       Next
                                       <ChevronRight className="h-3 w-3" />
                                     </Button>
                                   </div>
                                   
-                                  {/* Progress bar */}
-                                  <div className="relative">
-                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                  {/* Compact Progress bar */}
+                                  <div className="relative mb-2">
+                                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                       <motion.div
-                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-600"
+                                        className="h-full bg-blue-600"
                                         initial={{ width: "0%" }}
                                         animate={{ width: `${((currentSubsection + 1) / subsections.length) * 100}%` }}
-                                        transition={{ duration: 0.3 }}
+                                        transition={{ duration: 0.2 }}
                                       />
-                                    </div>
-                                    <div className="absolute inset-0 flex justify-between items-center px-1">
-                                      {subsections.map((_, index) => {
-                                        const isCompleted = completedSubsections.has(`${currentModule}-${index}`)
-                                        const isCurrent = currentSubsection === index
-                                        
-                                        return (
-                                          <div
-                                            key={index}
-                                            className={`w-1.5 h-1.5 rounded-full ${
-                                              isCurrent
-                                                ? "bg-white shadow-sm"
-                                                : isCompleted
-                                                ? "bg-green-400"
-                                                : "bg-slate-300"
-                                            }`}
-                                          />
-                                        )
-                                      })}
                                     </div>
                                   </div>
                                   
-                                  {/* Section grid for quick access */}
-                                  <div className="mt-3 pt-3 border-t border-slate-100">
-                                    <div className="grid grid-cols-4 gap-1">
-                                      {subsections.map((subsection, index) => {
-                                        const isCompleted = completedSubsections.has(`${currentModule}-${index}`)
-                                        const isCurrent = currentSubsection === index
-                                        
-                                        return (
+                                  {/* Enhanced Section dots with tooltips */}
+                                  <div 
+                                    className="flex items-center gap-1 overflow-x-auto py-1"
+                                    style={hiddenScrollbarStyle}
+                                  >
+                                    {subsections.map((subsection, index) => {
+                                      const isCompleted = completedSubsections.has(`${currentModule}-${index}`)
+                                      const isCurrent = currentSubsection === index
+                                      
+                                      return (
+                                        <div key={index} className="relative group flex-shrink-0">
                                           <button
-                                            key={index}
                                             onClick={() => {
-                                            setCurrentSubsection(index)
-                                            setCurrentPage(0)
-                                          }}
-                                            className={`p-2 rounded text-xs font-medium transition-all duration-200 ${
+                                              setCurrentSubsection(index)
+                                              setCurrentPage(0)
+                                            }}
+                                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border transition-all duration-150 ${
                                               isCurrent
-                                                ? "bg-blue-600 text-white shadow-sm"
+                                                ? "bg-blue-600 text-white border-blue-500 scale-110"
                                                 : isCompleted
-                                                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                                ? "bg-green-500 text-white border-green-400"
+                                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-150"
                                             }`}
                                           >
-                                            {isCompleted && <CheckCircle className="h-2 w-2 mx-auto mb-0.5" />}
-                                            <div className="truncate">
-                                              {subsection.title?.split(' ').slice(0, 2).join(' ') || `S${index + 1}`}
-                                            </div>
+                                            {isCompleted ? (
+                                              <CheckCircle className="h-2.5 w-2.5" />
+                                            ) : (
+                                              <span>{index + 1}</span>
+                                            )}
                                           </button>
-                                        )
-                                      })}
-                                    </div>
+                                          
+                                          {/* Mobile Tooltip */}
+                                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
+                                            <div className="bg-slate-800 text-white text-xs px-2 py-1.5 rounded-md shadow-lg max-w-32 text-center">
+                                              <div className="font-medium">{subsection.title || `Section ${index + 1}`}</div>
+                                              {subsection.type && (
+                                                <div className="text-slate-300 text-xs mt-0.5 capitalize">{subsection.type}</div>
+                                              )}
+                                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-slate-800"></div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )
+                                    })}
                                   </div>
                                 </div>
                               </div>
@@ -990,9 +1207,10 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                               size="sm"
                                               onClick={() => setCurrentPage(Math.min(currentSubsectionData.pages.length - 1, currentPage + 1))}
                                               disabled={currentPage === currentSubsectionData.pages.length - 1}
-                                              className="flex items-center gap-1"
+                                              className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3"
                                             >
-                                              Next Page
+                                              <span className="hidden sm:inline">Next Page</span>
+                                              <span className="sm:hidden">Next</span>
                                               <ChevronRight className="h-3 w-3" />
                                             </Button>
                                           </div>
@@ -1017,10 +1235,10 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                                 exit={{ opacity: 0, y: -20 }}
                                                 transition={{ duration: 0.3, ease: "easeInOut" }}
                                               >
-                                                <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200">
-                                                  <div className="flex items-center justify-between">
-                                                    <h6 className="font-medium text-slate-800 flex items-center gap-2">
-                                                      <BookOpen className="h-4 w-4 text-blue-600" />
+                                                <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200">
+                                                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                                    <h6 className="font-medium text-slate-800 flex items-center gap-2 text-sm sm:text-base">
+                                                      <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                                                       {pageTitle}
                                                     </h6>
                                                     <div className="flex items-center gap-2">
@@ -1031,28 +1249,30 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                                         <Button
                                                           onClick={() => markPageComplete(currentModule, currentSubsection, currentPage)}
                                                           size="sm"
-                                                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                                                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 sm:px-3 py-1"
                                                         >
                                                           <CheckCircle className="h-3 w-3 mr-1" />
-                                                          Mark Complete
+                                                          <span className="hidden sm:inline">Mark Complete</span>
+                                                          <span className="sm:hidden">Done</span>
                                                         </Button>
                                                       )}
                                                       {isPageCompleted && (
                                                         <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
                                                           <CheckCircle className="h-3 w-3 mr-1" />
-                                                          Completed
+                                                          <span className="hidden sm:inline">Completed</span>
+                                                          <span className="sm:hidden">Done</span>
                                                         </Badge>
                                                       )}
                                                     </div>
                                                   </div>
                                                 </div>
                                                 
-                                                <div className="p-8">
+                                                <div className="p-4 sm:p-6 lg:p-8">
                                                   {/* Main content with enhanced math rendering */}
-                                                  <div className="mb-6">
+                                                  <div className="mb-4 sm:mb-6">
                                                     <ReliableMathRenderer
                                                       content={pageContent}
-                                                      className="prose prose-lg max-w-none text-slate-700"
+                                                      className="prose prose-sm sm:prose-lg max-w-none text-slate-700"
                                                       showMetrics={false}
                                                     />
                                                   </div>
@@ -1076,20 +1296,21 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                                 </div>
                                                 
                                                 {/* Page Navigation Footer */}
-                                                <div className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+                                                <div className="border-t border-slate-200 bg-slate-50 px-4 sm:px-6 py-3 sm:py-4">
                                                   <div className="flex items-center justify-between">
                                                     <Button
                                                       variant="ghost"
                                                       size="sm"
                                                       onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                                                       disabled={currentPage === 0}
-                                                      className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+                                                      className="flex items-center gap-2 text-slate-600 hover:text-slate-800 text-xs sm:text-sm px-2 sm:px-4"
                                                     >
-                                                      <ChevronLeft className="h-4 w-4" />
-                                                      Previous Page
+                                                      <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                      <span className="hidden sm:inline">Previous Page</span>
+                                                      <span className="sm:hidden">Prev</span>
                                                     </Button>
                                                     
-                                                    <div className="text-sm text-slate-500">
+                                                    <div className="text-xs sm:text-sm text-slate-500">
                                                       Page {currentPage + 1} of {currentSubsectionData.pages.length}
                                                     </div>
                                                     
@@ -1098,10 +1319,11 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                                       size="sm"
                                                       onClick={() => setCurrentPage(Math.min(currentSubsectionData.pages.length - 1, currentPage + 1))}
                                                       disabled={currentPage === currentSubsectionData.pages.length - 1}
-                                                      className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+                                                      className="flex items-center gap-2 text-slate-600 hover:text-slate-800 text-xs sm:text-sm px-2 sm:px-4"
                                                     >
-                                                      Next Page
-                                                      <ChevronRight className="h-4 w-4" />
+                                                      <span className="hidden sm:inline">Next Page</span>
+                                                      <span className="sm:hidden">Next</span>
+                                                      <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                                                     </Button>
                                                   </div>
                                                 </div>
@@ -1256,15 +1478,16 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
 
                         {/* Enhanced Navigation Controls */}
                         <motion.div 
-                          className="pt-6 border-t border-slate-200"
+                          className="pt-4 sm:pt-6 border-t border-slate-200"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3 }}
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                             <motion.div
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
+                              className="w-full sm:w-auto"
                             >
                               <Button
                                 variant="outline"
@@ -1280,11 +1503,11 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                   }
                                 }}
                                 disabled={currentModule === 0 && currentSubsection === 0}
-                                className="group flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border-slate-300 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="group flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white hover:bg-slate-50 border-slate-300 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center sm:justify-start"
                               >
-                                <ChevronLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" />
+                                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 group-hover:-translate-x-0.5 transition-transform duration-200" />
                                 <div className="text-left">
-                                  <div className="font-medium">Previous</div>
+                                  <div className="font-medium text-sm sm:text-base">Previous</div>
                                   <div className="text-xs text-slate-500">
                                     {currentSubsection > 0 
                                       ? `Section ${currentSubsection}`
@@ -1297,21 +1520,23 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                               </Button>
                             </motion.div>
                             
-                            <div className="text-center">
-                              <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 rounded-full border border-blue-100">
-                                <div className="flex items-center gap-2">
-                                  <BookOpen className="h-4 w-4 text-blue-600" />
-                                  <span className="text-sm font-medium text-slate-700">
-                                    Module {currentModule + 1} of {modules.length}
+                            <div className="text-center order-first sm:order-none">
+                              <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-blue-50 to-purple-50 px-3 sm:px-4 py-2 rounded-full border border-blue-100">
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                  <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                                  <span className="text-xs sm:text-sm font-medium text-slate-700">
+                                    <span className="hidden sm:inline">Module {currentModule + 1} of {modules.length}</span>
+                                    <span className="sm:hidden">M{currentModule + 1}/{modules.length}</span>
                                   </span>
                                 </div>
                                 {subsections.length > 0 && (
                                   <>
                                     <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
-                                    <div className="flex items-center gap-2">
-                                      <FileText className="h-3 w-3 text-purple-600" />
-                                      <span className="text-sm text-slate-600">
-                                        Section {currentSubsection + 1} of {subsections.length}
+                                    <div className="flex items-center gap-1 sm:gap-2">
+                                      <FileText className="h-2 w-2 sm:h-3 sm:w-3 text-purple-600" />
+                                      <span className="text-xs text-slate-600">
+                                        <span className="hidden sm:inline">Section {currentSubsection + 1} of {subsections.length}</span>
+                                        <span className="sm:hidden">S{currentSubsection + 1}/{subsections.length}</span>
                                       </span>
                                     </div>
                                   </>
@@ -1343,6 +1568,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                             <motion.div
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
+                              className="w-full sm:w-auto"
                             >
                               <Button
                                 variant="outline"
@@ -1360,10 +1586,10 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                   currentModule === modules.length - 1 &&
                                   (subsections.length === 0 || currentSubsection === subsections.length - 1)
                                 }
-                                className="group flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border-slate-300 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="group flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white hover:bg-slate-50 border-slate-300 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center sm:justify-start"
                               >
                                 <div className="text-right">
-                                  <div className="font-medium">Next</div>
+                                  <div className="font-medium text-sm sm:text-base">Next</div>
                                   <div className="text-xs text-slate-500">
                                     {currentSubsection < subsections.length - 1
                                       ? `Section ${currentSubsection + 2}`
@@ -1373,25 +1599,28 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                     }
                                   </div>
                                 </div>
-                                <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform duration-200" />
+                                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-0.5 transition-transform duration-200" />
                               </Button>
                             </motion.div>
                           </div>
                           
                           {/* Progress summary */}
-                          <div className="mt-4 text-center">
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-xs">
+                          <div className="mt-3 sm:mt-4 text-center">
+                            <div className="inline-flex flex-wrap items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-100 rounded-full text-xs">
                               <Trophy className="h-3 w-3 text-amber-500" />
                               <span className="text-slate-600">
-                                {completedPages.size} pages completed
+                                <span className="hidden sm:inline">{completedPages.size} pages completed</span>
+                                <span className="sm:hidden">{completedPages.size}p</span>
                               </span>
                               <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
                               <span className="text-slate-600">
-                                {completedSubsections.size} sections completed
+                                <span className="hidden sm:inline">{completedSubsections.size} sections completed</span>
+                                <span className="sm:hidden">{completedSubsections.size}s</span>
                               </span>
                               <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
                               <span className="text-slate-600">
-                                {Math.round((completedModules.size / modules.length) * 100)}% course progress
+                                <span className="hidden sm:inline">{Math.round((completedModules.size / modules.length) * 100)}% course progress</span>
+                                <span className="sm:hidden">{Math.round((completedModules.size / modules.length) * 100)}%</span>
                               </span>
                             </div>
                           </div>
@@ -1400,6 +1629,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                     </CardContent>
                   </Card>
                 </div>
+                )
               ) : (
                 <Card>
                   <CardContent className="text-center py-12">
@@ -1418,16 +1648,16 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                 </CardHeader>
                 <CardContent>
                   {viewerCourse.assignments?.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {viewerCourse.assignments.map((assignment, index) => (
-                        <div key={index} className="p-4 border border-slate-200 rounded-lg">
-                          <h4 className="font-semibold text-slate-800 mb-2">
+                        <div key={index} className="p-3 sm:p-4 border border-slate-200 rounded-lg">
+                          <h4 className="font-semibold text-slate-800 mb-2 text-sm sm:text-base">
                             {assignment.title}
                           </h4>
-                          <p className="text-sm text-slate-600 mb-3">
+                          <p className="text-xs sm:text-sm text-slate-600 mb-3">
                             {assignment.description}
                           </p>
-                          <div className="flex items-center gap-4 text-xs text-slate-500">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-slate-500">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
@@ -1614,24 +1844,24 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                       <Progress value={getProgressPercentage()} className="mt-4" />
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600 mb-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                      <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
+                        <div className="text-xl sm:text-2xl font-bold text-blue-600 mb-1">
                           {completedModules.size}
                         </div>
-                        <div className="text-sm text-slate-600">Modules Completed</div>
+                        <div className="text-xs sm:text-sm text-slate-600">Modules Completed</div>
                       </div>
-                      <div className="text-center p-4 bg-slate-50 rounded-lg">
-                        <div className="text-2xl font-bold text-slate-600 mb-1">
+                      <div className="text-center p-3 sm:p-4 bg-slate-50 rounded-lg">
+                        <div className="text-xl sm:text-2xl font-bold text-slate-600 mb-1">
                           {(viewerCourse.modules?.length || 0) - completedModules.size}
                         </div>
-                        <div className="text-sm text-slate-600">Modules Remaining</div>
+                        <div className="text-xs sm:text-sm text-slate-600">Modules Remaining</div>
                       </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600 mb-1">
+                      <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+                        <div className="text-xl sm:text-2xl font-bold text-green-600 mb-1">
                           {viewerCourse.credits || 3}
                         </div>
-                        <div className="text-sm text-slate-600">Credits</div>
+                        <div className="text-xs sm:text-sm text-slate-600">Credits</div>
                       </div>
                     </div>
                   </div>

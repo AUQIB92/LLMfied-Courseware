@@ -81,21 +81,105 @@ export async function PUT(request, { params }) {
       }, { status: 404 })
     }
 
-    // Prepare update document
-    const updateDoc = {
-      ...requestBody,
-      updatedAt: new Date()
-    }
+    let updateDoc
+    let updateOperation
 
-    // Remove fields that shouldn't be updated directly
-    delete updateDoc._id
-    delete updateDoc.educatorId
-    delete updateDoc.createdAt
+    // Check if this is a module-specific update (for assignments)
+    if (requestBody.moduleIndex !== undefined && requestBody.updatedModule) {
+      const { moduleIndex, updatedModule } = requestBody
+      
+      console.log('📝 Processing module update:', {
+        courseId: resolvedParams.id,
+        moduleIndex,
+        moduleTitle: updatedModule.title,
+        assignmentCount: updatedModule.assignments?.length || 0
+      })
+
+      // Validate moduleIndex
+      if (!existingCourse.modules || moduleIndex >= existingCourse.modules.length || moduleIndex < 0) {
+        return NextResponse.json({ 
+          error: "Invalid module index" 
+        }, { status: 400 })
+      }
+
+      // Validate and truncate assignment content to prevent document size limit
+      if (updatedModule.assignments && Array.isArray(updatedModule.assignments)) {
+        updatedModule.assignments = updatedModule.assignments.map(assignment => {
+          if (assignment.content && assignment.content.length > 1000000) { // 1MB limit per assignment
+            console.log('⚠️ Truncating large assignment content:', {
+              originalSize: assignment.content.length,
+              truncatedSize: 1000000
+            })
+            return {
+              ...assignment,
+              content: assignment.content.substring(0, 1000000) + '\n\n[Content truncated due to size limit]',
+              originalContentSize: assignment.content.length,
+              wasTruncated: true
+            }
+          }
+          return assignment
+        })
+      }
+
+      // Calculate total document size estimation
+      const moduleJsonString = JSON.stringify(updatedModule)
+      const estimatedSize = new Blob([moduleJsonString]).size
+      
+      console.log('📊 Document size estimation:', {
+        moduleIndex,
+        estimatedSizeKB: Math.round(estimatedSize / 1024),
+        estimatedSizeMB: Math.round(estimatedSize / (1024 * 1024) * 100) / 100,
+        assignmentCount: updatedModule.assignments?.length || 0
+      })
+      
+      // Prevent updates that might exceed MongoDB's 16MB limit
+      if (estimatedSize > 15000000) { // 15MB safety limit
+        console.error('❌ Module update rejected - document too large:', {
+          estimatedSizeMB: Math.round(estimatedSize / (1024 * 1024) * 100) / 100,
+          limit: '16MB'
+        })
+        return NextResponse.json({ 
+          error: "Module content too large",
+          details: `Module size (${Math.round(estimatedSize / (1024 * 1024) * 100) / 100}MB) exceeds MongoDB document limit. Please reduce assignment content size.`,
+          estimatedSize: estimatedSize,
+          limitMB: 16
+        }, { status: 413 })
+      }
+
+      // Update specific module in the modules array
+      updateOperation = {
+        $set: {
+          [`modules.${moduleIndex}`]: updatedModule,
+          updatedAt: new Date()
+        }
+      }
+
+      console.log('🔄 Updating module with assignments:', {
+        moduleIndex,
+        totalAssignments: updatedModule.assignments?.length || 0,
+        documentSizeKB: Math.round(estimatedSize / 1024)
+      })
+    } else {
+      // Regular course update
+      updateDoc = {
+        ...requestBody,
+        updatedAt: new Date()
+      }
+
+      // Remove fields that shouldn't be updated directly
+      delete updateDoc._id
+      delete updateDoc.educatorId
+      delete updateDoc.createdAt
+      delete updateDoc.moduleIndex
+      delete updateDoc.updatedModule
+
+      updateOperation = { $set: updateDoc }
+    }
 
     // Update course
     const result = await db.collection("courses").updateOne(
       { _id: new ObjectId(resolvedParams.id) },
-      { $set: updateDoc }
+      updateOperation
     )
 
     if (result.matchedCount === 0) {
@@ -105,6 +189,12 @@ export async function PUT(request, { params }) {
     // Get updated course
     const updatedCourse = await db.collection("courses").findOne({
       _id: new ObjectId(resolvedParams.id)
+    })
+
+    console.log('✅ Course updated successfully:', {
+      courseId: resolvedParams.id,
+      moduleCount: updatedCourse.modules?.length || 0,
+      totalAssignments: updatedCourse.modules?.reduce((total, module) => total + (module.assignments?.length || 0), 0) || 0
     })
 
     return NextResponse.json(updatedCourse)

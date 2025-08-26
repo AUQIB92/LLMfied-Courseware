@@ -1415,46 +1415,85 @@ export default function AcademicModuleEditorEnhanced({
     }
 
     try {
-      // Publish assignment to make it available for learners
-      const assignmentData = {
-        courseId: courseId,
-        moduleId: localModule.id,
-        moduleTitle: localModule.title,
+      // Create assignment object to add to module structure
+      const newAssignment = {
+        id: `assignment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        title: `${localModule.title} - Mathematical Problem Set`,
+        type: "Mathematical Problem Set",
+        description: "Assignment generated from module content",
         content: generatedAssignment,
         topics: assignmentTopics,
-        instructions: assignmentInstructions,
+        instructions: assignmentInstructions || 'Complete all problems with detailed solutions and explanations',
         difficulty: assignmentDifficulty,
-        dueDate: assignmentDueDate.toISOString(),
-        references: assignmentReferences,
-        instructorName: 'Dr. Auqib Hamid Lone',
-        courseTitle: course?.title || 'Course Assignment',
+        points: 100,
         maxScore: 100,
-        publishedBy: 'instructor'
+        dueDate: assignmentDueDate.toISOString(),
+        publishedDate: new Date().toISOString(),
+        references: assignmentReferences,
+        instructorName: user?.name || 'Course Instructor',
+        isPublished: true,
+        isActive: true,
+        generatedFromModule: true,
+        moduleId: localModule.id,
+        moduleTitle: localModule.title,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
 
-      console.log("📤 Publishing assignment:", assignmentData);
+      console.log("📤 Adding assignment to module structure:", newAssignment);
 
-      const response = await fetch('/api/assignments/published', {
-        method: 'POST',
+      // Update the local module with the new assignment
+      const updatedModule = {
+        ...localModule,
+        assignments: [
+          ...(localModule.assignments || []),
+          newAssignment
+        ],
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Update the course in database with the new assignment
+      const response = await fetch(`/api/academic-courses/${courseId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
-        body: JSON.stringify(assignmentData)
+        body: JSON.stringify({
+          moduleIndex: localModule.order - 1, // Convert to 0-based index
+          updatedModule: updatedModule
+        })
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.details || result.error || 'Failed to publish assignment');
+        throw new Error(result.error || 'Failed to save assignment to course');
       }
 
-      if (result.success) {
-        setAssignmentPublished(true);
-        toast.success("🎉 Assignment published successfully! Students can now access and submit solutions.");
-        console.log("✅ Assignment published with ID:", result.assignment.id);
-      } else {
-        throw new Error(result.error || 'Failed to publish assignment');
+      // Update local state
+      setLocalModule(updatedModule);
+      setAssignmentPublished(true);
+      
+      // Notify parent component
+      if (onUpdate) {
+        onUpdate(updatedModule);
       }
+
+      toast.success(
+        `🎉 Assignment published successfully! \n\n` +
+        `✅ Added to ${localModule.title} module\n` +
+        `📅 Due: ${assignmentDueDate.toLocaleDateString()}\n` +
+        `🎯 Immediately available to all enrolled learners`
+      );
+      
+      console.log("✅ Assignment published and saved to module:", {
+        assignmentId: newAssignment.id,
+        moduleTitle: localModule.title,
+        dueDate: assignmentDueDate.toISOString(),
+        totalAssignments: updatedModule.assignments.length
+      });
+      
     } catch (error) {
       console.error("❌ Assignment publishing error:", error);
       toast.error(`Failed to publish assignment: ${error.message}`);
