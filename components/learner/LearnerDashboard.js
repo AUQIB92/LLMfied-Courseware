@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿﻿﻿﻿﻿﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -127,6 +127,7 @@ export default function LearnerDashboard() {
     if (enrollmentUpdated > 0) {
       fetchEnrolledCourses();
       fetchEnrolledAcademicCourses();
+      fetchAssignments(); // Also refresh assignments when enrollment changes
     }
   }, [enrollmentUpdated]);
 
@@ -170,11 +171,13 @@ export default function LearnerDashboard() {
           // Refresh enrolled courses when enrollment changes
           fetchEnrolledCourses();
           fetchEnrolledAcademicCourses();
+          fetchAssignments(); // Also refresh assignments
           break;
         case "enrollments_synced":
           // Refresh when bulk sync completes
           fetchEnrolledCourses();
           fetchEnrolledAcademicCourses();
+          fetchAssignments(); // Also refresh assignments
           break;
       }
     });
@@ -404,22 +407,79 @@ export default function LearnerDashboard() {
 
   const fetchAssignments = async () => {
     try {
-      console.log("🚀 Fetching published assignments...");
-      const response = await apiCall("/api/assignments/published", {
+      console.log("🚀 Fetching published assignments for learner...");
+      console.log("👥 Current user:", { id: user?.id || user?._id, role: user?.role, name: user?.name });
+      console.log("🔑 Auth headers check:", getAuthHeaders ? 'getAuthHeaders available' : 'getAuthHeaders missing');
+      
+      // Check if user is authenticated and has valid token
+      const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+      if (!user || !user.id || !token) {
+        console.warn("⚠️ No authenticated user or token found, skipping assignment fetch");
+        console.log("🔍 Debug info:", { 
+          hasUser: !!user, 
+          userId: user?.id || user?._id, 
+          hasToken: !!token 
+        });
+        setAssignments([]);
+        return;
+      }
+      
+      const response = await apiCall("/api/assignments/published?learnerView=true", {
         method: "GET",
       });
 
+      console.log("📊 Assignment fetch response status:", response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        console.log("📋 Assignments fetched:", data.assignments?.length || 0);
+        console.log("📋 Assignment fetch successful:", {
+          count: data.assignments?.length || 0,
+          message: data.message,
+          success: data.success
+        });
+        
+        if (data.assignments && data.assignments.length > 0) {
+          console.log("📋 Sample assignment data:", data.assignments[0]);
+        }
+        
         setAssignments(data.assignments || []);
       } else {
-        const errorText = await response.text();
-        console.error("Failed to fetch assignments:", errorText);
+        let errorData = null;
+        let errorText = '';
+        
+        try {
+          errorData = await response.json();
+          errorText = JSON.stringify(errorData);
+        } catch (jsonError) {
+          try {
+            errorText = await response.text();
+          } catch (textError) {
+            errorText = `Unable to read response body - JSON error: ${jsonError.message}, Text error: ${textError.message}`;
+          }
+        }
+        
+        console.error("❌ Failed to fetch assignments:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText || 'No error message available',
+          url: response.url,
+          headers: Object.fromEntries(response.headers.entries())
+        });
         setAssignments([]);
       }
     } catch (error) {
-      console.error("Failed to fetch assignments:", error);
+      console.error("❌ Assignment fetch error:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      // Handle authentication errors specifically
+      if (error.message?.includes("No authentication token available") || 
+          error.message?.includes("Session expired")) {
+        console.warn("⚠️ Authentication issue detected - user may need to log in");
+      }
+      
       setAssignments([]);
     }
   };
@@ -1450,20 +1510,94 @@ export default function LearnerDashboard() {
         );
       case "assignments":
         return (
-          <LearnerAssignmentList
-            assignments={assignments}
-            submissions={submissions}
-            studentId={user?.id || user?._id}
-            studentName={user?.name || 'Student'}
-            onViewAssignment={(assignment) => {
-              console.log("🎯 Assignment selected:", assignment.title);
-              setSelectedAssignment(assignment);
-              setHideHeader(true);
-            }}
-            onDownloadPDF={(assignment) => {
-              console.log("📄 PDF download requested for:", assignment.title);
-            }}
-          />
+          <div className="space-y-4">
+            {/* Debug Information Panel */}
+            {process.env.NODE_ENV === 'development' && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-blue-800">🔧 Debug Information</CardTitle>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={fetchAssignments}
+                      className="text-blue-600 border-blue-300"
+                    >
+                      🔄 Refresh Assignments
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => {
+                        fetchEnrolledCourses();
+                        fetchEnrolledAcademicCourses();
+                        fetchAssignments();
+                      }}
+                      className="text-green-600 border-green-300"
+                    >
+                      🔄 Refresh All Data
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <strong>User Info:</strong>
+                      <pre className="text-xs mt-1 bg-white p-2 rounded">
+                        {JSON.stringify({
+                          id: user?.id || user?._id,
+                          role: user?.role,
+                          name: user?.name
+                        }, null, 2)}
+                      </pre>
+                    </div>
+                    <div>
+                      <strong>Assignment Data:</strong>
+                      <pre className="text-xs mt-1 bg-white p-2 rounded">
+                        {JSON.stringify({
+                          count: assignments?.length || 0,
+                          hasData: !!assignments,
+                          isArray: Array.isArray(assignments),
+                          sample: assignments?.[0] ? {
+                            id: assignments[0].id,
+                            title: assignments[0].title,
+                            courseTitle: assignments[0].courseTitle,
+                            dueDate: assignments[0].dueDate
+                          } : null
+                        }, null, 2)}
+                      </pre>
+                    </div>
+                    <div>
+                      <strong>Enrollment Data:</strong>
+                      <pre className="text-xs mt-1 bg-white p-2 rounded">
+                        {JSON.stringify({
+                          enrolledCourses: enrolledCourses?.length || 0,
+                          academicCourses: enrolledAcademicCourses?.length || 0,
+                          testSeries: enrolledTestSeries?.length || 0,
+                          dataLoaded: enrollmentDataLoaded
+                        }, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            <LearnerAssignmentList
+              assignments={assignments}
+              submissions={submissions}
+              studentId={user?.id || user?._id}
+              studentName={user?.name || 'Student'}
+              onViewAssignment={(assignment) => {
+                console.log("🎯 Assignment selected:", assignment.title);
+                setSelectedAssignment(assignment);
+                setHideHeader(true);
+              }}
+              onDownloadPDF={(assignment) => {
+                console.log("📄 PDF download requested for:", assignment.title);
+              }}
+            />
+          </div>
         );
       case "academic-courses":
         return (

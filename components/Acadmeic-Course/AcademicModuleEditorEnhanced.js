@@ -712,6 +712,8 @@ export default function AcademicModuleEditorEnhanced({
       objectives: module.objectives || [],
       examples: module.examples || [],
       detailedSubsections: module.detailedSubsections || [],
+      // Ensure order is always a valid number
+      order: typeof module.order === 'number' ? module.order : 1,
       // Academic course specific fields
       isAcademicCourse: course?.isAcademicCourse || true,
       courseType: course?.courseType || "academic",
@@ -1460,7 +1462,7 @@ export default function AcademicModuleEditorEnhanced({
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          moduleIndex: localModule.order - 1, // Convert to 0-based index
+          moduleIndex: localModule.order - 1, // Convert to 0-based index (order is guaranteed to be a number)
           updatedModule: updatedModule
         })
       });
@@ -1526,7 +1528,7 @@ export default function AcademicModuleEditorEnhanced({
           },
           body: JSON.stringify({
             courseId: courseId,
-            moduleIndex: localModule.order - 1, // Convert to 0-based index
+            moduleIndex: localModule.order - 1, // Convert to 0-based index (order is guaranteed to be a number)
             academicLevel:
               course?.academicLevel || learnerLevel || "undergraduate",
             subject: course?.subject || subject || "General Studies",

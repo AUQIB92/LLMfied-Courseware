@@ -54,7 +54,10 @@ export async function GET(request) {
         status: 'active'
       }).toArray();
 
+      console.log(`📋 Found ${enrollments.length} active enrollments for learner ${user.userId}`);
+      
       if (enrollments.length === 0) {
+        console.log('⚠️ No enrolled courses found for learner');
         return NextResponse.json({
           success: true,
           assignments: [],
@@ -64,19 +67,29 @@ export async function GET(request) {
 
       // Get courses and extract assignments from modules
       const enrolledCourseIds = enrollments.map(e => e.courseId);
+      console.log('🔍 Looking for courses with IDs:', enrolledCourseIds.map(id => id.toString()));
+      
       const courses = await db.collection('courses').find({
         _id: { $in: enrolledCourseIds },
         status: 'published'
       }).toArray();
 
+      console.log(`📚 Found ${courses.length} published enrolled courses`);
+      courses.forEach(course => {
+        console.log(`  - Course: ${course.title} (${course._id}) - Modules: ${course.modules?.length || 0}`);
+      });
+
       // Extract assignments from course modules
       for (const course of courses) {
         if (course.modules && Array.isArray(course.modules)) {
-          for (const module of course.modules) {
+          console.log(`🔍 Checking modules in course: ${course.title}`);
+          for (const [moduleIndex, module] of course.modules.entries()) {
+            console.log(`  Module ${moduleIndex + 1}: ${module.title} - Assignments: ${module.assignments?.length || 0}`);
             if (module.assignments && Array.isArray(module.assignments)) {
-              for (const assignment of module.assignments) {
+              for (const [assignmentIndex, assignment] of module.assignments.entries()) {
+                console.log(`    Assignment ${assignmentIndex + 1}: ${assignment.title} - Active: ${assignment.isActive !== false}`);
                 if (assignment.isActive !== false) {
-                  assignments.push({
+                  const assignmentData = {
                     ...assignment,
                     courseId: course._id.toString(),
                     courseTitle: course.title,
@@ -86,15 +99,19 @@ export async function GET(request) {
                     dueDate: new Date(assignment.dueDate),
                     publishedDate: new Date(assignment.publishedDate),
                     enrollmentId: enrollments.find(e => e.courseId.toString() === course._id.toString())?._id
-                  });
+                  };
+                  assignments.push(assignmentData);
+                  console.log(`      ✅ Added assignment: ${assignment.title}`);
                 }
               }
             }
           }
+        } else {
+          console.log(`  ⚠️ Course ${course.title} has no modules or modules is not an array`);
         }
       }
       
-      console.log(`📋 Found ${assignments.length} assignments from ${courses.length} enrolled courses`);
+      console.log(`📋 Total assignments collected: ${assignments.length}`);
       
     } else if (courseId) {
       // For specific course: Get assignments from that course's modules

@@ -20,10 +20,39 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Academic course not found" }, { status: 404 })
     }
 
-    // Get assignments for this course
-    const assignments = await db.collection("assignments").find({
+    // Get assignments for this course from both sources
+    let assignments = []
+    
+    // 1. Get assignments from separate assignments collection
+    const separateAssignments = await db.collection("assignments").find({
       courseId: new ObjectId(resolvedParams.id)
     }).sort({ createdAt: -1 }).toArray()
+    
+    assignments = [...separateAssignments]
+    
+    // 2. Get assignments from course modules
+    if (course.modules && Array.isArray(course.modules)) {
+      for (const module of course.modules) {
+        if (module.assignments && Array.isArray(module.assignments)) {
+          for (const assignment of module.assignments) {
+            if (assignment.isActive !== false) {
+              assignments.push({
+                ...assignment,
+                courseId: course._id.toString(),
+                courseTitle: course.title,
+                educatorId: course.educatorId?.toString(),
+                educatorName: course.educatorName || 'Course Instructor',
+                moduleTitle: module.title,
+                fromModule: true,
+                // Ensure consistent date handling
+                dueDate: assignment.dueDate ? new Date(assignment.dueDate) : null,
+                publishedDate: assignment.publishedDate ? new Date(assignment.publishedDate) : null
+              })
+            }
+          }
+        }
+      }
+    }
 
     // Get enrollments count
     const enrollmentCount = await db.collection("enrollments").countDocuments({
@@ -57,16 +86,58 @@ export async function GET(request, { params }) {
 
 // PUT /api/academic-courses/[id] - Update academic course
 export async function PUT(request, { params }) {
+  const startTime = Date.now()
+  let operationContext = {
+    courseId: 'unknown',
+    operation: 'unknown',
+    step: 'initialization'
+  }
+  
   try {
+    console.log('🔄 Starting PUT request for academic course update')
+    operationContext.step = 'token_verification'
+    
     const user = await verifyToken(request)
-    if (user.role !== "educator") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    if (!user) {
+      console.error('❌ Token verification failed - no user returned')
+      return NextResponse.json({ error: "Authentication failed" }, { status: 401 })
     }
+    
+    if (user.role !== "educator") {
+      console.error('❌ Authorization failed - user role:', user.role)
+      return NextResponse.json({ error: "Unauthorized - educator role required" }, { status: 403 })
+    }
+    
+    console.log('✅ User authenticated:', { userId: user.userId, role: user.role })
 
+    operationContext.step = 'parameter_resolution'
     const resolvedParams = await params
+    if (!resolvedParams?.id) {
+      console.error('❌ No course ID provided in params')
+      return NextResponse.json({ error: "Course ID is required" }, { status: 400 })
+    }
+    
+    operationContext.courseId = resolvedParams.id
+    console.log('📋 Processing course update:', { courseId: resolvedParams.id })
+    
+    // Validate ObjectId format
+    if (!ObjectId.isValid(resolvedParams.id)) {
+      console.error('❌ Invalid ObjectId format:', resolvedParams.id)
+      return NextResponse.json({ error: "Invalid course ID format" }, { status: 400 })
+    }
+    
+    operationContext.step = 'request_body_parsing'
     const requestBody = await request.json()
+    console.log('📥 Request body structure:', {
+      hasModuleIndex: requestBody.moduleIndex !== undefined,
+      hasUpdatedModule: !!requestBody.updatedModule,
+      bodyKeys: Object.keys(requestBody)
+    })
+    
+    operationContext.step = 'database_connection'
     const client = await clientPromise
     const db = client.db("llmfied")
+    console.log('✅ Database connection established')
 
     // Check if course exists and belongs to educator
     const existingCourse = await db.collection("courses").findOne({
@@ -95,10 +166,23 @@ export async function PUT(request, { params }) {
         assignmentCount: updatedModule.assignments?.length || 0
       })
 
-      // Validate moduleIndex
-      if (!existingCourse.modules || moduleIndex >= existingCourse.modules.length || moduleIndex < 0) {
+      // Validate moduleIndex - check for null, undefined, or invalid values
+      if (moduleIndex === null || moduleIndex === undefined || 
+          !existingCourse.modules || 
+          moduleIndex >= existingCourse.modules.length || 
+          moduleIndex < 0 || 
+          !Number.isInteger(moduleIndex)) {
+        console.error('❌ Invalid module index:', {
+          moduleIndex,
+          moduleIndexType: typeof moduleIndex,
+          totalModules: existingCourse.modules?.length || 0,
+          isInteger: Number.isInteger(moduleIndex)
+        })
         return NextResponse.json({ 
-          error: "Invalid module index" 
+          error: "Invalid module index",
+          details: `Module index must be a valid integer between 0 and ${(existingCourse.modules?.length || 1) - 1}. Received: ${moduleIndex} (${typeof moduleIndex})`,
+          moduleIndex,
+          totalModules: existingCourse.modules?.length || 0
         }, { status: 400 })
       }
 
@@ -200,10 +284,45 @@ export async function PUT(request, { params }) {
     return NextResponse.json(updatedCourse)
 
   } catch (error) {
-    console.error("Error updating academic course:", error)
+    const duration = Date.now() - startTime
+    console.error('❌ PUT /api/academic-courses/[id] failed:', {
+      error: error.message,
+      stack: error.stack,
+      context: operationContext,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+    
+    // Provide specific error responses based on error type
+    if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+      return NextResponse.json({ 
+        error: "Database connection timeout",
+        details: "Please try again in a moment",
+        code: "DB_TIMEOUT"
+      }, { status: 504 })
+    }
+    
+    if (error.message.includes('authentication') || error.message.includes('token')) {
+      return NextResponse.json({ 
+        error: "Authentication error",
+        details: error.message,
+        code: "AUTH_ERROR"
+      }, { status: 401 })
+    }
+    
+    if (error.message.includes('ObjectId') || error.message.includes('Invalid')) {
+      return NextResponse.json({ 
+        error: "Invalid request data",
+        details: error.message,
+        code: "VALIDATION_ERROR"
+      }, { status: 400 })
+    }
+    
     return NextResponse.json({ 
       error: "Failed to update academic course",
-      details: error.message
+      details: error.message,
+      code: "INTERNAL_ERROR",
+      context: operationContext
     }, { status: 500 })
   }
 }
