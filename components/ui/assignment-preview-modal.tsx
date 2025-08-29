@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Download, FileText, Clock, Users } from 'lucide-react'
 import { LatexRenderer } from '@/components/ui/latex-renderer'
-import SmartMathRenderer from '@/components/SmartMathRenderer'
+import ReliableMathRenderer from '@/components/ReliableMathRenderer'
 import BeautifulAssignmentRenderer from '@/components/ui/beautiful-assignment-renderer'
 import { toast } from 'sonner'
 
@@ -159,6 +159,11 @@ export const AssignmentPreviewModal: React.FC<AssignmentPreviewModalProps> = ({
                 <BeautifulAssignmentRenderer 
                   content={assignment} 
                   className="assignment-content"
+                  allowEditing={true}
+                  onContentChange={(newContent) => {
+                    console.log('Preview assignment content updated:', newContent)
+                    // Handle content update if needed
+                  }}
                 />
               </div>
             ) : (

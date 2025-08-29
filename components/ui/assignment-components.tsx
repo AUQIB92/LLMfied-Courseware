@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import SmartMathRenderer from '../SmartMathRenderer'
+import ReliableMathRenderer from '../ReliableMathRenderer'
 import EnhancedContentRenderer from './enhanced-content-renderer'
 import { cn } from '@/lib/utils'
 
@@ -73,67 +73,168 @@ export const StepIcon = ({ stepNumber }: { stepNumber: number }) => (
   </div>
 )
 
-// Beautiful Question Header Component
+// Exam Front Page Component
+export const ExamFrontPage = ({ 
+  title,
+  totalMarks,
+  marksObtained,
+  deadline,
+  studentName,
+  studentEnrollment,
+  className 
+}: {
+  title: string
+  totalMarks: number
+  marksObtained?: number
+  deadline?: string
+  studentName?: string
+  studentEnrollment?: string
+  className?: string
+}) => (
+  <div className={cn(
+    "border-4 border-gray-800 p-8 mb-8 bg-white min-h-screen page-break-after",
+    className
+  )}>
+    {/* College Header */}
+    <div className="text-center border-b-2 border-gray-600 pb-6 mb-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        GCET KASHMIR
+      </h1>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">
+        Government College of Engineering and Technology
+      </h2>
+      <div className="text-lg text-gray-700">
+        <div className="mb-2">
+          <span className="font-semibold">Instructor:</span> Dr. Auqib Hamid
+        </div>
+      </div>
+    </div>
+
+    {/* Exam Title */}
+    <div className="text-center mb-8">
+      <h2 className="text-2xl font-bold text-gray-900 border-2 border-gray-600 p-4">
+        {title}
+      </h2>
+    </div>
+
+    {/* Student Information */}
+    <div className="grid grid-cols-1 gap-6 mb-8 text-lg">
+      <div className="flex justify-between border-b border-gray-400 pb-2">
+        <span className="font-semibold">Student Name:</span>
+        <span className="border-b border-gray-400 min-w-[300px] text-right">
+          {studentName || '_'.repeat(30)}
+        </span>
+      </div>
+      
+      <div className="flex justify-between border-b border-gray-400 pb-2">
+        <span className="font-semibold">Enrollment No:</span>
+        <span className="border-b border-gray-400 min-w-[300px] text-right">
+          {studentEnrollment || '_'.repeat(30)}
+        </span>
+      </div>
+      
+      <div className="flex justify-between border-b border-gray-400 pb-2">
+        <span className="font-semibold">Date:</span>
+        <span className="border-b border-gray-400 min-w-[300px] text-right">
+          {'_'.repeat(30)}
+        </span>
+      </div>
+
+      {deadline && (
+        <div className="flex justify-between border-b border-gray-400 pb-2">
+          <span className="font-semibold">Deadline:</span>
+          <span className="font-medium">{deadline}</span>
+        </div>
+      )}
+    </div>
+
+    {/* Marks Section */}
+    <div className="grid grid-cols-2 gap-8 mb-8">
+      <div className="border-2 border-gray-600 p-4">
+        <div className="text-center">
+          <div className="text-lg font-semibold mb-2">Total Marks</div>
+          <div className="text-3xl font-bold border-2 border-gray-400 p-4">
+            {totalMarks}
+          </div>
+        </div>
+      </div>
+      
+      <div className="border-2 border-gray-600 p-4">
+        <div className="text-center">
+          <div className="text-lg font-semibold mb-2">Marks Obtained</div>
+          <div className="text-3xl font-bold border-2 border-gray-400 p-4">
+            {marksObtained !== undefined ? marksObtained : '____'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Instructions */}
+    <div className="border-2 border-gray-600 p-4 mb-8">
+      <h3 className="text-lg font-semibold mb-4">Instructions:</h3>
+      <ul className="space-y-2 text-base">
+        <li>• Read all questions carefully before answering</li>
+        <li>• Show all work clearly and step by step</li>
+        <li>• Write your answers in the spaces provided</li>
+        <li>• Use proper mathematical notation</li>
+        <li>• Check your answers before submitting</li>
+      </ul>
+    </div>
+
+    {/* Signature Section */}
+    <div className="flex justify-between items-end mt-auto pt-8">
+      <div>
+        <div className="border-b border-gray-400 w-40 mb-2"></div>
+        <div className="text-center text-sm">Student Signature</div>
+      </div>
+      <div>
+        <div className="border-b border-gray-400 w-40 mb-2"></div>
+        <div className="text-center text-sm">Instructor Signature</div>
+      </div>
+    </div>
+  </div>
+)
+
+// Exam-style Question Header Component
 export const QuestionHeader = ({ 
   questionNumber, 
   title, 
   reference, 
-  className 
+  className,
+  marks 
 }: {
   questionNumber: number
   title: string
   reference?: string
   className?: string
+  marks?: number
 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5 }}
-    className={cn(
-      "relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 p-6 text-white shadow-2xl",
-      className
-    )}
-  >
-    {/* Background Pattern */}
-    <div className="absolute inset-0 opacity-10">
-      <svg className="h-full w-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
-          </pattern>
-        </defs>
-        <rect width="100" height="100" fill="url(#grid)" />
-      </svg>
-    </div>
-    
-    <div className="relative flex items-center gap-4">
-      <QuestionIcon />
-      <div className="flex-1">
-        <div className="flex items-center gap-3 mb-2">
-          <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold">
-            Question {questionNumber}
-          </span>
-          {reference && (
-            <div className="flex items-center gap-1 text-amber-200">
-              <ReferenceIcon />
-              <span className="text-sm opacity-90">Source</span>
-            </div>
-          )}
-        </div>
-        <h3 className="text-xl font-bold">{title}</h3>
-        {reference && (
-          <p className="text-blue-100 text-sm mt-1 opacity-90">{reference}</p>
-        )}
+  <div className={cn(
+    "border-b-2 border-gray-300 pb-3 mb-6",
+    className
+  )}>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="text-xl font-bold text-gray-800">
+          {questionNumber}.
+        </span>
+        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
       </div>
+      {marks && (
+        <div className="bg-gray-100 px-3 py-1 rounded-md border">
+          <span className="text-sm font-medium text-gray-700">[{marks} marks]</span>
+        </div>
+      )}
     </div>
-    
-    {/* Decorative elements */}
-    <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-    <div className="absolute -bottom-2 -left-2 w-16 h-16 bg-purple-400/20 rounded-full blur-lg"></div>
-  </motion.div>
+    {reference && (
+      <p className="text-sm text-gray-600 mt-2 ml-8">
+        Reference: {reference}
+      </p>
+    )}
+  </div>
 )
 
-// Beautiful Solved Example Component
+// Exam-style Worked Example Component
 export const SolvedExample = ({ 
   problem, 
   given, 
@@ -149,128 +250,85 @@ export const SolvedExample = ({
   answer: string
   className?: string
 }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.5, delay: 0.2 }}
-    className={cn(
-      "relative overflow-hidden rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50 p-6 shadow-lg",
-      className
-    )}
-  >
-    {/* Header */}
-    <div className="flex items-center gap-3 mb-6">
-      <SolvedIcon />
-      <div>
-        <h4 className="text-lg font-bold text-emerald-800">Solved Example</h4>
-        <p className="text-sm text-emerald-600">Complete step-by-step solution</p>
+  <div className={cn(
+    "border border-gray-300 rounded-lg p-4 mb-6 bg-gray-50",
+    className
+  )}>
+    <div className="mb-4">
+      <h4 className="text-base font-semibold text-gray-800 mb-3 border-b border-gray-300 pb-1">
+        Worked Example:
+      </h4>
+      <div className="text-gray-800 mb-4">
+        <ReliableMathRenderer content={problem} />
       </div>
     </div>
 
-    {/* Problem Statement */}
-    <div className="mb-6 rounded-lg bg-white/80 p-4 shadow-sm border border-emerald-100">
-      <h5 className="text-sm font-semibold text-emerald-700 mb-2 flex items-center gap-2">
-        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-        Problem Statement
-      </h5>
-      <EnhancedContentRenderer content={problem} className="text-gray-800" />
-    </div>
-
-    {/* Given & Required */}
-    <div className="grid md:grid-cols-2 gap-4 mb-6">
-      <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
-        <h5 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-          Given
-        </h5>
-        <ul className="space-y-2">
+    {/* Given and Required in simple format */}
+    {given.length > 0 && (
+      <div className="mb-4">
+        <p className="text-sm font-medium text-gray-700 mb-2">Given:</p>
+        <ul className="ml-4 space-y-1">
           {given.map((item, index) => (
-            <li key={index} className="flex items-start gap-2 text-blue-800">
-              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-              <EnhancedContentRenderer content={item} className="text-sm" />
+            <li key={index} className="text-sm text-gray-800">
+              • <ReliableMathRenderer content={item} inline />
             </li>
           ))}
         </ul>
       </div>
-      
-      <div className="rounded-lg bg-purple-50 p-4 border border-purple-200">
-        <h5 className="text-sm font-semibold text-purple-700 mb-3 flex items-center gap-2">
-          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-          Required
-        </h5>
-        <EnhancedContentRenderer content={required} className="text-purple-800 font-medium" />
+    )}
+
+    <div className="mb-4">
+      <p className="text-sm font-medium text-gray-700 mb-2">Find:</p>
+      <div className="text-sm text-gray-800 ml-4">
+        <ReliableMathRenderer content={required} />
       </div>
     </div>
 
-    {/* Solution Steps */}
-    <div className="mb-6">
-      <h5 className="text-sm font-semibold text-emerald-700 mb-4 flex items-center gap-2">
-        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-        Solution
-      </h5>
-      <div className="bg-white/90 rounded-lg p-4 border border-emerald-200">
-        <EnhancedContentRenderer content={solution} className="text-gray-800 leading-relaxed" />
+    <div className="mb-4">
+      <p className="text-sm font-medium text-gray-700 mb-2">Solution:</p>
+      <div className="ml-4 text-gray-800 leading-relaxed">
+        <ReliableMathRenderer content={solution} />
       </div>
     </div>
 
-    {/* Final Answer */}
-    <div className="rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 p-4 text-white">
-      <h5 className="text-sm font-semibold mb-2 flex items-center gap-2">
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-        </svg>
-        Final Answer
-      </h5>
-      <EnhancedContentRenderer content={answer} className="text-white font-semibold text-lg" />
+    <div className="border-t border-gray-300 pt-3">
+      <p className="text-sm font-medium text-gray-700 mb-2">Answer:</p>
+      <div className="ml-4 font-medium text-gray-900">
+        <ReliableMathRenderer content={answer} />
+      </div>
     </div>
-  </motion.div>
+  </div>
 )
 
-// Beautiful Unsolved Problem Component
+// Exam-style Problem Component
 export const UnsolvedProblem = ({ 
   problemNumber, 
   problem, 
-  className 
+  className,
+  marks 
 }: {
   problemNumber: number
   problem: string
   className?: string
+  marks?: number
 }) => (
-  <motion.div
-    initial={{ opacity: 0, x: -20 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ duration: 0.4, delay: problemNumber * 0.1 }}
-    className={cn(
-      "relative overflow-hidden rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-5 shadow-md hover:shadow-lg transition-all duration-300",
-      className
-    )}
-  >
-    {/* Header */}
-    <div className="flex items-center gap-3 mb-4">
-      <ProblemIcon />
-      <div>
-        <h5 className="text-lg font-bold text-blue-800">Problem {problemNumber}</h5>
-        <p className="text-sm text-blue-600">For students to solve</p>
-      </div>
+  <div className={cn(
+    "border border-gray-300 rounded-lg p-4 mb-4 bg-white",
+    className
+  )}>
+    <div className="flex items-center justify-between mb-3">
+      <span className="text-base font-semibold text-gray-800">
+        ({String.fromCharCode(97 + problemNumber - 1)}) {/* Converts 1 to 'a', 2 to 'b', etc. */}
+      </span>
+      {marks && (
+        <span className="text-sm text-gray-600">[{marks} marks]</span>
+      )}
     </div>
-
-    {/* Problem Statement Only */}
-    <div className="mb-4 rounded-lg bg-white/90 p-5 shadow-sm border border-blue-100">
-      <EnhancedContentRenderer content={problem} className="text-gray-800 text-base leading-relaxed" />
+    
+    <div className="text-gray-800">
+      <ReliableMathRenderer content={problem} />
     </div>
-
-    {/* Solution Space Indicator */}
-    <div className="mt-4 rounded-lg border-2 border-dashed border-gray-300 p-4 bg-gray-50/50">
-      <p className="text-center text-gray-500 text-sm font-medium">
-        ✏️ Student Solution Space
-      </p>
-      <div className="mt-2 space-y-2">
-        {[1, 2, 3, 4].map((line) => (
-          <div key={line} className="h-4 border-b border-dotted border-gray-300"></div>
-        ))}
-      </div>
-    </div>
-  </motion.div>
+  </div>
 )
 
 // Container for all problems in a question
@@ -290,6 +348,7 @@ export const QuestionContainer = ({
 )
 
 export default {
+  ExamFrontPage,
   QuestionHeader,
   SolvedExample,
   UnsolvedProblem,

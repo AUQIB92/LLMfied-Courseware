@@ -90,32 +90,71 @@ export const exportBeautifulAssignmentPDF = async (assignment, metadata = {}) =>
               
               @media print {
                   @page { 
-                      margin: 0.5in; 
+                      margin: 0.7in 0.5in; 
                       size: A4; 
                   }
                   body { 
                       -webkit-print-color-adjust: exact !important; 
                       print-color-adjust: exact !important;
+                      font-size: 11pt !important;
+                      line-height: 1.6 !important;
+                      padding: 0 !important;
                   }
                   .no-print { display: none !important; }
                   .page-break { page-break-before: always; }
                   .avoid-break { page-break-inside: avoid; }
                   
                   /* Print-specific adjustments */
-                  .question-header { margin-bottom: 1.5rem; }
-                  .solved-example { margin-bottom: 1.5rem; }
-                  .unsolved-problem { margin-bottom: 1rem; }
+                  .question-header { 
+                      margin-bottom: 1.5rem; 
+                      page-break-after: avoid;
+                      page-break-inside: avoid;
+                  }
+                  .solved-example { 
+                      margin-bottom: 2rem; 
+                      page-break-inside: avoid;
+                  }
+                  .unsolved-problem { 
+                      margin-bottom: 1.5rem; 
+                      page-break-inside: avoid;
+                  }
+                  .solution-section {
+                      page-break-inside: avoid;
+                  }
+                  .final-answer {
+                      page-break-inside: avoid;
+                  }
+                  .given-required-grid {
+                      page-break-inside: avoid;
+                  }
+                  
+                  /* Ensure proper spacing in print */
+                  .header { margin-bottom: 2rem !important; }
+                  .assignment-header { margin-bottom: 2rem !important; }
+                  .footer { margin-top: 2rem !important; }
+                  
+                  /* Math styling for print */
+                  .katex { font-size: 1.1em !important; }
+                  .katex-display { margin: 1rem 0 !important; padding: 1rem !important; }
+                  
+                  /* Optimize colors for print */
+                  .question-header { background: #8b5cf6 !important; }
+                  .solved-example { background: #d1fae5 !important; border-color: #10b981 !important; }
+                  .unsolved-problem { background: #dbeafe !important; border-color: #3b82f6 !important; }
               }
               
               body {
                   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-                  line-height: 1.6;
+                  line-height: 1.7;
                   color: var(--gray-800);
                   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-                  font-size: 11pt;
+                  font-size: 12pt;
                   max-width: 210mm;
                   margin: 0 auto;
-                  padding: 15px;
+                  padding: 20px;
+                  -webkit-font-smoothing: antialiased;
+                  -moz-osx-font-smoothing: grayscale;
+                  text-rendering: optimizeLegibility;
               }
               
               /* Beautiful Header with Institution Branding */
@@ -533,40 +572,52 @@ export const exportBeautifulAssignmentPDF = async (assignment, metadata = {}) =>
               
               /* Enhanced Math Styling */
               .katex {
-                  font-size: 1.1em !important;
+                  font-size: 1.2em !important;
+                  font-weight: 500 !important;
               }
               
               .katex-display {
-                  margin: 1rem 0 !important;
-                  padding: 1rem !important;
+                  margin: 1.5rem 0 !important;
+                  padding: 1.5rem !important;
                   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
                   border: 2px solid #bae6fd !important;
-                  border-radius: 12px !important;
-                  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1) !important;
+                  border-radius: 16px !important;
+                  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15) !important;
                   position: relative !important;
+                  page-break-inside: avoid !important;
               }
               
               .katex-display::before {
-                  content: '📐';
+                  content: '📐 Mathematics';
                   position: absolute;
-                  top: 8px;
-                  right: 12px;
-                  font-size: 12pt;
-                  opacity: 0.6;
+                  top: 12px;
+                  right: 16px;
+                  font-size: 10pt;
+                  color: var(--primary-blue);
+                  opacity: 0.7;
+                  background: white;
+                  padding: 4px 8px;
+                  border-radius: 8px;
+                  font-family: 'Inter', sans-serif;
+                  font-weight: 600;
+                  letter-spacing: 0.5px;
               }
               
               .katex-display .katex {
-                  font-size: 1.2em !important;
+                  font-size: 1.4em !important;
                   color: var(--primary-blue) !important;
+                  font-weight: 600 !important;
               }
               
               .katex:not(.katex-display) {
                   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
-                  padding: 2px 6px !important;
-                  border-radius: 4px !important;
+                  padding: 4px 8px !important;
+                  border-radius: 6px !important;
                   border: 1px solid #bae6fd !important;
                   color: var(--primary-blue) !important;
-                  margin: 0 2px !important;
+                  margin: 0 3px !important;
+                  font-weight: 600 !important;
+                  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1) !important;
               }
               
               /* Print Controls */
@@ -831,15 +882,21 @@ export const exportBeautifulAssignmentPDF = async (assignment, metadata = {}) =>
           <div class="print-controls no-print">
               <div class="print-title">✨ Beautiful Assignment PDF Export</div>
               <div class="print-description">
-                  Stunning visual design with SVG icons, beautiful mathematics rendering, and clear problem/solution differentiation.
+                  🎨 Stunning visual design • 📐 Enhanced mathematics rendering • 🎯 Clear problem/solution differentiation • 📚 Professional academic formatting
               </div>
               <div class="print-buttons">
                   <button class="print-button" onclick="window.print()">
                       🖨️ Generate Beautiful PDF
                   </button>
+                  <button class="print-button" onclick="window.location.reload()">
+                      🔄 Refresh Preview
+                  </button>
                   <button class="print-button close-button" onclick="window.close()">
                       ❌ Close Window
                   </button>
+              </div>
+              <div style="margin-top: 1rem; font-size: 9pt; opacity: 0.8;">
+                  💡 <strong>Tip:</strong> Use Chrome or Edge for best printing results. Set margins to "Minimum" for optimal layout.
               </div>
           </div>
           

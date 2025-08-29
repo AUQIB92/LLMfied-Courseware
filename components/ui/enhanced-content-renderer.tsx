@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import SmartMathRenderer from '../SmartMathRenderer'
+import ReliableMathRenderer from '../ReliableMathRenderer'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from './chart'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 
@@ -421,7 +421,7 @@ export const EnhancedContentRenderer: React.FC<EnhancedContentRendererProps> = (
         }
       `}</style>
       
-      <SmartMathRenderer 
+      <ReliableMathRenderer 
         content={processedContent} 
         className="prose prose-lg max-w-none enhanced-prose"
       />

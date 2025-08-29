@@ -1,27 +1,36 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
+  ExamFrontPage,
   QuestionHeader, 
   SolvedExample, 
   UnsolvedProblem, 
   QuestionContainer 
 } from './assignment-components'
-import SmartMathRenderer from '../SmartMathRenderer'
+import ReliableMathRenderer from '../ReliableMathRenderer'
 import EnhancedContentRenderer from './enhanced-content-renderer'
+import { useStudentInfo } from '@/hooks/useStudentInfo'
+import InlineLaTeXEditor from './inline-latex-editor'
 
 interface AssignmentData {
   title?: string
   instructions?: string
   references?: string
   questions?: QuestionData[]
+  deadline?: string
+  totalMarks?: number
+  marksObtained?: number
+  studentName?: string
+  studentEnrollment?: string
 }
 
 interface QuestionData {
   number: number
   title: string
   reference?: string
+  marks?: number
   solvedExample: {
     problem: string
     given: string[]
@@ -31,18 +40,25 @@ interface QuestionData {
   }
   unsolvedProblems: Array<{
     problem: string
+    marks?: number
   }>
 }
 
 interface BeautifulAssignmentRendererProps {
   content: string
   className?: string
+  allowEditing?: boolean
+  onContentChange?: (content: string) => void
 }
 
 export const BeautifulAssignmentRenderer: React.FC<BeautifulAssignmentRendererProps> = ({
   content,
-  className = ""
+  className = "",
+  allowEditing = false,
+  onContentChange
 }) => {
+  const studentInfo = useStudentInfo()
+  const [isEditMode, setIsEditMode] = useState(false)
   // Parse the assignment content to extract structured data
   const parseAssignment = (content: string): AssignmentData => {
     if (!content) return {}
@@ -160,64 +176,95 @@ export const BeautifulAssignmentRenderer: React.FC<BeautifulAssignmentRendererPr
   const assignmentData = parseAssignment(content)
 
   if (!assignmentData.questions || assignmentData.questions.length === 0) {
-    // Enhanced fallback renderer for unstructured content
+    // Simple fallback renderer for unstructured content
     return (
-      <div className={`beautiful-assignment-fallback ${className}`}>
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8 shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
+      <div className={`exam-assignment-fallback ${className}`}>
+        {/* Front Page for fallback content */}
+        <ExamFrontPage
+          title="Mathematics Assignment"
+          totalMarks={100}
+          studentName={studentInfo?.name}
+          studentEnrollment={studentInfo?.enrollmentNumber}
+          className="mb-12"
+        />
+        
+        <div className="border border-gray-300 rounded-lg p-6 bg-white">
+          {isEditMode && allowEditing ? (
+            <InlineLaTeXEditor
+              content={content}
+              onChange={(newContent) => {
+                onContentChange?.(newContent)
+              }}
+              placeholder="Enter assignment content with LaTeX..."
+              className="w-full"
+            />
+          ) : (
+            <div className="text-gray-800">
+              <ReliableMathRenderer content={content} />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-blue-800">Assignment Content</h2>
-              <p className="text-sm text-blue-600">Enhanced rendering with math, tables, and HTML support</p>
-            </div>
-          </div>
-        </div>
-        <div className="assignment-content-enhanced">
-          <EnhancedContentRenderer content={content} />
+          )}
         </div>
       </div>
     )
   }
 
+  // Calculate total marks
+  const totalMarks = assignmentData.questions?.reduce((total, q) => 
+    total + (q.marks || 0) + q.unsolvedProblems.reduce((subTotal, p) => subTotal + (p.marks || 0), 0)
+  , 0) || 0
+
   return (
     <div className={`beautiful-assignment-renderer ${className}`}>
-      {/* Assignment Header */}
+      {/* Edit Mode Toggle */}
+      {allowEditing && (
+        <div className="fixed top-4 right-4 z-50">
+          <button
+            onClick={() => setIsEditMode(!isEditMode)}
+            className={`px-4 py-2 rounded-lg shadow-lg font-medium transition-colors ${
+              isEditMode 
+                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+            }`}
+          >
+            {isEditMode ? '✓ Done Editing' : '✏️ Quick Edit'}
+          </button>
+        </div>
+      )}
+
+      {/* Exam Front Page */}
+      <ExamFrontPage
+        title={assignmentData.title || 'Mathematics Examination'}
+        totalMarks={totalMarks}
+        marksObtained={assignmentData.marksObtained}
+        deadline={assignmentData.deadline}
+        studentName={assignmentData.studentName || studentInfo?.name}
+        studentEnrollment={assignmentData.studentEnrollment || studentInfo?.enrollmentNumber}
+        className="mb-12"
+      />
+      {/* Exam Header */}
       {assignmentData.title && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+        <div className="text-center mb-8 px-4 border-b-2 border-gray-400 pb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
             {assignmentData.title}
           </h1>
-          <div className="w-32 h-1 bg-gradient-to-r from-purple-500 to-blue-500 mx-auto rounded-full"></div>
-        </motion.div>
+          <div className="flex justify-center gap-8 text-sm text-gray-700">
+            <div>Name: ___________________</div>
+            <div>Date: ___________________</div>
+            <div>Class: ___________________</div>
+          </div>
+        </div>
       )}
 
       {/* Instructions */}
       {assignmentData.instructions && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8 shadow-lg"
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-blue-800">Instructions for Students</h2>
+        <div className="border border-gray-300 rounded-lg p-4 mb-6 bg-gray-50">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">
+            Instructions:
+          </h2>
+          <div className="text-gray-800">
+            <ReliableMathRenderer content={assignmentData.instructions} />
           </div>
-          <EnhancedContentRenderer content={assignmentData.instructions} className="text-blue-700 leading-relaxed" />
-        </motion.div>
+        </div>
       )}
 
       {/* References */}
@@ -241,13 +288,15 @@ export const BeautifulAssignmentRenderer: React.FC<BeautifulAssignmentRendererPr
       )}
 
       {/* Questions */}
-      <div className="space-y-10">
+      <div className="space-y-8">
         {assignmentData.questions.map((question, index) => (
-          <QuestionContainer key={question.number} className="">
+          <div key={question.number} className="border border-gray-400 rounded-lg p-6 bg-white">
             <QuestionHeader
               questionNumber={question.number}
               title={question.title}
               reference={question.reference}
+              marks={question.marks}
+              className="mb-6"
             />
             
             <SolvedExample
@@ -256,55 +305,33 @@ export const BeautifulAssignmentRenderer: React.FC<BeautifulAssignmentRendererPr
               required={question.solvedExample.required}
               solution={question.solvedExample.solution}
               answer={question.solvedExample.answer}
+              className="mb-6"
             />
             
             {question.unsolvedProblems.length > 0 && (
               <div className="space-y-4">
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
-                  className="flex items-center gap-3 mb-4"
-                >
-                  <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <h4 className="text-lg font-bold text-blue-800">Problems for Students to Solve</h4>
-                </motion.div>
-                
-                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                  {question.unsolvedProblems.map((problem, problemIndex) => (
-                    <UnsolvedProblem
-                      key={`problem-${problemIndex}`}
-                      problemNumber={problemIndex + 1}
-                      problem={problem.problem}
-                    />
-                  ))}
-                </div>
+                {question.unsolvedProblems.map((problem, problemIndex) => (
+                  <UnsolvedProblem
+                    key={`problem-${problemIndex}`}
+                    problemNumber={problemIndex + 1}
+                    problem={problem.problem}
+                    marks={problem.marks}
+                  />
+                ))}
               </div>
             )}
-          </QuestionContainer>
+          </div>
         ))}
       </div>
 
-      {/* Assignment Footer */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 1 }}
-        className="mt-12 text-center"
-      >
-        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-blue-100 border border-purple-200 rounded-full px-6 py-3">
-          <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span className="font-semibold text-purple-800">
-            Assignment Complete • {assignmentData.questions.length} Questions • {assignmentData.questions.length * 4} Total Problems
-          </span>
+      {/* Exam Footer */}
+      <div className="mt-12 text-center border-t-2 border-gray-400 pt-6">
+        <div className="text-sm text-gray-600">
+          Total Marks: {assignmentData.questions.reduce((total, q) => 
+            total + (q.marks || 0) + q.unsolvedProblems.reduce((subTotal, p) => subTotal + (p.marks || 0), 0)
+          , 0)}
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

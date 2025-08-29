@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment Viewer Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature-card {
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        .feature-card.html {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
+        }
+        .feature-card.pdf {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+        }
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        .html .feature-title { color: #065f46; }
+        .pdf .feature-title { color: #92400e; }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .feature-list li::before {
+            content: '✨';
+            font-size: 1.1rem;
+        }
+        .test-section {
+            background: linear-gradient(135deg, #ede9fe 0%, #f3f4f6 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            border: 2px solid #a855f7;
+        }
+        .test-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #7c3aed;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #8b5cf6;
+        }
+        .sample-math {
+            background: #f0f9ff;
+            border: 2px solid #3b82f6;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Beautiful Assignment Viewer & PDF Export</h1>
+            <p class="subtitle">Enhanced Mathematical Assignment Rendering System</p>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card html">
+                <h2 class="feature-title">📚 Beautiful HTML View</h2>
+                <ul class="feature-list">
+                    <li>Responsive design for all devices</li>
+                    <li>Enhanced typography and spacing</li>
+                    <li>Proper LaTeX/KaTeX math rendering</li>
+                    <li>Interactive animations and gradients</li>
+                    <li>Color-coded problem sections</li>
+                    <li>Professional visual hierarchy</li>
+                    <li>Smart table and chart rendering</li>
+                    <li>Accessibility optimizations</li>
+                </ul>
+            </div>
+
+            <div class="feature-card pdf">
+                <h2 class="feature-title">📄 Professional PDF Export</h2>
+                <ul class="feature-list">
+                    <li>Optimized print layout and margins</li>
+                    <li>Enhanced math rendering in PDF</li>
+                    <li>Print-friendly color schemes</li>
+                    <li>Proper page breaks and spacing</li>
+                    <li>Institution branding and headers</li>
+                    <li>Student information integration</li>
+                    <li>Cross-browser compatibility</li>
+                    <li>High-quality vector graphics</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="test-title">🧪 Testing Instructions</h2>
+            
+            <div class="instructions">
+                <h3>📋 How to Test the Assignment Viewer:</h3>
+                <ol>
+                    <li><strong>Navigate to Assignment View:</strong> Go to the learner dashboard and select any assignment</li>
+                    <li><strong>Check HTML Rendering:</strong> Verify that assignments display with beautiful styling, proper math rendering, and responsive design</li>
+                    <li><strong>Test PDF Export:</strong> Click the "Download PDF" button to generate a professional PDF version</li>
+                    <li><strong>Verify Math Rendering:</strong> Ensure LaTeX expressions like those below render correctly in both HTML and PDF</li>
+                    <li><strong>Check Responsiveness:</strong> Test on different screen sizes (desktop, tablet, mobile)</li>
+                </ol>
+            </div>
+
+            <div class="sample-math">
+                <h3>📐 Sample Mathematical Expressions to Test:</h3>
+                <p><strong>Inline Math:</strong> $E = mc^2$, $\frac{d}{dx}[x^n] = nx^{n-1}$</p>
+                <p><strong>Display Math:</strong></p>
+                <p>$$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$$</p>
+                <p>$$\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}$$</p>
+                <p>$$\lim_{x \to 0} \frac{\sin x}{x} = 1$$</p>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>✅ Expected Results:</h3>
+            <ul>
+                <li><strong>HTML View:</strong> Assignments should display with beautiful gradients, proper spacing, and fully rendered mathematics</li>
+                <li><strong>PDF Export:</strong> Generated PDFs should maintain visual quality, proper formatting, and readable mathematics</li>
+                <li><strong>LaTeX Rendering:</strong> All mathematical expressions should render correctly using KaTeX</li>
+                <li><strong>Responsive Design:</strong> Layout should adapt seamlessly to different screen sizes</li>
+                <li><strong>Performance:</strong> Fast loading and smooth interactions</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 20px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 15px;">
+            <h3 style="color: #1e40af;">🚀 Ready to Test!</h3>
+            <p style="color: #374151;">The development server is running at <strong>http://localhost:3001</strong></p>
+            <p style="color: #6b7280; font-size: 0.9rem;">Navigate to the application to test the enhanced assignment viewer and PDF export functionality.</p>
+        </div>
+    </div>
+</body>
+</html>

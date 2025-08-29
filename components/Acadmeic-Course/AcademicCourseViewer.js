@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ReliableMathRenderer from "@/components/ReliableMathRenderer"
+import BeautifulAssignmentRenderer from "@/components/ui/beautiful-assignment-renderer"
 
 import {
   ArrowLeft,
@@ -65,20 +66,26 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
     try {
       setExportingPDF(true)
 
-      // Dynamic import of PDF export utility
-      const { exportAssignmentToPDF } = await import("@/utils/pdf-export")
+      // Dynamic import of beautiful PDF export utility
+      const { exportBeautifulAssignmentPDF } = await import("@/utils/beautiful-pdf-export")
 
-      await exportAssignmentToPDF(assignment.content, {
-        ...metadata,
-        topics: assignment.topics || "",
+      const pdfMetadata = {
+        moduleTitle: metadata.moduleTitle || "Assignment",
+        topics: assignment.topics || metadata.topics || "",
         difficulty: assignment.difficulty || "medium",
         dueDate: assignment.dueDate,
+        courseTitle: metadata.courseTitle || viewerCourse.title,
+        institutionName: metadata.institutionName || 'Govt. College of Engineering Safapora Ganderbal Kashmir, India 193504',
+        instructorName: metadata.instructorName || 'Instructor',
+        references: assignment.references,
         studentName: user?.name || "",
-        title: assignment.title,
-      })
+        assignmentId: assignment.id || "assignment"
+      }
 
-      // Show success message (you might want to use a toast library)
-      console.log("PDF exported successfully!")
+      await exportBeautifulAssignmentPDF(assignment.content, pdfMetadata)
+
+      // Show success message
+      console.log("📄 Assignment PDF exported successfully!")
     } catch (error) {
       console.error("Failed to export PDF:", error)
       alert("Failed to export PDF. Please try again.")
@@ -442,6 +449,109 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [activeTab, currentModule, currentSubsection, currentPage, modules, viewerCourse])
+
+  // If an assignment is selected, show the assignment viewer
+  if (selectedAssignment) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50">
+        <div className="max-w-6xl mx-auto p-6">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={() => setSelectedAssignment(null)}
+            className="mb-6 hover:bg-blue-50 text-blue-600 font-medium"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Module
+          </Button>
+
+          {/* Assignment Header */}
+          <Card className="border-l-4 border-l-purple-500 mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-6 w-6 text-purple-600" />
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-gray-900">
+                      {selectedAssignment.title || 'Module Assignment'}
+                    </CardTitle>
+                    <p className="text-gray-600 mt-1">{selectedAssignment.moduleTitle}</p>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => handleExportAssignmentPDF(selectedAssignment, {
+                    moduleTitle: selectedAssignment.moduleTitle,
+                    courseTitle: viewerCourse.title,
+                    institutionName: "Govt. College of Engineering Safapora Ganderbal Kashmir, India 193504",
+                  })}
+                  disabled={exportingPDF}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {exportingPDF ? "Exporting..." : "Export PDF"}
+                </Button>
+              </div>
+            </CardHeader>
+            
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">Module:</span>
+                  <span className="font-medium">{selectedAssignment.moduleTitle}</span>
+                </div>
+                
+                {selectedAssignment.difficulty && (
+                  <div className="flex items-center gap-2">
+                    <Badge className={
+                      selectedAssignment.difficulty.toLowerCase() === 'easy' 
+                        ? 'bg-green-100 text-green-800 border-green-200'
+                        : selectedAssignment.difficulty.toLowerCase() === 'medium'
+                        ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                        : 'bg-red-100 text-red-800 border-red-200'
+                    }>
+                      {selectedAssignment.difficulty.charAt(0).toUpperCase() + selectedAssignment.difficulty.slice(1)}
+                    </Badge>
+                  </div>
+                )}
+                
+                {selectedAssignment.topics && (
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">Topics:</span>
+                    <span className="text-sm font-medium">{selectedAssignment.topics}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Assignment Content */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-purple-600" />
+                Assignment Content
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BeautifulAssignmentRenderer 
+                content={selectedAssignment.content}
+                className="module-assignment-viewer"
+                allowEditing={true}
+                onContentChange={(newContent) => {
+                  // Update the assignment content
+                  console.log('Assignment content changed:', newContent)
+                  // You can add save logic here
+                }}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

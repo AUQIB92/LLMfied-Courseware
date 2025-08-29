@@ -15,43 +15,94 @@ import "katex/dist/katex.min.css";
  * 5. Performance optimizations with memoization
  */
 
-// Smart content detector - identifies mathematical contexts
+// Enhanced content detector - identifies mathematical contexts
 const detectMathContext = (text) => {
   const mathIndicators = [
     /\$[^$]+\$/,                    // Inline math: $...$
     /\$\$[^$]+\$\$/,                // Block math: $$...$$
     /\\[a-zA-Z]+\{[^}]*\}/,         // LaTeX commands: \frac{...}
     /\\[a-zA-Z]+(?![a-zA-Z])/,      // LaTeX commands: \alpha
-    /\b\d+\s*[+\-*/=]\s*\d+/,      // Simple equations: 2 + 3
-    /\b[a-z]\s*=\s*[^a-zA-Z\s]/,   // Variable assignments: x = 5
-    /\b(sin|cos|tan|log|ln|exp)\s*\(/,  // Math functions
-    /[∑∏∫∂∇∞αβγδεζηθλμπσφψω]/,     // Math symbols
+    /\b\d+\s*[+\-*/=≠<>≤≥]\s*\d+/, // Equations with math symbols
+    /\b[a-z]\s*[=≠<>≤≥]\s*[^a-zA-Z\s]/, // Variable assignments
+    /\b(sin|cos|tan|log|ln|exp|lim|max|min|sup|inf)\s*[\(_{]/,  // Math functions
+    /[∑∏∫∂∇∞αβγδεζηθλμπρστυφχψω]/,     // Greek letters and math symbols
+    /\^\{[^}]*\}|_\{[^}]*\}/,       // Superscripts and subscripts
+    /\\(begin|end)\{[^}]+\}/,       // LaTeX environments
+    /\\(left|right)\s*[\(\)\[\]\{\}|]/,  // LaTeX delimiters
+    /[²³¹⁰⁴⁵⁶⁷⁸⁹]/,              // Unicode superscripts
+    /[₀₁₂₃₄₅₆₇₈₉]/,                // Unicode subscripts
   ];
   
   return mathIndicators.some(pattern => pattern.test(text));
 };
 
-// Minimal, safe preprocessing - only fixes obvious LaTeX errors
-const minimalPreprocess = (text) => {
+// Enhanced preprocessing - fixes more LaTeX patterns
+const enhancedPreprocess = (text) => {
   return text
-    // Fix only the most common and safe LaTeX issues
-    .replace(/(?<!\\)frac\{([^}]+)\}\{([^}]+)\}/g, "\\frac{$1}{$2}")  // Missing backslash in fractions
-    .replace(/(?<!\\)sqrt\{([^}]+)\}/g, "\\sqrt{$1}")                  // Missing backslash in square roots
-    .replace(/(?<!\\)sum_\{([^}]+)\}\^\{([^}]+)\}/g, "\\sum_{$1}^{$2}") // Missing backslash in summations
-    .replace(/(?<!\\)int_\{([^}]+)\}\^\{([^}]+)\}/g, "\\int_{$1}^{$2}") // Missing backslash in integrals
+    // Fix missing backslashes for common LaTeX commands
+    .replace(/(?<!\\)\b(frac|sqrt|sum|int|prod|lim|sin|cos|tan|log|ln|exp)\s*\{/g, "\\$1{")
+    .replace(/(?<!\\)\b(alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega)\b/g, "\\$1")
+    .replace(/(?<!\\)\b(Alpha|Beta|Gamma|Delta|Epsilon|Zeta|Eta|Theta|Iota|Kappa|Lambda|Mu|Nu|Xi|Pi|Rho|Sigma|Tau|Upsilon|Phi|Chi|Psi|Omega)\b/g, "\\$1")
     
-    // Fix only mathematical "to" contexts (very conservative)
-    .replace(/\b(\d+)\s+to\s+(\d+)\b/g, "$1 \\to $2")                 // Numbers only: "1 to 5"
-    .replace(/\b([a-z])\s+to\s+([a-z])\b(?=\s*[,.]|\s*$)/g, "$1 \\to $2") // Single letters at end of sentence
+    // Fix subscripts and superscripts without proper math delimiters
+    .replace(/([a-zA-Z0-9])_(\w+)(?![{}])/g, "$1_{$2}")
+    .replace(/([a-zA-Z0-9])\^(\w+)(?![{}])/g, "$1^{$2}")
     
-    // Fix common Greek letters only when clearly mathematical
-    .replace(/\b(alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|phi|omega)\b(?=\s*[=+\-*/])/g, "\\$1")
+    // Fix common mathematical expressions
+    .replace(/\b(\d+)\s*\*\s*(\d+)/g, "$1 \\times $2")
+    .replace(/\b(\d+)\s*\/\s*(\d+)/g, "\\frac{$1}{$2}")
+    .replace(/\binfinity\b/g, "\\infty")
+    .replace(/\bpm\b|\+\-/g, "\\pm")
+    .replace(/\bmp\b|\-\+/g, "\\mp")
+    
+    // Fix arrows and special symbols
+    .replace(/\b(\w+)\s+to\s+(\w+)\b/g, "$1 \\to $2")
+    .replace(/->/g, "\\to")
+    .replace(/<-/g, "\\leftarrow")
+    .replace(/<->/g, "\\leftrightarrow")
+    .replace(/=>/g, "\\Rightarrow")
+    .replace(/<=/g, "\\Leftarrow")
+    .replace(/<=>/g, "\\Leftrightarrow")
+    
+    // Fix inequalities
+    .replace(/<=(?!=)/g, "\\leq")
+    .replace(/>=(?!=)/g, "\\geq")
+    .replace(/!=/g, "\\neq")
+    
+    // Fix set notation
+    .replace(/\bin\b/g, "\\in")
+    .replace(/\bnotin\b/g, "\\notin")
+    .replace(/\bsubset\b/g, "\\subset")
+    .replace(/\bsuperset\b/g, "\\superset")
+    .replace(/\bunion\b/g, "\\cup")
+    .replace(/\bintersection\b/g, "\\cap")
+    
+    // Fix common math functions that might be missing backslashes
+    .replace(/(?<!\\)\b(arcsin|arccos|arctan|sinh|cosh|tanh)\b/g, "\\$1")
+    .replace(/(?<!\\)\b(sec|csc|cot)\b/g, "\\$1")
+    
+    // Ensure proper math environment for standalone expressions
+    .replace(/^([^$]*[a-zA-Z0-9\\][^$]*)$/gm, (match) => {
+      // Only wrap if it contains math indicators and isn't already wrapped
+      if (detectMathContext(match) && !match.includes('$')) {
+        return `$${match}$`;
+      }
+      return match;
+    })
     
     // Clean up any double backslashes from JSON encoding
-    .replace(/\\\\([a-zA-Z]+)/g, "\\$1");
+    .replace(/\\\\([a-zA-Z]+)/g, "\\$1")
+    
+    // Fix common fraction patterns
+    .replace(/(\d+)\/(\d+)/g, "\\frac{$1}{$2}")
+    .replace(/\((\d+)\)\/(\d+)/g, "\\frac{$1}{$2}")
+    .replace(/(\d+)\/\((\d+)\)/g, "\\frac{$1}{$2}")
+    
+    // Fix degree symbols
+    .replace(/\bdegrees?\b|°/g, "^\\circ");
 };
 
-// Enhanced KaTeX configuration with better error handling
+// Enhanced KaTeX configuration with comprehensive macro support
 const getKatexOptions = () => ({
   strict: false,
   output: 'html',
@@ -63,19 +114,74 @@ const getKatexOptions = () => ({
   minRuleThickness: 0.04,
   maxSize: Infinity,
   maxExpand: 1000,
-  trust: false,
+  trust: (context) => {
+    // Allow certain safe commands
+    return ['\\htmlClass', '\\htmlId', '\\htmlStyle', '\\class', '\\id', '\\style'].includes(context.command);
+  },
   globalGroup: false,
   
-  // Useful macros without being too aggressive
+  // Comprehensive macros for common mathematical notation
   macros: {
+    // Fractions and basic operations
     "\\f": "\\frac{#1}{#2}",
     "\\half": "\\frac{1}{2}",
+    "\\third": "\\frac{1}{3}",
+    "\\quarter": "\\frac{1}{4}",
+    
+    // Common symbols
     "\\ohm": "\\Omega",
     "\\degree": "^\\circ",
+    "\\celsius": "^\\circ\\text{C}",
+    "\\fahrenheit": "^\\circ\\text{F}",
+    
+    // Vectors and absolute values
     "\\vv": "\\vec{#1}",
     "\\abs": "\\left|#1\\right|",
+    "\\norm": "\\left\\|#1\\right\\|",
+    "\\floor": "\\left\\lfloor#1\\right\\rfloor",
+    "\\ceil": "\\left\\lceil#1\\right\\rceil",
+    
+    // Derivatives
     "\\dd": "\\frac{d#1}{d#2}",
     "\\pd": "\\frac{\\partial#1}{\\partial#2}",
+    "\\ddx": "\\frac{d}{dx}",
+    "\\ddt": "\\frac{d}{dt}",
+    
+    // Sets
+    "\\N": "\\mathbb{N}",
+    "\\Z": "\\mathbb{Z}",
+    "\\Q": "\\mathbb{Q}",
+    "\\R": "\\mathbb{R}",
+    "\\C": "\\mathbb{C}",
+    
+    // Logic
+    "\\implies": "\\Rightarrow",
+    "\\iff": "\\Leftrightarrow",
+    "\\land": "\\wedge",
+    "\\lor": "\\vee",
+    "\\lnot": "\\neg",
+    
+    // Common functions
+    "\\sinc": "\\operatorname{sinc}",
+    "\\sgn": "\\operatorname{sgn}",
+    "\\erf": "\\operatorname{erf}",
+    "\\Var": "\\operatorname{Var}",
+    "\\Cov": "\\operatorname{Cov}",
+    "\\E": "\\operatorname{E}",
+    
+    // Chemistry/Physics
+    "\\pH": "\\text{pH}",
+    "\\pOH": "\\text{pOH}",
+    "\\molarity": "\\text{M}",
+    
+    // Units (basic)
+    "\\meter": "\\text{m}",
+    "\\kilogram": "\\text{kg}",
+    "\\second": "\\text{s}",
+    "\\ampere": "\\text{A}",
+    "\\kelvin": "\\text{K}",
+    "\\mole": "\\text{mol}",
+    "\\candela": "\\text{cd}",
   }
 });
 
@@ -96,9 +202,13 @@ export default function SmartMathRenderer({
       const hasMath = detectMathContext(content);
       
       if (hasMath) {
-        return minimalPreprocess(content);
+        return enhancedPreprocess(content);
       } else {
-        // For non-mathematical content, return as-is
+        // For non-mathematical content, still check for basic math patterns
+        const basicMathPatterns = /[\d]+[\+\-\*\/=][\d]+|[a-z]\s*=\s*[\d]/;
+        if (basicMathPatterns.test(content)) {
+          return enhancedPreprocess(content);
+        }
         return content;
       }
     } catch (error) {
@@ -114,16 +224,41 @@ export default function SmartMathRenderer({
     setRenderError(error);
   }, []);
 
-  // If there's an error and fallback is enabled, render plain text
+  // Enhanced error handling with progressive fallback
   if (renderError && fallbackToPlainText) {
     return (
       <div className={`math-fallback ${className}`}>
-        <ReactMarkdown>{content}</ReactMarkdown>
-        {process.env.NODE_ENV === 'development' && (
-          <div className="text-xs text-red-500 mt-1">
-            Math rendering error: {renderError.message}
-          </div>
-        )}
+        <div className="text-gray-800">
+          {/* Try basic markdown first */}
+          <ReactMarkdown
+            components={{
+              // Custom rendering for common math patterns
+              code: ({children, className, ...props}) => {
+                const code = String(children);
+                // If it looks like inline math, wrap it
+                if (code.includes('$') || /\\[a-zA-Z]+/.test(code)) {
+                  return <code className="math-code bg-yellow-50 px-1 rounded" {...props}>{code}</code>;
+                }
+                return <code className="bg-gray-100 px-1 rounded" {...props}>{children}</code>;
+              },
+              // Handle text that might contain math
+              p: ({children, ...props}) => (
+                <p className="mb-2 leading-relaxed" {...props}>{children}</p>
+              )
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+          
+          {/* Show error details in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <details className="mt-2 text-xs text-red-600 border border-red-200 rounded p-2">
+              <summary className="cursor-pointer">Math rendering error (dev only)</summary>
+              <div className="mt-1 font-mono whitespace-pre-wrap">{renderError.message}</div>
+              <div className="mt-1 text-gray-600">Original content length: {content?.length || 0} chars</div>
+            </details>
+          )}
+        </div>
       </div>
     );
   }

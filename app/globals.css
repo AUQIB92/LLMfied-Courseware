@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Print styles for exam front page */
+@media print {
+  .page-break-after {
+    page-break-after: always;
+  }
+  
+  .page-break-before {
+    page-break-before: always;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Ensure proper print layout */
+  .exam-assignment-renderer {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
 /* Import KaTeX styles for math rendering */
 @import url("https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css");
 

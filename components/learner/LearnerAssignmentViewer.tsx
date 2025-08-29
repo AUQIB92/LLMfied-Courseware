@@ -316,6 +316,11 @@ export const LearnerAssignmentViewer: React.FC<LearnerAssignmentViewerProps> = (
           <BeautifulAssignmentRenderer 
             content={assignment.content}
             className="assignment-viewer"
+            allowEditing={true}
+            onContentChange={(newContent) => {
+              console.log('Assignment content updated:', newContent)
+              // Add save logic here if needed
+            }}
           />
         </CardContent>
       </Card>
