@@ -37,6 +37,12 @@ import {
   ExternalLink,
   Edit,
   Trash2,
+  Upload,
+  Send,
+  Info,
+  AlertCircle,
+  XCircle,
+  Loader2,
 } from "lucide-react"
 
 // Add style for horizontal scrollbar hiding
@@ -65,6 +71,13 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   const [editingAssignment, setEditingAssignment] = useState(null) // For assignment editing
   const [deletingAssignment, setDeletingAssignment] = useState(null) // For assignment deletion
   const [editForm, setEditForm] = useState({ title: '', description: '', content: '', dueDate: '', points: '' }) // Edit form state
+  
+  // Assignment submission state
+  const [submissionUrl, setSubmissionUrl] = useState('') // Google Drive URL
+  const [submissionStatus, setSubmissionStatus] = useState('') // 'submitting', 'submitted', 'error'
+  const [submissionError, setSubmissionError] = useState('')
+  const [showSubmissionForm, setShowSubmissionForm] = useState(false)
+  const [assignmentSubmissions, setAssignmentSubmissions] = useState({}) // Track submissions per assignment
 
   // Check if current user is an educator for this course
   const isEducator = user?.role === 'educator' && (viewerCourse?.educatorId === user?.id || viewerCourse?.educatorId === user?._id)
@@ -222,6 +235,123 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
       alert(`Failed to update assignment: ${error.message}`)
     }
   }
+
+  // Assignment submission functions
+  const validateGoogleDriveUrl = (url) => {
+    if (!url || !url.trim()) {
+      return { isValid: false, error: 'Google Drive URL is required' }
+    }
+
+    // Check if it's a valid Google Drive URL
+    const driveUrlPatterns = [
+      /^https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
+      /^https:\/\/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
+      /^https:\/\/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/,
+      /^https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/,
+      /^https:\/\/docs\.google\.com\/presentation\/d\/([a-zA-Z0-9_-]+)/
+    ]
+
+    const isValidDriveUrl = driveUrlPatterns.some(pattern => pattern.test(url.trim()))
+    
+    if (!isValidDriveUrl) {
+      return { 
+        isValid: false, 
+        error: 'Please provide a valid Google Drive sharing URL (drive.google.com or docs.google.com)' 
+      }
+    }
+
+    return { isValid: true, error: null }
+  }
+
+  const checkDueDate = (assignment) => {
+    if (!assignment.dueDate) {
+      return { isPastDue: false, daysLeft: null }
+    }
+
+    const now = new Date()
+    const dueDate = new Date(assignment.dueDate)
+    const timeDiff = dueDate.getTime() - now.getTime()
+    const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24))
+
+    return {
+      isPastDue: timeDiff < 0,
+      daysLeft: daysLeft,
+      dueDate: dueDate
+    }
+  }
+
+  const handleSubmitAssignment = async (assignment) => {
+    // Validate URL
+    const urlValidation = validateGoogleDriveUrl(submissionUrl)
+    if (!urlValidation.isValid) {
+      setSubmissionError(urlValidation.error)
+      return
+    }
+
+    // Check due date
+    const dueDateCheck = checkDueDate(assignment)
+    if (dueDateCheck.isPastDue) {
+      setSubmissionError(`Assignment submission deadline has passed. Due date was ${dueDateCheck.dueDate.toLocaleDateString()}`)
+      return
+    }
+
+    try {
+      setSubmissionStatus('submitting')
+      setSubmissionError('')
+
+      const submissionData = {
+        assignmentId: assignment.id,
+        assignmentTitle: assignment.title,
+        moduleTitle: assignment.moduleTitle,
+        courseId: viewerCourse._id,
+        studentId: user?.id || user?._id,
+        studentName: user?.name,
+        studentEmail: user?.email,
+        submissionUrl: submissionUrl.trim(),
+        submittedAt: new Date().toISOString(),
+        status: 'submitted'
+      }
+
+      // For now, store submission in local storage (you can implement API call later)
+      const submissionKey = `${assignment.id}_${user?.id || user?._id}`
+      const existingSubmissions = JSON.parse(localStorage.getItem('assignmentSubmissions') || '{}')
+      existingSubmissions[submissionKey] = submissionData
+      localStorage.setItem('assignmentSubmissions', JSON.stringify(existingSubmissions))
+
+      // Update local state
+      setAssignmentSubmissions(prev => ({
+        ...prev,
+        [submissionKey]: submissionData
+      }))
+
+      setSubmissionStatus('submitted')
+      setSubmissionUrl('')
+      setShowSubmissionForm(false)
+
+      // Optional: Show success message
+      if (typeof toast !== 'undefined') {
+        toast.success('Assignment submitted successfully!')
+      } else {
+        alert('Assignment submitted successfully!')
+      }
+
+    } catch (error) {
+      console.error('Assignment submission error:', error)
+      setSubmissionStatus('error')
+      setSubmissionError(`Failed to submit assignment: ${error.message}`)
+    }
+  }
+
+  const getSubmissionStatus = (assignment) => {
+    const submissionKey = `${assignment.id}_${user?.id || user?._id}`
+    return assignmentSubmissions[submissionKey] || null
+  }
+
+  // Load existing submissions on component mount
+  useEffect(() => {
+    const existingSubmissions = JSON.parse(localStorage.getItem('assignmentSubmissions') || '{}')
+    setAssignmentSubmissions(existingSubmissions)
+  }, [])
 
   useEffect(() => {
     if (initialCourse) {
@@ -689,6 +819,202 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
               />
             </CardContent>
           </Card>
+
+          {/* Assignment Submission Section - Only for learners, not educators */}
+          {!isEducator && (
+            <Card className="mt-6">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5 text-green-600" />
+                    Assignment Submission
+                  </CardTitle>
+                  {(() => {
+                    const dueDateCheck = checkDueDate(selectedAssignment)
+                    const submissionStatus = getSubmissionStatus(selectedAssignment)
+                    
+                    if (submissionStatus) {
+                      return (
+                        <Badge className="bg-green-100 text-green-800 border-green-200">
+                          ✅ Submitted
+                        </Badge>
+                      )
+                    } else if (dueDateCheck.isPastDue) {
+                      return (
+                        <Badge className="bg-red-100 text-red-800 border-red-200">
+                          ❌ Past Due
+                        </Badge>
+                      )
+                    } else if (dueDateCheck.daysLeft !== null) {
+                      return (
+                        <Badge className={`${
+                          dueDateCheck.daysLeft <= 1 
+                            ? 'bg-orange-100 text-orange-800 border-orange-200' 
+                            : 'bg-blue-100 text-blue-800 border-blue-200'
+                        }`}>
+                          ⏰ {dueDateCheck.daysLeft} day{dueDateCheck.daysLeft !== 1 ? 's' : ''} left
+                        </Badge>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const submissionStatus = getSubmissionStatus(selectedAssignment)
+                  const dueDateCheck = checkDueDate(selectedAssignment)
+                  
+                  // Show submission details if already submitted
+                  if (submissionStatus) {
+                    return (
+                      <div className="space-y-4">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <span className="font-medium text-green-800">Assignment Submitted Successfully</span>
+                          </div>
+                          <div className="text-sm text-green-700 space-y-1">
+                            <div>
+                              <strong>Submitted:</strong> {new Date(submissionStatus.submittedAt).toLocaleString()}
+                            </div>
+                            <div>
+                              <strong>Google Drive Link:</strong> 
+                              <a 
+                                href={submissionStatus.submissionUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                              >
+                                View Submission
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <AlertCircle className="h-4 w-4 inline mr-1" />
+                          Your assignment has been submitted. Contact your instructor if you need to make changes.
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  // Show past due message
+                  if (dueDateCheck.isPastDue) {
+                    return (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <XCircle className="h-5 w-5 text-red-600" />
+                          <span className="font-medium text-red-800">Submission Deadline Passed</span>
+                        </div>
+                        <div className="text-sm text-red-700">
+                          This assignment was due on {dueDateCheck.dueDate.toLocaleDateString()} at {dueDateCheck.dueDate.toLocaleTimeString()}. 
+                          Please contact your instructor if you have special circumstances.
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  // Show submission form
+                  return (
+                    <div className="space-y-4">
+                      {/* Due date info */}
+                      {selectedAssignment.dueDate && (
+                        <div className={`p-4 rounded-lg border ${
+                          dueDateCheck.daysLeft <= 1 
+                            ? 'bg-orange-50 border-orange-200' 
+                            : 'bg-blue-50 border-blue-200'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="h-4 w-4" />
+                            <span className="font-medium">Due Date:</span>
+                            <span>{new Date(selectedAssignment.dueDate).toLocaleDateString()} at {new Date(selectedAssignment.dueDate).toLocaleTimeString()}</span>
+                          </div>
+                          {dueDateCheck.daysLeft !== null && (
+                            <div className="text-sm text-gray-600">
+                              {dueDateCheck.daysLeft > 1 
+                                ? `You have ${dueDateCheck.daysLeft} days to submit this assignment.`
+                                : dueDateCheck.daysLeft === 1
+                                ? 'This assignment is due tomorrow!'
+                                : 'This assignment is due today!'
+                              }
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Instructions */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                          <Info className="h-4 w-4" />
+                          Submission Instructions
+                        </h4>
+                        <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                          <li>Upload your assignment to Google Drive</li>
+                          <li>Set sharing permissions to "Anyone with the link can view"</li>
+                          <li>Copy and paste the sharing URL below</li>
+                          <li>Ensure your file is accessible before submitting</li>
+                        </ul>
+                      </div>
+
+                      {/* Submission form */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="submissionUrl" className="text-sm font-medium">
+                            Google Drive Submission URL *
+                          </Label>
+                          <div className="mt-1 space-y-2">
+                            <Input
+                              id="submissionUrl"
+                              type="url"
+                              placeholder="https://drive.google.com/file/d/... or https://docs.google.com/document/d/..."
+                              value={submissionUrl}
+                              onChange={(e) => {
+                                setSubmissionUrl(e.target.value)
+                                setSubmissionError('') // Clear error when user starts typing
+                              }}
+                              className="w-full"
+                              disabled={submissionStatus === 'submitting'}
+                            />
+                            {submissionError && (
+                              <div className="text-sm text-red-600 flex items-center gap-1">
+                                <AlertCircle className="h-4 w-4" />
+                                {submissionError}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <Button
+                            onClick={() => handleSubmitAssignment(selectedAssignment)}
+                            disabled={!submissionUrl.trim() || submissionStatus === 'submitting'}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            {submissionStatus === 'submitting' ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Submitting...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-4 w-4 mr-2" />
+                                Submit Assignment
+                              </>
+                            )}
+                          </Button>
+                          
+                          <div className="text-xs text-gray-500">
+                            * Submission is final. Make sure your work is complete.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     )

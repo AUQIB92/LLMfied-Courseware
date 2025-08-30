@@ -220,6 +220,64 @@ export function sanitizeLaTeX(text: string): string {
       .replace(/\\end\{equation\}/g, "$$")
       .replace(/\\begin\{align\}/g, "$$")
       .replace(/\\end\{align\}/g, "$$")
+      .replace(/\\begin\{align\*\}/g, "$$")
+      .replace(/\\end\{align\*\}/g, "$$")
+      .replace(/\\begin\{gather\}/g, "$$")
+      .replace(/\\end\{gather\}/g, "$$")
+      .replace(/\\begin\{multline\}/g, "$$")
+      .replace(/\\end\{multline\}/g, "$$")
+      
+      // 🔧 Handle list environments (convert to HTML) - Process from innermost to outermost
+      .replace(/\\begin\{itemize\}((?:(?!\\begin\{itemize\}|\\end\{itemize\})[\s\S])*?)\\end\{itemize\}/g, (match, content) => {
+        // Split by \item but keep content that follows each item
+        const parts = content.split(/\\item\s+/);
+        const items = parts.slice(1).filter(item => item.trim()); // Remove empty first element
+        if (items.length === 0) return '';
+        return '<ul>' + items.map(item => `<li>${item.trim()}</li>`).join('') + '</ul>';
+      })
+      .replace(/\\begin\{enumerate\}((?:(?!\\begin\{enumerate\}|\\end\{enumerate\})[\s\S])*?)\\end\{enumerate\}/g, (match, content) => {
+        const parts = content.split(/\\item\s+/);
+        const items = parts.slice(1).filter(item => item.trim());
+        if (items.length === 0) return '';
+        return '<ol>' + items.map(item => `<li>${item.trim()}</li>`).join('') + '</ol>';
+      })
+      .replace(/\\begin\{description\}([\s\S]*?)\\end\{description\}/g, (match, content) => {
+        const items = content.split(/\\item\[([^\]]+)\]\s*/);
+        let result = '<dl>';
+        for (let i = 1; i < items.length; i += 2) {
+          if (items[i] && items[i + 1]) {
+            result += `<dt>${items[i]}</dt><dd>${items[i + 1].trim()}</dd>`;
+          }
+        }
+        result += '</dl>';
+        return result === '<dl></dl>' ? '' : result;
+      })
+      
+      // 🔧 Fallback for any remaining \item commands (in case of malformed lists)
+      .replace(/\\item\s+/g, "• ")
+      .replace(/\\item\[([^\]]+)\]/g, "**$1:** ")
+      
+      // 🔧 Handle theorem-like environments
+      .replace(/\\begin\{theorem\}/g, "**Theorem:** ")
+      .replace(/\\end\{theorem\}/g, "")
+      .replace(/\\begin\{lemma\}/g, "**Lemma:** ")
+      .replace(/\\end\{lemma\}/g, "")
+      .replace(/\\begin\{proof\}/g, "**Proof:** ")
+      .replace(/\\end\{proof\}/g, "")
+      .replace(/\\begin\{definition\}/g, "**Definition:** ")
+      .replace(/\\end\{definition\}/g, "")
+      .replace(/\\begin\{example\}/g, "**Example:** ")
+      .replace(/\\end\{example\}/g, "")
+      .replace(/\\begin\{remark\}/g, "**Remark:** ")
+      .replace(/\\end\{remark\}/g, "")
+      
+      // 🔧 Handle text formatting environments  
+      .replace(/\\begin\{center\}/g, "")
+      .replace(/\\end\{center\}/g, "")
+      .replace(/\\begin\{quote\}/g, "> ")
+      .replace(/\\end\{quote\}/g, "")
+      .replace(/\\begin\{verbatim\}/g, "```")
+      .replace(/\\end\{verbatim\}/g, "```")
 
       // 🔧 Prevent KaTeX from crashing on lonely commands
       .replace(/\\frac(?!\s*\{)/g, "")

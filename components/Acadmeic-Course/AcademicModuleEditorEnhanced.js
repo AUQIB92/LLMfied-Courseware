@@ -1558,6 +1558,101 @@ export default function AcademicModuleEditorEnhanced({
     }
   };
 
+  // Assignment editing and deletion functions
+  const [editingAssignment, setEditingAssignment] = useState(null);
+  const [editingAssignmentContent, setEditingAssignmentContent] = useState("");
+  const [showEditAssignmentModal, setShowEditAssignmentModal] = useState(false);
+
+  const handleEditAssignment = (assignment, index) => {
+    setEditingAssignment({ ...assignment, index });
+    setEditingAssignmentContent(assignment.content || "");
+    setShowEditAssignmentModal(true);
+  };
+
+  const handleSaveEditedAssignment = async () => {
+    if (!editingAssignment) {
+      toast.error("No assignment selected for editing");
+      return;
+    }
+
+    try {
+      // Update the assignment in the local module
+      const updatedModule = { ...localModule };
+      const assignmentIndex = editingAssignment.index;
+      
+      if (!updatedModule.assignments) {
+        updatedModule.assignments = [];
+      }
+
+      // Update the assignment with new content
+      updatedModule.assignments[assignmentIndex] = {
+        ...updatedModule.assignments[assignmentIndex],
+        content: editingAssignmentContent,
+        updatedAt: new Date().toISOString(),
+        isModified: true
+      };
+
+      setLocalModule(updatedModule);
+
+      // Update parent component
+      if (onUpdate) {
+        onUpdate(updatedModule);
+      }
+
+      // Close modal and reset state
+      setShowEditAssignmentModal(false);
+      setEditingAssignment(null);
+      setEditingAssignmentContent("");
+
+      toast.success("Assignment updated successfully!");
+      
+    } catch (error) {
+      console.error("❌ Assignment edit error:", error);
+      toast.error(`Failed to edit assignment: ${error.message}`);
+    }
+  };
+
+  const handleDeleteAssignment = async (assignmentId, assignmentTitle) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${assignmentTitle || 'this assignment'}"?\n\nThis action cannot be undone.`
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      // Remove assignment from local module
+      const updatedModule = { ...localModule };
+      
+      if (!updatedModule.assignments) {
+        updatedModule.assignments = [];
+      }
+
+      // Filter out the assignment to delete
+      updatedModule.assignments = updatedModule.assignments.filter((assignment, index) => {
+        // Match by ID if available, otherwise by index
+        if (assignmentId && assignment.id) {
+          return assignment.id !== assignmentId;
+        }
+        return index !== assignmentId; // When using index as ID
+      });
+
+      setLocalModule(updatedModule);
+
+      // Update parent component
+      if (onUpdate) {
+        onUpdate(updatedModule);
+      }
+
+      toast.success(`Assignment "${assignmentTitle || 'assignment'}" deleted successfully!`);
+      
+    } catch (error) {
+      console.error("❌ Assignment deletion error:", error);
+      toast.error(`Failed to delete assignment: ${error.message}`);
+    }
+  };
+
   // Academic detailed content generation state
   const [generatingDetailedContent, setGeneratingDetailedContent] =
     useState(false);
@@ -6831,6 +6926,93 @@ Examples:
               </div>
             </CardContent>
           </Card>
+
+          {/* Existing Assignments Section */}
+          {localModule.assignments && localModule.assignments.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Published Assignments ({localModule.assignments.length})
+                </CardTitle>
+                <CardDescription>
+                  Manage and edit existing assignments for this module
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {localModule.assignments.map((assignment, index) => (
+                    <Card key={assignment.id || index} className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-semibold text-lg text-blue-900">
+                                {assignment.title || `Assignment ${index + 1}`}
+                              </h3>
+                              <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                {assignment.difficulty || 'medium'}
+                              </Badge>
+                              {assignment.isPublished && (
+                                <Badge className="bg-green-100 text-green-800">
+                                  Published
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-gray-600 text-sm mb-2">
+                              {assignment.description || 'No description provided'}
+                            </p>
+                            <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date'}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Trophy className="h-3 w-3" />
+                                Points: {assignment.points || assignment.maxScore || 'N/A'}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Created: {assignment.publishedDate ? new Date(assignment.publishedDate).toLocaleDateString() : 'Unknown'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditAssignment(assignment, index)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeleteAssignment(assignment.id || index, assignment.title)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                        {assignment.topics && (
+                          <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                            <div className="text-xs text-gray-500 mb-1">Topics covered:</div>
+                            <div className="text-sm text-gray-700 line-clamp-2">
+                              {assignment.topics.substring(0, 200)}{assignment.topics.length > 200 ? '...' : ''}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Resources Tab */}
@@ -7328,6 +7510,101 @@ Examples:
         onPublish={handlePublishAssignment}
         onExportPDF={handleExportAssignmentPDF}
       />
+
+      {/* Edit Assignment Modal */}
+      <Dialog open={showEditAssignmentModal} onOpenChange={setShowEditAssignmentModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Edit Assignment: {editingAssignment?.title || 'Assignment'}
+            </DialogTitle>
+            <DialogDescription>
+              Make changes to the assignment content. Your changes will be saved automatically.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingAssignment && (
+            <div className="space-y-4">
+              {/* Assignment metadata display */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Difficulty</Label>
+                  <div className="text-sm">{editingAssignment.difficulty || 'Medium'}</div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Due Date</Label>
+                  <div className="text-sm">
+                    {editingAssignment.dueDate 
+                      ? new Date(editingAssignment.dueDate).toLocaleDateString() 
+                      : 'No due date set'}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Points</Label>
+                  <div className="text-sm">{editingAssignment.points || editingAssignment.maxScore || 'Not specified'}</div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Status</Label>
+                  <div className="text-sm">
+                    {editingAssignment.isPublished ? (
+                      <Badge className="bg-green-100 text-green-800">Published</Badge>
+                    ) : (
+                      <Badge variant="outline">Draft</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Assignment content editor */}
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Assignment Content</Label>
+                <div className="border rounded-lg">
+                  <HtmlEditor
+                    value={editingAssignmentContent}
+                    onChange={setEditingAssignmentContent}
+                    placeholder="Edit the assignment content..."
+                    rows={20}
+                    className="min-h-[400px]"
+                  />
+                </div>
+              </div>
+
+              {/* Preview section */}
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Preview</Label>
+                <div className="border rounded-lg p-4 bg-gray-50 max-h-60 overflow-y-auto">
+                  <HtmlMathViewer
+                    html={editingAssignmentContent || "No content to preview"}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center justify-end gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditAssignmentModal(false);
+                    setEditingAssignment(null);
+                    setEditingAssignmentContent("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveEditedAssignment}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
