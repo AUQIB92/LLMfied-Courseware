@@ -110,6 +110,11 @@ export async function GET(request) {
       console.log("Modified filter to check both status and isPublished fields");
     }
 
+    // Ensure we only get actual courses, not individual modules
+    filter.moduleType = { $exists: false }  // Exclude entries that are individual modules
+    filter.title = { $exists: true }        // Must have a course title
+    filter.educatorId = { $exists: true }   // Must have an educator (courses should have creators)
+
     console.log("Final filter object:", filter)
 
     // Test collection access

@@ -111,29 +111,45 @@ export const LearnerAssignmentViewer: React.FC<LearnerAssignmentViewerProps> = (
   const handleDownloadPDF = async () => {
     setIsDownloading(true)
     try {
-      // Import the beautiful PDF export function
-      const { exportBeautifulAssignmentPDF } = await import('../../utils/beautiful-pdf-export')
+      // Import the current view PDF export function (much lighter)
+      const { exportCurrentAssignmentView } = await import('../../utils/current-view-pdf-export')
       
       const metadata = {
-        moduleTitle: assignment.moduleTitle,
-        topics: assignment.topics,
-        difficulty: assignment.difficulty,
-        dueDate: assignment.dueDate,
+        moduleTitle: assignment.moduleTitle || assignment.title,
         courseTitle: assignment.courseTitle,
-        institutionName: 'Govt. College of Engineering Safapora Ganderbal Kashmir, India 193504',
-        instructorName: assignment.instructorName,
-        references: assignment.references,
+        institutionName: 'GCET Kashmir',
+        instructorName: assignment.instructorName || 'Dr. Auqib Hamid',
         studentName: studentName,
+        dueDate: assignment.dueDate,
         assignmentId: assignment.id
       }
 
-      await exportBeautifulAssignmentPDF(assignment.content, metadata)
-      toast.success("📄 Assignment PDF downloaded successfully!")
+      await exportCurrentAssignmentView(metadata)
+      toast.success("📄 Assignment PDF exported successfully!")
     } catch (error) {
-      console.error("PDF Download Error:", error)
-      toast.error("Failed to download PDF. Please try again.")
+      console.error("PDF Export Error:", error)
+      toast.error(`Failed to export PDF: ${error.message}`)
     } finally {
       setIsDownloading(false)
+    }
+  }
+
+  const handleSimplePrint = async () => {
+    try {
+      // Import the simple print function as fallback
+      const { exportAssignmentAsPDF } = await import('../../utils/current-view-pdf-export')
+      
+      const metadata = {
+        moduleTitle: assignment.moduleTitle || assignment.title,
+        courseTitle: assignment.courseTitle,
+        studentName: studentName
+      }
+      
+      await exportAssignmentAsPDF(metadata)
+      toast.success("📄 Print dialog opened!")
+    } catch (error) {
+      console.error("Print Error:", error)
+      toast.error("Failed to open print dialog")
     }
   }
 
@@ -239,14 +255,24 @@ export const LearnerAssignmentViewer: React.FC<LearnerAssignmentViewerProps> = (
               </div>
             </div>
             
-            <Button
-              onClick={handleDownloadPDF}
-              disabled={isDownloading}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {isDownloading ? "Downloading..." : "Download PDF"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={isDownloading}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isDownloading ? "Exporting..." : "Export PDF"}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleSimplePrint}
+                className="border-blue-300 text-blue-600 hover:bg-blue-50"
+              >
+                🖨️ Quick Print
+              </Button>
+            </div>
           </div>
         </CardHeader>
         
@@ -315,7 +341,7 @@ export const LearnerAssignmentViewer: React.FC<LearnerAssignmentViewerProps> = (
         <CardContent>
           <BeautifulAssignmentRenderer 
             content={assignment.content}
-            className="assignment-viewer"
+            className="assignment-viewer beautiful-assignment-renderer"
             allowEditing={true}
             onContentChange={(newContent) => {
               console.log('Assignment content updated:', newContent)

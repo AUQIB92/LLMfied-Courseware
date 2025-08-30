@@ -118,7 +118,7 @@ export default function LearnerDashboard() {
     fetchEnrolledCourses();
     fetchEnrolledAcademicCourses();
     fetchStats();
-    fetchAssignments();
+    // fetchAssignments(); // Disabled - causing errors
     fetchSubmissions();
   }, []);
 
@@ -127,7 +127,7 @@ export default function LearnerDashboard() {
     if (enrollmentUpdated > 0) {
       fetchEnrolledCourses();
       fetchEnrolledAcademicCourses();
-      fetchAssignments(); // Also refresh assignments when enrollment changes
+      // fetchAssignments(); // Disabled - causing errors
     }
   }, [enrollmentUpdated]);
 
@@ -171,13 +171,13 @@ export default function LearnerDashboard() {
           // Refresh enrolled courses when enrollment changes
           fetchEnrolledCourses();
           fetchEnrolledAcademicCourses();
-          fetchAssignments(); // Also refresh assignments
+          // fetchAssignments(); // Disabled - causing errors
           break;
         case "enrollments_synced":
           // Refresh when bulk sync completes
           fetchEnrolledCourses();
           fetchEnrolledAcademicCourses();
-          fetchAssignments(); // Also refresh assignments
+          // fetchAssignments(); // Disabled - causing errors
           break;
       }
     });
@@ -342,8 +342,25 @@ export default function LearnerDashboard() {
       if (response.ok) {
         const data = await response.json();
         console.log("📚 Academic enrollment response:", data);
+        console.log("📋 Enrollment details:", data.map(enrollment => ({
+          id: enrollment._id,
+          courseId: enrollment.courseId,
+          hasValidCourse: !!enrollment.course,
+          courseTitle: enrollment.course?.title,
+          courseStatus: enrollment.course?.status
+        })));
         
-        const academicCoursesArray = Array.isArray(data?.enrollments) ? data.enrollments : [];
+        // The API returns enrollments array directly, not wrapped in an enrollments property
+        // Each enrollment contains the course data in enrollment.course
+        const academicCoursesArray = Array.isArray(data) ? data
+          .filter(enrollment => enrollment && enrollment.course && enrollment.course.title) // Filter out invalid enrollments
+          .map(enrollment => ({
+            ...enrollment.course,
+            enrollmentId: enrollment._id,
+            enrolledAt: enrollment.enrolledAt,
+            status: enrollment.status,
+            progress: enrollment.progress
+          })) : [];
         console.log("✅ Setting enrolled academic courses:", academicCoursesArray?.length || 0, "courses");
         setEnrolledAcademicCourses(academicCoursesArray || []);
       } else {
@@ -461,17 +478,17 @@ export default function LearnerDashboard() {
         console.error("❌ Failed to fetch assignments:", {
           status: response.status,
           statusText: response.statusText,
-          error: errorText || 'No error message available',
-          url: response.url,
-          headers: Object.fromEntries(response.headers.entries())
+          error: errorData || errorText || 'No error message available',
+          url: response.url
         });
         setAssignments([]);
       }
     } catch (error) {
       console.error("❌ Assignment fetch error:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
+        message: error?.message || 'Unknown error',
+        stack: error?.stack || 'No stack trace',
+        name: error?.name || 'Unknown error type',
+        error: error
       });
       
       // Handle authentication errors specifically
@@ -1037,7 +1054,12 @@ export default function LearnerDashboard() {
                         (course) =>
                           !course.isExamGenius &&
                           !course.examType &&
-                          !course.isCompetitiveExam
+                          !course.isCompetitiveExam &&
+                          !course.isAcademicCourse &&
+                          course.courseType !== "academic" &&
+                          !course.academicLevel &&
+                          !course.subject &&
+                          !course.semester
                       );
                       const competitiveExamCourses = enrolledCourses.filter(
                         (course) =>
@@ -1074,7 +1096,7 @@ export default function LearnerDashboard() {
 
                                   return (
                                     <div
-                                      key={course._id}
+                                      key={course._id || course.id || `technical-course-${index}`}
                                       className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-blue-300 bg-gradient-to-r from-white to-slate-50/50 touch-manipulation"
                                     >
                                       <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -1189,7 +1211,7 @@ export default function LearnerDashboard() {
 
                                   return (
                                     <div
-                                      key={course._id}
+                                      key={course._id || course.id || `competitive-course-${index}`}
                                       className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-orange-300 bg-gradient-to-r from-orange-50/50 to-red-50/50 touch-manipulation"
                                     >
                                       <div className="absolute top-0 right-0 w-32 h-32 bg-orange-100/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -1310,7 +1332,7 @@ export default function LearnerDashboard() {
 
                                   return (
                                     <div
-                                      key={course._id}
+                                      key={course._id || course.id || `academic-course-${index}`}
                                       className="group relative overflow-hidden p-4 sm:p-6 border border-slate-200 rounded-2xl hover:shadow-xl transition-all duration-500 hover:border-purple-300 bg-gradient-to-r from-white to-purple-50/50 touch-manipulation"
                                     >
                                       <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -1325,21 +1347,67 @@ export default function LearnerDashboard() {
                                               <h4 className="font-bold text-base sm:text-lg text-slate-800 group-hover:text-purple-600 transition-colors duration-300 line-clamp-2">
                                                 {course.title}
                                               </h4>
-                                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
-                                                <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
-                                                  <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
-                                                  {course.modules?.length || 0} modules
-                                                </span>
-                                                <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
-                                                  <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                                                  ~{timeLeft} min left
-                                                </span>
-                                                <Badge
-                                                  variant="outline"
-                                                  className="bg-green-50 text-green-700 border-green-200 text-xs self-start"
-                                                >
-                                                  {Math.floor(progress)}% complete
-                                                </Badge>
+                                              <div className="space-y-2 mt-2">
+                                                {/* Academic Level & Subject */}
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                  {course.academicLevel && (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs"
+                                                    >
+                                                      {course.academicLevel.charAt(0).toUpperCase() + course.academicLevel.slice(1)}
+                                                    </Badge>
+                                                  )}
+                                                  {course.subject && (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
+                                                    >
+                                                      {course.subject}
+                                                    </Badge>
+                                                  )}
+                                                  {course.semester && (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs"
+                                                    >
+                                                      Semester {course.semester}
+                                                    </Badge>
+                                                  )}
+                                                </div>
+                                                
+                                                {/* Course Details */}
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                                  <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                    <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                    {course.modules?.length || 0} modules
+                                                  </span>
+                                                  {course.credits && (
+                                                    <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                      <Award className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                      {course.credits} credits
+                                                    </span>
+                                                  )}
+                                                  {course.instructorName && (
+                                                    <span className="text-xs sm:text-sm text-slate-600 flex items-center gap-1">
+                                                      <User className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                      {course.instructorName}
+                                                    </span>
+                                                  )}
+                                                  <Badge
+                                                    variant="outline"
+                                                    className="bg-green-50 text-green-700 border-green-200 text-xs self-start"
+                                                  >
+                                                    {Math.floor(progress)}% complete
+                                                  </Badge>
+                                                </div>
+                                                
+                                                {/* Course Description */}
+                                                {course.description && (
+                                                  <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 mt-2">
+                                                    {course.description}
+                                                  </p>
+                                                )}
                                               </div>
                                             </div>
                                           </div>
@@ -1517,21 +1585,21 @@ export default function LearnerDashboard() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-blue-800">🔧 Debug Information</CardTitle>
                   <div className="flex gap-2">
-                    <Button 
+                    {/* <Button 
                       size="sm" 
                       variant="outline" 
                       onClick={fetchAssignments}
                       className="text-blue-600 border-blue-300"
                     >
                       🔄 Refresh Assignments
-                    </Button>
+                    </Button> */}
                     <Button 
                       size="sm" 
                       variant="outline" 
                       onClick={() => {
                         fetchEnrolledCourses();
                         fetchEnrolledAcademicCourses();
-                        fetchAssignments();
+                        // fetchAssignments(); // Disabled - causing errors
                       }}
                       className="text-green-600 border-green-300"
                     >

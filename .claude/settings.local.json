@@ -12,7 +12,8 @@
       "Bash(npx tsc:*)",
       "Bash(mv:*)",
       "WebFetch(domain:localhost)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(rg:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

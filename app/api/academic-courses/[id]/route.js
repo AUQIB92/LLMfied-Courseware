@@ -131,7 +131,10 @@ export async function PUT(request, { params }) {
     console.log('📥 Request body structure:', {
       hasModuleIndex: requestBody.moduleIndex !== undefined,
       hasUpdatedModule: !!requestBody.updatedModule,
-      bodyKeys: Object.keys(requestBody)
+      hasAddAssignment: !!requestBody.addAssignment,
+      bodyKeys: Object.keys(requestBody),
+      moduleIndex: requestBody.moduleIndex,
+      addAssignmentId: requestBody.addAssignment?.id
     })
     
     operationContext.step = 'database_connection'
@@ -152,19 +155,92 @@ export async function PUT(request, { params }) {
       }, { status: 404 })
     }
 
+    console.log('📚 Found existing course:', {
+      courseId: existingCourse._id.toString(),
+      title: existingCourse.title,
+      totalModules: existingCourse.modules?.length || 0,
+      modulesTitles: existingCourse.modules?.map((m, i) => `${i}: ${m.title}`) || []
+    })
+
     let updateDoc
     let updateOperation
 
+    // Handle action-based updates (delete/edit assignments)
+    if (requestBody.action) {
+      const { action, moduleIndex, assignmentIndex, updatedAssignment } = requestBody
+      
+      if (action === 'deleteAssignment') {
+        console.log('🗑️ Processing assignment deletion:', { moduleIndex, assignmentIndex })
+        
+        // Validate indices
+        if (!existingCourse.modules || moduleIndex >= existingCourse.modules.length || 
+            !existingCourse.modules[moduleIndex].assignments || 
+            assignmentIndex >= existingCourse.modules[moduleIndex].assignments.length) {
+          return NextResponse.json({ 
+            error: "Invalid module or assignment index" 
+          }, { status: 400 })
+        }
+        
+        // Create updated modules array with assignment removed
+        const updatedModules = [...existingCourse.modules]
+        updatedModules[moduleIndex] = {
+          ...updatedModules[moduleIndex],
+          assignments: updatedModules[moduleIndex].assignments.filter((_, index) => index !== assignmentIndex)
+        }
+        
+        updateOperation = {
+          $set: {
+            modules: updatedModules,
+            updatedAt: new Date()
+          }
+        }
+        
+      } else if (action === 'updateAssignment') {
+        console.log('✏️ Processing assignment update:', { moduleIndex, assignmentIndex })
+        
+        // Validate indices
+        if (!existingCourse.modules || moduleIndex >= existingCourse.modules.length || 
+            !existingCourse.modules[moduleIndex].assignments || 
+            assignmentIndex >= existingCourse.modules[moduleIndex].assignments.length) {
+          return NextResponse.json({ 
+            error: "Invalid module or assignment index" 
+          }, { status: 400 })
+        }
+        
+        // Create updated modules array with assignment updated
+        const updatedModules = [...existingCourse.modules]
+        updatedModules[moduleIndex] = {
+          ...updatedModules[moduleIndex],
+          assignments: updatedModules[moduleIndex].assignments.map((assignment, index) => 
+            index === assignmentIndex ? { ...assignment, ...updatedAssignment } : assignment
+          )
+        }
+        
+        updateOperation = {
+          $set: {
+            modules: updatedModules,
+            updatedAt: new Date()
+          }
+        }
+      }
+    }
     // Check if this is a module-specific update (for assignments)
-    if (requestBody.moduleIndex !== undefined && requestBody.updatedModule) {
-      const { moduleIndex, updatedModule } = requestBody
+    if (requestBody.moduleIndex !== undefined && (requestBody.updatedModule || requestBody.addAssignment)) {
+      operationContext.operation = 'module_update'
+      operationContext.step = 'module_validation'
+      
+      const { moduleIndex, updatedModule, addAssignment } = requestBody
       
       console.log('📝 Processing module update:', {
         courseId: resolvedParams.id,
         moduleIndex,
-        moduleTitle: updatedModule.title,
-        assignmentCount: updatedModule.assignments?.length || 0
+        updateType: addAssignment ? 'addAssignment' : 'replaceModule',
+        moduleTitle: updatedModule?.title || 'adding assignment only',
+        assignmentCount: updatedModule?.assignments?.length || (addAssignment ? 1 : 0)
       })
+      
+      operationContext.moduleIndex = moduleIndex
+      operationContext.updateType = addAssignment ? 'addAssignment' : 'replaceModule'
 
       // Validate moduleIndex - check for null, undefined, or invalid values
       if (moduleIndex === null || moduleIndex === undefined || 
@@ -186,63 +262,132 @@ export async function PUT(request, { params }) {
         }, { status: 400 })
       }
 
-      // Validate and truncate assignment content to prevent document size limit
-      if (updatedModule.assignments && Array.isArray(updatedModule.assignments)) {
-        updatedModule.assignments = updatedModule.assignments.map(assignment => {
-          if (assignment.content && assignment.content.length > 1000000) { // 1MB limit per assignment
-            console.log('⚠️ Truncating large assignment content:', {
-              originalSize: assignment.content.length,
-              truncatedSize: 1000000
-            })
-            return {
-              ...assignment,
-              content: assignment.content.substring(0, 1000000) + '\n\n[Content truncated due to size limit]',
-              originalContentSize: assignment.content.length,
-              wasTruncated: true
+      if (updatedModule) {
+        // Validate and truncate assignment content to prevent document size limit (for full module updates)
+        if (updatedModule.assignments && Array.isArray(updatedModule.assignments)) {
+          updatedModule.assignments = updatedModule.assignments.map(assignment => {
+            if (assignment.content && assignment.content.length > 1000000) { // 1MB limit per assignment
+              console.log('⚠️ Truncating large assignment content:', {
+                originalSize: assignment.content.length,
+                truncatedSize: 1000000
+              })
+              return {
+                ...assignment,
+                content: assignment.content.substring(0, 1000000) + '\n\n[Content truncated due to size limit]',
+                originalContentSize: assignment.content.length,
+                wasTruncated: true
+              }
             }
-          }
-          return assignment
-        })
-      }
+            return assignment
+          })
+        }
 
-      // Calculate total document size estimation
-      const moduleJsonString = JSON.stringify(updatedModule)
-      const estimatedSize = new Blob([moduleJsonString]).size
-      
-      console.log('📊 Document size estimation:', {
-        moduleIndex,
-        estimatedSizeKB: Math.round(estimatedSize / 1024),
-        estimatedSizeMB: Math.round(estimatedSize / (1024 * 1024) * 100) / 100,
-        assignmentCount: updatedModule.assignments?.length || 0
-      })
-      
-      // Prevent updates that might exceed MongoDB's 16MB limit
-      if (estimatedSize > 15000000) { // 15MB safety limit
-        console.error('❌ Module update rejected - document too large:', {
+        // Calculate total document size estimation
+        const moduleJsonString = JSON.stringify(updatedModule)
+        const estimatedSize = new Blob([moduleJsonString]).size
+        
+        console.log('📊 Document size estimation for full module update:', {
+          moduleIndex,
+          estimatedSizeKB: Math.round(estimatedSize / 1024),
           estimatedSizeMB: Math.round(estimatedSize / (1024 * 1024) * 100) / 100,
-          limit: '16MB'
+          assignmentCount: updatedModule.assignments?.length || 0
         })
-        return NextResponse.json({ 
-          error: "Module content too large",
-          details: `Module size (${Math.round(estimatedSize / (1024 * 1024) * 100) / 100}MB) exceeds MongoDB document limit. Please reduce assignment content size.`,
-          estimatedSize: estimatedSize,
-          limitMB: 16
-        }, { status: 413 })
+        
+        // Prevent updates that might exceed MongoDB's 16MB limit
+        if (estimatedSize > 15000000) { // 15MB safety limit
+          console.error('❌ Module update rejected - document too large:', {
+            estimatedSizeMB: Math.round(estimatedSize / (1024 * 1024) * 100) / 100,
+            limit: '16MB'
+          })
+          return NextResponse.json({ 
+            error: "Module content too large",
+            details: `Module size (${Math.round(estimatedSize / (1024 * 1024) * 100) / 100}MB) exceeds MongoDB document limit. Please reduce assignment content size.`,
+            estimatedSize: estimatedSize,
+            limitMB: 16
+          }, { status: 413 })
+        }
+      } else if (addAssignment) {
+        // Validate single assignment content size
+        if (addAssignment.content && addAssignment.content.length > 1000000) { // 1MB limit per assignment
+          console.log('⚠️ Truncating large assignment content:', {
+            originalSize: addAssignment.content.length,
+            truncatedSize: 1000000
+          })
+          addAssignment.content = addAssignment.content.substring(0, 1000000) + '\n\n[Content truncated due to size limit]'
+          addAssignment.originalContentSize = addAssignment.content.length
+          addAssignment.wasTruncated = true
+        }
+
+        // Calculate assignment size estimation
+        const assignmentJsonString = JSON.stringify(addAssignment)
+        const estimatedSize = new Blob([assignmentJsonString]).size
+        
+        console.log('📊 Assignment size estimation:', {
+          moduleIndex,
+          estimatedSizeKB: Math.round(estimatedSize / 1024),
+          assignmentId: addAssignment.id,
+          assignmentTitle: addAssignment.title
+        })
       }
 
-      // Update specific module in the modules array
-      updateOperation = {
-        $set: {
-          [`modules.${moduleIndex}`]: updatedModule,
-          updatedAt: new Date()
+      if (addAssignment) {
+        // Add assignment to existing module without overwriting
+        console.log('➕ Adding assignment to existing module:', {
+          moduleIndex,
+          assignmentId: addAssignment.id,
+          assignmentTitle: addAssignment.title
+        })
+        
+        // Get the current module and safely add the assignment
+        const currentModule = existingCourse.modules[moduleIndex]
+        
+        if (!currentModule) {
+          console.error('❌ Module not found at index:', {
+            moduleIndex,
+            totalModules: existingCourse.modules?.length || 0,
+            courseId: resolvedParams.id
+          })
+          return NextResponse.json({
+            error: `Module not found at index ${moduleIndex}`,
+            details: `Course has ${existingCourse.modules?.length || 0} modules, but tried to access index ${moduleIndex}`,
+            totalModules: existingCourse.modules?.length || 0
+          }, { status: 400 })
+        }
+        
+        const currentAssignments = currentModule.assignments || []
+        
+        console.log('📋 Current module assignments:', {
+          moduleTitle: currentModule.title,
+          assignmentCount: currentAssignments.length
+        })
+        
+        // Create updated assignments array with new assignment
+        const updatedAssignments = [...currentAssignments, addAssignment]
+        
+        // Update only the assignments array and timestamp
+        updateOperation = {
+          $set: {
+            [`modules.${moduleIndex}.assignments`]: updatedAssignments,
+            updatedAt: new Date()
+          }
+        }
+        
+        console.log('✅ Will update assignments array with', updatedAssignments.length, 'assignments')
+      } else {
+        // Replace entire module (existing behavior)
+        console.log('🔄 Replacing entire module:', {
+          moduleIndex,
+          totalAssignments: updatedModule.assignments?.length || 0,
+          documentSizeKB: Math.round(estimatedSize / 1024)
+        })
+        
+        updateOperation = {
+          $set: {
+            [`modules.${moduleIndex}`]: updatedModule,
+            updatedAt: new Date()
+          }
         }
       }
-
-      console.log('🔄 Updating module with assignments:', {
-        moduleIndex,
-        totalAssignments: updatedModule.assignments?.length || 0,
-        documentSizeKB: Math.round(estimatedSize / 1024)
-      })
     } else {
       // Regular course update
       updateDoc = {
@@ -261,12 +406,33 @@ export async function PUT(request, { params }) {
     }
 
     // Update course
-    const result = await db.collection("courses").updateOne(
-      { _id: new ObjectId(resolvedParams.id) },
-      updateOperation
-    )
+    console.log('🔄 Executing database update:', {
+      courseId: resolvedParams.id,
+      updateOperation: JSON.stringify(updateOperation, null, 2)
+    })
+    
+    let result
+    try {
+      result = await db.collection("courses").updateOne(
+        { _id: new ObjectId(resolvedParams.id) },
+        updateOperation
+      )
+      console.log('📊 Database update result:', {
+        matchedCount: result.matchedCount,
+        modifiedCount: result.modifiedCount,
+        acknowledged: result.acknowledged
+      })
+    } catch (dbError) {
+      console.error('❌ Database update failed:', {
+        error: dbError.message,
+        stack: dbError.stack,
+        updateOperation: JSON.stringify(updateOperation, null, 2)
+      })
+      throw new Error(`Database update failed: ${dbError.message}`)
+    }
 
     if (result.matchedCount === 0) {
+      console.error('❌ No course matched the update criteria')
       return NextResponse.json({ error: "Academic course not found" }, { status: 404 })
     }
 

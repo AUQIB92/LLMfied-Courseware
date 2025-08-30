@@ -38,7 +38,11 @@ export async function GET(request) {
     console.log("Query params:", { status, educatorId, subject, academicLevel })
 
     const filter = { 
-      $or: [{ courseType: "academic" }, { isAcademicCourse: true }]
+      $or: [{ courseType: "academic" }, { isAcademicCourse: true }],
+      // Ensure we only get actual courses, not individual modules
+      moduleType: { $exists: false },  // Exclude entries that are individual modules
+      title: { $exists: true },        // Must have a course title
+      educatorId: { $exists: true }    // Must have an educator (courses should have creators)
     }
     
     if (educatorId) {

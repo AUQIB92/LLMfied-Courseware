@@ -6,13 +6,21 @@ import { verifyToken } from "@/lib/auth";
 // GET /api/academic-enrollment - Get academic enrollments
 export async function GET(request) {
   try {
+    // Verify authentication
+    const user = await verifyToken(request)
+    if (!user) {
+      return NextResponse.json({ 
+        error: "Authentication required" 
+      }, { status: 401 })
+    }
+    
     const client = await clientPromise
     const db = client.db("llmfied")
     
     const { searchParams } = new URL(request.url)
-    const studentId = searchParams.get("studentId")
+    const studentId = searchParams.get("studentId") || user.userId // Use authenticated user's ID if no studentId provided
     const courseId = searchParams.get("courseId")
-    const status = searchParams.get("status")
+    const status = searchParams.get("status") || "active" // Default to active enrollments
 
     const filter = {}
     
@@ -69,6 +77,12 @@ export async function GET(request) {
         enrollment.course = courseMap[enrollment.courseId.toString()]
         enrollment.student = studentMap[enrollment.studentId.toString()]
       })
+
+      // Filter out enrollments where the course was not found (e.g., deleted courses)
+      const validEnrollments = enrollments.filter(enrollment => enrollment.course && enrollment.course.title)
+      console.log(`Filtered ${enrollments.length - validEnrollments.length} enrollments with missing course data`)
+      
+      return NextResponse.json(validEnrollments)
     }
 
     return NextResponse.json(enrollments)

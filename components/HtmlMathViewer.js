@@ -148,7 +148,15 @@ export default function HtmlMathViewer({ html, markdownFallback = '', className 
     const loadDOMPurify = async () => {
       try {
         const DOMPurifyModule = await import('dompurify')
-        setDOMPurify(DOMPurifyModule.default)
+        // Check if the module was loaded correctly
+        if (DOMPurifyModule && DOMPurifyModule.default && typeof DOMPurifyModule.default.sanitize === 'function') {
+          setDOMPurify(DOMPurifyModule.default)
+        } else if (DOMPurifyModule && typeof DOMPurifyModule.sanitize === 'function') {
+          // Handle different import formats
+          setDOMPurify(DOMPurifyModule)
+        } else {
+          console.warn('DOMPurify loaded but sanitize function not found')
+        }
       } catch (error) {
         console.warn('Failed to load DOMPurify:', error)
       }
@@ -165,23 +173,28 @@ export default function HtmlMathViewer({ html, markdownFallback = '', className 
     }
     
     // Only sanitize on client side when DOMPurify is available
-    if (isClient && DOMPurify) {
-      const clean = DOMPurify.sanitize(source || '', {
-        USE_PROFILES: { html: true },
-        ALLOWED_TAGS: [
-          'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'code', 'pre',
-          'ul', 'ol', 'li', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
-          'span', 'div', 'a', 'img', 'hr'
-        ],
-        ALLOWED_ATTR: [
-          'class', 'href', 'src', 'alt', 'title', 'id'
-        ],
-        ALLOWED_CLASSES: {}
-      })
-      return clean
+    if (isClient && DOMPurify && typeof DOMPurify.sanitize === 'function') {
+      try {
+        const clean = DOMPurify.sanitize(source || '', {
+          USE_PROFILES: { html: true },
+          ALLOWED_TAGS: [
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'code', 'pre',
+            'ul', 'ol', 'li', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+            'span', 'div', 'a', 'img', 'hr'
+          ],
+          ALLOWED_ATTR: [
+            'class', 'href', 'src', 'alt', 'title', 'id'
+          ],
+          ALLOWED_CLASSES: {}
+        })
+        return clean
+      } catch (error) {
+        console.warn('DOMPurify sanitization failed, returning original content:', error)
+        return source || ''
+      }
     }
     
-    // Return unsanitized content during SSR (should be safe if content is trusted)
+    // Return unsanitized content during SSR or when DOMPurify is not available
     return source || ''
   }, [html, markdownFallback, isClient, DOMPurify])
 

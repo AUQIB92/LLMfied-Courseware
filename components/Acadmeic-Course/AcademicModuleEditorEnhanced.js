@@ -1444,7 +1444,83 @@ export default function AcademicModuleEditorEnhanced({
 
       console.log("📤 Adding assignment to module structure:", newAssignment);
 
-      // Update the local module with the new assignment
+      // Validate module index before sending request
+      const moduleIndex = typeof localModule.order === 'number' && localModule.order > 0 
+        ? localModule.order - 1 
+        : 0; // Default to first module if order is invalid
+        
+      if (moduleIndex < 0) {
+        throw new Error('Invalid module index');
+      }
+
+      console.log(`📤 Publishing assignment to module index: ${moduleIndex} (order: ${localModule.order})`);
+      console.log(`📝 Assignment details:`, {
+        assignmentId: newAssignment.id,
+        assignmentTitle: newAssignment.title,
+        moduleTitle: localModule.title
+      });
+
+      const requestPayload = {
+        moduleIndex: moduleIndex,
+        addAssignment: newAssignment
+      };
+      
+      console.log('📤 Request payload:', {
+        url: `/api/academic-courses/${courseId}`,
+        method: 'PUT',
+        payload: requestPayload,
+        payloadSize: JSON.stringify(requestPayload).length
+      });
+
+      // Send only the new assignment to be added, not the entire module
+      const response = await fetch(`/api/academic-courses/${courseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(requestPayload)
+      });
+
+      console.log('📥 Raw Response Info:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      let result;
+      try {
+        const responseText = await response.text();
+        console.log('📄 Raw response text:', responseText);
+        
+        if (!responseText.trim()) {
+          throw new Error('Empty response from server');
+        }
+        
+        result = JSON.parse(responseText);
+        console.log('📥 Parsed API Response:', result);
+      } catch (parseError) {
+        console.error('❌ Failed to parse response as JSON:', {
+          error: parseError.message,
+          status: response.status,
+          statusText: response.statusText
+        });
+        throw new Error(`Invalid response from server (${response.status}): ${response.statusText}`);
+      }
+
+      if (!response.ok) {
+        console.error('❌ API Error:', {
+          status: response.status,
+          error: result.error,
+          details: result.details,
+          message: result.message,
+          fullResult: result
+        });
+        throw new Error(result.error || result.details || result.message || `API request failed (${response.status})`);
+      }
+
+      // Update local state - add the new assignment to existing assignments
       const updatedModule = {
         ...localModule,
         assignments: [
@@ -1453,27 +1529,7 @@ export default function AcademicModuleEditorEnhanced({
         ],
         lastUpdated: new Date().toISOString()
       };
-
-      // Update the course in database with the new assignment
-      const response = await fetch(`/api/academic-courses/${courseId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({
-          moduleIndex: localModule.order - 1, // Convert to 0-based index (order is guaranteed to be a number)
-          updatedModule: updatedModule
-        })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to save assignment to course');
-      }
-
-      // Update local state
+      
       setLocalModule(updatedModule);
       setAssignmentPublished(true);
       
@@ -1528,7 +1584,9 @@ export default function AcademicModuleEditorEnhanced({
           },
           body: JSON.stringify({
             courseId: courseId,
-            moduleIndex: localModule.order - 1, // Convert to 0-based index (order is guaranteed to be a number)
+            moduleIndex: typeof localModule.order === 'number' && localModule.order > 0 
+              ? localModule.order - 1 
+              : 0, // Convert to 0-based index with validation
             academicLevel:
               course?.academicLevel || learnerLevel || "undergraduate",
             subject: course?.subject || subject || "General Studies",

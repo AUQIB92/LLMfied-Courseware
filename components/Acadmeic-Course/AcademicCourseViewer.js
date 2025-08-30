@@ -8,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import ReliableMathRenderer from "@/components/ReliableMathRenderer"
 import BeautifulAssignmentRenderer from "@/components/ui/beautiful-assignment-renderer"
 
@@ -31,6 +35,8 @@ import {
   Eye,
   Download,
   ExternalLink,
+  Edit,
+  Trash2,
 } from "lucide-react"
 
 // Add style for horizontal scrollbar hiding
@@ -56,6 +62,12 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   const [focusedModule, setFocusedModule] = useState(null) // New state for focused module view
   const [selectedAssignment, setSelectedAssignment] = useState(null) // For assignment viewing
   const [exportingPDF, setExportingPDF] = useState(false) // PDF export state
+  const [editingAssignment, setEditingAssignment] = useState(null) // For assignment editing
+  const [deletingAssignment, setDeletingAssignment] = useState(null) // For assignment deletion
+  const [editForm, setEditForm] = useState({ title: '', description: '', content: '', dueDate: '', points: '' }) // Edit form state
+
+  // Check if current user is an educator for this course
+  const isEducator = user?.role === 'educator' && (viewerCourse?.educatorId === user?.id || viewerCourse?.educatorId === user?._id)
 
   // Assignment handling functions
   const handleViewFullAssignment = (assignment) => {
@@ -66,31 +78,148 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
     try {
       setExportingPDF(true)
 
-      // Dynamic import of beautiful PDF export utility
-      const { exportBeautifulAssignmentPDF } = await import("@/utils/beautiful-pdf-export")
+      // Dynamic import of current view PDF export utility (much lighter)
+      const { exportCurrentAssignmentView } = await import("@/utils/current-view-pdf-export")
 
       const pdfMetadata = {
-        moduleTitle: metadata.moduleTitle || "Assignment",
-        topics: assignment.topics || metadata.topics || "",
-        difficulty: assignment.difficulty || "medium",
-        dueDate: assignment.dueDate,
+        moduleTitle: metadata.moduleTitle || assignment.title || "Assignment",
         courseTitle: metadata.courseTitle || viewerCourse.title,
-        institutionName: metadata.institutionName || 'Govt. College of Engineering Safapora Ganderbal Kashmir, India 193504',
-        instructorName: metadata.instructorName || 'Instructor',
-        references: assignment.references,
+        institutionName: 'GCET Kashmir',
+        instructorName: metadata.instructorName || 'Dr. Auqib Hamid',
         studentName: user?.name || "",
+        dueDate: assignment.dueDate,
         assignmentId: assignment.id || "assignment"
       }
 
-      await exportBeautifulAssignmentPDF(assignment.content, pdfMetadata)
+      await exportCurrentAssignmentView(pdfMetadata)
 
       // Show success message
       console.log("📄 Assignment PDF exported successfully!")
+      // Optional: Add toast notification if available
+      if (typeof toast !== 'undefined') {
+        toast.success("📄 Assignment PDF exported successfully!")
+      }
     } catch (error) {
       console.error("Failed to export PDF:", error)
-      alert("Failed to export PDF. Please try again.")
+      alert(`Failed to export PDF: ${error.message}`)
     } finally {
       setExportingPDF(false)
+    }
+  }
+
+  const handleQuickPrintAssignment = async (assignment, metadata = {}) => {
+    try {
+      // Dynamic import of simple print utility
+      const { exportAssignmentAsPDF } = await import("@/utils/current-view-pdf-export")
+
+      const pdfMetadata = {
+        moduleTitle: metadata.moduleTitle || assignment.title || "Assignment",
+        courseTitle: metadata.courseTitle || viewerCourse.title,
+        studentName: user?.name || ""
+      }
+
+      await exportAssignmentAsPDF(pdfMetadata)
+      console.log("📄 Print dialog opened!")
+    } catch (error) {
+      console.error("Failed to open print dialog:", error)
+      alert(`Failed to print: ${error.message}`)
+    }
+  }
+
+  // Handle assignment editing
+  const handleEditAssignment = (assignment, moduleIndex, assignmentIndex) => {
+    setEditingAssignment({
+      assignment,
+      moduleIndex,
+      assignmentIndex,
+      originalContent: assignment.content
+    })
+    
+    // Populate edit form
+    setEditForm({
+      title: assignment.title || '',
+      description: assignment.description || '',
+      content: assignment.content || '',
+      dueDate: assignment.dueDate ? new Date(assignment.dueDate).toISOString().split('T')[0] : '',
+      points: assignment.points || ''
+    })
+  }
+
+  // Handle assignment deletion
+  const handleDeleteAssignment = async (assignmentIndex, moduleIndex) => {
+    if (!confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      setDeletingAssignment(`${moduleIndex}-${assignmentIndex}`)
+      
+      const response = await fetch(`/api/academic-courses/${viewerCourse._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          action: 'deleteAssignment',
+          moduleIndex: moduleIndex,
+          assignmentIndex: assignmentIndex
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete assignment: ${response.statusText}`)
+      }
+
+      // Refresh course data
+      await fetchCourse()
+      console.log('✅ Assignment deleted successfully')
+      
+    } catch (error) {
+      console.error('❌ Error deleting assignment:', error)
+      alert(`Failed to delete assignment: ${error.message}`)
+    } finally {
+      setDeletingAssignment(null)
+    }
+  }
+
+  // Handle saving edited assignment
+  const handleSaveEditedAssignment = async () => {
+    try {
+      const updatedAssignment = {
+        title: editForm.title,
+        description: editForm.description,
+        content: editForm.content,
+        dueDate: editForm.dueDate ? new Date(editForm.dueDate).toISOString() : null,
+        points: editForm.points ? parseInt(editForm.points) : null
+      }
+
+      const response = await fetch(`/api/academic-courses/${viewerCourse._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          action: 'updateAssignment',
+          moduleIndex: editingAssignment.moduleIndex,
+          assignmentIndex: editingAssignment.assignmentIndex,
+          updatedAssignment: updatedAssignment
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to update assignment: ${response.statusText}`)
+      }
+
+      // Refresh course data
+      await fetchCourse()
+      setEditingAssignment(null)
+      console.log('✅ Assignment updated successfully')
+      
+    } catch (error) {
+      console.error('❌ Error updating assignment:', error)
+      alert(`Failed to update assignment: ${error.message}`)
     }
   }
 
@@ -479,18 +608,30 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                   </div>
                 </div>
                 
-                <Button
-                  onClick={() => handleExportAssignmentPDF(selectedAssignment, {
-                    moduleTitle: selectedAssignment.moduleTitle,
-                    courseTitle: viewerCourse.title,
-                    institutionName: "Govt. College of Engineering Safapora Ganderbal Kashmir, India 193504",
-                  })}
-                  disabled={exportingPDF}
-                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {exportingPDF ? "Exporting..." : "Export PDF"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleExportAssignmentPDF(selectedAssignment, {
+                      moduleTitle: selectedAssignment.moduleTitle,
+                      courseTitle: viewerCourse.title
+                    })}
+                    disabled={exportingPDF}
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {exportingPDF ? "Exporting..." : "Export PDF"}
+                  </Button>
+                  
+                  <Button
+                    onClick={() => handleQuickPrintAssignment(selectedAssignment, {
+                      moduleTitle: selectedAssignment.moduleTitle,
+                      courseTitle: viewerCourse.title
+                    })}
+                    variant="outline"
+                    className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                  >
+                    🖨️ Quick Print
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             
@@ -1815,7 +1956,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                               </div>
                                             </div>
                                           </div>
-                                          <div className="flex gap-3">
+                                          <div className="flex gap-2">
                                             <Button
                                               onClick={() => {
                                                 const assignmentWithModule = {
@@ -1827,22 +1968,65 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                               className="bg-purple-600 hover:bg-purple-700 text-white"
                                             >
                                               <Eye className="h-4 w-4 mr-2" />
-                                              View Assignment
+                                              View
                                             </Button>
                                             <Button
                                               onClick={() =>
                                                 handleExportAssignmentPDF(assignment, {
                                                   moduleTitle: currentModuleData.title,
-                                                  courseTitle: viewerCourse.title,
-                                                  institutionName: "Academic Institution",
+                                                  courseTitle: viewerCourse.title
                                                 })
                                               }
                                               variant="outline"
                                               className="border-purple-200 text-purple-600 hover:bg-purple-50"
+                                              disabled={exportingPDF}
+                                              size="sm"
                                             >
-                                              <Download className="h-4 w-4 mr-2" />
-                                              Export PDF
+                                              <Download className="h-4 w-4 mr-1" />
+                                              {exportingPDF ? "..." : "PDF"}
                                             </Button>
+                                            <Button
+                                              onClick={() =>
+                                                handleQuickPrintAssignment(assignment, {
+                                                  moduleTitle: currentModuleData.title,
+                                                  courseTitle: viewerCourse.title
+                                                })
+                                              }
+                                              variant="outline"
+                                              className="border-gray-200 text-gray-600 hover:bg-gray-50"
+                                              size="sm"
+                                            >
+                                              🖨️
+                                            </Button>
+                                            
+                                            {/* Edit and Delete buttons for educators only */}
+                                            {isEducator && (
+                                              <>
+                                                <Button
+                                                  onClick={() => handleEditAssignment(assignment, currentModule, index)}
+                                                  variant="outline"
+                                                  className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                                                  size="sm"
+                                                  title="Edit Assignment"
+                                                >
+                                                  <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                  onClick={() => handleDeleteAssignment(index, currentModule)}
+                                                  variant="outline"
+                                                  className="border-red-200 text-red-600 hover:bg-red-50"
+                                                  size="sm"
+                                                  disabled={deletingAssignment === `${currentModule}-${index}`}
+                                                  title="Delete Assignment"
+                                                >
+                                                  {deletingAssignment === `${currentModule}-${index}` ? (
+                                                    <span className="animate-spin">⏳</span>
+                                                  ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                  )}
+                                                </Button>
+                                              </>
+                                            )}
                                           </div>
                                         </div>
                                       ))}
@@ -2120,6 +2304,91 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
           </motion.div>
         </div>
       </motion.div>
+      
+      {/* Assignment Edit Modal */}
+      {editingAssignment && (
+        <Dialog open={!!editingAssignment} onOpenChange={() => setEditingAssignment(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Assignment</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-title">Title</Label>
+                <Input
+                  id="edit-title"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm(prev => ({...prev, title: e.target.value}))}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm(prev => ({...prev, description: e.target.value}))}
+                  rows={3}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-due-date">Due Date</Label>
+                  <Input
+                    id="edit-due-date"
+                    type="date"
+                    value={editForm.dueDate}
+                    onChange={(e) => setEditForm(prev => ({...prev, dueDate: e.target.value}))}
+                    className="mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-points">Points</Label>
+                  <Input
+                    id="edit-points"
+                    type="number"
+                    value={editForm.points}
+                    onChange={(e) => setEditForm(prev => ({...prev, points: e.target.value}))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-content">Content</Label>
+                <Textarea
+                  id="edit-content"
+                  value={editForm.content}
+                  onChange={(e) => setEditForm(prev => ({...prev, content: e.target.value}))}
+                  rows={10}
+                  className="mt-1 font-mono text-sm"
+                  placeholder="Assignment content..."
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditingAssignment(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveEditedAssignment}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 }

@@ -271,7 +271,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
     try {
       console.log("Fetching academic courses from API...");
 
-      const url = "/api/courses?status=published&isAcademicCourse=true";
+      const url = "/api/academic-courses?status=published";
       console.log("Fetching academic courses from URL:", url);
 
       const response = await fetch(url, {
@@ -806,13 +806,14 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
     const matchesLevel =
       selectedLevel === "all" || course.level === selectedLevel;
 
-    // When not in competitive mode, show only regular courses
+    // When not in competitive mode, show only regular courses that are NOT enrolled
     return (
       matchesSearch &&
       matchesCategory &&
       matchesLevel &&
       !course.isExamGenius &&
-      !course.isCompetitiveExam
+      !course.isCompetitiveExam &&
+      !isEnrolled(course._id)  // Exclude enrolled courses
     );
   });
 
@@ -821,11 +822,15 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
       course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // When in competitive mode, show only ExamGenius/competitive courses
-    return matchesSearch && (course.isExamGenius || course.isCompetitiveExam);
+    // When in competitive mode, show only ExamGenius/competitive courses that are NOT enrolled
+    return (
+      matchesSearch && 
+      (course.isExamGenius || course.isCompetitiveExam) &&
+      !isEnrolled(course._id)  // Exclude enrolled courses
+    );
   });
 
-  // Filter academic courses
+  // Filter academic courses - exclude enrolled ones
   const filteredAcademicCourses = academicCourses.filter((course) => {
     const matchesSearch =
       course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -833,7 +838,7 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
       course.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.academicLevel?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesSearch;
+    return matchesSearch && !academicEnrollments[course._id];  // Exclude enrolled academic courses
   });
 
   const filteredCourses = showCompetitiveOnly
@@ -1449,8 +1454,48 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
           </div>
         )}
 
-        {/* Course Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {/* Technical Courses Section */}
+        {filteredCourses.length > 0 && (
+          <div className="mb-12">
+            {/* Technical Courses Header */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-xl shadow-lg ${showCompetitiveOnly 
+                    ? 'bg-gradient-to-r from-orange-500 to-red-600' 
+                    : 'bg-gradient-to-r from-green-500 to-blue-600'
+                  }`}>
+                    {showCompetitiveOnly 
+                      ? <Trophy className="h-6 w-6 text-white" />
+                      : <Code className="h-6 w-6 text-white" />
+                    }
+                  </div>
+                  <div>
+                    <h2 className={`text-2xl font-bold bg-clip-text text-transparent ${showCompetitiveOnly 
+                      ? 'bg-gradient-to-r from-orange-600 to-red-600' 
+                      : 'bg-gradient-to-r from-green-600 to-blue-600'
+                    }`}>
+                      {showCompetitiveOnly ? 'Competitive Exam Courses' : 'Technical Courses'}
+                    </h2>
+                    <p className="text-slate-600 text-sm">
+                      {showCompetitiveOnly ? 'Exam preparation and practice' : 'Programming, development, and technical skills'}
+                    </p>
+                  </div>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={showCompetitiveOnly 
+                    ? "bg-gradient-to-r from-orange-50 to-red-50 border-orange-200 text-orange-700"
+                    : "bg-gradient-to-r from-green-50 to-blue-50 border-green-200 text-green-700"
+                  }
+                >
+                  {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Technical Course Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {coursesArray.map((course, index) => {
             const courseData = getDefaultData(course);
             const LevelIcon = getLevelIcon(course.level);
@@ -1697,7 +1742,9 @@ export default function CourseLibrary({ onCourseSelect, onEnrollmentChange }) {
               </Card>
             );
           })}
-        </div>
+            </div>
+          </div>
+        )}
 
         {/* Error State */}
         {error && !loading && (

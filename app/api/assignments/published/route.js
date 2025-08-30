@@ -66,7 +66,19 @@ export async function GET(request) {
       }
 
       // Get courses and extract assignments from modules
-      const enrolledCourseIds = enrollments.map(e => e.courseId);
+      const enrolledCourseIds = enrollments
+        .map(e => e.courseId)
+        .filter(courseId => courseId != null); // Filter out null/undefined courseIds
+      
+      if (enrolledCourseIds.length === 0) {
+        console.log('⚠️ No valid course IDs found in enrollments');
+        return NextResponse.json({
+          success: true,
+          assignments: [],
+          message: 'No valid enrolled courses found'
+        });
+      }
+      
       console.log('🔍 Looking for courses with IDs:', enrolledCourseIds.map(id => id.toString()));
       
       const courses = await db.collection('courses').find({
@@ -95,6 +107,9 @@ export async function GET(request) {
                     courseTitle: course.title,
                     educatorId: course.educatorId?.toString(),
                     educatorName: course.educatorName || 'Course Instructor',
+                    // Ensure the moduleTitle matches the actual module title
+                    moduleTitle: module.title,
+                    moduleIndex: moduleIndex,
                     // Ensure consistent date handling
                     dueDate: new Date(assignment.dueDate),
                     publishedDate: new Date(assignment.publishedDate),
@@ -133,7 +148,7 @@ export async function GET(request) {
 
       // Extract assignments from course modules
       if (course.modules && Array.isArray(course.modules)) {
-        for (const module of course.modules) {
+        for (const [moduleIndex, module] of course.modules.entries()) {
           if (module.assignments && Array.isArray(module.assignments)) {
             for (const assignment of module.assignments) {
               if (assignment.isActive !== false) {
@@ -143,6 +158,9 @@ export async function GET(request) {
                   courseTitle: course.title,
                   educatorId: course.educatorId?.toString(),
                   educatorName: course.educatorName || 'Course Instructor',
+                  // Ensure the moduleTitle matches the actual module title
+                  moduleTitle: module.title,
+                  moduleIndex: moduleIndex,
                   dueDate: new Date(assignment.dueDate),
                   publishedDate: new Date(assignment.publishedDate)
                 });
@@ -164,7 +182,7 @@ export async function GET(request) {
         // Extract assignments from all educator's courses
         for (const course of courses) {
           if (course.modules && Array.isArray(course.modules)) {
-            for (const module of course.modules) {
+            for (const [moduleIndex, module] of course.modules.entries()) {
               if (module.assignments && Array.isArray(module.assignments)) {
                 for (const assignment of module.assignments) {
                   if (assignment.isActive !== false) {
@@ -174,6 +192,9 @@ export async function GET(request) {
                       courseTitle: course.title,
                       educatorId: course.educatorId?.toString(),
                       educatorName: course.educatorName || user.name || 'Course Instructor',
+                      // Ensure the moduleTitle matches the actual module title
+                      moduleTitle: module.title,
+                      moduleIndex: moduleIndex,
                       dueDate: new Date(assignment.dueDate),
                       publishedDate: new Date(assignment.publishedDate)
                     });
