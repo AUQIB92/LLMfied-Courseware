@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 
@@ -12,6 +12,7 @@ async function verifyToken(request) {
 
 // GET - Fetch test attempts for a test series
 export async function GET(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     const { searchParams } = new URL(request.url)
@@ -24,7 +25,8 @@ export async function GET(request) {
       )
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Fetch all attempts for this user and test series
@@ -46,6 +48,7 @@ export async function GET(request) {
 
 // POST - Save or submit test attempt
 export async function POST(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     const body = await request.json()
@@ -67,7 +70,8 @@ export async function POST(request) {
       )
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Get the test series to access questions and scoring info

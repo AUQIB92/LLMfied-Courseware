@@ -17,9 +17,14 @@ async function verifyToken(request) {
   } catch (error) {
     console.error('Token verification failed:', error);
     return null;
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
 }
 export async function GET(request) {
+  let client = null;
   try {
     const { searchParams } = new URL(request.url);
     const courseId = searchParams.get('courseId');
@@ -39,7 +44,8 @@ export async function GET(request) {
       );
     }
 
-    const client = await clientPromise;
+    const connection = await connectToDatabase()
+    const client = connection.client;
     const db = client.db('llmfied');
     
     let assignments = [];

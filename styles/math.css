@@ -62,16 +62,70 @@
   border-color: #6b7280 !important;
 }
 
-/* Responsive math display */
+/* Enhanced responsive math display with blur fixes */
 @media (max-width: 768px) {
   .katex-display {
-    font-size: 0.9em;
+    font-size: 0.95em;
     margin: 1rem 0;
-    padding: 0.25rem;
+    padding: 0.5rem;
+    max-width: calc(100vw - 2rem);
+    overflow-x: auto;
+    box-sizing: border-box;
+    /* Fix blur issues on mobile */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-rendering: optimizeLegibility;
   }
   
   .katex {
     font-size: 1em !important;
+    /* Anti-aliasing improvements for mobile */
+    transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-rendering: optimizeLegibility;
+    backface-visibility: hidden;
+  }
+
+  .katex-html {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    min-width: 0;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+  .katex-display {
+    font-size: 0.85em;
+    margin: 0.75rem 0;
+    padding: 0.4rem;
+    max-width: calc(100vw - 1rem);
+  }
+  
+  .katex {
+    font-size: 0.9em !important;
+  }
+
+  .katex-html {
+    font-size: 0.95em;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+  .katex-display {
+    font-size: 0.8em;
+    margin: 0.5rem 0;
+    padding: 0.3rem;
+    max-width: calc(100vw - 0.5rem);
+  }
+  
+  .katex {
+    font-size: 0.85em !important;
   }
 }
 

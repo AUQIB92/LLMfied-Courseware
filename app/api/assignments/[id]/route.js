@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { verifyToken } from "@/lib/auth";
 
 // GET /api/assignments/[id] - Get specific assignment
 export async function GET(request, { params }) {
+  let client = null;
   try {
     const resolvedParams = await params
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Get assignment
@@ -47,6 +49,7 @@ export async function GET(request, { params }) {
 
 // PUT /api/assignments/[id] - Update assignment
 export async function PUT(request, { params }) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     if (user.role !== "educator") {
@@ -55,7 +58,8 @@ export async function PUT(request, { params }) {
 
     const resolvedParams = await params
     const requestBody = await request.json()
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check if assignment exists and belongs to educator
@@ -115,6 +119,7 @@ export async function PUT(request, { params }) {
 
 // DELETE /api/assignments/[id] - Delete assignment
 export async function DELETE(request, { params }) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     if (user.role !== "educator") {
@@ -122,7 +127,8 @@ export async function DELETE(request, { params }) {
     }
 
     const resolvedParams = await params
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check if assignment exists and belongs to educator

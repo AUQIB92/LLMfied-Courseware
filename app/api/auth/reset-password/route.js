@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 
 export async function POST(request) {
+  let client = null;
   try {
     const { token, password } = await request.json()
 
@@ -40,7 +41,8 @@ export async function POST(request) {
     })
 
     // Connect to MongoDB
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Find user with this reset token and check if it's not expired

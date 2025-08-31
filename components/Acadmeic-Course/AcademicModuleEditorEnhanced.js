@@ -3674,6 +3674,10 @@ export default function AcademicModuleEditorEnhanced({
         // Update the module
         updateModule(updatedModule);
 
+        // Auto-save after generating AI resources
+        setHasChanges(true); // Trigger the existing auto-save mechanism
+        console.log("✓ Triggered auto-save after generating AI resources");
+
         toast.success("Learning resources have been added to your module.");
       }
     } catch (error) {

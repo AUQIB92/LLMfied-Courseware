@@ -4051,7 +4051,23 @@ Return JSON format:
                   <CardContent className="relative z-10 p-8">
                     <Tabs
                       defaultValue={
-                        aiResources.articles && aiResources.articles.length > 0
+                        // Check instructor resources first (prioritize educator-added content)
+                        instructorMasterpieces.articles && instructorMasterpieces.articles.length > 0
+                          ? "articles"
+                          : instructorMasterpieces.videos && instructorMasterpieces.videos.length > 0
+                          ? "videos"
+                          : instructorMasterpieces.books && instructorMasterpieces.books.length > 0
+                          ? "books"
+                          : instructorMasterpieces.courses && instructorMasterpieces.courses.length > 0
+                          ? "courses"
+                          : instructorMasterpieces.tools && instructorMasterpieces.tools.length > 0
+                          ? "tools"
+                          : instructorMasterpieces.websites && instructorMasterpieces.websites.length > 0
+                          ? "websites"
+                          : instructorMasterpieces.exercises && instructorMasterpieces.exercises.length > 0
+                          ? "exercises"
+                          : // Fallback to AI resources
+                          aiResources.articles && aiResources.articles.length > 0
                           ? "articles"
                           : aiResources.videos && aiResources.videos.length > 0
                           ? "videos"
@@ -4074,8 +4090,8 @@ Return JSON format:
                     >
                       {/* Enhanced TabsList with Educator Design */}
                       <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-lg">
-                        {aiResources.articles &&
-                          aiResources.articles.length > 0 && (
+                        {((aiResources.articles && aiResources.articles.length > 0) || 
+                          (instructorMasterpieces.articles && instructorMasterpieces.articles.length > 0)) && (
                             <TabsTrigger
                               value="articles"
                               className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-green-50"
@@ -4090,13 +4106,13 @@ Return JSON format:
                                 variant="secondary"
                                 className="text-xs bg-green-100 text-green-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
                               >
-                                {aiResources.articles.length}
+                                {(aiResources.articles?.length || 0) + (instructorMasterpieces.articles?.length || 0)}
                               </Badge>
                             </TabsTrigger>
                           )}
 
-                        {aiResources.videos &&
-                          aiResources.videos.length > 0 && (
+                        {((aiResources.videos && aiResources.videos.length > 0) || 
+                          (instructorMasterpieces.videos && instructorMasterpieces.videos.length > 0)) && (
                             <TabsTrigger
                               value="videos"
                               className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-red-50"
@@ -4111,12 +4127,13 @@ Return JSON format:
                                 variant="secondary"
                                 className="text-xs bg-red-100 text-red-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
                               >
-                                {aiResources.videos.length}
+                                {(aiResources.videos?.length || 0) + (instructorMasterpieces.videos?.length || 0)}
                               </Badge>
                             </TabsTrigger>
                           )}
 
-                        {aiResources.books && aiResources.books.length > 0 && (
+                        {((aiResources.books && aiResources.books.length > 0) || 
+                          (instructorMasterpieces.books && instructorMasterpieces.books.length > 0)) && (
                           <TabsTrigger
                             value="books"
                             className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-blue-50"
@@ -4129,13 +4146,12 @@ Return JSON format:
                               variant="secondary"
                               className="text-xs bg-blue-100 text-blue-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
                             >
-                              {aiResources.books.length}
+                              {(aiResources.books?.length || 0) + (instructorMasterpieces.books?.length || 0)}
                             </Badge>
                           </TabsTrigger>
                         )}
 
-                        {aiResources.courses &&
-                          aiResources.courses.length > 0 && (
+                        {((aiResources.courses && aiResources.courses.length > 0) || (instructorMasterpieces.courses && instructorMasterpieces.courses.length > 0)) && (
                             <TabsTrigger
                               value="courses"
                               className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-purple-50"
@@ -4150,12 +4166,12 @@ Return JSON format:
                                 variant="secondary"
                                 className="text-xs bg-purple-100 text-purple-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
                               >
-                                {aiResources.courses.length}
+                                {(aiResources.courses?.length || 0) + (instructorMasterpieces.courses?.length || 0)}
                               </Badge>
                             </TabsTrigger>
                           )}
 
-                        {aiResources.tools && aiResources.tools.length > 0 && (
+                        {((aiResources.tools && aiResources.tools.length > 0) || (instructorMasterpieces.tools && instructorMasterpieces.tools.length > 0)) && (
                           <TabsTrigger
                             value="tools"
                             className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-orange-50"
@@ -4168,13 +4184,12 @@ Return JSON format:
                               variant="secondary"
                               className="text-xs bg-orange-100 text-orange-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
                             >
-                              {aiResources.tools.length}
+                              {(aiResources.tools?.length || 0) + (instructorMasterpieces.tools?.length || 0)}
                             </Badge>
                           </TabsTrigger>
                         )}
 
-                        {aiResources.websites &&
-                          aiResources.websites.length > 0 && (
+                        {((aiResources.websites && aiResources.websites.length > 0) || (instructorMasterpieces.websites && instructorMasterpieces.websites.length > 0)) && (
                             <TabsTrigger
                               value="websites"
                               className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-indigo-50"
@@ -4189,13 +4204,12 @@ Return JSON format:
                                 variant="secondary"
                                 className="text-xs bg-indigo-100 text-indigo-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
                               >
-                                {aiResources.websites.length}
+                                {(aiResources.websites?.length || 0) + (instructorMasterpieces.websites?.length || 0)}
                               </Badge>
                             </TabsTrigger>
                           )}
 
-                        {aiResources.exercises &&
-                          aiResources.exercises.length > 0 && (
+                        {((aiResources.exercises && aiResources.exercises.length > 0) || (instructorMasterpieces.exercises && instructorMasterpieces.exercises.length > 0)) && (
                             <TabsTrigger
                               value="exercises"
                               className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-pink-50"
@@ -4210,15 +4224,16 @@ Return JSON format:
                                 variant="secondary"
                                 className="text-xs bg-pink-100 text-pink-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
                               >
-                                {aiResources.exercises.length}
+                                {(aiResources.exercises?.length || 0) + (instructorMasterpieces.exercises?.length || 0)}
                               </Badge>
                             </TabsTrigger>
                           )}
                       </TabsList>
 
                       <div className="mt-8">
-                        {/* Books Content */}
-                        {aiResources.books && aiResources.books.length > 0 && (
+                        {/* Books Content - Combined AI + Instructor Resources */}
+                        {((aiResources.books && aiResources.books.length > 0) ||
+                          (instructorMasterpieces.books && instructorMasterpieces.books.length > 0)) && (
                           <TabsContent key="books" value="books">
                             <motion.div
                               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -4226,9 +4241,10 @@ Return JSON format:
                               initial="hidden"
                               animate="visible"
                             >
-                              {aiResources.books.map((resource, index) => (
+                              {/* Display Instructor Resources First (Prioritized) */}
+                              {instructorMasterpieces.books?.map((resource, index) => (
                                 <motion.div
-                                  key={`books-${index}-${
+                                  key={`instructor-books-${index}-${
                                     resource.title || resource.name || index
                                   }`}
                                   variants={itemVariants}
@@ -4237,6 +4253,22 @@ Return JSON format:
                                     resource={resource}
                                     type="books"
                                     resourceIndex={index}
+                                    isInstructorChoice={true}
+                                  />
+                                </motion.div>
+                              ))}
+                              {/* Display AI Resources */}
+                              {aiResources.books?.map((resource, index) => (
+                                <motion.div
+                                  key={`ai-books-${index}-${
+                                    resource.title || resource.name || index
+                                  }`}
+                                  variants={itemVariants}
+                                >
+                                  <ResourceCard
+                                    resource={resource}
+                                    type="books"
+                                    resourceIndex={index + (instructorMasterpieces.books?.length || 0)}
                                   />
                                 </motion.div>
                               ))}
@@ -4244,9 +4276,9 @@ Return JSON format:
                           </TabsContent>
                         )}
 
-                        {/* Courses Content */}
-                        {aiResources.courses &&
-                          aiResources.courses.length > 0 && (
+                        {/* Courses Content - Combined AI + Instructor Resources */}
+                        {((aiResources.courses && aiResources.courses.length > 0) ||
+                          (instructorMasterpieces.courses && instructorMasterpieces.courses.length > 0)) && (
                             <TabsContent key="courses" value="courses">
                               <motion.div
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -4254,9 +4286,10 @@ Return JSON format:
                                 initial="hidden"
                                 animate="visible"
                               >
-                                {aiResources.courses.map((resource, index) => (
+                                {/* Display Instructor Resources First (Prioritized) */}
+                                {instructorMasterpieces.courses?.map((resource, index) => (
                                   <motion.div
-                                    key={`courses-${index}-${
+                                    key={`instructor-courses-${index}-${
                                       resource.title || resource.name || index
                                     }`}
                                     variants={itemVariants}
@@ -4265,6 +4298,22 @@ Return JSON format:
                                       resource={resource}
                                       type="courses"
                                       resourceIndex={index}
+                                      isInstructorChoice={true}
+                                    />
+                                  </motion.div>
+                                ))}
+                                {/* Display AI Resources */}
+                                {aiResources.courses?.map((resource, index) => (
+                                  <motion.div
+                                    key={`ai-courses-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="courses"
+                                      resourceIndex={index + (instructorMasterpieces.courses?.length || 0)}
                                     />
                                   </motion.div>
                                 ))}
@@ -4272,9 +4321,9 @@ Return JSON format:
                             </TabsContent>
                           )}
 
-                        {/* Videos Content */}
-                        {aiResources.videos &&
-                          aiResources.videos.length > 0 && (
+                        {/* Videos Content - Combined AI + Instructor Resources */}
+                        {((aiResources.videos && aiResources.videos.length > 0) ||
+                          (instructorMasterpieces.videos && instructorMasterpieces.videos.length > 0)) && (
                             <TabsContent key="videos" value="videos">
                               <motion.div
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -4282,9 +4331,10 @@ Return JSON format:
                                 initial="hidden"
                                 animate="visible"
                               >
-                                {aiResources.videos.map((resource, index) => (
+                                {/* Display Instructor Resources First (Prioritized) */}
+                                {instructorMasterpieces.videos?.map((resource, index) => (
                                   <motion.div
-                                    key={`videos-${index}-${
+                                    key={`instructor-videos-${index}-${
                                       resource.title || resource.name || index
                                     }`}
                                     variants={itemVariants}
@@ -4293,6 +4343,22 @@ Return JSON format:
                                       resource={resource}
                                       type="videos"
                                       resourceIndex={index}
+                                      isInstructorChoice={true}
+                                    />
+                                  </motion.div>
+                                ))}
+                                {/* Display AI Resources */}
+                                {aiResources.videos?.map((resource, index) => (
+                                  <motion.div
+                                    key={`ai-videos-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="videos"
+                                      resourceIndex={index + (instructorMasterpieces.videos?.length || 0)}
                                     />
                                   </motion.div>
                                 ))}
@@ -4300,9 +4366,9 @@ Return JSON format:
                             </TabsContent>
                           )}
 
-                        {/* Articles Content */}
-                        {aiResources.articles &&
-                          aiResources.articles.length > 0 && (
+                        {/* Articles Content - Combined AI + Instructor Resources */}
+                        {((aiResources.articles && aiResources.articles.length > 0) ||
+                          (instructorMasterpieces.articles && instructorMasterpieces.articles.length > 0)) && (
                             <TabsContent key="articles" value="articles">
                               <motion.div
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -4310,9 +4376,10 @@ Return JSON format:
                                 initial="hidden"
                                 animate="visible"
                               >
-                                {aiResources.articles.map((resource, index) => (
+                                {/* Display Instructor Resources First (Prioritized) */}
+                                {instructorMasterpieces.articles?.map((resource, index) => (
                                   <motion.div
-                                    key={`articles-${index}-${
+                                    key={`instructor-articles-${index}-${
                                       resource.title || resource.name || index
                                     }`}
                                     variants={itemVariants}
@@ -4321,6 +4388,22 @@ Return JSON format:
                                       resource={resource}
                                       type="articles"
                                       resourceIndex={index}
+                                      isInstructorChoice={true}
+                                    />
+                                  </motion.div>
+                                ))}
+                                {/* Display AI Resources */}
+                                {aiResources.articles?.map((resource, index) => (
+                                  <motion.div
+                                    key={`ai-articles-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="articles"
+                                      resourceIndex={index + (instructorMasterpieces.articles?.length || 0)}
                                     />
                                   </motion.div>
                                 ))}
@@ -4328,8 +4411,9 @@ Return JSON format:
                             </TabsContent>
                           )}
 
-                        {/* Tools Content */}
-                        {aiResources.tools && aiResources.tools.length > 0 && (
+                        {/* Tools Content - Combined AI + Instructor Resources */}
+                        {((aiResources.tools && aiResources.tools.length > 0) ||
+                          (instructorMasterpieces.tools && instructorMasterpieces.tools.length > 0)) && (
                           <TabsContent key="tools" value="tools">
                             <motion.div
                               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -4337,9 +4421,10 @@ Return JSON format:
                               initial="hidden"
                               animate="visible"
                             >
-                              {aiResources.tools.map((resource, index) => (
+                              {/* Display Instructor Resources First (Prioritized) */}
+                              {instructorMasterpieces.tools?.map((resource, index) => (
                                 <motion.div
-                                  key={`tools-${index}-${
+                                  key={`instructor-tools-${index}-${
                                     resource.title || resource.name || index
                                   }`}
                                   variants={itemVariants}
@@ -4348,6 +4433,22 @@ Return JSON format:
                                     resource={resource}
                                     type="tools"
                                     resourceIndex={index}
+                                    isInstructorChoice={true}
+                                  />
+                                </motion.div>
+                              ))}
+                              {/* Display AI Resources */}
+                              {aiResources.tools?.map((resource, index) => (
+                                <motion.div
+                                  key={`ai-tools-${index}-${
+                                    resource.title || resource.name || index
+                                  }`}
+                                  variants={itemVariants}
+                                >
+                                  <ResourceCard
+                                    resource={resource}
+                                    type="tools"
+                                    resourceIndex={index + (instructorMasterpieces.tools?.length || 0)}
                                   />
                                 </motion.div>
                               ))}
@@ -4355,9 +4456,9 @@ Return JSON format:
                           </TabsContent>
                         )}
 
-                        {/* Websites Content */}
-                        {aiResources.websites &&
-                          aiResources.websites.length > 0 && (
+                        {/* Websites Content - Combined AI + Instructor Resources */}
+                        {((aiResources.websites && aiResources.websites.length > 0) ||
+                          (instructorMasterpieces.websites && instructorMasterpieces.websites.length > 0)) && (
                             <TabsContent key="websites" value="websites">
                               <motion.div
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -4365,9 +4466,10 @@ Return JSON format:
                                 initial="hidden"
                                 animate="visible"
                               >
-                                {aiResources.websites.map((resource, index) => (
+                                {/* Display Instructor Resources First (Prioritized) */}
+                                {instructorMasterpieces.websites?.map((resource, index) => (
                                   <motion.div
-                                    key={`websites-${index}-${
+                                    key={`instructor-websites-${index}-${
                                       resource.title || resource.name || index
                                     }`}
                                     variants={itemVariants}
@@ -4376,6 +4478,22 @@ Return JSON format:
                                       resource={resource}
                                       type="websites"
                                       resourceIndex={index}
+                                      isInstructorChoice={true}
+                                    />
+                                  </motion.div>
+                                ))}
+                                {/* Display AI Resources */}
+                                {aiResources.websites?.map((resource, index) => (
+                                  <motion.div
+                                    key={`ai-websites-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="websites"
+                                      resourceIndex={index + (instructorMasterpieces.websites?.length || 0)}
                                     />
                                   </motion.div>
                                 ))}
@@ -4383,9 +4501,9 @@ Return JSON format:
                             </TabsContent>
                           )}
 
-                        {/* Exercises Content */}
-                        {aiResources.exercises &&
-                          aiResources.exercises.length > 0 && (
+                        {/* Exercises Content - Combined AI + Instructor Resources */}
+                        {((aiResources.exercises && aiResources.exercises.length > 0) ||
+                          (instructorMasterpieces.exercises && instructorMasterpieces.exercises.length > 0)) && (
                             <TabsContent key="exercises" value="exercises">
                               <motion.div
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -4393,22 +4511,37 @@ Return JSON format:
                                 initial="hidden"
                                 animate="visible"
                               >
-                                {aiResources.exercises.map(
-                                  (resource, index) => (
-                                    <motion.div
-                                      key={`exercises-${index}-${
-                                        resource.title || resource.name || index
-                                      }`}
-                                      variants={itemVariants}
-                                    >
-                                      <ResourceCard
-                                        resource={resource}
-                                        type="exercises"
-                                        resourceIndex={index}
-                                      />
-                                    </motion.div>
-                                  )
-                                )}
+                                {/* Display Instructor Resources First (Prioritized) */}
+                                {instructorMasterpieces.exercises?.map((resource, index) => (
+                                  <motion.div
+                                    key={`instructor-exercises-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="exercises"
+                                      resourceIndex={index}
+                                      isInstructorChoice={true}
+                                    />
+                                  </motion.div>
+                                ))}
+                                {/* Display AI Resources */}
+                                {aiResources.exercises?.map((resource, index) => (
+                                  <motion.div
+                                    key={`ai-exercises-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="exercises"
+                                      resourceIndex={index + (instructorMasterpieces.exercises?.length || 0)}
+                                    />
+                                  </motion.div>
+                                ))}
                               </motion.div>
                             </TabsContent>
                           )}

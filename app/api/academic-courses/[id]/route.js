@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { verifyToken } from "@/lib/auth";
 
 // GET /api/academic-courses/[id] - Get specific academic course
 export async function GET(request, { params }) {
+  let client = null;
   try {
     const resolvedParams = await params
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Get academic course basic info
@@ -86,6 +88,7 @@ export async function GET(request, { params }) {
 
 // PUT /api/academic-courses/[id] - Update academic course
 export async function PUT(request, { params }) {
+  let client = null;
   const startTime = Date.now()
   let operationContext = {
     courseId: 'unknown',
@@ -138,7 +141,8 @@ export async function PUT(request, { params }) {
     })
     
     operationContext.step = 'database_connection'
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     console.log('✅ Database connection established')
 
@@ -495,6 +499,7 @@ export async function PUT(request, { params }) {
 
 // DELETE /api/academic-courses/[id] - Delete academic course
 export async function DELETE(request, { params }) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     if (user.role !== "educator") {
@@ -502,7 +507,8 @@ export async function DELETE(request, { params }) {
     }
 
     const resolvedParams = await params
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check if course exists and belongs to educator

@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { verifyToken } from "@/lib/auth";
 
 // GET /api/assignment-submissions/[id] - Get specific submission
 export async function GET(request, { params }) {
+  let client = null;
   try {
     const resolvedParams = await params
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Get submission
@@ -52,11 +54,13 @@ export async function GET(request, { params }) {
 
 // PUT /api/assignment-submissions/[id] - Update submission or grade submission
 export async function PUT(request, { params }) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     const resolvedParams = await params
     const requestBody = await request.json()
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Get existing submission
@@ -195,6 +199,7 @@ export async function PUT(request, { params }) {
 
 // DELETE /api/assignment-submissions/[id] - Delete submission (only by student before grading)
 export async function DELETE(request, { params }) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     if (user.role !== "learner") {
@@ -202,7 +207,8 @@ export async function DELETE(request, { params }) {
     }
 
     const resolvedParams = await params
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check if submission exists and belongs to student

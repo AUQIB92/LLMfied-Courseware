@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
 export async function POST(request) {
+  let client = null;
   try {
     const body = await request.json()
     const {
@@ -33,7 +34,8 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     const draftData = {

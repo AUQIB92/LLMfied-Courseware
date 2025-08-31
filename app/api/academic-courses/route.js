@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { verifyToken } from "@/lib/auth";
 
 // GET /api/academic-courses - Fetch academic courses
 export async function GET(request) {
+  let client = null;
   const errorDetails = {
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV,
@@ -26,8 +27,9 @@ export async function GET(request) {
       }, { status: 500 })
     }
 
-    const client = await clientPromise
-    const db = client.db("llmfied")
+    const connection = await connectToDatabase()
+    client = connection.client
+    const db = connection.db
     
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
@@ -132,11 +134,22 @@ export async function GET(request) {
       details: error.message,
       debug: errorDetails
     }, { status: 500 })
+  } finally {
+    // Close the database connection
+    if (client) {
+      try {
+        await client.close()
+        console.log("🔌 Database connection closed")
+      } catch (closeError) {
+        console.error("⚠️ Error closing database connection:", closeError.message)
+      }
+    }
   }
 }
 
 // POST /api/academic-courses - Create new academic course
 export async function POST(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     if (user.role !== "educator") {
@@ -158,8 +171,9 @@ export async function POST(request) {
       assessmentCriteria
     } = requestBody
 
-    const client = await clientPromise
-    const db = client.db("llmfied")
+    const connection = await connectToDatabase()
+    client = connection.client
+    const db = connection.db
 
     const courseDocument = {
       courseType: "academic",
@@ -215,5 +229,15 @@ export async function POST(request) {
       error: "Failed to create academic course",
       details: error.message
     }, { status: 500 })
+  } finally {
+    // Close the database connection
+    if (client) {
+      try {
+        await client.close()
+        console.log("🔌 Database connection closed")
+      } catch (closeError) {
+        console.error("⚠️ Error closing database connection:", closeError.message)
+      }
+    }
   }
 } 

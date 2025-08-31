@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import jwt from "jsonwebtoken"
 
@@ -13,6 +13,7 @@ async function verifyToken(request) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     // Get user session
     const user = await verifyToken(request)
@@ -21,7 +22,8 @@ export async function POST(request) {
     }
 
     // Connect to MongoDB
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     const { topic, learnerLevel, subject, duration, objectives, title, description } = await request.json()
@@ -134,7 +136,11 @@ IMPORTANT OUTPUT FORMAT:
       } catch (parseError) {
         console.log("Failed to parse curriculum response JSON, using raw response...");
         curriculum = responseText;
-      }
+      } finally {
+    if (client) {
+      await client.close()
+    }
+  }
     }
 
     // Count estimated modules from the generated content

@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { verifyToken } from "@/lib/auth";
 
 // GET /api/assignments - Fetch assignments
 export async function GET(request) {
+  let client = null;
   try {
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     
     const { searchParams } = new URL(request.url)
@@ -93,6 +95,7 @@ export async function GET(request) {
 
 // POST /api/assignments - Create new assignment
 export async function POST(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     if (user.role !== "educator") {
@@ -121,7 +124,8 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Verify the course exists and belongs to the educator

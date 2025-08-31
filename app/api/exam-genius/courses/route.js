@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 
@@ -11,6 +11,7 @@ async function verifyToken(request) {
 }
 
 export async function GET(request) {
+  let client = null;
   try {
     // Get user session
     const user = await verifyToken(request)
@@ -19,7 +20,8 @@ export async function GET(request) {
     }
 
     // Connect to MongoDB
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     const coursesCollection = db.collection("courses")
     const enrollmentsCollection = db.collection("enrollments")
@@ -238,7 +240,11 @@ async function calculateCompetitiveExamStats(coursesCollection, enrollmentsColle
         averageProgress: 0,
         completedCourses: 0,
         activeStudents: 0
-      }
+      } finally {
+    if (client) {
+      await client.close()
+    }
+  }
     }
   }
 }
@@ -271,6 +277,10 @@ async function getExamTypeStats(coursesCollection, userId) {
   } catch (error) {
     console.error("Error getting exam type stats:", error)
     return []
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
 }
 
@@ -302,6 +312,10 @@ async function getSubjectStats(coursesCollection, userId) {
   } catch (error) {
     console.error("Error getting subject stats:", error)
     return []
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
 }
 

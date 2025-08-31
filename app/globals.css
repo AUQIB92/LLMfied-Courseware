@@ -311,16 +311,77 @@
   margin: 0.2em;
 }
 
-/* Math content responsive styles */
+/* Enhanced mobile responsiveness and LaTeX blur fixes */
 @media (max-width: 640px) {
   .katex {
     font-size: 1em;
+    /* Fix blur issues on mobile by forcing hardware acceleration */
+    transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-rendering: optimizeLegibility;
+    backface-visibility: hidden;
+    will-change: transform;
+  }
+
+  .katex-display {
+    margin: 0.75em 0;
+    overflow-x: auto;
+    padding: 0.75rem;
+    /* Prevent horizontal scrolling issues on small screens */
+    max-width: calc(100vw - 2rem);
+    box-sizing: border-box;
+    /* Fix blur on mobile */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  /* Ensure content doesn't overflow on very small screens */
+  .katex-html {
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
+  /* Better touch targets for mobile */
+  .katex-display:hover {
+    transform: none;
+  }
+}
+
+/* Enhanced mobile styles for tablets */
+@media (max-width: 768px) and (min-width: 641px) {
+  .katex {
+    font-size: 1.05em;
+    transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .katex-display {
+    margin: 1em 0;
+    padding: 0.6rem;
+    max-width: calc(100vw - 3rem);
+    transform: translateZ(0);
+  }
+}
+
+/* Fix for very small mobile screens */
+@media (max-width: 320px) {
+  .katex {
+    font-size: 0.9em;
   }
 
   .katex-display {
     margin: 0.5em 0;
-    overflow-x: auto;
     padding: 0.5rem;
+    font-size: 0.85em;
+    max-width: calc(100vw - 1rem);
+  }
+
+  .katex-html {
+    font-size: 0.9em;
   }
 }
 
@@ -328,6 +389,10 @@
 @import url("../styles/resources.css");
 /* Import enhanced landing page styles */
 @import url("../styles/landing.css");
+/* Import comprehensive mobile responsive styles */
+@import url("../styles/mobile-responsive.css");
+/* Import mobile LaTeX blur fixes */
+@import url("../styles/mobile-latex-fixes.css");
 
 @layer base {
   :root {
@@ -1745,24 +1810,158 @@
   margin-bottom: 1rem;
 }
 
-/* Responsive Spacing Adjustments */
+/* Enhanced Mobile Responsiveness - Comprehensive */
 @media (max-width: 768px) {
+  /* Spacing Adjustments */
   .section-padding {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  .section-padding-large {
     padding-top: 4rem;
     padding-bottom: 4rem;
   }
 
-  .section-padding-large {
-    padding-top: 5rem;
-    padding-bottom: 5rem;
-  }
-
   .content-spacing {
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
   }
 
   .header-spacing {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Typography improvements */
+  h1 {
+    font-size: 1.875rem !important; /* 30px */
+    line-height: 2.25rem !important;
+  }
+
+  h2 {
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 2rem !important;
+  }
+
+  h3 {
+    font-size: 1.25rem !important; /* 20px */
+    line-height: 1.75rem !important;
+  }
+
+  /* Card and component responsiveness */
+  .card-gradient,
+  .card-hover {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+
+  /* Button improvements for touch */
+  .btn-gradient,
+  .btn-glow {
+    min-height: 44px; /* Minimum touch target */
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  /* Navigation improvements */
+  .tabs-modern .tabs-trigger {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+  }
+
+  /* Form elements */
+  input, 
+  textarea,
+  select {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Prevent horizontal scroll */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Grid improvements */
+  .grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Feature cards mobile optimization */
+  .feature-card-premium {
+    margin: 1rem 0.5rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .feature-card-premium:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
+
+  /* Resource cards */
+  .resource-card {
+    margin: 0.5rem 0;
+    padding: 1rem;
+  }
+
+  .resource-card:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
+
+  /* Fix overflow issues */
+  .overflow-hidden {
+    overflow-x: hidden;
+  }
+
+  /* Improve touch targets */
+  a, button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Hide desktop-only content */
+  .hidden-mobile {
+    display: none !important;
+  }
+
+  /* Show mobile-only content */
+  .mobile-only {
+    display: block !important;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .section-padding {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .section-padding-large {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  h1 {
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 2rem !important;
+  }
+
+  h2 {
+    font-size: 1.25rem !important; /* 20px */
+    line-height: 1.75rem !important;
+  }
+
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .card-gradient,
+  .card-hover,
+  .feature-card-premium {
+    margin: 0.25rem;
+    padding: 1rem 0.75rem;
   }
 }
 

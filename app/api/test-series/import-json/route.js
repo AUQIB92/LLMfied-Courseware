@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 
 export async function POST(request) {
+  let client = null;
   try {
     const jsonData = await request.json();
-    const client = await clientPromise;
+    const connection = await connectToDatabase()
+    const client = connection.client;
     const db = client.db("llmfied");
 
     // Helper function to normalize question options

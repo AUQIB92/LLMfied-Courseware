@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import jwt from "jsonwebtoken";
 
@@ -11,6 +11,7 @@ async function verifyToken(request) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     const user = await verifyToken(request);
     if (user.role !== 'learner') {
@@ -23,7 +24,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const client = await clientPromise;
+    const connection = await connectToDatabase()
+    const client = connection.client;
     const db = client.db("llmfied");
 
     const quiz = await db.collection("quizzes").findOne({ _id: new ObjectId(quizId) });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { sendOTPEmail } from "@/lib/emailService"
 
 // Helper function to generate 6-digit OTP
@@ -8,6 +8,7 @@ function generateOTP() {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     console.log("=== Starting POST /api/auth/send-otp ===")
     
@@ -23,7 +24,8 @@ export async function POST(request) {
     
     // Check if user already exists
     console.log("Connecting to MongoDB...")
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     
     const existingUser = await db.collection("users").findOne({ email })

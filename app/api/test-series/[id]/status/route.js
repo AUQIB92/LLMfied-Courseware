@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
 export async function PATCH(request, { params }) {
+  let client = null;
   try {
     const { id } = params
     const { status } = await request.json()
@@ -23,7 +24,8 @@ export async function PATCH(request, { params }) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Update test series status

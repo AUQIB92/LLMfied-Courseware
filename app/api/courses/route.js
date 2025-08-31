@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 
@@ -11,6 +11,7 @@ async function verifyToken(request) {
 }
 
 export async function GET(request) {
+  let client = null;
   // Return detailed error information to help debug
   const errorDetails = {
     timestamp: new Date().toISOString(),
@@ -35,7 +36,8 @@ export async function GET(request) {
     }
 
     console.log("Attempting to get MongoDB client...")
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     console.log("MongoDB client obtained successfully")
     
     console.log("Selecting database 'llmfied'...")
@@ -217,6 +219,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     if (user.role !== "educator") {
@@ -225,7 +228,8 @@ export async function POST(request) {
 
     const requestBody = await request.json()
     const { title, description, modules } = requestBody
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")  // Changed from "ai-tutor" to match your .env
 
     // Create the course document preserving all fields from the request

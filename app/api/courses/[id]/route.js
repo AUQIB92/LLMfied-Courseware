@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 import { createCoursePublishedNotification } from "@/lib/notificationService"
@@ -12,9 +12,11 @@ async function verifyToken(request) {
 }
 
 export async function GET(request, { params }) {
+  let client = null;
   try {
     const resolvedParams = await params
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Get course basic info first
@@ -101,8 +103,11 @@ export async function GET(request, { params }) {
           createdAt: course.createdAt,
           enrollmentCount: course.enrollmentCount || 0,
           isEnrolled: false
-        }
-        
+        } finally {
+    if (client) {
+      await client.close()
+    }
+  }
         return NextResponse.json(publicCourse)
       } else {
         // Don't show draft courses to unauthenticated users
@@ -117,6 +122,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  let client = null;
   try {
     const resolvedParams = await params
     const user = await verifyToken(request)
@@ -132,7 +138,8 @@ export async function PUT(request, { params }) {
       hasEducatorId: 'educatorId' in updates
     })
     
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     const course = await db.collection("courses").findOne({
@@ -224,10 +231,12 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  let client = null;
   try {
     const resolvedParams = await params
     const user = await verifyToken(request)
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     const course = await db.collection("courses").findOne({

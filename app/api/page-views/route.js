@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 
 export async function GET(request) {
+  let client = null;
   try {
     console.log("📊 Getting page views statistics...")
     
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     
     // Get total page views
@@ -51,10 +53,12 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     console.log("👁️ Recording page view...")
     
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     
     // Get client IP and user agent for basic tracking

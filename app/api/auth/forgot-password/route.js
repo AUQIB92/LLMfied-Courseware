@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import nodemailer from 'nodemailer'
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 
 // Configure email transporter (you'll need to set these environment variables)
 const transporter = nodemailer.createTransport({
@@ -13,6 +13,7 @@ const transporter = nodemailer.createTransport({
 })
 
 export async function POST(request) {
+  let client = null;
   try {
     const { email } = await request.json()
 
@@ -36,7 +37,8 @@ export async function POST(request) {
     }
 
     // Connect to MongoDB
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check if user exists

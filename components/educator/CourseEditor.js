@@ -250,7 +250,11 @@ export default function CourseEditor({ courseId, onBack, onCourseUpdated }) {
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                <ModuleEditor module={module} onUpdate={(updates) => updateModule(module.id, updates)} />
+                <ModuleEditor 
+                  module={module} 
+                  onUpdate={(updates) => updateModule(module.id, updates)}
+                  onSave={handleSave}
+                />
               </CardContent>
             </Card>
           ))

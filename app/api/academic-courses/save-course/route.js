@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
-import { MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import jwt from "jsonwebtoken";
+import { connectToDatabase } from "@/lib/mongodb";
 
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+// Enhanced database connection with timeout
+async function connectWithTimeout(timeoutMs = 15000) {
+  return Promise.race([
+    connectToDatabase(),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database connection timeout')), timeoutMs)
+    )
+  ]);
+}
 
 async function verifyToken(request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
@@ -13,8 +21,19 @@ async function verifyToken(request) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     console.log("💾 Saving academic course...");
+    console.log("📅 Timestamp:", new Date().toISOString());
+
+    // Check if MongoDB URI is configured
+    if (!process.env.MONGODB_URI) {
+      console.error("❌ MONGODB_URI not configured");
+      return NextResponse.json(
+        { error: "Database configuration error" },
+        { status: 500 }
+      );
+    }
 
     // Verify authentication
     const user = await verifyToken(request);
@@ -25,7 +44,22 @@ export async function POST(request) {
       );
     }
 
-    const body = await request.json();
+    console.log("🔗 Connecting to database with timeout...");
+    const connection = await connectWithTimeout(12000); // 12 second timeout
+    client = connection.client;
+    const db = connection.db;
+    console.log("✅ Database connected successfully");
+
+    const body = await Promise.race([
+      request.json(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request body parsing timeout')), 5000)
+      )
+    ]);
+    
+    console.log("📖 Request body parsed successfully");
+    console.log(`📊 Body size: ${JSON.stringify(body).length} characters`);
+    
     // Handle both direct course data and nested course object
     const requestData = body.course || body;
     
@@ -63,12 +97,12 @@ export async function POST(request) {
     const courseAcademicLevel = academicLevel || "Undergraduate";
 
     console.log(`📚 Saving academic course: ${title} (${courseSubject} - ${courseAcademicLevel})`);
-
-    await client.connect();
-    const db = client.db("llmfied");
-    const coursesCollection = db.collection("courses");
-
+    console.log(`📊 Module count: ${modules?.length || 0}`);
+    
     const isUpdating = !!_id;
+    console.log(`🔄 Operation: ${isUpdating ? 'UPDATE' : 'CREATE'}`);
+
+    const coursesCollection = db.collection("courses");
     let result;
     let courseId;
 
@@ -77,7 +111,12 @@ export async function POST(request) {
       console.log(`📝 Updating existing academic course with ID: ${_id}`);
       
       // First, let's get the existing course data to preserve fields not being updated
-      const existingCourse = await coursesCollection.findOne({ _id: new ObjectId(_id) });
+      const existingCourse = await Promise.race([
+        coursesCollection.findOne({ _id: new ObjectId(_id) }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database findOne timeout')), 8000)
+        )
+      ]);
       
       if (!existingCourse) {
         return NextResponse.json(
@@ -85,6 +124,8 @@ export async function POST(request) {
           { status: 404 }
         );
       }
+      
+      console.log("✅ Existing course found, preparing update...");
 
       const updateData = {
         title: title?.trim() || existingCourse.title,
@@ -192,14 +233,43 @@ export async function POST(request) {
 
   } catch (error) {
     console.error("❌ Save academic course error:", error);
+    
+    // Provide specific error guidance based on error type
+    let errorMessage = "Failed to save academic course";
+    let errorDetails = error.message;
+    
+    if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT') || error.message.includes('ETIMEOUT')) {
+      errorMessage = "Database connection timeout";
+      errorDetails = "The database connection timed out. This could be due to network issues or MongoDB server overload. Please try again.";
+      console.error("💡 Connection timeout detected. Suggestions:");
+      console.error("   1. Check your internet connection");
+      console.error("   2. Verify MongoDB Atlas IP whitelist settings");
+      console.error("   3. Check if MongoDB cluster is experiencing issues");
+    } else if (error.message.includes('authentication failed')) {
+      errorMessage = "Database authentication failed";
+      errorDetails = "Invalid database credentials. Please check your MongoDB connection string.";
+    } else if (error.message.includes('MONGODB_URI is not set')) {
+      errorMessage = "Database not configured";
+      errorDetails = "MongoDB connection string is not configured.";
+    }
+    
     return NextResponse.json(
       { 
-        error: "Failed to save academic course",
-        details: error.message
+        error: errorMessage,
+        details: errorDetails,
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     );
   } finally {
-    await client.close();
+    // Only close client if it was successfully created
+    if (client) {
+      try {
+        await client.close();
+        console.log("🔌 Database connection closed");
+      } catch (closeError) {
+        console.error("⚠️ Error closing database connection:", closeError.message);
+      }
+    }
   }
 } 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,7 +155,7 @@ function ValidatedModuleField({
   );
 }
 
-export default function ModuleEditor({ module, onUpdate }) {
+export default function ModuleEditor({ module, onUpdate, onSave }) {
   const { getAuthHeaders } = useAuth();
   const [showManualResourceForm, setShowManualResourceForm] = useState(false);
   const [newResource, setNewResource] = useState({
@@ -544,7 +544,43 @@ export default function ModuleEditor({ module, onUpdate }) {
           exercises: [],
         };
 
-  const handleAddManualResource = () => {
+  // Auto-save AI resources when they exist but aren't persisted
+  useEffect(() => {
+    const hasAIResources = Object.values(aiResources).some(
+      (categoryResources) => Array.isArray(categoryResources) && categoryResources.length > 0
+    );
+
+    // Check if AI resources exist but might not be properly saved
+    if (hasAIResources && onSave) {
+      console.log("🔍 Checking if AI resources need persistence...");
+      
+      // Always ensure AI resources are saved to module content
+      const resourcesStructure = {
+        ...aiResources,
+        manual: legacyResources,
+      };
+
+      // Update the module with current AI resources structure
+      onUpdate({
+        resources: resourcesStructure,
+      });
+
+      // Auto-save to ensure AI resources are persisted
+      const saveAIResources = async () => {
+        try {
+          await onSave();
+          console.log("✓ Auto-saved AI resources to ensure persistence");
+        } catch (error) {
+          console.error("✗ Failed to auto-save AI resources:", error);
+        }
+      };
+
+      // Use setTimeout to avoid blocking the UI and prevent infinite loops
+      setTimeout(saveAIResources, 500);
+    }
+  }, [JSON.stringify(aiResources), JSON.stringify(legacyResources), onSave, onUpdate]);
+
+  const handleAddManualResource = async () => {
     if (newResource.title) {
       const resourceWithId = {
         ...newResource,
@@ -575,12 +611,24 @@ export default function ModuleEditor({ module, onUpdate }) {
         });
       }
 
+      // Auto-save the course after adding resource
+      if (onSave) {
+        try {
+          await onSave();
+          console.log("✓ Auto-saved course after adding resource:", resourceWithId.title);
+          // Could add toast notification here if toast system is available
+        } catch (error) {
+          console.error("✗ Failed to auto-save after adding resource:", error);
+          // Could add error toast notification here
+        }
+      }
+
       setNewResource({ title: "", url: "", description: "", type: "article" });
       setShowManualResourceForm(false);
     }
   };
 
-  const handleRemoveManualResource = (resourceId) => {
+  const handleRemoveManualResource = async (resourceId) => {
     const updatedLegacyResources = legacyResources.filter(
       (r) => r.id !== resourceId
     );
@@ -608,6 +656,16 @@ export default function ModuleEditor({ module, onUpdate }) {
       onUpdate({
         resources: updatedLegacyResources,
       });
+    }
+
+    // Auto-save the course after removing resource
+    if (onSave) {
+      try {
+        await onSave();
+        console.log("✓ Auto-saved course after removing resource:", resourceId);
+      } catch (error) {
+        console.error("✗ Failed to auto-save after removing resource:", error);
+      }
     }
   };
 

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { verifyToken } from "@/lib/auth";
 
 // GET /api/academic-enrollment - Get academic enrollments
 export async function GET(request) {
+  let client = null;
   try {
     // Verify authentication
     const user = await verifyToken(request)
@@ -14,7 +15,8 @@ export async function GET(request) {
       }, { status: 401 })
     }
     
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     
     const { searchParams } = new URL(request.url)
@@ -98,6 +100,7 @@ export async function GET(request) {
 
 // POST /api/academic-enrollment - Enroll in academic course
 export async function POST(request) {
+  let client = null;
   try {
     console.log("🎓 Academic enrollment request received");
     
@@ -120,7 +123,8 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     console.log("🔍 Looking for course with ID:", courseId);
@@ -211,6 +215,7 @@ export async function POST(request) {
 
 // DELETE /api/academic-enrollment - Unenroll from academic course
 export async function DELETE(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     if (user.role !== "learner") {
@@ -226,7 +231,8 @@ export async function DELETE(request) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check if enrollment exists

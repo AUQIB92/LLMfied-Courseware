@@ -1,0 +1,329 @@
+/* Mobile LaTeX Blur Fixes - Comprehensive Anti-Aliasing and Rendering Optimization */
+
+/* Base KaTeX mobile optimizations */
+.katex {
+  /* Force hardware acceleration to prevent blur */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  
+  /* Enhanced font smoothing */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: always;
+  text-rendering: optimizeLegibility;
+  font-rendering: optimizeLegibility;
+  
+  /* Force layout to prevent subpixel rendering issues */
+  position: relative;
+  will-change: auto;
+  
+  /* Improve crisp text rendering on high DPI displays */
+  font-variant-numeric: lining-nums;
+  font-kerning: normal;
+  font-feature-settings: "kern" 1;
+}
+
+/* Display math specific fixes */
+.katex-display {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-rendering: optimizeLegibility;
+  
+  /* Prevent layout shifts that cause blur */
+  contain: layout style;
+  
+  /* Optimize for mobile viewport */
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 768px) {
+  .katex {
+    /* Force integer pixel positioning on mobile */
+    transform: translateZ(0) translateX(0.5px) translateY(0.5px);
+    -webkit-transform: translateZ(0) translateX(0.5px) translateY(0.5px);
+    
+    /* Enhanced mobile font smoothing */
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    
+    /* Force font weight consistency */
+    font-weight: 400;
+    font-synthesis: none;
+    
+    /* Prevent iOS zoom blur */
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+  
+  .katex-display {
+    /* Mobile display math optimizations */
+    transform: translateZ(0) translateX(0.5px) translateY(0.5px);
+    -webkit-transform: translateZ(0) translateX(0.5px) translateY(0.5px);
+    
+    /* Prevent horizontal scroll blur */
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    
+    /* Snap to pixel grid */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    
+    /* Force consistent line height */
+    line-height: 1.5;
+  }
+  
+  /* Fix for specific KaTeX elements that commonly blur */
+  .katex .mord,
+  .katex .mrel,
+  .katex .mbin,
+  .katex .mop,
+  .katex .mopen,
+  .katex .mclose,
+  .katex .minner {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Fraction line fixes */
+  .katex .frac-line {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    /* Force sharp lines */
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+  
+  /* Square root and radical fixes */
+  .katex .sqrt > .sqrt-line {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    image-rendering: crisp-edges;
+  }
+  
+  /* Matrix and array alignment fixes */
+  .katex .arraycolsep {
+    transform: translateZ(0);
+  }
+  
+  /* Subscript and superscript fixes */
+  .katex .msupsub {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* High DPI mobile displays */
+@media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 2) {
+  .katex {
+    /* Enhanced sharpness on Retina displays */
+    -webkit-font-smoothing: subpixel-antialiased;
+    font-smooth: auto;
+    
+    /* Slightly adjust positioning for sharpness */
+    transform: translateZ(0) translate3d(0.25px, 0.25px, 0);
+    -webkit-transform: translateZ(0) translate3d(0.25px, 0.25px, 0);
+  }
+  
+  .katex-display {
+    -webkit-font-smoothing: subpixel-antialiased;
+    transform: translateZ(0) translate3d(0.25px, 0.25px, 0);
+    -webkit-transform: translateZ(0) translate3d(0.25px, 0.25px, 0);
+  }
+}
+
+/* Extra high DPI displays (3x) */
+@media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 3) {
+  .katex {
+    /* Fine-tune for very high DPI */
+    transform: translateZ(0) translate3d(0.33px, 0.33px, 0);
+    -webkit-transform: translateZ(0) translate3d(0.33px, 0.33px, 0);
+  }
+  
+  .katex-display {
+    transform: translateZ(0) translate3d(0.33px, 0.33px, 0);
+    -webkit-transform: translateZ(0) translate3d(0.33px, 0.33px, 0);
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 768px) {
+    .katex {
+      /* iOS Safari blur prevention */
+      -webkit-transform: translateZ(0) translate3d(0, 0, 0);
+      -webkit-font-smoothing: antialiased;
+      -webkit-backface-visibility: hidden;
+      -webkit-perspective: 1000;
+    }
+    
+    .katex-display {
+      -webkit-transform: translateZ(0) translate3d(0, 0, 0);
+      -webkit-font-smoothing: antialiased;
+      -webkit-backface-visibility: hidden;
+    }
+    
+    /* Fix iOS zoom blur */
+    .katex,
+    .katex-display {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+  }
+}
+
+/* Android Chrome specific fixes */
+@media (max-width: 768px) {
+  .katex {
+    /* Android Chrome optimizations */
+    font-display: swap;
+    will-change: transform;
+  }
+  
+  .katex-display {
+    will-change: transform;
+  }
+}
+
+/* Samsung Internet specific fixes */
+@supports (-webkit-appearance: none) and (background: -webkit-named-image(i)) {
+  @media (max-width: 768px) {
+    .katex {
+      /* Samsung Internet blur prevention */
+      transform: translateZ(0) translateX(0.1px);
+    }
+    
+    .katex-display {
+      transform: translateZ(0) translateX(0.1px);
+    }
+  }
+}
+
+/* Landscape orientation fixes */
+@media (max-width: 768px) and (orientation: landscape) {
+  .katex {
+    /* Landscape specific adjustments */
+    transform: translateZ(0) scale(1.001);
+    -webkit-transform: translateZ(0) scale(1.001);
+  }
+  
+  .katex-display {
+    transform: translateZ(0) scale(1.001);
+    -webkit-transform: translateZ(0) scale(1.001);
+  }
+}
+
+/* Touch device specific optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .katex {
+    /* Touch device optimizations */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    
+    /* Prevent touch highlight blur */
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+  }
+  
+  .katex-display {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Dark mode mobile fixes */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  .katex {
+    /* Dark mode specific anti-aliasing */
+    -webkit-font-smoothing: antialiased;
+    color: #f8fafc;
+    text-shadow: none;
+  }
+  
+  .katex-display {
+    -webkit-font-smoothing: antialiased;
+    background: rgba(15, 23, 42, 0.5);
+    border-color: rgba(71, 85, 105, 0.3);
+  }
+}
+
+/* Animation and transition fixes */
+.katex,
+.katex-display {
+  /* Prevent blur during animations */
+  animation-fill-mode: both;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Container optimizations */
+.katex-renderer {
+  /* Optimize container for mobile */
+  transform: translateZ(0);
+  contain: layout style;
+  will-change: auto;
+}
+
+/* Performance optimizations for mobile */
+@media (max-width: 768px) {
+  .katex-renderer {
+    /* Mobile performance optimizations */
+    contain: strict;
+    content-visibility: auto;
+  }
+  
+  .katex-display {
+    /* Optimize for mobile scrolling */
+    contain: layout style paint;
+    content-visibility: auto;
+  }
+}
+
+/* Prevent flash of unstyled content */
+.katex {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.1s ease-in-out;
+}
+
+.katex[data-loading="true"] {
+  opacity: 0;
+}
+
+/* Error state mobile fixes */
+.katex-error {
+  /* Error display optimizations */
+  transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
+  font-weight: 500;
+}
+
+/* Mobile keyboard and input fixes */
+@media (max-width: 768px) {
+  .katex:focus,
+  .katex-display:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    border-radius: 4px;
+  }
+}

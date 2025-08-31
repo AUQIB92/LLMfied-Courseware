@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
 export async function GET(request, { params }) {
+  let client = null;
   try {
     const { id } = params
 
@@ -13,7 +14,8 @@ export async function GET(request, { params }) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     const testSeries = await db.collection("testSeries").findOne({
@@ -42,6 +44,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  let client = null;
   try {
     const { id } = params
     const body = await request.json()
@@ -53,7 +56,8 @@ export async function PUT(request, { params }) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Remove _id from update data if present
@@ -92,6 +96,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  let client = null;
   try {
     const { id } = params
 
@@ -102,7 +107,8 @@ export async function DELETE(request, { params }) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Delete test series

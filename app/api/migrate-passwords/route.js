@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
 
 // Helper function to check if a password is already hashed
@@ -13,6 +13,7 @@ function isPasswordHashed(password) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     console.log("=== Starting Password Migration ===")
     
@@ -26,7 +27,8 @@ export async function POST(request) {
     }
     
     console.log("Connecting to MongoDB...")
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     
     // Find all users with potentially plain text passwords
@@ -128,6 +130,7 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
+  let client = null;
   try {
     console.log("=== Password Migration Status Check ===")
     
@@ -141,7 +144,8 @@ export async function GET(request) {
     }
     
     console.log("Connecting to MongoDB...")
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     
     // Count users by password status

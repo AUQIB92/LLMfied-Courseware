@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 
@@ -11,6 +11,7 @@ async function verifyToken(request) {
 }
 
 export async function GET(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     const { searchParams } = new URL(request.url)
@@ -20,7 +21,8 @@ export async function GET(request) {
       return NextResponse.json({ error: "Course ID is required" }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check enrollment status for learners
@@ -62,6 +64,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     const { courseId, moduleId, completed, timeSpent, quizScore } = await request.json()
@@ -70,7 +73,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Course ID and Module ID are required" }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check enrollment status for learners

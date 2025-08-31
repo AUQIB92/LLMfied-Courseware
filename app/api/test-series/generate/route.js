@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { jsonrepair } from "jsonrepair";
 import JSON5 from "json5";
@@ -55,7 +55,11 @@ function parseAIResponse(content) {
       return JSON.parse(jsonString);
     } catch (codeBlockError) {
       console.warn("Code block JSON parse failed:", codeBlockError.message);
+    } finally {
+    if (client) {
+      await client.close()
     }
+  }
   }
 
   // Strategy 2: Direct JSON parsing
@@ -63,8 +67,11 @@ function parseAIResponse(content) {
     return JSON.parse(content);
   } catch (directError) {
     console.warn("Direct JSON parse failed:", directError.message);
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
-
   // Strategy 3: Extract JSON from array pattern
   try {
     const arrayMatch = content.match(/\[[\s\S]*\]/);
@@ -82,8 +89,11 @@ function parseAIResponse(content) {
     }
   } catch (arrayError) {
     console.warn("Array extraction failed:", arrayError.message);
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
-
   // Strategy 4: Use jsonrepair
   try {
     console.log("Attempting jsonrepair...");
@@ -91,16 +101,22 @@ function parseAIResponse(content) {
     return JSON.parse(repairedJson);
   } catch (repairError) {
     console.warn("JSON repair failed:", repairError.message);
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
-
   // Strategy 5: JSON5 fallback
   try {
     console.log("Attempting JSON5 fallback...");
     return JSON5.parse(content);
   } catch (json5Error) {
     console.warn("JSON5 fallback failed:", json5Error.message);
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
-
   // Strategy 6: Try to extract JSON from code block and repair it
   if (codeBlockMatch) {
     try {
@@ -110,7 +126,11 @@ function parseAIResponse(content) {
       return JSON.parse(repairedJson);
     } catch (repairCodeBlockError) {
       console.warn("Code block repair failed:", repairCodeBlockError.message);
+    } finally {
+    if (client) {
+      await client.close()
     }
+  }
   }
 
   console.error("All JSON parsing strategies failed");
@@ -121,6 +141,7 @@ function parseAIResponse(content) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     // Diagnostic checks
     if (!PERPLEXITY_API_KEY) {
@@ -250,7 +271,8 @@ export async function POST(request) {
       );
     }
 
-    const client = await clientPromise;
+    const connection = await connectToDatabase()
+    const client = connection.client;
     const db = client.db("llmfied");
 
     // Process topics and create generation tasks

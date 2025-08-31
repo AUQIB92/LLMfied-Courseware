@@ -20,7 +20,7 @@ const KatexRenderer = ({
   onError = null,
   accessibilityLabel = "",
 }) => {
-  // Enhanced KaTeX options for better rendering
+  // Enhanced KaTeX options with mobile blur fixes
   const katexOptions = useMemo(
     () => ({
       strict: false,
@@ -32,9 +32,9 @@ const KatexRenderer = ({
       maxExpand: 1000,
       trust: false,
       displayMode: false, // Will be handled by markdown parsing
-
+      
       // Enhanced spacing and display
-      fleqn: false, // Center equations
+      fleqn: false, // Center equations for better mobile display
       leqno: false, // Number on right
 
       // Useful macros for common patterns
@@ -123,6 +123,15 @@ const KatexRenderer = ({
     <WrapperComponent
       className={`katex-renderer ${inline ? "inline" : ""} ${className}`}
       {...accessibilityProps}
+      style={{
+        // Mobile blur fixes
+        transform: 'translateZ(0)',
+        WebkitFontSmoothing: 'antialiased',
+        MozOsxFontSmoothing: 'grayscale',
+        fontRendering: 'optimizeLegibility',
+        backfaceVisibility: 'hidden',
+        willChange: 'auto'
+      }}
     >
       <ReactMarkdown
         remarkPlugins={[remarkMath]}

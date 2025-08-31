@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 
@@ -10,18 +10,9 @@ async function verifyToken(request) {
   return jwt.verify(token, process.env.JWT_SECRET)
 }
 
-// Enhanced database connection with timeout
-async function getDBWithTimeout(timeoutMs = 10000) {
-  return Promise.race([
-    clientPromise.then(client => client.db("llmfied")),
-    new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Database connection timeout')), timeoutMs)
-    )
-  ])
-}
-
 // GET - Check enrollment status or get enrolled courses/test series
 export async function GET(request) {
+  let client = null;
   try {
     console.log("📋 Enrollment GET request received")
     console.log("📅 Timestamp:", new Date().toISOString())
@@ -31,9 +22,11 @@ export async function GET(request) {
     const user = await verifyToken(request)
     console.log("✅ User verified:", { userId: user.userId, role: user.role })
     
-    // Connect to database with timeout
+    // Connect to database
     console.log("🔗 Connecting to database...")
-    const db = await getDBWithTimeout(10000) // 10 second timeout
+    const connection = await connectToDatabase()
+    client = connection.client
+    const db = connection.db
     console.log("✅ Database connected")
     
     const { searchParams } = new URL(request.url)
@@ -175,11 +168,16 @@ export async function GET(request) {
       },
       { status: statusCode }
     )
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
 }
 
 // POST - Enroll in a course or test series
 export async function POST(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     
@@ -199,7 +197,9 @@ export async function POST(request) {
       )
     }
 
-    const db = await getDBWithTimeout(10000)
+    const connection = await connectToDatabase()
+    client = connection.client
+    const db = connection.db
     
     let item, itemType, itemId, collectionName, updateCollection
     
@@ -348,11 +348,16 @@ export async function POST(request) {
       },
       { status: statusCode }
     )
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
 }
 
 // DELETE - Unenroll from a course or test series
 export async function DELETE(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     
@@ -374,7 +379,9 @@ export async function DELETE(request) {
       )
     }
 
-    const db = await getDBWithTimeout(10000)
+    const connection = await connectToDatabase()
+    client = connection.client
+    const db = connection.db
     
     let filter, updateFilter, itemType
     
@@ -455,5 +462,9 @@ export async function DELETE(request) {
       },
       { status: statusCode }
     )
+  } finally {
+    if (client) {
+      await client.close()
+    }
   }
 }

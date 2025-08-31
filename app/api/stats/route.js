@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import jwt from "jsonwebtoken";
 
@@ -24,6 +24,7 @@ async function getDBWithTimeout(timeoutMs = 10000) {
 }
 
 export async function GET(request) {
+  let client = null;
   try {
     console.log("📊 Stats API called");
 

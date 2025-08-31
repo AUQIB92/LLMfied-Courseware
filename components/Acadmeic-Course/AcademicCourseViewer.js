@@ -1618,14 +1618,26 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                           </div>
                                         )}
                                         
-                                        {module.resources && module.resources.length > 0 && (
-                                          <div className={`flex items-center gap-1 ${
-                                            currentModule === index ? "text-white/80" : "text-slate-500"
-                                          }`}>
-                                            <Lightbulb className="h-3 w-3" />
-                                            <span>{module.resources.length} resources</span>
-                                          </div>
-                                        )}
+                                        {(() => {
+                                          // Calculate total resources from all categories
+                                          const resourceCategories = module.resources || {};
+                                          const totalResources = Object.values(resourceCategories).reduce((total, category) => {
+                                            return total + (Array.isArray(category) ? category.length : 0);
+                                          }, 0);
+                                          
+                                          // Check if there are any legacy flat resources
+                                          const legacyResources = Array.isArray(module.resources) ? module.resources.length : 0;
+                                          const finalTotal = totalResources + legacyResources;
+                                          
+                                          return finalTotal > 0 ? (
+                                            <div className={`flex items-center gap-1 ${
+                                              currentModule === index ? "text-white/80" : "text-slate-500"
+                                            }`}>
+                                              <Lightbulb className="h-3 w-3" />
+                                              <span>{finalTotal} resources</span>
+                                            </div>
+                                          ) : null;
+                                        })()}
                                       </div>
 
                                       {/* Progress Bar */}
@@ -1734,11 +1746,23 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                 <TabsTrigger value="resources" className="flex items-center gap-2">
                                   <Lightbulb className="h-4 w-4" />
                                   Resources
-                                  {currentModuleData?.resources?.length > 0 && (
-                                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                                      {currentModuleData.resources.length}
-                                    </Badge>
-                                  )}
+                                  {(() => {
+                                    // Calculate total resources from all categories
+                                    const resourceCategories = currentModuleData?.resources || {};
+                                    const totalResources = Object.values(resourceCategories).reduce((total, category) => {
+                                      return total + (Array.isArray(category) ? category.length : 0);
+                                    }, 0);
+                                    
+                                    // Check if there are any legacy flat resources
+                                    const legacyResources = Array.isArray(currentModuleData?.resources) ? currentModuleData.resources.length : 0;
+                                    const finalTotal = totalResources + legacyResources;
+                                    
+                                    return finalTotal > 0 ? (
+                                      <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                                        {finalTotal}
+                                      </Badge>
+                                    ) : null;
+                                  })()}
                                 </TabsTrigger>
                                 <TabsTrigger value="progress" className="flex items-center gap-2">
                                   <Trophy className="h-4 w-4" />
@@ -2372,80 +2396,202 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                               {/* Resources Tab */}
                               <TabsContent value="resources" className="space-y-6 mt-6">
                                 <div className="space-y-4">
-                                  <h4 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                                    <Lightbulb className="h-5 w-5 text-amber-600" />
-                                    Module Resources
-                                    {currentModuleData?.resources?.length > 0 && (
-                                      <Badge variant="secondary" className="ml-2">
-                                        {currentModuleData.resources.length} resource{currentModuleData.resources.length > 1 ? 's' : ''}
-                                      </Badge>
-                                    )}
-                                  </h4>
+                                  {(() => {
+                                    // Calculate total resources from all categories
+                                    const resourceCategories = currentModuleData?.resources || {};
+                                    const totalResources = Object.values(resourceCategories).reduce((total, category) => {
+                                      return total + (Array.isArray(category) ? category.length : 0);
+                                    }, 0);
+                                    
+                                    // Check if there are any legacy flat resources
+                                    const legacyResources = Array.isArray(currentModuleData?.resources) ? currentModuleData.resources : [];
+                                    const finalTotal = totalResources + legacyResources.length;
 
-                                  {currentModuleData?.resources && currentModuleData.resources.length > 0 ? (
-                                    <div className="grid gap-4">
-                                      {currentModuleData.resources.map((resource, index) => (
-                                        <div
-                                          key={index}
-                                          className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 p-6 hover:shadow-lg transition-shadow"
-                                        >
-                                          <div className="flex items-start gap-4">
-                                            <div className="flex-shrink-0">
-                                              <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center">
-                                                <Lightbulb className="h-6 w-6 text-amber-600" />
+                                    return (
+                                      <>
+                                        <h4 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                          <Lightbulb className="h-5 w-5 text-amber-600" />
+                                          Module Resources
+                                          {finalTotal > 0 && (
+                                            <Badge variant="secondary" className="ml-2">
+                                              {finalTotal} resource{finalTotal > 1 ? 's' : ''}
+                                            </Badge>
+                                          )}
+                                        </h4>
+
+                                        {finalTotal > 0 ? (
+                                          <div className="space-y-6">
+                                            {/* Categorized Resources */}
+                                            {Object.entries(resourceCategories).map(([category, resources]) => {
+                                              if (!Array.isArray(resources) || resources.length === 0) return null;
+                                              
+                                              const getCategoryIcon = () => {
+                                                switch (category) {
+                                                  case 'videos': return { icon: Play, color: 'text-red-600', bg: 'from-red-50 to-pink-50', border: 'border-red-200' };
+                                                  case 'articles': return { icon: FileText, color: 'text-green-600', bg: 'from-green-50 to-emerald-50', border: 'border-green-200' };
+                                                  case 'books': return { icon: BookOpen, color: 'text-blue-600', bg: 'from-blue-50 to-indigo-50', border: 'border-blue-200' };
+                                                  case 'courses': return { icon: GraduationCap, color: 'text-purple-600', bg: 'from-purple-50 to-violet-50', border: 'border-purple-200' };
+                                                  case 'tools': return { icon: Trophy, color: 'text-orange-600', bg: 'from-orange-50 to-amber-50', border: 'border-orange-200' };
+                                                  case 'websites': return { icon: ExternalLink, color: 'text-cyan-600', bg: 'from-cyan-50 to-blue-50', border: 'border-cyan-200' };
+                                                  case 'exercises': return { icon: Target, color: 'text-pink-600', bg: 'from-pink-50 to-rose-50', border: 'border-pink-200' };
+                                                  default: return { icon: Lightbulb, color: 'text-slate-600', bg: 'from-slate-50 to-gray-50', border: 'border-slate-200' };
+                                                }
+                                              };
+                                              
+                                              const categoryStyle = getCategoryIcon();
+                                              const IconComponent = categoryStyle.icon;
+                                              
+                                              return (
+                                                <div key={category} className="space-y-3">
+                                                  <h5 className="text-md font-semibold text-slate-700 flex items-center gap-2 capitalize">
+                                                    <IconComponent className={`h-4 w-4 ${categoryStyle.color}`} />
+                                                    {category} ({resources.length})
+                                                  </h5>
+                                                  <div className="grid gap-3">
+                                                    {resources.map((resource, index) => (
+                                                      <div
+                                                        key={index}
+                                                        className={`bg-gradient-to-r ${categoryStyle.bg} rounded-lg border ${categoryStyle.border} p-4 hover:shadow-lg transition-shadow`}
+                                                      >
+                                                        <div className="flex items-start gap-3">
+                                                          <div className="flex-shrink-0">
+                                                            <div className={`w-10 h-10 rounded-lg bg-white/70 flex items-center justify-center`}>
+                                                              <IconComponent className={`h-5 w-5 ${categoryStyle.color}`} />
+                                                            </div>
+                                                          </div>
+                                                          <div className="flex-1">
+                                                            <h6 className="text-md font-semibold text-slate-800 mb-1">
+                                                              {resource.title || resource.name || `${category.slice(0, -1)} ${index + 1}`}
+                                                            </h6>
+                                                            {resource.description && (
+                                                              <p className="text-slate-600 text-sm mb-2 line-clamp-2">
+                                                                {resource.description}
+                                                              </p>
+                                                            )}
+                                                            {resource.author && (
+                                                              <p className="text-slate-500 text-xs mb-2">
+                                                                by {resource.author}
+                                                              </p>
+                                                            )}
+                                                            {resource.duration && (
+                                                              <p className="text-slate-500 text-xs mb-2 flex items-center gap-1">
+                                                                <Clock className="h-3 w-3" />
+                                                                {resource.duration}
+                                                              </p>
+                                                            )}
+                                                            {resource.platform && (
+                                                              <Badge variant="outline" className="text-xs mb-2">
+                                                                {resource.platform}
+                                                              </Badge>
+                                                            )}
+                                                            <div className="flex gap-2 mt-2">
+                                                              {resource.url && (
+                                                                <Button
+                                                                  onClick={() => window.open(resource.url, '_blank')}
+                                                                  className={`${categoryStyle.color.replace('text-', 'bg-')} hover:opacity-90 text-white`}
+                                                                  size="sm"
+                                                                >
+                                                                  <ExternalLink className="h-3 w-3 mr-1" />
+                                                                  Open
+                                                                </Button>
+                                                              )}
+                                                              {resource.downloadUrl && (
+                                                                <Button
+                                                                  onClick={() => window.open(resource.downloadUrl, '_blank')}
+                                                                  variant="outline"
+                                                                  className="text-slate-600 hover:bg-slate-50"
+                                                                  size="sm"
+                                                                >
+                                                                  <Download className="h-3 w-3 mr-1" />
+                                                                  Download
+                                                                </Button>
+                                                              )}
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                            
+                                            {/* Legacy flat resources (for backward compatibility) */}
+                                            {legacyResources.length > 0 && (
+                                              <div className="space-y-3">
+                                                <h5 className="text-md font-semibold text-slate-700 flex items-center gap-2">
+                                                  <Lightbulb className="h-4 w-4 text-amber-600" />
+                                                  Additional Resources ({legacyResources.length})
+                                                </h5>
+                                                <div className="grid gap-3">
+                                                  {legacyResources.map((resource, index) => (
+                                                    <div
+                                                      key={index}
+                                                      className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 p-4 hover:shadow-lg transition-shadow"
+                                                    >
+                                                      <div className="flex items-start gap-3">
+                                                        <div className="flex-shrink-0">
+                                                          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                                                            <Lightbulb className="h-5 w-5 text-amber-600" />
+                                                          </div>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                          <h6 className="text-md font-semibold text-amber-900 mb-1">
+                                                            {resource.title || `Resource ${index + 1}`}
+                                                          </h6>
+                                                          {resource.description && (
+                                                            <p className="text-amber-700 text-sm mb-2">
+                                                              {resource.description}
+                                                            </p>
+                                                          )}
+                                                          {resource.type && (
+                                                            <Badge variant="outline" className="border-amber-300 text-amber-700 mb-2 text-xs">
+                                                              {resource.type}
+                                                            </Badge>
+                                                          )}
+                                                          <div className="flex gap-2">
+                                                            {resource.url && (
+                                                              <Button
+                                                                onClick={() => window.open(resource.url, '_blank')}
+                                                                className="bg-amber-600 hover:bg-amber-700 text-white"
+                                                                size="sm"
+                                                              >
+                                                                <ExternalLink className="h-3 w-3 mr-1" />
+                                                                Open
+                                                              </Button>
+                                                            )}
+                                                            {resource.downloadUrl && (
+                                                              <Button
+                                                                onClick={() => window.open(resource.downloadUrl, '_blank')}
+                                                                variant="outline"
+                                                                className="border-amber-200 text-amber-600 hover:bg-amber-50"
+                                                                size="sm"
+                                                              >
+                                                                <Download className="h-3 w-3 mr-1" />
+                                                                Download
+                                                              </Button>
+                                                            )}
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  ))}
+                                                </div>
                                               </div>
-                                            </div>
-                                            <div className="flex-1">
-                                              <h5 className="text-lg font-bold text-amber-900 mb-2">
-                                                {resource.title || `Resource ${index + 1}`}
-                                              </h5>
-                                              {resource.description && (
-                                                <p className="text-amber-700 mb-4">
-                                                  {resource.description}
-                                                </p>
-                                              )}
-                                              {resource.type && (
-                                                <Badge variant="outline" className="border-amber-300 text-amber-700 mb-3">
-                                                  {resource.type}
-                                                </Badge>
-                                              )}
-                                              <div className="flex gap-2">
-                                                {resource.url && (
-                                                  <Button
-                                                    onClick={() => window.open(resource.url, '_blank')}
-                                                    className="bg-amber-600 hover:bg-amber-700 text-white"
-                                                    size="sm"
-                                                  >
-                                                    <ExternalLink className="h-4 w-4 mr-2" />
-                                                    Open Resource
-                                                  </Button>
-                                                )}
-                                                {resource.downloadUrl && (
-                                                  <Button
-                                                    onClick={() => window.open(resource.downloadUrl, '_blank')}
-                                                    variant="outline"
-                                                    className="border-amber-200 text-amber-600 hover:bg-amber-50"
-                                                    size="sm"
-                                                  >
-                                                    <Download className="h-4 w-4 mr-2" />
-                                                    Download
-                                                  </Button>
-                                                )}
-                                              </div>
-                                            </div>
+                                            )}
                                           </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                                      <Lightbulb className="h-16 w-16 text-slate-300 mb-4" />
-                                      <h5 className="text-lg font-medium text-slate-600 mb-2">No Resources Yet</h5>
-                                      <p className="text-slate-500 max-w-md">
-                                        Additional learning resources for this module will appear here when available.
-                                      </p>
-                                    </div>
-                                  )}
+                                        ) : (
+                                          <div className="flex flex-col items-center justify-center py-12 text-center">
+                                            <Lightbulb className="h-16 w-16 text-slate-300 mb-4" />
+                                            <h5 className="text-lg font-medium text-slate-600 mb-2">No Resources Yet</h5>
+                                            <p className="text-slate-500 max-w-md">
+                                              Additional learning resources for this module will appear here when your educator adds or generates them.
+                                            </p>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               </TabsContent>
 
@@ -2522,7 +2668,21 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                             <Lightbulb className="h-4 w-4" />
                                             Resources
                                           </span>
-                                          <span className="font-semibold text-blue-900">{currentModuleData?.resources?.length || 0}</span>
+                                          <span className="font-semibold text-blue-900">
+                                            {(() => {
+                                              // Calculate total resources from all categories
+                                              const resourceCategories = currentModuleData?.resources || {};
+                                              const totalResources = Object.values(resourceCategories).reduce((total, category) => {
+                                                return total + (Array.isArray(category) ? category.length : 0);
+                                              }, 0);
+                                              
+                                              // Check if there are any legacy flat resources
+                                              const legacyResources = Array.isArray(currentModuleData?.resources) ? currentModuleData.resources.length : 0;
+                                              const finalTotal = totalResources + legacyResources;
+                                              
+                                              return finalTotal;
+                                            })()}
+                                          </span>
                                         </div>
                                         <div className="flex items-center justify-between">
                                           <span className="text-sm text-blue-700 flex items-center gap-2">

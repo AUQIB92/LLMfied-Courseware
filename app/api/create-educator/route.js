@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
 
 // This endpoint is for testing purposes - to create a test educator account
 export async function POST(request) {
+  let client = null;
   try {
     console.log("=== Creating Test Educator Account ===")
     
@@ -17,7 +18,8 @@ export async function POST(request) {
     }
     
     console.log("Connecting to MongoDB...")
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check if user already exists

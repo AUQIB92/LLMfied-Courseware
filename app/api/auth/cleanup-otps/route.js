@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 
 export async function POST(request) {
+  let client = null;
   try {
     console.log("=== Starting OTP Cleanup ===")
     
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
     
     // Delete expired OTPs

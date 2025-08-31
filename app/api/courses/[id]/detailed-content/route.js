@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { generateCompetitiveExamModuleSummary } from "@/lib/gemini";
 
 // Function to parse Markdown content and convert to expected structure
@@ -202,6 +202,7 @@ function createFallbackDetailedSubsections(module) {
 }
 
 export async function GET(request, { params }) {
+  let client = null;
   console.log("🚀 Starting detailed content fetch for course:", params.id);
 
   const authHeader = request.headers.get("Authorization");
@@ -364,7 +365,11 @@ export async function GET(request, { params }) {
                 updateError
               );
               // Continue with the content even if database update fails
-            }
+            } finally {
+    if (client) {
+      await client.close()
+    }
+  }
           } else {
             console.warn(
               `⚠️ No subsections parsed from markdown, using fallback`
@@ -374,7 +379,11 @@ export async function GET(request, { params }) {
         } catch (parseError) {
           console.error(`❌ Failed to parse markdown content:`, parseError);
           detailedSubsections = createFallbackDetailedSubsections(module);
-        }
+        } finally {
+    if (client) {
+      await client.close()
+    }
+  }
       } else if (!detailedSubsections || detailedSubsections.length === 0) {
         console.log(
           `⚠️ No valid markdown content and no existing subsections, using fallback`

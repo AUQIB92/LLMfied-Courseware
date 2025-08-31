@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import { generateTutorResponse } from "@/lib/gemini"
 import jwt from "jsonwebtoken"
@@ -12,11 +12,13 @@ async function verifyToken(request) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     const user = await verifyToken(request)
     const { courseId, moduleId, message, action } = await request.json()
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Get course and module content

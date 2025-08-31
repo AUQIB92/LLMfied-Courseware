@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { sendOTPEmail } from "@/lib/emailService"
 
 export async function POST(request) {
+  let client = null;
   try {
     console.log("=== Starting POST /api/send-otp ===")
     
@@ -24,7 +25,8 @@ export async function POST(request) {
     }
     
     console.log("Connecting to MongoDB...")
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Check if user already exists

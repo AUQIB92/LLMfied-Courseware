@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
 export async function GET(request) {
+  let client = null;
   try {
     const { searchParams } = new URL(request.url)
     const educatorId = searchParams.get("educatorId")
     const testSeriesId = searchParams.get("id")
     
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     if (testSeriesId) {
@@ -60,6 +62,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     const body = await request.json()
     const {
@@ -90,7 +93,8 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Create test series document (draft mode)
@@ -150,6 +154,7 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
+  let client = null;
   try {
     const body = await request.json()
     const { _id, ...updateData } = body
@@ -161,7 +166,8 @@ export async function PUT(request) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Update test series
@@ -197,6 +203,7 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
+  let client = null;
   try {
     const { searchParams } = new URL(request.url)
     const testSeriesId = searchParams.get("id")
@@ -208,7 +215,8 @@ export async function DELETE(request) {
       }, { status: 400 })
     }
 
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Delete test series

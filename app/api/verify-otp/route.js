@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { sendLearnerRegistrationNotification } from "@/lib/emailService"
 
 export async function POST(request) {
+  let client = null;
   try {
     console.log("=== Starting POST /api/verify-otp ===")
     
@@ -19,7 +20,8 @@ export async function POST(request) {
     }
     
     console.log("Connecting to MongoDB...")
-    const client = await clientPromise
+    const connection = await connectToDatabase()
+    const client = connection.client
     const db = client.db("llmfied")
 
     // Find and verify OTP

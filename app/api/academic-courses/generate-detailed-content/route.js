@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { generateAcademicSubsectionSummary } from "@/lib/gemini";
 
 
@@ -382,6 +382,7 @@ function parseMarkdownToSubsections(markdownContent) {
 }
 
 export async function POST(request) {
+  let client = null;
   try {
     console.log(
       "🎓 Academic Courses: Generating detailed multipage content..."
@@ -426,8 +427,11 @@ export async function POST(request) {
         }
       } catch (e) {
         console.warn('[HTML TEST][API] Failed to log single subsection HTML:', e);
-      }
-
+      } finally {
+    if (client) {
+      await client.close()
+    }
+  }
       // Return minimal payload: title + pages (HTML ensured)
       const pagesNorm = Array.isArray(enhancedContent?.pages?.pages)
         ? enhancedContent.pages.pages
@@ -459,7 +463,8 @@ export async function POST(request) {
       );
     }
 
-    const client = await clientPromise;
+    const connection = await connectToDatabase()
+    const client = connection.client;
     const db = client.db("llmfied");
     const coursesCollection = db.collection("courses");
 
@@ -521,8 +526,11 @@ export async function POST(request) {
         }
       } catch (e) {
         console.warn('[HTML TEST][API] Failed to log bulk subsection HTML:', e);
-      }
-
+      } finally {
+    if (client) {
+      await client.close()
+    }
+  }
       const detailedSubsection = {
         title: subsection.title,
         pages: ensureContentAndHtmlOnPages(Array.isArray(pages?.pages) ? pages.pages : pages),
