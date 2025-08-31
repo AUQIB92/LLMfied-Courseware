@@ -162,35 +162,14 @@ export const LearnerAssignmentList: React.FC<LearnerAssignmentListProps> = ({
     }).format(new Date(date))
   }
 
-  const handleDownloadPDF = async (assignment: Assignment) => {
-    try {
-      // Import the beautiful PDF export function
-      const { exportBeautifulAssignmentPDF } = await import('../../utils/beautiful-pdf-export')
-      
-      const metadata = {
-        moduleTitle: assignment.moduleTitle,
-        topics: assignment.topics,
-        difficulty: assignment.difficulty,
-        dueDate: assignment.dueDate,
-        courseTitle: assignment.courseTitle,
-        institutionName: 'Govt. College of Engineering Safapora Ganderbal Kashmir, India 193504',
-        instructorName: assignment.instructorName,
-        references: assignment.references,
-        studentName: studentName,
-        assignmentId: assignment.id
-      }
-
-      await exportBeautifulAssignmentPDF(assignment.content, metadata)
-      toast.success("📄 Assignment PDF downloaded successfully!")
-      
-      if (onDownloadPDF) {
-        onDownloadPDF(assignment)
-      }
-    } catch (error) {
-      console.error("PDF Download Error:", error)
-      toast.error("Failed to download PDF. Please try again.")
+  // Removed PDF download functionality - keeping only view functionality
+  const handleViewAssignment = (assignment: Assignment) => {
+    if (onViewAssignment) {
+      onViewAssignment(assignment)
     }
   }
+
+  // PDF download functionality completely removed
 
   const getStatusCounts = () => {
     const now = new Date()

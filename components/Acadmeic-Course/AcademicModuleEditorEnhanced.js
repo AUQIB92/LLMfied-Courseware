@@ -69,6 +69,10 @@ import {
   Loader2,
   Send,
   Calendar,
+  GitBranch,
+  ImageIcon,
+  Palette,
+  Copy,
 } from "lucide-react";
 import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
 import UniversalContentRenderer from "@/components/UniversalContentRenderer";
@@ -1277,6 +1281,18 @@ export default function AcademicModuleEditorEnhanced({
     module.subsectionQuizzes || {}
   );
 
+  // Image generation states
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [imageStyle, setImageStyle] = useState("academic");
+  const [imageSize, setImageSize] = useState("1024x1024");
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState(
+    localModule.generatedImages || []
+  );
+  const [imageProgress, setImageProgress] = useState(0);
+  const [selectedImageTopic, setSelectedImageTopic] = useState("");
+  const [showImageGallery, setShowImageGallery] = useState(true);
+
   // Assignment generation functions
   const handleGenerateAssignment = async () => {
     if (!assignmentTopics.trim()) {
@@ -1369,40 +1385,13 @@ export default function AcademicModuleEditorEnhanced({
     URL.revokeObjectURL(url);
   };
 
-  const handleExportAssignmentPDF = async () => {
-    if (!generatedAssignment) return;
-
-    try {
-      // Use beautiful PDF export with enhanced visual design
-      const { exportBeautifulAssignmentPDF } = await import('@/utils/beautiful-pdf-export');
-      
-      const metadata = {
-        moduleTitle: localModule.title,
-        topics: assignmentTopics,
-        difficulty: assignmentDifficulty,
-        dueDate: assignmentDueDate,
-        courseTitle: course?.title || 'Course Assignment',
-        institutionName: 'Govt. College of Engineering Safapora Ganderbal Kashmir, India 193504',
-        instructorName: 'Dr. Auqib Hamid Lone',
-        references: assignmentReferences
-      };
-
-      const result = await exportBeautifulAssignmentPDF(generatedAssignment, metadata);
-      toast.success("🎨 Beautiful Assignment PDF Ready! Stunning visual design with SVG icons and clear problem/solution differentiation.");
-    } catch (error) {
-      console.error("Beautiful PDF Export Error:", error);
-      
-      // Fallback to enhanced math PDF export
-      try {
-        console.log("Falling back to enhanced math PDF export...");
-        const { exportMathRenderedPDF } = await import('@/utils/enhanced-math-pdf');
-        const result = await exportMathRenderedPDF(generatedAssignment, metadata);
-        toast.success("📄 PDF with Rendered Mathematics Ready! Professional document with properly displayed math equations.");
-      } catch (fallbackError) {
-        console.error("Fallback PDF Export Error:", fallbackError);
-        toast.error(`Failed to export PDF: ${fallbackError.message}`);
-      }
+  // Removed PDF export functionality - keeping only preview functionality
+  const handlePreviewAssignment = () => {
+    if (!generatedAssignment) {
+      toast.error("No assignment to preview");
+      return;
     }
+    setShowAssignmentPreview(true);
   };
 
   const handlePublishAssignment = async () => {
@@ -1651,6 +1640,174 @@ export default function AcademicModuleEditorEnhanced({
       console.error("❌ Assignment deletion error:", error);
       toast.error(`Failed to delete assignment: ${error.message}`);
     }
+  };
+
+  // Image generation functions
+  const handleGenerateImage = async () => {
+    if (!imagePrompt.trim()) {
+      toast.error("Please enter an image prompt");
+      return;
+    }
+
+    setGeneratingImage(true);
+    setImageProgress(0);
+
+    try {
+      // Enhance the prompt with academic context
+      const enhancedPrompt = `${imagePrompt}. Academic style, educational illustration, professional, clean design, ${imageStyle} style. Subject: ${course?.subject || subject || 'General Studies'}. Level: ${course?.academicLevel || academicLevel || 'undergraduate'}.`;
+      
+      console.log("🎨 Generating image with Nano Banana model:", {
+        originalPrompt: imagePrompt,
+        enhancedPrompt: enhancedPrompt,
+        style: imageStyle,
+        size: imageSize,
+        moduleTitle: localModule.title
+      });
+
+      toast.info(`🎨 Creating ${imageStyle} illustration: "${imagePrompt.substring(0, 50)}..."`);
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setImageProgress((prev) => Math.min(prev + 15, 90));
+      }, 800);
+
+      const response = await fetch("/api/images/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          prompt: enhancedPrompt,
+          style: imageStyle,
+          size: imageSize,
+          model: "nano-banana", // Google's Nano Banana model
+          courseId: courseId,
+          moduleTitle: localModule.title,
+          subject: course?.subject || subject,
+          academicLevel: course?.academicLevel || academicLevel,
+          context: {
+            moduleContent: localModule.content?.substring(0, 500),
+            objectives: localModule.objectives?.slice(0, 3),
+            topic: selectedImageTopic || imagePrompt
+          }
+        }),
+      });
+
+      clearInterval(progressInterval);
+      setImageProgress(100);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to generate image: ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.imageUrl) {
+        const newImage = {
+          id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          url: data.imageUrl,
+          prompt: imagePrompt,
+          enhancedPrompt: enhancedPrompt,
+          style: imageStyle,
+          size: imageSize,
+          model: "nano-banana",
+          createdAt: new Date().toISOString(),
+          moduleTitle: localModule.title,
+          topic: selectedImageTopic || "General",
+          metadata: {
+            subject: course?.subject || subject,
+            academicLevel: course?.academicLevel || academicLevel,
+            generationTime: data.generationTime || "Unknown"
+          }
+        };
+
+        const updatedImages = [...generatedImages, newImage];
+        setGeneratedImages(updatedImages);
+
+        // Update module with new images
+        const updatedModule = {
+          ...localModule,
+          generatedImages: updatedImages,
+          lastUpdated: new Date().toISOString()
+        };
+        setLocalModule(updatedModule);
+
+        if (onUpdate) {
+          onUpdate(updatedModule);
+        }
+
+        toast.success(`🎉 Beautiful ${imageStyle} illustration created successfully! Generated with Google's Nano Banana model.`);
+        
+        // Clear the prompt for next generation
+        setImagePrompt("");
+        setSelectedImageTopic("");
+      } else {
+        throw new Error(data.error || "Failed to generate image");
+      }
+    } catch (error) {
+      console.error("❌ Image generation error:", error);
+      toast.error(`Failed to generate image: ${error.message}`);
+    } finally {
+      setGeneratingImage(false);
+      setTimeout(() => setImageProgress(0), 2000);
+    }
+  };
+
+  const handleDeleteImage = (imageId) => {
+    const updatedImages = generatedImages.filter(img => img.id !== imageId);
+    setGeneratedImages(updatedImages);
+
+    const updatedModule = {
+      ...localModule,
+      generatedImages: updatedImages,
+      lastUpdated: new Date().toISOString()
+    };
+    setLocalModule(updatedModule);
+
+    if (onUpdate) {
+      onUpdate(updatedModule);
+    }
+
+    toast.success("Image deleted successfully");
+  };
+
+  const handleDownloadImage = async (imageUrl, imageName) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${imageName || 'academic-image'}-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Image downloaded successfully!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download image");
+    }
+  };
+
+  const generateImageFromTopic = (topic) => {
+    const prompts = {
+      "diagram": `Create a clear educational diagram about ${topic}. Include labeled components, arrows showing relationships, professional scientific illustration style`,
+      "concept": `Visualize the concept of ${topic}. Abstract but clear representation, educational infographic style with icons and visual elements`,
+      "process": `Show the step-by-step process of ${topic}. Flowchart style with numbered steps, clean educational design`,
+      "comparison": `Compare different aspects of ${topic}. Side-by-side comparison chart, educational table or graph format`,
+      "timeline": `Timeline visualization of ${topic}. Chronological progression, educational timeline design with dates and milestones`,
+      "structure": `Structural representation of ${topic}. Cross-section view or architectural diagram, technical illustration style`
+    };
+
+    const randomStyle = Object.keys(prompts)[Math.floor(Math.random() * Object.keys(prompts).length)];
+    const generatedPrompt = prompts[randomStyle].replace('${topic}', topic);
+    
+    setImagePrompt(generatedPrompt);
+    setSelectedImageTopic(topic);
+    toast.info(`🎨 Generated ${randomStyle} prompt for: ${topic}`);
   };
 
   // Academic detailed content generation state
@@ -4071,30 +4228,51 @@ export default function AcademicModuleEditorEnhanced({
         onValueChange={setActiveMainTab}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Overview
+        <TabsList className="grid w-full grid-cols-6 h-auto p-2 bg-gradient-to-r from-slate-50 via-blue-50 to-purple-50 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-lg">
+          <TabsTrigger value="overview" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md">
+            <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20">
+              <FileText className="h-4 w-4" />
+            </div>
+            <span className="font-medium">Overview</span>
           </TabsTrigger>
-          <TabsTrigger value="content" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            Content
+          <TabsTrigger value="content" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md">
+            <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20">
+              <BookOpen className="h-4 w-4" />
+            </div>
+            <span className="font-medium">Content</span>
           </TabsTrigger>
-          <TabsTrigger value="subsections" className="flex items-center gap-2">
-            <Layers className="h-4 w-4" />
-            Subsections
+          <TabsTrigger value="subsections" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md">
+            <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20">
+              <Layers className="h-4 w-4" />
+            </div>
+            <span className="font-medium">Subsections</span>
           </TabsTrigger>
-          <TabsTrigger value="quizzes" className="flex items-center gap-2">
-            <Trophy className="h-4 w-4" />
-            Quizzes
+          <TabsTrigger value="quizzes" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-yellow-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md">
+            <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20">
+              <Trophy className="h-4 w-4" />
+            </div>
+            <span className="font-medium">Quizzes</span>
           </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Assignments
+          <TabsTrigger value="assignments" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md">
+            <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20">
+              <Target className="h-4 w-4" />
+            </div>
+            <span className="font-medium">Assignments</span>
           </TabsTrigger>
-          <TabsTrigger value="resources" className="flex items-center gap-2">
-            <Network className="h-4 w-4" />
-            Resources
+          <TabsTrigger value="images" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md group">
+            <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20 transition-all duration-300 group-hover:scale-110">
+              <ImageIcon className="h-4 w-4" />
+            </div>
+            <span className="font-medium">Images</span>
+            <div className="ml-1 px-1.5 py-0.5 bg-gradient-to-r from-pink-400 to-rose-500 text-white text-xs rounded-full font-bold animate-pulse">
+              NEW
+            </div>
+          </TabsTrigger>
+          <TabsTrigger value="resources" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md">
+            <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20">
+              <Network className="h-4 w-4" />
+            </div>
+            <span className="font-medium">Resources</span>
           </TabsTrigger>
         </TabsList>
 
@@ -6859,15 +7037,7 @@ Examples:
                           <Eye className="h-4 w-4 mr-1" />
                           Preview
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleExportAssignmentPDF}
-                          className="bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border-purple-200 text-purple-700 font-semibold"
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Export Beautiful PDF
-                        </Button>
+                        {/* Removed PDF export button - keeping only preview functionality */}
                         {!assignmentPublished && (
                           <Button
                             size="sm"
@@ -7017,6 +7187,260 @@ Examples:
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Images Tab */}
+        <TabsContent value="images" className="space-y-6">
+          <div className="space-y-6">
+            {/* Image Generator Section */}
+            <Card className="bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 border-2 border-teal-200/50 shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-lg">
+                    <Palette className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">AI Image Generator</h3>
+                    <p className="text-sm text-gray-600 font-normal">Powered by Google's Nano Banana Model</p>
+                  </div>
+                  <div className="ml-auto flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs rounded-full font-bold animate-pulse">
+                    <Sparkles className="h-3 w-3" />
+                    AI Powered
+                  </div>
+                </CardTitle>
+                <CardDescription className="text-base">
+                  Generate beautiful educational illustrations, diagrams, and visual explanations for your academic content
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Quick Topic Buttons */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold text-gray-700">Quick Topic Generators</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {detailedSubsections.slice(0, 6).map((subsection, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => generateImageFromTopic(subsection.title)}
+                        className="justify-start text-left h-auto p-3 bg-white/80 hover:bg-teal-50 hover:border-teal-300 transition-all duration-200"
+                      >
+                        <div className="flex flex-col items-start w-full">
+                          <span className="font-medium text-xs text-teal-700 mb-1">Generate for:</span>
+                          <span className="text-sm font-semibold text-gray-800 truncate w-full">
+                            {subsection.title.length > 20 ? subsection.title.substring(0, 20) + '...' : subsection.title}
+                          </span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Image Generation Form */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-2 space-y-4">
+                    <div>
+                      <Label htmlFor="imagePrompt" className="text-sm font-semibold text-gray-700">
+                        Image Description
+                      </Label>
+                      <Textarea
+                        id="imagePrompt"
+                        value={imagePrompt}
+                        onChange={(e) => setImagePrompt(e.target.value)}
+                        placeholder="Describe the image you want to generate... e.g., 'A detailed diagram showing the structure of an atom with electrons, protons, and neutrons clearly labeled'"
+                        className="mt-2 h-24 border-2 border-teal-200 focus:border-teal-500 bg-white/80"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700">Style</Label>
+                        <Select value={imageStyle} onValueChange={setImageStyle}>
+                          <SelectTrigger className="mt-2 border-2 border-teal-200 focus:border-teal-500 bg-white/80">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="academic">Academic</SelectItem>
+                            <SelectItem value="diagram">Technical Diagram</SelectItem>
+                            <SelectItem value="infographic">Infographic</SelectItem>
+                            <SelectItem value="scientific">Scientific</SelectItem>
+                            <SelectItem value="minimalist">Minimalist</SelectItem>
+                            <SelectItem value="colorful">Colorful</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700">Size</Label>
+                        <Select value={imageSize} onValueChange={setImageSize}>
+                          <SelectTrigger className="mt-2 border-2 border-teal-200 focus:border-teal-500 bg-white/80">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1024x1024">Square (1024×1024)</SelectItem>
+                            <SelectItem value="1024x768">Landscape (1024×768)</SelectItem>
+                            <SelectItem value="768x1024">Portrait (768×1024)</SelectItem>
+                            <SelectItem value="1280x720">Wide (1280×720)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col justify-center items-center space-y-4">
+                    <Button
+                      onClick={handleGenerateImage}
+                      disabled={generatingImage || !imagePrompt.trim()}
+                      className="w-full h-16 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      {generatingImage ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Creating...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Wand2 className="h-5 w-5" />
+                          Generate Image
+                        </div>
+                      )}
+                    </Button>
+                    {generatingImage && (
+                      <div className="w-full">
+                        <Progress value={imageProgress} className="h-2" />
+                        <p className="text-xs text-center text-gray-600 mt-1">
+                          {imageProgress}% complete
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Generated Images Gallery */}
+            {generatedImages.length > 0 && (
+              <Card className="border-2 border-slate-200 shadow-lg">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5" />
+                      Generated Images ({generatedImages.length})
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowImageGallery(!showImageGallery)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      {showImageGallery ? 'Hide' : 'Show'} Gallery
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                {showImageGallery && (
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {generatedImages.map((image, index) => (
+                        <Card key={image.id} className="overflow-hidden border-2 border-gray-200 hover:border-teal-300 transition-all duration-300 hover:shadow-lg group">
+                          <div className="aspect-square relative bg-gray-100">
+                            <img
+                              src={image.url}
+                              alt={image.prompt}
+                              className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
+                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleDownloadImage(image.url, image.prompt)}
+                                className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleDeleteImage(image.id)}
+                                className="h-8 w-8 p-0 bg-red-100/90 hover:bg-red-200 text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="absolute bottom-2 left-2 right-2">
+                              <div className="bg-white/95 backdrop-blur-sm rounded-lg p-2 text-xs">
+                                <p className="font-semibold text-gray-800 truncate">{image.style} style</p>
+                                <p className="text-gray-600 text-xs">{image.size}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <CardContent className="p-4">
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium text-gray-800 line-clamp-2">
+                                {image.prompt}
+                              </p>
+                              <div className="flex items-center justify-between text-xs text-gray-500">
+                                <span>Created: {new Date(image.createdAt).toLocaleDateString()}</span>
+                                <div className="flex items-center gap-1">
+                                  <Sparkles className="h-3 w-3" />
+                                  Nano Banana
+                                </div>
+                              </div>
+                              {image.topic && image.topic !== "General" && (
+                                <div className="inline-block px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full">
+                                  {image.topic}
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            )}
+
+            {/* Empty State */}
+            {generatedImages.length === 0 && (
+              <Card className="border-2 border-dashed border-gray-300">
+                <CardContent className="text-center py-12">
+                  <div className="mb-4">
+                    <ImageIcon className="h-16 w-16 text-gray-300 mx-auto" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                    No Images Generated Yet
+                  </h3>
+                  <p className="text-gray-500 mb-4 max-w-md mx-auto">
+                    Create beautiful educational illustrations using our AI image generator powered by Google's Nano Banana model
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateImageFromTopic("Basic Concepts")}
+                      className="hover:bg-teal-50"
+                    >
+                      Try: Basic Concepts
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateImageFromTopic("Process Flow")}
+                      className="hover:bg-blue-50"
+                    >
+                      Try: Process Flow
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateImageFromTopic("System Architecture")}
+                      className="hover:bg-purple-50"
+                    >
+                      Try: Architecture
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         {/* Resources Tab */}
@@ -7204,6 +7628,12 @@ Examples:
                           <div className="flex items-center gap-2">
                             <Target className="h-4 w-4 text-pink-600" />
                             Exercise
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="github">
+                          <div className="flex items-center gap-2">
+                            <GitBranch className="h-4 w-4 text-gray-800" />
+                            GitHub
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -7512,7 +7942,7 @@ Examples:
         dueDate={assignmentDueDate}
         references={assignmentReferences}
         onPublish={handlePublishAssignment}
-        onExportPDF={handleExportAssignmentPDF}
+        onExportPDF={null}
       />
 
       {/* Edit Assignment Modal */}

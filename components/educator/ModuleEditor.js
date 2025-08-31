@@ -3188,6 +3188,12 @@ export default function ModuleEditor({ module, onUpdate, onSave }) {
                                     Exercise
                                   </div>
                                 </SelectItem>
+                                <SelectItem value="github">
+                                  <div className="flex items-center gap-2">
+                                    <GitBranch className="h-4 w-4 text-gray-800" />
+                                    GitHub
+                                  </div>
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           </div>

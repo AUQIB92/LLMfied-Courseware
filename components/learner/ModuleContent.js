@@ -72,6 +72,7 @@ import {
   X,
   Edit,
   Plus,
+  GitBranch,
 } from "lucide-react";
 import QuizModal from "./QuizModal";
 import ContentDisplay from "@/components/ContentDisplay";
@@ -1381,6 +1382,11 @@ Return JSON format:
                   (r) => r && (r.title || r.name)
                 )
               : [],
+            github: Array.isArray(module.resources.github)
+              ? module.resources.github.filter(
+                  (r) => r && (r.title || r.name)
+                )
+              : [],
           }
         : {
             books: [],
@@ -1390,6 +1396,7 @@ Return JSON format:
             tools: [],
             websites: [],
             exercises: [],
+            github: [],
           };
 
     return { legacyResources: legacy, aiResources: ai };
@@ -1480,6 +1487,14 @@ Return JSON format:
           r.type === "learning" ||
           r.type === "mooc"
       ),
+      github: allResources.filter(
+        (r) =>
+          r.type === "github" ||
+          r.type === "repository" ||
+          r.type === "repo" ||
+          r.type === "source" ||
+          r.type === "code"
+      ),
     };
 
     // Ensure no resource is categorized multiple times by removing duplicates
@@ -1527,6 +1542,7 @@ Return JSON format:
         tools: <Wrench className="h-6 w-6 text-white" />,
         websites: <Globe className="h-6 w-6 text-white" />,
         exercises: <Target className="h-6 w-6 text-white" />,
+        github: <GitBranch className="h-6 w-6 text-white" />,
       };
       return iconMap[type] || <ExternalLink className="h-6 w-6 text-white" />;
     };
@@ -1581,6 +1597,13 @@ Return JSON format:
           iconBg: "from-pink-500 to-rose-600",
           titleColor: "text-pink-700",
           accent: "pink",
+        },
+        github: {
+          gradient: "from-gray-500/10 via-slate-500/10 to-gray-600/10",
+          border: "border-gray-200/50",
+          iconBg: "from-gray-700 to-gray-900",
+          titleColor: "text-gray-700",
+          accent: "gray",
         },
       };
       return designMap[type] || designMap.articles;
@@ -4154,6 +4177,8 @@ Return JSON format:
                           ? "websites"
                           : instructorMasterpieces.exercises && instructorMasterpieces.exercises.length > 0
                           ? "exercises"
+                          : instructorMasterpieces.github && instructorMasterpieces.github.length > 0
+                          ? "github"
                           : // Fallback to AI resources
                           aiResources.articles && aiResources.articles.length > 0
                           ? "articles"
@@ -4172,12 +4197,14 @@ Return JSON format:
                           : aiResources.exercises &&
                             aiResources.exercises.length > 0
                           ? "exercises"
+                          : aiResources.github && aiResources.github.length > 0
+                          ? "github"
                           : "articles"
                       }
                       className="w-full"
                     >
                       {/* Enhanced TabsList with Educator Design */}
-                      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto p-2 bg-gradient-to-r from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-lg">
+                      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto p-2 bg-gradient-to-r from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-lg">
                         {((aiResources.articles && aiResources.articles.length > 0) || 
                           (instructorMasterpieces.articles && instructorMasterpieces.articles.length > 0)) && (
                             <TabsTrigger
@@ -4313,6 +4340,26 @@ Return JSON format:
                                 className="text-xs bg-pink-100 text-pink-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
                               >
                                 {(aiResources.exercises?.length || 0) + (instructorMasterpieces.exercises?.length || 0)}
+                              </Badge>
+                            </TabsTrigger>
+                          )}
+
+                        {((aiResources.github && aiResources.github.length > 0) || (instructorMasterpieces.github && instructorMasterpieces.github.length > 0)) && (
+                            <TabsTrigger
+                              value="github"
+                              className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-gray-700 data-[state=active]:to-gray-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-gray-50"
+                            >
+                              <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                                <GitBranch className="h-5 w-5 text-gray-700 group-data-[state=active]:text-white" />
+                              </div>
+                              <span className="text-xs font-semibold">
+                                GitHub
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-gray-100 text-gray-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                              >
+                                {(aiResources.github?.length || 0) + (instructorMasterpieces.github?.length || 0)}
                               </Badge>
                             </TabsTrigger>
                           )}
@@ -4627,6 +4674,51 @@ Return JSON format:
                                       resource={resource}
                                       type="exercises"
                                       resourceIndex={index + (instructorMasterpieces.exercises?.length || 0)}
+                                    />
+                                  </motion.div>
+                                ))}
+                              </motion.div>
+                            </TabsContent>
+                          )}
+
+                        {/* GitHub Content - Combined AI + Instructor Resources */}
+                        {((aiResources.github && aiResources.github.length > 0) ||
+                          (instructorMasterpieces.github && instructorMasterpieces.github.length > 0)) && (
+                            <TabsContent key="github" value="github">
+                              <motion.div
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                              >
+                                {/* Display Instructor Resources First (Prioritized) */}
+                                {instructorMasterpieces.github?.map((resource, index) => (
+                                  <motion.div
+                                    key={`instructor-github-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="github"
+                                      resourceIndex={index}
+                                      isInstructorChoice={true}
+                                    />
+                                  </motion.div>
+                                ))}
+                                {/* Display AI Resources */}
+                                {aiResources.github?.map((resource, index) => (
+                                  <motion.div
+                                    key={`ai-github-${index}-${
+                                      resource.title || resource.name || index
+                                    }`}
+                                    variants={itemVariants}
+                                  >
+                                    <ResourceCard
+                                      resource={resource}
+                                      type="github"
+                                      resourceIndex={index + (instructorMasterpieces.github?.length || 0)}
                                     />
                                   </motion.div>
                                 ))}

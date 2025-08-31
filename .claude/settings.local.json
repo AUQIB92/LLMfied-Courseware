@@ -15,7 +15,9 @@
       "Bash(git restore:*)",
       "Bash(rg:*)",
       "Bash(find:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(if exist \"test-nano-banana.js\" del \"test-nano-banana.js\")",
+      "Bash(if exist \"app\\api\\test-nano-banana\" rmdir /s /q \"app\\api\\test-nano-banana\")"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

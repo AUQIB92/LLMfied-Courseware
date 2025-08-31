@@ -10,17 +10,14 @@ async function verifyToken(request) {
   return jwt.verify(token, process.env.JWT_SECRET);
 }
 
-// Enhanced database connection with timeout
+// Enhanced database connection with timeout  
 async function getDBWithTimeout(timeoutMs = 10000) {
-  return Promise.race([
-    clientPromise.then((client) => client.db("llmfied")),
-    new Promise((_, reject) =>
-      setTimeout(
-        () => reject(new Error("Database connection timeout")),
-        timeoutMs
-      )
-    ),
-  ]);
+  try {
+    const { db } = await connectToDatabase();
+    return db;
+  } catch (error) {
+    throw new Error(`Database connection failed: ${error.message}`);
+  }
 }
 
 export async function GET(request) {

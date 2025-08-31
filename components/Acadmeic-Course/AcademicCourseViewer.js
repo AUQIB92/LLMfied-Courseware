@@ -67,7 +67,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   const [activeTab, setActiveTab] = useState("overview")
   const [focusedModule, setFocusedModule] = useState(null) // New state for focused module view
   const [selectedAssignment, setSelectedAssignment] = useState(null) // For assignment viewing
-  const [exportingPDF, setExportingPDF] = useState(false) // PDF export state
+  // Removed PDF export state - keeping only view and print functionality
   const [editingAssignment, setEditingAssignment] = useState(null) // For assignment editing
   const [deletingAssignment, setDeletingAssignment] = useState(null) // For assignment deletion
   const [editForm, setEditForm] = useState({ title: '', description: '', content: '', dueDate: '', points: '' }) // Edit form state
@@ -87,55 +87,29 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
     setSelectedAssignment(assignment)
   }
 
-  const handleExportAssignmentPDF = async (assignment, metadata = {}) => {
-    try {
-      setExportingPDF(true)
-
-      // Dynamic import of current view PDF export utility (much lighter)
-      const { exportCurrentAssignmentView } = await import("@/utils/current-view-pdf-export")
-
-      const pdfMetadata = {
-        moduleTitle: metadata.moduleTitle || assignment.title || "Assignment",
-        courseTitle: metadata.courseTitle || viewerCourse.title,
-        institutionName: 'GCET Kashmir',
-        instructorName: metadata.instructorName || 'Dr. Auqib Hamid',
-        studentName: user?.name || "",
-        dueDate: assignment.dueDate,
-        assignmentId: assignment.id || "assignment"
-      }
-
-      await exportCurrentAssignmentView(pdfMetadata)
-
-      // Show success message
-      console.log("📄 Assignment PDF exported successfully!")
-      // Optional: Add toast notification if available
-      if (typeof toast !== 'undefined') {
-        toast.success("📄 Assignment PDF exported successfully!")
-      }
-    } catch (error) {
-      console.error("Failed to export PDF:", error)
-      alert(`Failed to export PDF: ${error.message}`)
-    } finally {
-      setExportingPDF(false)
-    }
-  }
+  // Removed PDF download functionality - keeping only view and print
 
   const handleQuickPrintAssignment = async (assignment, metadata = {}) => {
     try {
-      // Dynamic import of simple print utility
-      const { exportAssignmentAsPDF } = await import("@/utils/current-view-pdf-export")
+      // Use simple print function from fixed PDF export
+      const { simpleAssignmentPrint } = await import("@/utils/fixed-pdf-export")
 
-      const pdfMetadata = {
-        moduleTitle: metadata.moduleTitle || assignment.title || "Assignment",
-        courseTitle: metadata.courseTitle || viewerCourse.title,
-        studentName: user?.name || ""
+      const result = simpleAssignmentPrint()
+      
+      if (result) {
+        console.log("📄 Print dialog opened!")
+      } else {
+        throw new Error("Print function failed to find assignment content")
       }
-
-      await exportAssignmentAsPDF(pdfMetadata)
-      console.log("📄 Print dialog opened!")
     } catch (error) {
       console.error("Failed to open print dialog:", error)
-      alert(`Failed to print: ${error.message}`)
+      // Final fallback - just use browser print
+      try {
+        window.print()
+        console.log("📄 Fallback print dialog opened!")
+      } catch (fallbackError) {
+        alert(`Failed to print: ${error.message}`)
+      }
     }
   }
 
@@ -739,18 +713,6 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleExportAssignmentPDF(selectedAssignment, {
-                      moduleTitle: selectedAssignment.moduleTitle,
-                      courseTitle: viewerCourse.title
-                    })}
-                    disabled={exportingPDF}
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    {exportingPDF ? "Exporting..." : "Export PDF"}
-                  </Button>
-                  
                   <Button
                     onClick={() => handleQuickPrintAssignment(selectedAssignment, {
                       moduleTitle: selectedAssignment.moduleTitle,
@@ -2073,21 +2035,6 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                                 >
                                                   View
                                                 </Button>
-                                                <Button
-                                                  onClick={() =>
-                                                    handleExportAssignmentPDF(assignment, {
-                                                      moduleTitle: currentModuleData.title,
-                                                      courseTitle: viewerCourse.title,
-                                                      institutionName: "Academic Institution",
-                                                    })
-                                                  }
-                                                  size="sm"
-                                                  variant="outline"
-                                                  className="text-purple-600 border-purple-200 hover:bg-purple-50 px-2 py-1 text-xs"
-                                                  disabled={exportingPDF}
-                                                >
-                                                  <FileText className="h-3 w-3" />
-                                                </Button>
                                               </div>
                                             </div>
 
@@ -2320,21 +2267,7 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                                               <Eye className="h-4 w-4 mr-2" />
                                               View
                                             </Button>
-                                            <Button
-                                              onClick={() =>
-                                                handleExportAssignmentPDF(assignment, {
-                                                  moduleTitle: currentModuleData.title,
-                                                  courseTitle: viewerCourse.title
-                                                })
-                                              }
-                                              variant="outline"
-                                              className="border-purple-200 text-purple-600 hover:bg-purple-50"
-                                              disabled={exportingPDF}
-                                              size="sm"
-                                            >
-                                              <Download className="h-4 w-4 mr-1" />
-                                              {exportingPDF ? "..." : "PDF"}
-                                            </Button>
+                                            {/* Removed PDF download button - keeping only view functionality */}
                                             <Button
                                               onClick={() =>
                                                 handleQuickPrintAssignment(assignment, {
