@@ -142,11 +142,7 @@ export async function POST(request) {
         } catch (migrationError) {
           console.error("⚠️ Failed to migrate password for:", email, migrationError)
           // Don't fail the login if migration fails, but log it
-        } finally {
-    if (client) {
-      await client.close()
-    }
-  }
+        }
       }
 
       console.log("Password valid, generating token...")

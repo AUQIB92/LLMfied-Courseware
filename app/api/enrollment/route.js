@@ -168,10 +168,6 @@ export async function GET(request) {
       },
       { status: statusCode }
     )
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
 }
 
@@ -348,10 +344,6 @@ export async function POST(request) {
       },
       { status: statusCode }
     )
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
 }
 
@@ -462,9 +454,5 @@ export async function DELETE(request) {
       },
       { status: statusCode }
     )
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
 }

@@ -55,11 +55,7 @@ function parseAIResponse(content) {
       return JSON.parse(jsonString);
     } catch (codeBlockError) {
       console.warn("Code block JSON parse failed:", codeBlockError.message);
-    } finally {
-    if (client) {
-      await client.close()
     }
-  }
   }
 
   // Strategy 2: Direct JSON parsing
@@ -67,10 +63,6 @@ function parseAIResponse(content) {
     return JSON.parse(content);
   } catch (directError) {
     console.warn("Direct JSON parse failed:", directError.message);
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
   // Strategy 3: Extract JSON from array pattern
   try {
@@ -89,10 +81,6 @@ function parseAIResponse(content) {
     }
   } catch (arrayError) {
     console.warn("Array extraction failed:", arrayError.message);
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
   // Strategy 4: Use jsonrepair
   try {
@@ -101,10 +89,6 @@ function parseAIResponse(content) {
     return JSON.parse(repairedJson);
   } catch (repairError) {
     console.warn("JSON repair failed:", repairError.message);
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
   // Strategy 5: JSON5 fallback
   try {
@@ -112,10 +96,6 @@ function parseAIResponse(content) {
     return JSON5.parse(content);
   } catch (json5Error) {
     console.warn("JSON5 fallback failed:", json5Error.message);
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
   // Strategy 6: Try to extract JSON from code block and repair it
   if (codeBlockMatch) {
@@ -126,11 +106,7 @@ function parseAIResponse(content) {
       return JSON.parse(repairedJson);
     } catch (repairCodeBlockError) {
       console.warn("Code block repair failed:", repairCodeBlockError.message);
-    } finally {
-    if (client) {
-      await client.close()
     }
-  }
   }
 
   console.error("All JSON parsing strategies failed");

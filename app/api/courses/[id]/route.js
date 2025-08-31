@@ -103,11 +103,7 @@ export async function GET(request, { params }) {
           createdAt: course.createdAt,
           enrollmentCount: course.enrollmentCount || 0,
           isEnrolled: false
-        } finally {
-    if (client) {
-      await client.close()
-    }
-  }
+        }
         return NextResponse.json(publicCourse)
       } else {
         // Don't show draft courses to unauthenticated users

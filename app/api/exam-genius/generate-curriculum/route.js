@@ -214,11 +214,7 @@ IMPORTANT OUTPUT FORMAT:
       } catch (parseError) {
         console.log("Failed to parse curriculum response JSON, using raw response...");
         curriculum = responseText;
-      } finally {
-    if (client) {
-      await client.close()
-    }
-  }
+      }
     }
 
     // Count estimated modules from the generated content

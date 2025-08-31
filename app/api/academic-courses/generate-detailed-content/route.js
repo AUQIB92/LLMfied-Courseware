@@ -427,11 +427,7 @@ export async function POST(request) {
         }
       } catch (e) {
         console.warn('[HTML TEST][API] Failed to log single subsection HTML:', e);
-      } finally {
-    if (client) {
-      await client.close()
-    }
-  }
+      }
       // Return minimal payload: title + pages (HTML ensured)
       const pagesNorm = Array.isArray(enhancedContent?.pages?.pages)
         ? enhancedContent.pages.pages
@@ -526,11 +522,7 @@ export async function POST(request) {
         }
       } catch (e) {
         console.warn('[HTML TEST][API] Failed to log bulk subsection HTML:', e);
-      } finally {
-    if (client) {
-      await client.close()
-    }
-  }
+      }
       const detailedSubsection = {
         title: subsection.title,
         pages: ensureContentAndHtmlOnPages(Array.isArray(pages?.pages) ? pages.pages : pages),

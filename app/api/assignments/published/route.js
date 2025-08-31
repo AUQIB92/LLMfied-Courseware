@@ -17,10 +17,6 @@ async function verifyToken(request) {
   } catch (error) {
     console.error('Token verification failed:', error);
     return null;
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
 }
 export async function GET(request) {

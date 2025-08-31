@@ -240,11 +240,7 @@ async function calculateCompetitiveExamStats(coursesCollection, enrollmentsColle
         averageProgress: 0,
         completedCourses: 0,
         activeStudents: 0
-      } finally {
-    if (client) {
-      await client.close()
-    }
-  }
+      }
     }
   }
 }
@@ -277,10 +273,6 @@ async function getExamTypeStats(coursesCollection, userId) {
   } catch (error) {
     console.error("Error getting exam type stats:", error)
     return []
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
 }
 
@@ -312,10 +304,6 @@ async function getSubjectStats(coursesCollection, userId) {
   } catch (error) {
     console.error("Error getting subject stats:", error)
     return []
-  } finally {
-    if (client) {
-      await client.close()
-    }
   }
 }
 

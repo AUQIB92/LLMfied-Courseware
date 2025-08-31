@@ -365,11 +365,7 @@ export async function GET(request, { params }) {
                 updateError
               );
               // Continue with the content even if database update fails
-            } finally {
-    if (client) {
-      await client.close()
-    }
-  }
+            }
           } else {
             console.warn(
               `⚠️ No subsections parsed from markdown, using fallback`
@@ -379,11 +375,7 @@ export async function GET(request, { params }) {
         } catch (parseError) {
           console.error(`❌ Failed to parse markdown content:`, parseError);
           detailedSubsections = createFallbackDetailedSubsections(module);
-        } finally {
-    if (client) {
-      await client.close()
-    }
-  }
+        }
       } else if (!detailedSubsections || detailedSubsections.length === 0) {
         console.log(
           `⚠️ No valid markdown content and no existing subsections, using fallback`

@@ -3786,61 +3786,127 @@ Return JSON format:
                         </TabsList>
 
                         <div className="mt-8">
-                          <TabsContent value="articles" className="space-y-6">
+                          <TabsContent value="articles" className="space-y-8">
                             {instructorMasterpieces.articles.length > 0 && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {instructorMasterpieces.articles.map(
-                                  (resource, index) => (
-                                    <motion.div
-                                      key={`instructor-article-${
-                                        resource.id ||
-                                        resource.url ||
-                                        resource.title ||
-                                        index
-                                      }`}
-                                      variants={itemVariants}
-                                    >
-                                      <ResourceCard
-                                        resource={resource}
-                                        type="articles"
-                                        isInstructorChoice={true}
-                                      />
-                                    </motion.div>
-                                  )
-                                )}
-                              </div>
+                              <motion.div
+                                className="space-y-6"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ staggerChildren: 0.1 }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                                      <FileText className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div>
+                                      <h4 className="text-xl font-bold text-green-700">Articles & Papers</h4>
+                                      <p className="text-sm text-green-600">Curated reading materials</p>
+                                    </div>
+                                  </div>
+                                  <Badge className="bg-green-100 text-green-700 border-green-200">
+                                    {instructorMasterpieces.articles.length} Resources
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                                  {instructorMasterpieces.articles.map(
+                                    (resource, index) => (
+                                      <motion.div
+                                        key={`instructor-article-${
+                                          resource.id ||
+                                          resource.url ||
+                                          resource.title ||
+                                          index
+                                        }`}
+                                        variants={itemVariants}
+                                        whileHover={{ y: -2 }}
+                                        transition={{ type: "spring", stiffness: 300 }}
+                                      >
+                                        <ResourceCard
+                                          resource={resource}
+                                          type="articles"
+                                          isInstructorChoice={true}
+                                        />
+                                      </motion.div>
+                                    )
+                                  )}
+                                </div>
+                              </motion.div>
                             )}
                           </TabsContent>
 
-                          <TabsContent value="videos" className="space-y-6">
+                          <TabsContent value="videos" className="space-y-8">
                             {instructorMasterpieces.videos.length > 0 && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {instructorMasterpieces.videos.map(
-                                  (resource, index) => (
-                                    <motion.div
-                                      key={`instructor-video-${
-                                        resource.id ||
-                                        resource.url ||
-                                        resource.title ||
-                                        index
-                                      }`}
-                                      variants={itemVariants}
-                                    >
-                                      <ResourceCard
-                                        resource={resource}
-                                        type="videos"
-                                        isInstructorChoice={true}
-                                      />
-                                    </motion.div>
-                                  )
-                                )}
-                              </div>
+                              <motion.div
+                                className="space-y-6"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ staggerChildren: 0.1 }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-orange-600 rounded-full flex items-center justify-center">
+                                      <Play className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div>
+                                      <h4 className="text-xl font-bold text-red-700">Video Content</h4>
+                                      <p className="text-sm text-red-600">Visual learning resources</p>
+                                    </div>
+                                  </div>
+                                  <Badge className="bg-red-100 text-red-700 border-red-200">
+                                    {instructorMasterpieces.videos.length} Resources
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                                  {instructorMasterpieces.videos.map(
+                                    (resource, index) => (
+                                      <motion.div
+                                        key={`instructor-video-${
+                                          resource.id ||
+                                          resource.url ||
+                                          resource.title ||
+                                          index
+                                        }`}
+                                        variants={itemVariants}
+                                        whileHover={{ y: -2, scale: 1.02 }}
+                                        transition={{ type: "spring", stiffness: 300 }}
+                                      >
+                                        <ResourceCard
+                                          resource={resource}
+                                          type="videos"
+                                          isInstructorChoice={true}
+                                        />
+                                      </motion.div>
+                                    )
+                                  )}
+                                </div>
+                              </motion.div>
                             )}
                           </TabsContent>
 
-                          <TabsContent value="books" className="space-y-6">
+                          <TabsContent value="books" className="space-y-8">
                             {instructorMasterpieces.books.length > 0 && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              <motion.div
+                                className="space-y-6"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ staggerChildren: 0.1 }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                                      <BookOpen className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div>
+                                      <h4 className="text-xl font-bold text-blue-700">Books & References</h4>
+                                      <p className="text-sm text-blue-600">Essential reading materials</p>
+                                    </div>
+                                  </div>
+                                  <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                                    {instructorMasterpieces.books.length} Resources
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                                 {instructorMasterpieces.books.map(
                                   (resource, index) => (
                                     <motion.div
@@ -3860,13 +3926,34 @@ Return JSON format:
                                     </motion.div>
                                   )
                                 )}
-                              </div>
+                                </div>
+                              </motion.div>
                             )}
                           </TabsContent>
 
-                          <TabsContent value="courses" className="space-y-6">
+                          <TabsContent value="courses" className="space-y-8">
                             {instructorMasterpieces.courses.length > 0 && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              <motion.div
+                                className="space-y-6"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ staggerChildren: 0.1 }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+                                      <Video className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div>
+                                      <h4 className="text-xl font-bold text-purple-700">Online Courses</h4>
+                                      <p className="text-sm text-purple-600">Structured learning paths</p>
+                                    </div>
+                                  </div>
+                                  <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+                                    {instructorMasterpieces.courses.length} Resources
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                                 {instructorMasterpieces.courses.map(
                                   (resource, index) => (
                                     <motion.div
@@ -3887,6 +3974,7 @@ Return JSON format:
                                   )
                                 )}
                               </div>
+                              </motion.div>
                             )}
                           </TabsContent>
 
