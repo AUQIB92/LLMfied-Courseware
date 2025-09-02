@@ -64,7 +64,6 @@ export default function ForgotPassword({ initialToken }) {
 
       if (response.ok) {
         setIsSuccess(true)
-        setStep("reset")
         toast.success("Password reset link sent to your email!")
       } else {
         setError(data.error || "Failed to send reset email. Please try again.")
@@ -150,6 +149,61 @@ export default function ForgotPassword({ initialToken }) {
   }
 
   const passwordStrength = getPasswordStrength(newPassword)
+
+  if (isSuccess && step === "email") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardContent className="p-8">
+            <div className="text-center space-y-6">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                <Mail className="h-8 w-8 text-blue-600" />
+              </div>
+              
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-gray-900">Check Your Email</h2>
+                <p className="text-gray-600">
+                  We've sent a password reset link to <strong>{email}</strong>. 
+                  Please check your email and click the link to reset your password.
+                </p>
+              </div>
+
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>Didn't receive the email?</strong> Check your spam folder or try again in a few minutes.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => {
+                    setIsSuccess(false)
+                    setEmail("")
+                    setError("")
+                  }}
+                  variant="outline" 
+                  className="w-full"
+                >
+                  Try Another Email
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  asChild 
+                  className="w-full"
+                >
+                  <Link href="/">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Login
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   if (step === "success") {
     return (
