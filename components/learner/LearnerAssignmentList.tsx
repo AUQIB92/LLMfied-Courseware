@@ -48,7 +48,6 @@ interface LearnerAssignmentListProps {
   studentId: string
   studentName: string
   onViewAssignment: (assignment: Assignment) => void
-  onDownloadPDF?: (assignment: Assignment) => void
 }
 
 export const LearnerAssignmentList: React.FC<LearnerAssignmentListProps> = ({
@@ -56,8 +55,7 @@ export const LearnerAssignmentList: React.FC<LearnerAssignmentListProps> = ({
   submissions,
   studentId,
   studentName,
-  onViewAssignment,
-  onDownloadPDF
+  onViewAssignment
 }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'submitted' | 'overdue'>('all')
@@ -361,14 +359,6 @@ export const LearnerAssignmentList: React.FC<LearnerAssignmentListProps> = ({
                         View & Submit
                       </Button>
                       
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDownloadPDF(assignment)}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download PDF
-                      </Button>
                     </div>
                   </div>
                 </CardContent>

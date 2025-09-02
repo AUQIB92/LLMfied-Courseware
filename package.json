@@ -12,6 +12,7 @@
   "dependencies": {
     "@aws-sdk/credential-providers": "latest",
     "@google-cloud/vertexai": "^1.10.0",
+    "@google/genai": "^1.16.0",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.1",
     "@mongodb-js/zstd": "latest",

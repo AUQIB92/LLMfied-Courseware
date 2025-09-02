@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen,
   Clock,
@@ -51,6 +52,12 @@ import {
   GraduationCap,
   Bookmark,
   FileQuestion,
+  FileText,
+  Video,
+  ExternalLink,
+  Wrench,
+  GitBranch,
+  Brain,
 } from "lucide-react";
 import CourseLibrary from "./CourseLibrary";
 import {
@@ -1718,6 +1725,490 @@ export default function LearnerDashboard() {
             isEducator={false}
           />
         );
+      
+      case "resources":
+        // Sample resources data - in a real app, this would come from enrolled courses
+        const sampleResources = {
+          articles: [
+            {
+              title: "Introduction to React Hooks",
+              description: "Comprehensive guide to understanding and implementing React Hooks in modern applications",
+              url: "https://reactjs.org/docs/hooks-intro.html",
+              type: "article"
+            },
+            {
+              title: "JavaScript ES6+ Features",
+              description: "Deep dive into modern JavaScript features and best practices",
+              url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+              type: "article"
+            },
+            {
+              title: "CSS Grid Layout Guide",
+              description: "Complete guide to mastering CSS Grid for responsive layouts",
+              url: "https://css-tricks.com/snippets/css/complete-guide-grid/",
+              type: "article"
+            }
+          ],
+          videos: [
+            {
+              title: "Next.js Full Course",
+              description: "Complete Next.js tutorial covering routing, API routes, and deployment",
+              url: "https://youtube.com/watch?v=example1",
+              type: "video"
+            },
+            {
+              title: "Node.js Crash Course",
+              description: "Learn Node.js fundamentals and build REST APIs",
+              url: "https://youtube.com/watch?v=example2",
+              type: "video"
+            }
+          ],
+          books: [
+            {
+              title: "You Don't Know JS",
+              description: "Essential book series for deep JavaScript understanding",
+              url: "https://github.com/getify/You-Dont-Know-JS",
+              type: "book"
+            },
+            {
+              title: "Clean Code",
+              description: "A handbook of agile software craftsmanship",
+              url: "https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882",
+              type: "book"
+            }
+          ],
+          courses: [
+            {
+              title: "Full Stack Web Development",
+              description: "Complete course covering frontend and backend development",
+              url: "https://example.com/course1",
+              type: "course"
+            }
+          ],
+          tools: [
+            {
+              title: "VS Code",
+              description: "Popular code editor with extensive extension ecosystem",
+              url: "https://code.visualstudio.com/",
+              type: "tool"
+            },
+            {
+              title: "Figma",
+              description: "Collaborative interface design tool",
+              url: "https://figma.com",
+              type: "tool"
+            }
+          ],
+          websites: [
+            {
+              title: "MDN Web Docs",
+              description: "Comprehensive resource for web developers",
+              url: "https://developer.mozilla.org/",
+              type: "website"
+            },
+            {
+              title: "Stack Overflow",
+              description: "Community-driven Q&A platform for programmers",
+              url: "https://stackoverflow.com/",
+              type: "website"
+            }
+          ],
+          exercises: [
+            {
+              title: "LeetCode Problems",
+              description: "Coding interview practice problems",
+              url: "https://leetcode.com/",
+              type: "exercise"
+            }
+          ],
+          github: [
+            {
+              title: "React Repository",
+              description: "Official React.js repository with source code and examples",
+              url: "https://github.com/facebook/react",
+              type: "github"
+            },
+            {
+              title: "Awesome JavaScript",
+              description: "Curated list of awesome JavaScript libraries and resources",
+              url: "https://github.com/sorrycc/awesome-javascript",
+              type: "github"
+            }
+          ]
+        };
+
+        // Resource Card Component
+        const ResourceCard = ({ resource, type }) => {
+          const getIcon = () => {
+            const iconMap = {
+              books: <BookOpen className="h-6 w-6 text-white" />,
+              courses: <Video className="h-6 w-6 text-white" />,
+              videos: <Play className="h-6 w-6 text-white" />,
+              articles: <FileText className="h-6 w-6 text-white" />,
+              tools: <Wrench className="h-6 w-6 text-white" />,
+              websites: <Globe className="h-6 w-6 text-white" />,
+              exercises: <Target className="h-6 w-6 text-white" />,
+              github: <GitBranch className="h-6 w-6 text-white" />,
+            };
+            return iconMap[type] || <ExternalLink className="h-6 w-6 text-white" />;
+          };
+
+          const getGradientAndColors = () => {
+            const designMap = {
+              books: {
+                gradient: "from-blue-500/10 via-indigo-500/10 to-purple-500/10",
+                border: "border-blue-200/50",
+                iconBg: "from-blue-500 to-indigo-600",
+                titleColor: "text-blue-700",
+                accent: "blue",
+              },
+              courses: {
+                gradient: "from-purple-500/10 via-pink-500/10 to-rose-500/10",
+                border: "border-purple-200/50",
+                iconBg: "from-purple-500 to-pink-600",
+                titleColor: "text-purple-700",
+                accent: "purple",
+              },
+              videos: {
+                gradient: "from-red-500/10 via-orange-500/10 to-yellow-500/10",
+                border: "border-red-200/50",
+                iconBg: "from-red-500 to-orange-600",
+                titleColor: "text-red-700",
+                accent: "red",
+              },
+              articles: {
+                gradient: "from-green-500/10 via-emerald-500/10 to-teal-500/10",
+                border: "border-green-200/50",
+                iconBg: "from-green-500 to-emerald-600",
+                titleColor: "text-green-700",
+                accent: "green",
+              },
+              tools: {
+                gradient: "from-orange-500/10 via-amber-500/10 to-yellow-500/10",
+                border: "border-orange-200/50",
+                iconBg: "from-orange-500 to-amber-600",
+                titleColor: "text-orange-700",
+                accent: "orange",
+              },
+              websites: {
+                gradient: "from-indigo-500/10 via-blue-500/10 to-cyan-500/10",
+                border: "border-indigo-200/50",
+                iconBg: "from-indigo-500 to-blue-600",
+                titleColor: "text-indigo-700",
+                accent: "indigo",
+              },
+              exercises: {
+                gradient: "from-pink-500/10 via-rose-500/10 to-red-500/10",
+                border: "border-pink-200/50",
+                iconBg: "from-pink-500 to-rose-600",
+                titleColor: "text-pink-700",
+                accent: "pink",
+              },
+              github: {
+                gradient: "from-gray-500/10 via-slate-500/10 to-gray-600/10",
+                border: "border-gray-200/50",
+                iconBg: "from-gray-700 to-gray-900",
+                titleColor: "text-gray-700",
+                accent: "gray",
+              },
+            };
+            return designMap[type] || designMap.articles;
+          };
+
+          const design = getGradientAndColors();
+
+          return (
+            <Card className={`h-full bg-gradient-to-br ${design.gradient} backdrop-blur-sm border ${design.border} transition-all duration-300 hover:shadow-xl hover:scale-[1.02] overflow-hidden relative group`}>
+              <CardHeader className="pb-4 relative z-10">
+                <div className="flex items-start gap-4">
+                  <div className={`w-12 h-12 bg-gradient-to-br ${design.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    {getIcon()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className={`text-lg font-bold ${design.titleColor} mb-2 line-clamp-2 group-hover:text-opacity-90 transition-colors`}>
+                      {resource.title}
+                    </CardTitle>
+                    <p className={`text-sm text-${design.accent}-600 line-clamp-3 leading-relaxed`}>
+                      {resource.description}
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="flex items-center justify-between">
+                  <Badge className={`bg-${design.accent}-100 text-${design.accent}-700 border-${design.accent}-200 text-xs`}>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`text-${design.accent}-600 hover:text-${design.accent}-700 hover:bg-${design.accent}-50 p-2 rounded-lg transition-all duration-200`}
+                    onClick={() => window.open(resource.url, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        };
+
+        return (
+          <div className="space-y-8">
+            {/* Welcome Section */}
+            <div className="text-center py-8">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-3xl blur-3xl"></div>
+                <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-4">
+                    Learning Resources
+                  </h1>
+                  <p className="text-slate-600 text-lg max-w-2xl mx-auto">
+                    Your personalized collection of learning materials from all enrolled courses
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Horizontal Resources Section - Educator Dashboard Style */}
+            <div className="relative">
+              {/* Enhanced background blur effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-indigo-600/10 to-blue-600/10 rounded-3xl blur-3xl"></div>
+
+              <Card className="relative border-0 bg-gradient-to-br from-purple-50/90 via-indigo-50/90 to-blue-50/90 shadow-2xl overflow-hidden backdrop-blur-sm">
+                {/* Animated background elements */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 to-indigo-100/30"></div>
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 rounded-full blur-2xl"></div>
+                  <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-r from-indigo-400/20 to-blue-400/20 rounded-full blur-2xl"></div>
+                </div>
+
+                <CardHeader className="relative z-10 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border-b border-purple-200/50 p-8">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl">
+                        <Sparkles className="h-8 w-8 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 bg-clip-text text-transparent mb-2">
+                          Complete Learning Resources
+                        </CardTitle>
+                        <CardDescription className="text-purple-700 text-lg font-medium">
+                          AI-curated collection of comprehensive learning materials
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-0 shadow-lg px-4 py-2 text-sm font-bold">
+                      <Brain className="h-4 w-4 mr-2" />
+                      AI Curated
+                    </Badge>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="relative z-10 p-8">
+                  <Tabs defaultValue="articles" className="w-full">
+                    {/* Enhanced TabsList with Educator Design */}
+                    <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto p-2 bg-gradient-to-r from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-lg mb-8">
+                      <TabsTrigger
+                        value="articles"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-green-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <FileText className="h-5 w-5 text-green-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Articles</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-green-100 text-green-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        >
+                          {sampleResources.articles.length}
+                        </Badge>
+                      </TabsTrigger>
+
+                      <TabsTrigger
+                        value="videos"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-red-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Play className="h-5 w-5 text-red-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Videos</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-red-100 text-red-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        >
+                          0
+                        </Badge>
+                      </TabsTrigger>
+
+                      <TabsTrigger
+                        value="books"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-blue-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <BookOpen className="h-5 w-5 text-blue-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Books</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-blue-100 text-blue-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        >
+                          0
+                        </Badge>
+                      </TabsTrigger>
+
+                      <TabsTrigger
+                        value="courses"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-purple-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Video className="h-5 w-5 text-purple-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Courses</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-purple-100 text-purple-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        >
+                          0
+                        </Badge>
+                      </TabsTrigger>
+
+                      <TabsTrigger
+                        value="tools"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-orange-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Wrench className="h-5 w-5 text-orange-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Tools</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-orange-100 text-orange-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        >
+                          0
+                        </Badge>
+                      </TabsTrigger>
+
+                      <TabsTrigger
+                        value="websites"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-cyan-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Globe className="h-5 w-5 text-cyan-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Websites</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-cyan-100 text-cyan-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        >
+                          0
+                        </Badge>
+                      </TabsTrigger>
+
+                      <TabsTrigger
+                        value="exercises"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-yellow-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-yellow-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <Target className="h-5 w-5 text-yellow-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">Practice</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-yellow-100 text-yellow-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        >
+                          0
+                        </Badge>
+                      </TabsTrigger>
+
+                      <TabsTrigger
+                        value="github"
+                        className="group flex flex-col items-center gap-2 p-4 data-[state=active]:bg-gradient-to-br data-[state=active]:from-gray-500 data-[state=active]:to-slate-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-gray-50"
+                      >
+                        <div className="p-2 rounded-lg bg-white/80 group-data-[state=active]:bg-white/20 transition-all duration-300">
+                          <GitBranch className="h-5 w-5 text-gray-600 group-data-[state=active]:text-white" />
+                        </div>
+                        <span className="text-xs font-semibold">GitHub</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-gray-100 text-gray-700 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
+                        >
+                          0
+                        </Badge>
+                      </TabsTrigger>
+                    </TabsList>
+
+                    {/* Tab Contents */}
+                    <TabsContent value="articles" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sampleResources.articles.map((resource, index) => (
+                          <ResourceCard key={index} resource={resource} type="articles" />
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="videos" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sampleResources.videos.map((resource, index) => (
+                          <ResourceCard key={index} resource={resource} type="videos" />
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="books" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sampleResources.books.map((resource, index) => (
+                          <ResourceCard key={index} resource={resource} type="books" />
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="courses" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sampleResources.courses.map((resource, index) => (
+                          <ResourceCard key={index} resource={resource} type="courses" />
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="tools" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sampleResources.tools.map((resource, index) => (
+                          <ResourceCard key={index} resource={resource} type="tools" />
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="websites" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sampleResources.websites.map((resource, index) => (
+                          <ResourceCard key={index} resource={resource} type="websites" />
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="exercises" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sampleResources.exercises.map((resource, index) => (
+                          <ResourceCard key={index} resource={resource} type="exercises" />
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="github" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sampleResources.github.map((resource, index) => (
+                          <ResourceCard key={index} resource={resource} type="github" />
+                        ))}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        );
+      
       default:
         return null;
     }
@@ -3124,6 +3615,12 @@ export default function LearnerDashboard() {
                   label: "Course Library",
                   icon: BookOpen,
                   gradient: "from-emerald-500 to-green-600",
+                },
+                {
+                  id: "resources",
+                  label: "Learning Resources",
+                  icon: Sparkles,
+                  gradient: "from-purple-500 to-pink-600",
                 },
                 {
                   id: "test-series",

@@ -2746,6 +2746,7 @@ export default function AcademicModuleEditorEnhanced({
     tools: { icon: Wrench, label: "Tools", color: "orange" },
     websites: { icon: Globe, label: "Websites", color: "cyan" },
     exercises: { icon: Target, label: "Exercises", color: "pink" },
+    github: { icon: GitBranch, label: "GitHub", color: "gray" },
   };
 
   const addResource = (category, resource) => {
@@ -3253,7 +3254,20 @@ export default function AcademicModuleEditorEnhanced({
       id: Date.now().toString(),
     };
 
-    addResource(newResource?.type + "s", resourceWithId);
+    // Map resource type to correct category name
+    const categoryMap = {
+      'article': 'articles',
+      'book': 'books',
+      'video': 'videos',
+      'course': 'courses', 
+      'tool': 'tools',
+      'website': 'websites',
+      'exercise': 'exercises',
+      'github': 'github'  // Keep github as-is, don't add 's'
+    };
+    
+    const category = categoryMap[newResource?.type] || newResource?.type + "s";
+    addResource(category, resourceWithId);
     setNewResource({
       title: "",
       url: "",
@@ -3797,8 +3811,8 @@ export default function AcademicModuleEditorEnhanced({
           data.resources.githubRepos.length > 0
         ) {
           updatedModule.resources = updatedModule.resources || {};
-          updatedModule.resources.websites = [
-            ...(updatedModule.resources.websites || []),
+          updatedModule.resources.github = [
+            ...(updatedModule.resources.github || []),
             ...(data.resources.githubRepos || [])
               .filter((repo) => repo && repo.title)
               .map((repo) => ({

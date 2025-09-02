@@ -564,6 +564,7 @@ export default function ModuleContent({
     tools: [],
     websites: [],
     exercises: [],
+    github: [],
   });
   const [editingResource, setEditingResource] = useState(null);
   const [editedResourceData, setEditedResourceData] = useState({});
@@ -1493,7 +1494,9 @@ Return JSON format:
           r.type === "repository" ||
           r.type === "repo" ||
           r.type === "source" ||
-          r.type === "code"
+          r.type === "code" ||
+          // Include GitHub URLs that might be incorrectly categorized
+          (r.url && (r.url.includes('github.com') || r.url.includes('github.io')))
       ),
     };
 
