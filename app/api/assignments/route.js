@@ -118,9 +118,9 @@ export async function POST(request) {
     } = requestBody
 
     // Validate required fields
-    if (!courseId || !title || !description || !dueDate) {
+    if (!courseId || !title || !description) {
       return NextResponse.json({ 
-        error: "Missing required fields: courseId, title, description, dueDate" 
+        error: "Missing required fields: courseId, title, description" 
       }, { status: 400 })
     }
 
@@ -140,13 +140,16 @@ export async function POST(request) {
       }, { status: 404 })
     }
 
+    // Use provided dueDate if specified, otherwise default to 10-09-2025 for published assignments
+    const finalDueDate = dueDate ? new Date(dueDate) : new Date('2025-09-10T23:59:59');
+    
     const assignmentDocument = {
       courseId: new ObjectId(courseId),
       educatorId: new ObjectId(user.userId),
       title,
       description,
       instructions: instructions || "",
-      dueDate: new Date(dueDate),
+      dueDate: finalDueDate,
       maxPoints: maxPoints || 100,
       attachments: attachments || [],
       submissionType: submissionType || "file", // file, text, url

@@ -70,7 +70,17 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   // Removed PDF export state - keeping only view and print functionality
   const [editingAssignment, setEditingAssignment] = useState(null) // For assignment editing
   const [deletingAssignment, setDeletingAssignment] = useState(null) // For assignment deletion
-  const [editForm, setEditForm] = useState({ title: '', description: '', content: '', dueDate: '', points: '' }) // Edit form state
+  const [editForm, setEditForm] = useState({ 
+    title: '', 
+    description: '', 
+    content: '', 
+    instructions: '',
+    dueDate: '', 
+    maxPoints: '',
+    submissionType: 'text',
+    allowLateSubmission: true,
+    lateSubmissionPenalty: 10
+  }) // Edit form state
   
   // Assignment submission state
   const [submissionUrl, setSubmissionUrl] = useState('') // Google Drive URL
@@ -127,8 +137,12 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
       title: assignment.title || '',
       description: assignment.description || '',
       content: assignment.content || '',
+      instructions: assignment.instructions || '',
       dueDate: assignment.dueDate ? new Date(assignment.dueDate).toISOString().split('T')[0] : '',
-      points: assignment.points || ''
+      maxPoints: assignment.maxPoints || assignment.points || '',
+      submissionType: assignment.submissionType || 'text',
+      allowLateSubmission: assignment.allowLateSubmission !== undefined ? assignment.allowLateSubmission : true,
+      lateSubmissionPenalty: assignment.lateSubmissionPenalty || 10
     })
   }
 
@@ -173,27 +187,49 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
   // Handle saving edited assignment
   const handleSaveEditedAssignment = async () => {
     try {
+      const assignment = editingAssignment.assignment;
       const updatedAssignment = {
         title: editForm.title,
         description: editForm.description,
         content: editForm.content,
+        instructions: editForm.instructions,
         dueDate: editForm.dueDate ? new Date(editForm.dueDate).toISOString() : null,
-        points: editForm.points ? parseInt(editForm.points) : null
+        maxPoints: editForm.maxPoints ? parseInt(editForm.maxPoints) : null,
+        submissionType: editForm.submissionType,
+        allowLateSubmission: editForm.allowLateSubmission,
+        lateSubmissionPenalty: editForm.lateSubmissionPenalty
       }
 
-      const response = await fetch(`/api/academic-courses/${viewerCourse._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify({
-          action: 'updateAssignment',
-          moduleIndex: editingAssignment.moduleIndex,
-          assignmentIndex: editingAssignment.assignmentIndex,
-          updatedAssignment: updatedAssignment
-        })
-      })
+      let response;
+      
+      // Check if this assignment has a separate ID (standalone assignment)
+      if (assignment._id || assignment.id) {
+        // Use the assignments API for standalone assignments
+        const assignmentId = assignment._id || assignment.id;
+        response = await fetch(`/api/assignments/${assignmentId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          },
+          body: JSON.stringify(updatedAssignment)
+        });
+      } else {
+        // Use the course API for embedded assignments
+        response = await fetch(`/api/academic-courses/${viewerCourse._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          },
+          body: JSON.stringify({
+            action: 'updateAssignment',
+            moduleIndex: editingAssignment.moduleIndex,
+            assignmentIndex: editingAssignment.assignmentIndex,
+            updatedAssignment: updatedAssignment
+          })
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to update assignment: ${response.statusText}`)
@@ -2753,6 +2789,18 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                   className="mt-1"
                 />
               </div>
+
+              <div>
+                <Label htmlFor="edit-instructions">Instructions</Label>
+                <Textarea
+                  id="edit-instructions"
+                  value={editForm.instructions}
+                  onChange={(e) => setEditForm(prev => ({...prev, instructions: e.target.value}))}
+                  rows={3}
+                  className="mt-1"
+                  placeholder="Detailed instructions for students..."
+                />
+              </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -2767,12 +2815,12 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                 </div>
                 
                 <div>
-                  <Label htmlFor="edit-points">Points</Label>
+                  <Label htmlFor="edit-points">Max Points</Label>
                   <Input
                     id="edit-points"
                     type="number"
-                    value={editForm.points}
-                    onChange={(e) => setEditForm(prev => ({...prev, points: e.target.value}))}
+                    value={editForm.maxPoints}
+                    onChange={(e) => setEditForm(prev => ({...prev, maxPoints: e.target.value}))}
                     className="mt-1"
                   />
                 </div>
@@ -2789,6 +2837,48 @@ export default function AcademicCourseViewer({ courseId, course: initialCourse, 
                   placeholder="Assignment content..."
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-submission-type">Submission Type</Label>
+                  <select
+                    id="edit-submission-type"
+                    value={editForm.submissionType}
+                    onChange={(e) => setEditForm(prev => ({...prev, submissionType: e.target.value}))}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="text">Text Submission</option>
+                    <option value="file">File Upload</option>
+                    <option value="url">URL/Link</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center space-x-2 mt-6">
+                  <input
+                    id="edit-allow-late"
+                    type="checkbox"
+                    checked={editForm.allowLateSubmission}
+                    onChange={(e) => setEditForm(prev => ({...prev, allowLateSubmission: e.target.checked}))}
+                    className="rounded"
+                  />
+                  <Label htmlFor="edit-allow-late">Allow Late Submissions</Label>
+                </div>
+              </div>
+
+              {editForm.allowLateSubmission && (
+                <div>
+                  <Label htmlFor="edit-late-penalty">Late Submission Penalty (%)</Label>
+                  <Input
+                    id="edit-late-penalty"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editForm.lateSubmissionPenalty}
+                    onChange={(e) => setEditForm(prev => ({...prev, lateSubmissionPenalty: parseInt(e.target.value) || 0}))}
+                    className="mt-1"
+                  />
+                </div>
+              )}
             </div>
             
             <DialogFooter>

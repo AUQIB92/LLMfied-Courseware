@@ -73,6 +73,8 @@ import {
   ImageIcon,
   Palette,
   Copy,
+  Presentation,
+  Monitor,
 } from "lucide-react";
 import MathMarkdownRenderer from "@/components/MathMarkdownRenderer";
 import UniversalContentRenderer from "@/components/UniversalContentRenderer";
@@ -1293,6 +1295,14 @@ export default function AcademicModuleEditorEnhanced({
   const [selectedImageTopic, setSelectedImageTopic] = useState("");
   const [showImageGallery, setShowImageGallery] = useState(true);
 
+  // Slide deck generation state
+  const [generatingSlides, setGeneratingSlides] = useState(false);
+  const [generatedSlidesDeck, setGeneratedSlidesDeck] = useState(null);
+  const [showSlideDeckPreview, setShowSlideDeckPreview] = useState(false);
+  const [slideDeckProgress, setSlideDeckProgress] = useState(0);
+  const [slideDeckStyle, setSlideDeckStyle] = useState("academic");
+  const [slideDeckTheme, setSlideDeckTheme] = useState("professional");
+
   // Assignment generation functions
   const handleGenerateAssignment = async () => {
     if (!assignmentTopics.trim()) {
@@ -1350,7 +1360,7 @@ export default function AcademicModuleEditorEnhanced({
 
       if (data.success && data.assignment) {
         setGeneratedAssignment(data.assignment);
-        // Set due date to 7 days from now
+        // Set due date to 7 days from now (configurable by educator)
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 7);
         setAssignmentDueDate(dueDate);
@@ -1551,10 +1561,26 @@ export default function AcademicModuleEditorEnhanced({
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [editingAssignmentContent, setEditingAssignmentContent] = useState("");
   const [showEditAssignmentModal, setShowEditAssignmentModal] = useState(false);
+  const [editingAssignmentData, setEditingAssignmentData] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    points: '',
+    difficulty: 'medium',
+    instructions: ''
+  });
 
   const handleEditAssignment = (assignment, index) => {
     setEditingAssignment({ ...assignment, index });
     setEditingAssignmentContent(assignment.content || "");
+    setEditingAssignmentData({
+      title: assignment.title || '',
+      description: assignment.description || '',
+      dueDate: assignment.dueDate ? new Date(assignment.dueDate).toISOString().split('T')[0] : '',
+      points: assignment.points || assignment.maxScore || '',
+      difficulty: assignment.difficulty || 'medium',
+      instructions: assignment.instructions || ''
+    });
     setShowEditAssignmentModal(true);
   };
 
@@ -1573,9 +1599,16 @@ export default function AcademicModuleEditorEnhanced({
         updatedModule.assignments = [];
       }
 
-      // Update the assignment with new content
+      // Update the assignment with new content and metadata
       updatedModule.assignments[assignmentIndex] = {
         ...updatedModule.assignments[assignmentIndex],
+        title: editingAssignmentData.title,
+        description: editingAssignmentData.description,
+        dueDate: editingAssignmentData.dueDate ? new Date(editingAssignmentData.dueDate).toISOString() : null,
+        points: editingAssignmentData.points ? parseInt(editingAssignmentData.points) : null,
+        maxScore: editingAssignmentData.points ? parseInt(editingAssignmentData.points) : null,
+        difficulty: editingAssignmentData.difficulty,
+        instructions: editingAssignmentData.instructions,
         content: editingAssignmentContent,
         updatedAt: new Date().toISOString(),
         isModified: true
@@ -1592,6 +1625,14 @@ export default function AcademicModuleEditorEnhanced({
       setShowEditAssignmentModal(false);
       setEditingAssignment(null);
       setEditingAssignmentContent("");
+      setEditingAssignmentData({
+        title: '',
+        description: '',
+        dueDate: '',
+        points: '',
+        difficulty: 'medium',
+        instructions: ''
+      });
 
       toast.success("Assignment updated successfully!");
       
@@ -1808,6 +1849,279 @@ export default function AcademicModuleEditorEnhanced({
     setImagePrompt(generatedPrompt);
     setSelectedImageTopic(topic);
     toast.info(`🎨 Generated ${randomStyle} prompt for: ${topic}`);
+  };
+
+  // Slide Deck Generation Functions
+  const handleGenerateSlidesDeck = async () => {
+    if (!localModule.content && !localModule.detailedSubsections?.length) {
+      toast.error("Module needs content or detailed subsections to generate slides");
+      return;
+    }
+
+    setGeneratingSlides(true);
+    setSlideDeckProgress(0);
+
+    try {
+      console.log("📊 Generating presentation slides...");
+      toast.info(`🎨 Creating breathtaking ${slideDeckTheme} presentation slides...`);
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setSlideDeckProgress((prev) => Math.min(prev + 15, 90));
+      }, 800);
+
+      // Prepare content for slide generation
+      const slideContent = {
+        moduleTitle: localModule.title,
+        moduleContent: localModule.content,
+        objectives: localModule.objectives || [],
+        detailedSubsections: localModule.detailedSubsections || [],
+        academicLevel: course?.academicLevel || academicLevel,
+        subject: course?.subject || subject,
+      };
+
+      const response = await fetch("/api/academic-courses/generate-slides", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          courseId: courseId,
+          moduleData: slideContent,
+          style: slideDeckStyle,
+          theme: slideDeckTheme,
+          context: {
+            academicLevel: course?.academicLevel || academicLevel,
+            subject: course?.subject || subject,
+            semester: semester,
+          }
+        }),
+      });
+
+      clearInterval(progressInterval);
+      setSlideDeckProgress(100);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to generate slide deck: ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.slides) {
+        const newSlideDeck = {
+          id: `slides_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          slides: data.slides,
+          title: `${localModule.title} - Presentation`,
+          style: slideDeckStyle,
+          theme: slideDeckTheme,
+          createdAt: new Date().toISOString(),
+          moduleTitle: localModule.title,
+          totalSlides: data.slides?.length || 0,
+          metadata: {
+            subject: course?.subject || subject,
+            academicLevel: course?.academicLevel || academicLevel,
+            generationTime: data.generationTime || "Unknown"
+          }
+        };
+
+        setGeneratedSlidesDeck(newSlideDeck);
+
+        // Update module with slide deck
+        const updatedModule = {
+          ...localModule,
+          slideDeck: newSlideDeck,
+          lastUpdated: new Date().toISOString()
+        };
+        setLocalModule(updatedModule);
+
+        if (onUpdate) {
+          onUpdate(updatedModule);
+        }
+
+        toast.success(`🎉 Beautiful ${slideDeckTheme} presentation created with ${data.slides?.length || 0} breathtaking slides!`);
+        
+        // Show preview modal
+        setShowSlideDeckPreview(true);
+      } else {
+        throw new Error(data.error || "Failed to generate slide deck");
+      }
+    } catch (error) {
+      console.error("❌ Slide deck generation error:", error);
+      toast.error(`Failed to generate slide deck: ${error.message}`);
+    } finally {
+      setGeneratingSlides(false);
+      setTimeout(() => setSlideDeckProgress(0), 2000);
+    }
+  };
+
+  const handleDownloadSlides = () => {
+    if (!generatedSlidesDeck || !generatedSlidesDeck.slides) return;
+
+    // Create HTML content for the slides
+    const htmlContent = generateSlidesHTML(generatedSlidesDeck);
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${localModule.title || 'slides'}-presentation-${Date.now()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Slide deck downloaded successfully!");
+  };
+
+  const generateSlidesHTML = (slideDeck) => {
+    if (!slideDeck || !slideDeck.slides) return "";
+
+    const slidesHTML = slideDeck.slides.map((slide, index) => `
+      <section class="slide slide-${index + 1}" data-slide="${index + 1}">
+        <div class="slide-content">
+          <h2 class="slide-title">${slide.title || `Slide ${index + 1}`}</h2>
+          <div class="slide-body">${slide.content || ''}</div>
+          ${slide.notes ? `<div class="slide-notes" style="display: none;">${slide.notes}</div>` : ''}
+        </div>
+      </section>
+    `).join('\n');
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${slideDeck.title}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow: hidden;
+        }
+        .presentation {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .slide {
+            width: 90vw;
+            height: 80vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 60px;
+            display: none;
+            position: relative;
+            overflow-y: auto;
+        }
+        .slide.active { display: block; }
+        .slide-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: #2d3748;
+            border-bottom: 4px solid #667eea;
+            padding-bottom: 1rem;
+        }
+        .slide-body {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            color: #4a5568;
+        }
+        .slide-body h3 { color: #2d3748; margin: 2rem 0 1rem 0; font-size: 2rem; }
+        .slide-body ul, .slide-body ol { margin: 1rem 0; padding-left: 2rem; }
+        .slide-body li { margin: 0.5rem 0; }
+        .slide-body p { margin: 1rem 0; }
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .control-btn {
+            padding: 12px 24px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        .control-btn:hover { background: white; transform: translateY(-2px); }
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .title-slide .slide-title { font-size: 4rem; text-align: center; }
+        .title-slide .slide-body { text-align: center; font-size: 1.8rem; }
+    </style>
+</head>
+<body>
+    <div class="presentation">
+        ${slidesHTML}
+    </div>
+    <div class="slide-counter">
+        <span id="current-slide">1</span> / <span id="total-slides">${slideDeck.slides?.length || 0}</span>
+    </div>
+    <div class="controls">
+        <button class="control-btn" onclick="previousSlide()">← Previous</button>
+        <button class="control-btn" onclick="nextSlide()">Next →</button>
+        <button class="control-btn" onclick="toggleFullscreen()">🔲 Fullscreen</button>
+    </div>
+    <script>
+        let currentSlide = 1;
+        const totalSlides = ${slideDeck.slides?.length || 0};
+        
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            if (n > totalSlides) currentSlide = 1;
+            if (n < 1) currentSlide = totalSlides;
+            slides.forEach(slide => slide.classList.remove('active'));
+            if (slides[currentSlide - 1]) {
+                slides[currentSlide - 1].classList.add('active');
+            }
+            document.getElementById('current-slide').textContent = currentSlide;
+        }
+        
+        function nextSlide() { showSlide(currentSlide += 1); }
+        function previousSlide() { showSlide(currentSlide -= 1); }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+            if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+            if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
+        });
+        
+        // Initialize first slide
+        showSlide(1);
+    </script>
+</body>
+</html>`;
   };
 
   // Academic detailed content generation state
@@ -2322,11 +2636,10 @@ export default function AcademicModuleEditorEnhanced({
     }));
   };
 
-  // Generate quiz for subsection with difficulty level
+  // Generate mixed difficulty quiz for subsection (10 questions with mixed difficulty levels)
   const generateSubsectionQuiz = async (
     subsection,
-    subsectionIndex,
-    difficulty = "medium"
+    subsectionIndex
   ) => {
     // Check authentication first
     if (!user || user.role !== "educator") {
@@ -2485,12 +2798,12 @@ export default function AcademicModuleEditorEnhanced({
       return;
     }
 
-    const quizKey = `${subsectionIndex}_${difficulty}`;
+    const quizKey = `${subsectionIndex}_mixed`;
     setGeneratingQuiz((prev) => ({ ...prev, [quizKey]: true }));
     setQuizProgress((prev) => ({ ...prev, [quizKey]: 0 }));
 
     try {
-      toast.info(`🎯 Creating ${difficulty} quiz for: ${subsection.title}`);
+      toast.info(`🎯 Creating mixed difficulty quiz (10 questions) for: ${subsection.title}`);
 
       // Simulate progress
       const progressInterval = setInterval(() => {
@@ -2503,12 +2816,13 @@ export default function AcademicModuleEditorEnhanced({
 
       const requestPayload = {
         moduleContent: subsectionContent.trim(),
-        difficulty: difficulty,
+        difficulty: "mixed", // Generate 10 questions with mixed difficulty levels
+        questionCount: 10, // Specify exactly 10 questions
         context: {
           concept: subsection.title,
           academicLevel: academicLevel,
           subject: subject,
-          semester: difficulty, // Use difficulty as learner level
+          semester: semester,
         },
         provider: selectedProviders.quiz, // Include selected provider
       };
@@ -2549,11 +2863,12 @@ export default function AcademicModuleEditorEnhanced({
           ...subsectionQuizzes,
           [quizKey]: {
             questions: data.questions || [],
-            difficulty: difficulty,
+            difficulty: "mixed", // Mixed difficulty levels within 10 questions
+            difficultyBreakdown: data.difficultyBreakdown || { easy: 3, medium: 4, hard: 3 },
             subsectionTitle: subsection.title,
             formattedSubsectionTitle: subsection.formattedTitle,
             createdAt: new Date().toISOString(),
-            totalQuestions: data.questions?.length || 0,
+            totalQuestions: data.questions?.length || 10,
             generatedWith:
               data.metadata?.generatedWith || selectedProviders.quiz,
           },
@@ -2575,10 +2890,9 @@ export default function AcademicModuleEditorEnhanced({
           ? "Gemini"
           : "Perplexity";
 
+        const breakdown = data.difficultyBreakdown || { easy: 3, medium: 4, hard: 3 };
         toast.success(
-          `🏆 ${
-            difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
-          } quiz created successfully with ${providerName}!`
+          `🏆 Mixed difficulty quiz created successfully with ${providerName}! (${breakdown.easy} Easy + ${breakdown.medium} Medium + ${breakdown.hard} Hard questions)`
         );
       } else {
         const errorText = await response.text();
@@ -2629,8 +2943,8 @@ export default function AcademicModuleEditorEnhanced({
   };
 
   // Delete quiz
-  const deleteSubsectionQuiz = (subsectionIndex, difficulty) => {
-    const quizKey = `${subsectionIndex}_${difficulty}`;
+  const deleteSubsectionQuiz = (subsectionIndex) => {
+    const quizKey = `${subsectionIndex}_mixed`;
     const updatedQuizzes = { ...subsectionQuizzes };
     delete updatedQuizzes[quizKey];
 
@@ -4242,7 +4556,7 @@ export default function AcademicModuleEditorEnhanced({
         onValueChange={setActiveMainTab}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-6 h-auto p-2 bg-gradient-to-r from-slate-50 via-blue-50 to-purple-50 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-lg">
+        <TabsList className="grid w-full grid-cols-7 h-auto p-2 bg-gradient-to-r from-slate-50 via-blue-50 to-purple-50 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-lg">
           <TabsTrigger value="overview" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md">
             <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20">
               <FileText className="h-4 w-4" />
@@ -4273,14 +4587,20 @@ export default function AcademicModuleEditorEnhanced({
             </div>
             <span className="font-medium">Assignments</span>
           </TabsTrigger>
+          <TabsTrigger value="slides" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md group">
+            <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20 transition-all duration-300 group-hover:scale-110">
+              <Monitor className="h-4 w-4" />
+            </div>
+            <span className="font-medium">Slides</span>
+            <div className="ml-1 px-1.5 py-0.5 bg-gradient-to-r from-pink-400 to-rose-500 text-white text-xs rounded-full font-bold animate-pulse">
+              NEW
+            </div>
+          </TabsTrigger>
           <TabsTrigger value="images" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md group">
             <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20 transition-all duration-300 group-hover:scale-110">
               <ImageIcon className="h-4 w-4" />
             </div>
             <span className="font-medium">Images</span>
-            <div className="ml-1 px-1.5 py-0.5 bg-gradient-to-r from-pink-400 to-rose-500 text-white text-xs rounded-full font-bold animate-pulse">
-              NEW
-            </div>
           </TabsTrigger>
           <TabsTrigger value="resources" className="flex items-center gap-2 p-3 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-xl hover:bg-slate-100/80 hover:shadow-md">
             <div className="p-1.5 rounded-lg bg-white/20 group-data-[state=active]:bg-white/20">
@@ -7203,6 +7523,213 @@ Examples:
           )}
         </TabsContent>
 
+        {/* Slides Tab */}
+        <TabsContent value="slides" className="space-y-6">
+          <div className="space-y-6">
+            {/* Slide Deck Generator Section */}
+            <Card className="bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 border-2 border-pink-200/50 shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 text-white shadow-lg">
+                    <Monitor className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">AI Slide Deck Generator</h3>
+                    <p className="text-sm text-gray-600 font-normal">Create Breathtaking Presentation Slides</p>
+                  </div>
+                  <div className="ml-auto flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs rounded-full font-bold animate-pulse">
+                    <Sparkles className="h-3 w-3" />
+                    AI Powered
+                  </div>
+                </CardTitle>
+                <CardDescription className="text-base">
+                  Generate professional presentation slides based on your module content with stunning visuals and layouts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Slide Generation Options */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Presentation Style</Label>
+                      <Select value={slideDeckStyle} onValueChange={setSlideDeckStyle}>
+                        <SelectTrigger className="mt-2 border-2 border-pink-200 focus:border-pink-500 bg-white/80">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="academic">Academic & Scholarly</SelectItem>
+                          <SelectItem value="modern">Modern & Sleek</SelectItem>
+                          <SelectItem value="creative">Creative & Colorful</SelectItem>
+                          <SelectItem value="minimalist">Clean & Minimalist</SelectItem>
+                          <SelectItem value="corporate">Professional Corporate</SelectItem>
+                          <SelectItem value="educational">Educational & Interactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Theme</Label>
+                      <Select value={slideDeckTheme} onValueChange={setSlideDeckTheme}>
+                        <SelectTrigger className="mt-2 border-2 border-pink-200 focus:border-pink-500 bg-white/80">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="professional">Professional Blue</SelectItem>
+                          <SelectItem value="vibrant">Vibrant Colors</SelectItem>
+                          <SelectItem value="dark">Dark Mode</SelectItem>
+                          <SelectItem value="nature">Nature Green</SelectItem>
+                          <SelectItem value="sunset">Sunset Orange</SelectItem>
+                          <SelectItem value="royal">Royal Purple</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col justify-center items-center space-y-4">
+                    <Button
+                      onClick={handleGenerateSlidesDeck}
+                      disabled={generatingSlides || (!localModule.content && !localModule.detailedSubsections?.length)}
+                      className="w-full h-16 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      {generatingSlides ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Creating Slides...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Monitor className="h-5 w-5" />
+                          Generate Slide Deck
+                        </div>
+                      )}
+                    </Button>
+                    
+                    {generatingSlides && (
+                      <div className="w-full space-y-2">
+                        <Progress value={slideDeckProgress} className="h-2 bg-pink-100" />
+                        <p className="text-xs text-center text-gray-600">
+                          Creating breathtaking {slideDeckTheme} slides...
+                        </p>
+                      </div>
+                    )}
+                    
+                    {generatedSlidesDeck && (
+                      <div className="flex gap-2 w-full">
+                        <Button
+                          onClick={() => setShowSlideDeckPreview(true)}
+                          variant="outline"
+                          className="flex-1 border-pink-200 text-pink-700 hover:bg-pink-50"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Preview
+                        </Button>
+                        <Button
+                          onClick={handleDownloadSlides}
+                          variant="outline"
+                          className="flex-1 border-purple-200 text-purple-700 hover:bg-purple-50"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Content Preview */}
+                {(localModule.content || localModule.detailedSubsections?.length > 0) && (
+                  <div className="bg-white/60 rounded-lg p-4 border border-pink-200">
+                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Content Source:</h4>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <div>📝 Module Title: {localModule.title}</div>
+                      {localModule.content && (
+                        <div>📄 Main Content: {localModule.content.length} characters</div>
+                      )}
+                      {localModule.detailedSubsections?.length > 0 && (
+                        <div>🔍 Detailed Subsections: {localModule.detailedSubsections.length} sections</div>
+                      )}
+                      {localModule.objectives?.length > 0 && (
+                        <div>🎯 Learning Objectives: {localModule.objectives.length} objectives</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Generated Slide Deck Display */}
+            {generatedSlidesDeck && (
+              <Card className="border-2 border-pink-200/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Monitor className="h-5 w-5 text-pink-600" />
+                    Generated Slide Deck
+                  </CardTitle>
+                  <CardDescription>
+                    {generatedSlidesDeck.title} • {generatedSlidesDeck.totalSlides} slides • {generatedSlidesDeck.style} style • {generatedSlidesDeck.theme} theme
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-6 border border-pink-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-800">
+                          {generatedSlidesDeck.title}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Created: {new Date(generatedSlidesDeck.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge className="bg-pink-100 text-pink-800">
+                          {generatedSlidesDeck.totalSlides} Slides
+                        </Badge>
+                        <Badge className="bg-purple-100 text-purple-800">
+                          {generatedSlidesDeck.theme}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <Button
+                        onClick={() => setShowSlideDeckPreview(true)}
+                        className="bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview Slides
+                      </Button>
+                      <Button
+                        onClick={handleDownloadSlides}
+                        variant="outline"
+                        className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download HTML
+                      </Button>
+                      <Button
+                        onClick={() => setShowSlideDeckPreview(true)}
+                        variant="outline"
+                        className="border-pink-300 text-pink-700 hover:bg-pink-50"
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Present
+                      </Button>
+                    </div>
+                    
+                    {generatedSlidesDeck.metadata && (
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <div>🎓 Subject: {generatedSlidesDeck.metadata.subject}</div>
+                        <div>📚 Academic Level: {generatedSlidesDeck.metadata.academicLevel}</div>
+                        <div>⏱️ Generation Time: {generatedSlidesDeck.metadata.generationTime}</div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
         {/* Images Tab */}
         <TabsContent value="images" className="space-y-6">
           <div className="space-y-6">
@@ -7959,6 +8486,107 @@ Examples:
         onExportPDF={null}
       />
 
+      {/* Slide Deck Preview Modal */}
+      {showSlideDeckPreview && generatedSlidesDeck && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full h-full max-w-6xl max-h-[95vh] m-4 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+              <div className="flex items-center gap-3">
+                <Monitor className="h-6 w-6" />
+                <div>
+                  <h3 className="text-lg font-semibold">{generatedSlidesDeck.title}</h3>
+                  <p className="text-sm opacity-90">{generatedSlidesDeck.totalSlides} slides • {generatedSlidesDeck.style} • {generatedSlidesDeck.theme}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleDownloadSlides}
+                  variant="secondary"
+                  size="sm"
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSlideDeckPreview(false)}
+                  className="text-white hover:bg-white/20"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-auto bg-gray-50 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {generatedSlidesDeck.slides?.map((slide, index) => (
+                  <div key={index} className="bg-white rounded-lg shadow-md p-4 border hover:shadow-lg transition-all duration-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-500">Slide {index + 1}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {slide.type || 'content'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm text-gray-800 line-clamp-2">
+                        {slide.title || `Slide ${index + 1}`}
+                      </h4>
+                      
+                      <div className="text-xs text-gray-600 h-20 overflow-hidden">
+                        <div 
+                          className="prose prose-xs"
+                          dangerouslySetInnerHTML={{ 
+                            __html: slide.content?.substring(0, 150) + (slide.content?.length > 150 ? '...' : '') || 'No content' 
+                          }}
+                        />
+                      </div>
+                      
+                      {slide.notes && (
+                        <div className="mt-2 p-2 bg-yellow-50 rounded text-xs text-yellow-800 border border-yellow-200">
+                          <strong>Notes:</strong> {slide.notes.substring(0, 80)}{slide.notes.length > 80 ? '...' : ''}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="border-t p-4 bg-white flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                🎨 Generated {generatedSlidesDeck.style} slides with {generatedSlidesDeck.theme} theme
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    // Open slides in new window for presentation
+                    const slidesHTML = generateSlidesHTML(generatedSlidesDeck);
+                    const newWindow = window.open('', '_blank', 'width=1200,height=800');
+                    if (newWindow) {
+                      newWindow.document.write(slidesHTML);
+                      newWindow.document.close();
+                    }
+                  }}
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Present
+                </Button>
+                <Button
+                  onClick={() => setShowSlideDeckPreview(false)}
+                  variant="outline"
+                >
+                  Close Preview
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Assignment Modal */}
       <Dialog open={showEditAssignmentModal} onOpenChange={setShowEditAssignmentModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -7974,32 +8602,94 @@ Examples:
           
           {editingAssignment && (
             <div className="space-y-4">
-              {/* Assignment metadata display */}
-              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Difficulty</Label>
-                  <div className="text-sm">{editingAssignment.difficulty || 'Medium'}</div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Due Date</Label>
-                  <div className="text-sm">
-                    {editingAssignment.dueDate 
-                      ? new Date(editingAssignment.dueDate).toLocaleDateString() 
-                      : 'No due date set'}
+              {/* Assignment metadata form */}
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="assignment-title" className="text-sm font-medium text-gray-700">Title</Label>
+                    <Input
+                      id="assignment-title"
+                      value={editingAssignmentData.title}
+                      onChange={(e) => setEditingAssignmentData(prev => ({...prev, title: e.target.value}))}
+                      placeholder="Assignment title"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="assignment-difficulty" className="text-sm font-medium text-gray-700">Difficulty</Label>
+                    <select
+                      id="assignment-difficulty"
+                      value={editingAssignmentData.difficulty}
+                      onChange={(e) => setEditingAssignmentData(prev => ({...prev, difficulty: e.target.value}))}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="easy">Easy</option>
+                      <option value="medium">Medium</option>
+                      <option value="hard">Hard</option>
+                    </select>
                   </div>
                 </div>
+                
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">Points</Label>
-                  <div className="text-sm">{editingAssignment.points || editingAssignment.maxScore || 'Not specified'}</div>
+                  <Label htmlFor="assignment-description" className="text-sm font-medium text-gray-700">Description</Label>
+                  <Textarea
+                    id="assignment-description"
+                    value={editingAssignmentData.description}
+                    onChange={(e) => setEditingAssignmentData(prev => ({...prev, description: e.target.value}))}
+                    placeholder="Assignment description"
+                    rows={2}
+                    className="mt-1"
+                  />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="assignment-due-date" className="text-sm font-medium text-gray-700">Due Date</Label>
+                    <Input
+                      id="assignment-due-date"
+                      type="date"
+                      value={editingAssignmentData.dueDate}
+                      onChange={(e) => setEditingAssignmentData(prev => ({...prev, dueDate: e.target.value}))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="assignment-points" className="text-sm font-medium text-gray-700">Points</Label>
+                    <Input
+                      id="assignment-points"
+                      type="number"
+                      value={editingAssignmentData.points}
+                      onChange={(e) => setEditingAssignmentData(prev => ({...prev, points: e.target.value}))}
+                      placeholder="Max points"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">Status</Label>
-                  <div className="text-sm">
-                    {editingAssignment.isPublished ? (
-                      <Badge className="bg-green-100 text-green-800">Published</Badge>
+                  <Label htmlFor="assignment-instructions" className="text-sm font-medium text-gray-700">Instructions</Label>
+                  <Textarea
+                    id="assignment-instructions"
+                    value={editingAssignmentData.instructions}
+                    onChange={(e) => setEditingAssignmentData(prev => ({...prev, instructions: e.target.value}))}
+                    placeholder="Detailed instructions for students"
+                    rows={3}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Status: {editingAssignment.isPublished ? (
+                      <Badge className="bg-green-100 text-green-800 ml-1">Published</Badge>
                     ) : (
-                      <Badge variant="outline">Draft</Badge>
+                      <Badge variant="outline" className="ml-1">Draft</Badge>
                     )}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Last updated: {editingAssignment.updatedAt 
+                      ? new Date(editingAssignment.updatedAt).toLocaleString() 
+                      : 'Never'}
                   </div>
                 </div>
               </div>
@@ -8037,6 +8727,14 @@ Examples:
                     setShowEditAssignmentModal(false);
                     setEditingAssignment(null);
                     setEditingAssignmentContent("");
+                    setEditingAssignmentData({
+                      title: '',
+                      description: '',
+                      dueDate: '',
+                      points: '',
+                      difficulty: 'medium',
+                      instructions: ''
+                    });
                   }}
                 >
                   Cancel

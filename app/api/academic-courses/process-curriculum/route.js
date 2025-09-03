@@ -9,6 +9,17 @@ async function verifyToken(request) {
   return jwt.verify(token, process.env.JWT_SECRET);
 }
 
+// Helper function to determine assignment due date
+function getAssignmentDueDate(isPublished = false, weekOffset = 1) {
+  if (isPublished) {
+    // For published assignments, use fixed date
+    return "10-09-2025";
+  } else {
+    // For new assignments, use relative week format (educator can modify)
+    return `Week ${weekOffset}`;
+  }
+}
+
 // Process curriculum into modules without AI generation
 async function processCurriculumIntoModules(curriculum, title, description, subject, academicLevel, credits, semester, objectives) {
   console.log("📚 Processing curriculum into module structure...");
@@ -50,7 +61,7 @@ async function processCurriculumIntoModules(curriculum, title, description, subj
             type: "Research Paper",
             description: "Critical analysis and research assignment",
             points: 100,
-            dueDate: `Week ${i + 1}`,
+            dueDate: getAssignmentDueDate(false, i + 1),
             requirements: "1500-2000 words, minimum 5 scholarly sources"
           },
           {
@@ -59,7 +70,7 @@ async function processCurriculumIntoModules(curriculum, title, description, subj
             type: "Problem Solving",
             description: "Practical application and implementation project",
             points: 100,
-            dueDate: `Week ${i + 2}`,
+            dueDate: getAssignmentDueDate(false, i + 2),
             requirements: "Demonstrate practical understanding and real-world application"
           }
         ],
@@ -110,7 +121,7 @@ async function processCurriculumIntoModules(curriculum, title, description, subj
             type: "Research Paper",
             description: "Complete a research assignment based on module content",
             points: 100,
-            dueDate: `Week ${i + 1}`
+            dueDate: getAssignmentDueDate(false, i + 1)
           },
           {
             id: `assignment_${Date.now()}_${i}_2`,
@@ -118,7 +129,7 @@ async function processCurriculumIntoModules(curriculum, title, description, subj
             type: "Problem Solving",
             description: "Apply concepts learned in practical exercises",
             points: 100,
-            dueDate: `Week ${i + 2}`
+            dueDate: getAssignmentDueDate(false, i + 2)
           }
         ],
         quiz: {

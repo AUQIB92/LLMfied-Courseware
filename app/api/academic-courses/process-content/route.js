@@ -10,6 +10,17 @@ async function verifyToken(request) {
   return jwt.verify(token, process.env.JWT_SECRET);
 }
 
+// Helper function to determine assignment due date
+function getAssignmentDueDate(isPublished = false, weekOffset = 1) {
+  if (isPublished) {
+    // For published assignments, use fixed date
+    return "10-09-2025";
+  } else {
+    // For new assignments, use relative week format (educator can modify)
+    return `Week ${weekOffset}`;
+  }
+}
+
 // Generate academic modules with 2 assignments and 1 quiz each - WITHOUT AI generation
 async function generateAcademicModulesFromContent(content, title, description, subject, academicLevel, credits, semester, objectives) {
   console.log(`🔍 Debug: Content type: ${typeof content}, length: ${content?.length || 'undefined'}`);
@@ -43,7 +54,7 @@ async function generateAcademicModulesFromContent(content, title, description, s
           type: "Research Paper",
           description: "Complete a research assignment based on module content and theoretical foundations",
           points: 100,
-          dueDate: "Week 1"
+          dueDate: getAssignmentDueDate(false, 1)
         },
         {
           id: `assignment_${Date.now()}_2`,
@@ -51,7 +62,7 @@ async function generateAcademicModulesFromContent(content, title, description, s
           type: "Problem Solving",
           description: "Apply concepts learned in practical exercises and real-world implementation",
           points: 100,
-          dueDate: "Week 2"
+          dueDate: getAssignmentDueDate(false, 2)
         }
       ],
       quiz: {
@@ -104,7 +115,7 @@ async function generateAcademicModulesFromContent(content, title, description, s
             type: "Research Paper",
             description: "Complete a research assignment based on module content and theoretical foundations",
             points: 100,
-            dueDate: `Week ${i + 1}`
+            dueDate: getAssignmentDueDate(false, i + 1)
           },
           {
             id: `assignment_${Date.now()}_${i}_2`,
@@ -112,7 +123,7 @@ async function generateAcademicModulesFromContent(content, title, description, s
             type: "Problem Solving",
             description: "Apply concepts learned in practical exercises and real-world implementation",
             points: 100,
-            dueDate: `Week ${i + 2}`
+            dueDate: getAssignmentDueDate(false, i + 2)
           }
         ],
         quiz: {
@@ -161,7 +172,7 @@ async function generateAcademicModulesFromContent(content, title, description, s
             type: "Research Paper",
             description: "Complete a research assignment based on module content",
             points: 100,
-            dueDate: `Week ${i + 1}`
+            dueDate: getAssignmentDueDate(false, i + 1)
           },
           {
             id: `assignment_${Date.now()}_2`,
@@ -169,7 +180,7 @@ async function generateAcademicModulesFromContent(content, title, description, s
             type: "Problem Solving",
             description: "Apply concepts learned in practical exercises",
             points: 100,
-            dueDate: `Week ${i + 2}`
+            dueDate: getAssignmentDueDate(false, i + 2)
           }
         ],
         quiz: {
@@ -269,7 +280,7 @@ function parseAcademicModule(content) {
         type: "Research Paper",
         description: "Research assignment based on module content",
         points: 100,
-        dueDate: "Week 1"
+        dueDate: getAssignmentDueDate(false, 1)
       },
       {
         id: `assignment_${Date.now()}_2`,
@@ -277,7 +288,7 @@ function parseAcademicModule(content) {
         type: "Problem Solving",
         description: "Apply concepts in practical exercises",
         points: 100,
-        dueDate: "Week 2"
+        dueDate: getAssignmentDueDate(false, 2)
       }
     ];
   }
